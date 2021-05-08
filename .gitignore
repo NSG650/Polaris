@@ -1,0 +1,5 @@
+*.elf
+*.img
+*.o
+*.kdev4
+.kdev4/
