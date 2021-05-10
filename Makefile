@@ -5,6 +5,7 @@ KERNEL := d.elf
 #the compiler we are using
 
 CC = x86_64-elf-gcc
+AS = nasm
 
 #compiler flags
 
@@ -33,8 +34,9 @@ INTERNALCFLAGS  :=           \
 
 #c files and object
 
-CFILES := $(wildcard kernel/kernel/*.c)
-OBJ := $(CFILES:.c=.o)
+CFILES := $(wildcard kernel/*/*.c)
+ASMFILES := $(wildcard kernel/*/*.asm)
+OBJ := $(CFILES:.c=.o) $(ASMFILES:.asm=.o)
 
 .PHONY: all clean
 
@@ -46,9 +48,16 @@ $(KERNEL): $(OBJ)
 %.o: %.c
 	$(CC) $(CFLAGS) $(INTERNALCFLAGS) -c $< -o $@
 
+%.o: %.asm
+	$(AS) -felf64 $< -o $@
+
+
 clean:
 	rm -rf $(KERNEL) $(OBJ)
 	rm -rf d.img
 
 image:
 	./image.sh
+
+run:
+	qemu-system-x86_64 -hda d.img
