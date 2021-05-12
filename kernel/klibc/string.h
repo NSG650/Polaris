@@ -30,6 +30,7 @@ size_t strlen(const char s[]);
 char *hex_to_ascii_upper(int n, char str[]);
 char *hex_to_ascii(int n, char str[]);
 char *int_to_ascii(int n, char str[]);
+char *long_to_ascii(unsigned long long n, char str[]);
 char *octal_to_ascii(int n);
 int atoi(const char *str);
 

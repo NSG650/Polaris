@@ -49,8 +49,13 @@ void _start(struct stivale2_struct *stivale2_struct) {
 
     video_init(fb_str_tag);
     clear_screen(0x000000);
-    for(int i = 0; i < 64; i++)
-        kprintbgc("Hello 64 bit world!\n", 0x00FF00, 0x000000);
+    for(int i = 0; i < 32; i++) {
+        kprint_color("Hello 64 bit world!\n", 0x00FF00);
+        char x[3] = "";
+        long_to_ascii(18446744073709551614 / 2, x);
+        kprint_color(x, 0x00FF00);
+        kprint_color("\n", 0x00FF00);
+    }
 
     for (;;)
         __asm__("hlt");

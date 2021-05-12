@@ -24,6 +24,23 @@ char *int_to_ascii(int n, char str[]) {
     return (str);
 }
 
+char *long_to_ascii(unsigned long long n, char str[]) {
+    int i, sign;
+    if ((sign = n) < 0) n = -n;
+    i = 0;
+    do {
+        str[i++] = n % 10 + '0';
+    } while ((n /= 10) > 0);
+
+    if (sign < 0) str[i++] = '-';
+    str[i] = '\0';
+
+    reverse(str);
+
+    return (str);
+}
+
+
 char *hex_to_ascii(int n, char str[]) {
     append(str, '0');
     append(str, 'x');
