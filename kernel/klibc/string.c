@@ -724,6 +724,17 @@ int strverscmp(const char *l0, const char *r0) {
     return l[i] - r[i];
 }
 
+static int strncasecmp(const char *_l, const char *_r, size_t n) {
+    const uint8_t *l = (void *)_l, *r = (void *)_r;
+    if (!n--) {
+        return 0;
+    }
+    for (; *l && *r && n && (*l == *r || tolower(*l) == tolower(*r));
+         l++, r++, n--)
+        ;
+    return tolower(*l) - tolower(*r);
+}
+
 char *strcasestr(const char *h, const char *n) {
     size_t l = strlen(n);
     for (; *h; h++) {
