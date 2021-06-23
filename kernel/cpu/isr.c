@@ -275,7 +275,7 @@ void isr_install() {
   set_idt();
 }
 
-inline const char *exceptionMessages[] = {"Divide by zero",
+inline const char* exceptionMessages[] = {"Divide by zero",
                                           "Debug",
                                           "NMI",
                                           "Breakpoint",

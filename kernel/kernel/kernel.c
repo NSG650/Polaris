@@ -60,6 +60,7 @@ void _start(struct stivale2_struct *stivale2_struct) {
     kprint("Did the ISR load?\n");
     set_pit_freq(1000);
     kprint("Did the timer load?\n");
+    asm("int $3");
     for (;;)
         __asm__("hlt");
 }

@@ -1,6 +1,10 @@
 #include "../video/video.h"
 #include "../klibc/string.h"
 
+char* errmsg[] = {
+	"SYSTEM_SERVICE_EXCEPTION_NOT_HANDLED"
+};
+
 void die(int code) {
 	dieex(code, 0, 0, 0, 0);
 }
@@ -8,11 +12,11 @@ void die(int code) {
 void dieex(int code, int code0, int code1, int code2, int code3) {
 	vidreset();
 	clear_screen(0xB80000);
-	char msg[10];
-	char msg0[10];
-	char msg1[10];
-	char msg2[10];
-	char msg3[10];
+	char msg[15];
+	char msg0[15];
+	char msg1[15];
+	char msg2[15];
+	char msg3[15];
 	hex_to_ascii_upper(code, msg);
     hex_to_ascii_upper(code0, msg0);
 	hex_to_ascii_upper(code1, msg1);
@@ -41,16 +45,12 @@ void dieex(int code, int code0, int code1, int code2, int code3) {
 	kprintbgc(", ", 0xFFFFFF, 0xB80000);
 	kprintbgc(msg3, 0xFFFFFF, 0xB80000);
 	kprintbgc(")\n", 0xFFFFFF, 0xB80000);
-	switch(code) {
-		case 0xDEADDEAD:
-			kprintbgc("MANUALLY_INITIATED_CRASH\n", 0xFFFFFF, 0xB80000);
-			break;
-        case 0x00000001:
-            kprintbgc("SYSTEM_SERVICE_EXCEPTION", 0xFFFFFF, 0xB80000);
-            break;
-		default:
-			break;
+	if(code > sizeof(errmsg)) {
+		kprintbgc("\n\nSystem Halted", 0xFFFFFF, 0xB80000);
+		for(;;)
+			__asm__("cli\nhlt");
 	}
+	kprintbgc(errmsg[code - 1], 0xFFFFFF, 0xB80000);
 	kprintbgc("\n\nSystem Halted", 0xFFFFFF, 0xB80000);
 	for(;;)
 		__asm__("cli\nhlt");
