@@ -15,7 +15,7 @@ CFLAGS = -Wall -Wextra -O2 -pipe -I stivale/
 
 INTERNALLDFLAGS :=     \
 	-fno-pic -fpie \
-	-Wl,-static,-pie,--no-dynamic-linker,-ztext \
+	-Wl,-static \
 	-static-pie    \
 	-nostdlib      \
 	-T kernel/linker.ld    \

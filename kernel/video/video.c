@@ -8,6 +8,11 @@ uint8_t *fb_addr;
 size_t fb_pitch, fb_bpp;
 uint16_t width_s, height_s;
 
+void vidreset() {
+	 cursor_x = 0;
+	 cursor_y = 0;
+}
+
 void video_init(struct stivale2_struct_tag_framebuffer *framebuffer){
     fb_addr = (uint8_t *)framebuffer->framebuffer_addr;
 	fb_pitch = framebuffer->framebuffer_pitch;

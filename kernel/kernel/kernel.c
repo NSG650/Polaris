@@ -2,6 +2,10 @@
 #include <stddef.h>
 #include "../video/video.h"
 #include <stivale2.h>
+#include "die.h"
+
+extern void init_gdt();
+
 static uint8_t stack[4096];
 static struct stivale2_header_tag_framebuffer framebuffer_hdr_tag = {
     // All tags need to begin with an identifier and a pointer to the next tag.
@@ -47,11 +51,10 @@ void _start(struct stivale2_struct *stivale2_struct) {
             __asm__("hlt");
     }
 
+    init_gdt();
     video_init(fb_str_tag);
     clear_screen(0x000000);
-    for(int i = 0; i < 32; i++) {
-        kprint_color("Hello 64 bit world!\n", 0x00FF00);
-    }
+    kprint("Did the GDT work?\n");
 
     for (;;)
         __asm__("hlt");
