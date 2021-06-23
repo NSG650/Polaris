@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include "idt.h"
 #include "reg.h"
+#include "pit.h"
 
 void isr1();
 void isr2();
@@ -265,78 +266,6 @@ void isr255();
 
 typedef void (*eventHandlers_t)(registers_t*);
 
-inline const char *exceptionMessages[] = {"Divide by zero",
-                                          "Debug",
-                                          "NMI",
-                                          "Breakpoint",
-                                          "Overflow",
-                                          "Bound Range Exceeded",
-                                          "Invaild Opcode",
-                                          "Device Not Available",
-                                          "Double fault",
-                                          "Co-processor Segment Overrun",
-                                          "Invaild TSS",
-                                          "Segment not present",
-                                          "Stack-Segment Fault",
-                                          "GPF",
-                                          "Page Fault",
-                                          "Reserved",
-                                          "x87 Floating Point Exception",
-                                          "allignement check",
-                                          "Machine check",
-                                          "SIMD floating-point exception",
-                                          "Virtualization Exception",
-                                          "Deadlock",
-                                          "Reserved",
-                                          "Reserved",
-                                          "Reserved",
-                                          "Reserved",
-                                          "Reserved",
-                                          "Reserved",
-                                          "Reserved",
-                                          "Reserved",
-                                          "Reserved",
-                                          "Security Exception",
-                                          "Reserved",
-                                          "Triple Fault",
-                                          "FPU error"};
-
 void isr_install();
 extern void isr_handler(registers_t *r);
-
-inline eventHandlers_t eventHandlers[] =   {
-                                        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                                        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                                        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                                        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                                        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                                        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                                        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                                        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                                        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                                        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                                        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                                        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                                        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                                        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                                        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                                        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                                        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                                        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                                        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                                        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                                        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                                        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                                        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                                        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                                        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                                        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                                        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                                        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                                        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                                        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                                        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                                        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
-                                    };
-
 #endif

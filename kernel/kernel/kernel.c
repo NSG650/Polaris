@@ -58,7 +58,8 @@ void _start(struct stivale2_struct *stivale2_struct) {
     isr_install();
     asm volatile("sti");
     kprint("Did the ISR load?\n");
-    asm volatile ("int $0x3");
+    set_pit_freq(1000);
+    kprint("Did the timer load?\n");
     for (;;)
         __asm__("hlt");
 }
