@@ -55,7 +55,10 @@ void _start(struct stivale2_struct *stivale2_struct) {
     video_init(fb_str_tag);
     clear_screen(0x000000);
     kprint("Did the GDT work?\n");
-
+    isr_install();
+    asm volatile("sti");
+    kprint("Did the ISR load?\n");
+    asm volatile ("int $0x3");
     for (;;)
         __asm__("hlt");
 }

@@ -1,6 +1,10 @@
 #include "../video/video.h"
 #include "../klibc/string.h"
 
+void die(int code) {
+	dieex(code, 0, 0, 0, 0);
+}
+
 void dieex(int code, int code0, int code1, int code2, int code3) {
 	vidreset();
 	clear_screen(0xB80000);
@@ -42,7 +46,7 @@ void dieex(int code, int code0, int code1, int code2, int code3) {
 			kprintbgc("MANUALLY_INITIATED_CRASH\n", 0xFFFFFF, 0xB80000);
 			break;
         case 0x00000001:
-            kprintbgc("PAGE_FAULT_IN_NONPAGED_AREA", 0xFFFFFF, 0xB80000);
+            kprintbgc("SYSTEM_SERVICE_EXCEPTION", 0xFFFFFF, 0xB80000);
             break;
 		default:
 			break;
