@@ -1,20 +1,40 @@
 #include "ports.h"
 uint8_t port_byte_in(unsigned short port) {
-  uint8_t res;
-  __asm__("in %%dx, %%al" : "=a"(res) : "d"(port));
-  return res;
+   uint8_t ret;
+    asm volatile (
+        "in %0, %1\n\t"
+        : "=a"(ret)
+        : "d"(port)
+        : "memory"
+    );
+    return ret;
 }
 
 void port_byte_out(unsigned short port, unsigned char data) {
-  __asm__("out %%al, %%dx" ::"a"(data), "d"(port));
+   asm volatile (
+        "out %0, %1\n\t"
+        :
+        : "d"(port), "a"(data)
+        : "memory"
+    );
 }
 
 uint16_t port_word_in(unsigned short port) {
-  uint16_t res;
-  __asm__("in %%dx, %%ax" : "=a"(res) : "d"(port));
-  return res;
+   uint16_t ret;
+    asm volatile (
+        "in %0, %1\n\t"
+        : "=a"(ret)
+        : "d"(port)
+        : "memory"
+    );
+    return ret;
 }
 
 void port_word_out(unsigned short port, unsigned short data) {
-  __asm__("out %%ax, %%dx" : : "a"(data), "d"(port));
+   asm volatile (
+        "out %0, %1\n\t"
+        :
+        : "d"(port), "a"(data)
+        : "memory"
+    );
 }

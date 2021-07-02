@@ -1,8 +1,10 @@
 #include "../video/video.h"
 #include "../klibc/string.h"
+#include "die.h"
 
 char* errmsg[] = {
-	"SYSTEM_SERVICE_EXCEPTION_NOT_HANDLED"
+	"SYSTEM_SERVICE_EXCEPTION_NOT_HANDLED",
+    "ASSERTION_FAILURE"
 };
 
 void die(int code) {

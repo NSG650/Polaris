@@ -30,7 +30,8 @@ INTERNALCFLAGS  :=           \
 	-fno-stack-protector \
 	-fno-pic -fpie       \
 	-mgeneral-regs-only  \
-	-mno-red-zone
+	-mno-red-zone	     \
+	-masm=intel
 
 #c files and object
 

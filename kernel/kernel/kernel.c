@@ -1,6 +1,10 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "../video/video.h"
+#include "../cpu/idt.h"
+#include "../cpu/isr.h"
+#include "../cpu/pit.h"
+#include "../mm/pmm.h"
 #include <stivale2.h>
 #include "die.h"
 
@@ -43,24 +47,25 @@ void *stivale2_get_tag(struct stivale2_struct *stivale2_struct, uint64_t id) {
 }
 
 void _start(struct stivale2_struct *stivale2_struct) {
+    init_gdt();
     struct stivale2_struct_tag_framebuffer *fb_str_tag;
+    stivale2_struct = (void *)stivale2_struct + (uintptr_t)0xffff800000000000;
+    struct stivale2_struct_tag_memmap *memmap_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MEMMAP_ID);
+    pmm_init((void *)memmap_tag->memmap, memmap_tag->entries);
     fb_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_FRAMEBUFFER_ID);
-
     if (fb_str_tag == NULL) {
         for (;;)
             __asm__("hlt");
     }
-
-    init_gdt();
     video_init(fb_str_tag);
     clear_screen(0x000000);
     kprint("Did the GDT work?\n");
+    kprint("Did the PMM work?\n");
     isr_install();
     asm volatile("sti");
     kprint("Did the ISR load?\n");
     set_pit_freq(1000);
     kprint("Did the timer load?\n");
-    asm("int $3");
     for (;;)
         __asm__("hlt");
 }
