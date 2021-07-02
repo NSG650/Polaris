@@ -1,7 +1,5 @@
 #include "pmm.h"
 #include "../kernel/die.h"
-#include "../video/video.h"
-#include "../klibc/string.h"
 #include "../klibc/bitman.h"
 #include "../klibc/mem.h"
 #include "../klibc/math.h"
@@ -85,4 +83,8 @@ void pmm_free(void *ptr, size_t count) {
     size_t page = (size_t)ptr / 0x1000;
     for (size_t i = page; i < page + count; i++)
         bitmap_unset(bitmap, i);
+}
+
+uintptr_t return_highest_page() {
+    return highest_page;
 }
