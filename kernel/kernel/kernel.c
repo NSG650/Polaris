@@ -6,6 +6,7 @@
 #include "../cpu/pit.h"
 #include "../mm/pmm.h"
 #include "../mm/vmm.h"
+#include "../serial/serial.h"
 #include <stivale2.h>
 #include "die.h"
 
@@ -49,31 +50,32 @@ void *stivale2_get_tag(struct stivale2_struct *stivale2_struct, uint64_t id) {
 
 void _start(struct stivale2_struct *stivale2_struct) {
     stivale2_struct = (void *)stivale2_struct + MEM_PHYS_OFFSET;
-    struct stivale2_struct_tag_memmap *memmap_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MEMMAP_ID);
     init_gdt();
-    pmm_init((void *)memmap_tag->memmap, memmap_tag->entries);
-    vmm_init((void *)memmap_tag->memmap, memmap_tag->entries);
     struct stivale2_struct_tag_framebuffer *fb_str_tag;
     fb_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_FRAMEBUFFER_ID);
+    video_init(fb_str_tag);
+    struct stivale2_struct_tag_memmap *memmap_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MEMMAP_ID);
+    pmm_init((void *)memmap_tag->memmap, memmap_tag->entries);
+    vmm_init((void *)memmap_tag->memmap, memmap_tag->entries);
     if (fb_str_tag == NULL) {
         for (;;)
             __asm__("hlt");
     }
-    video_init(fb_str_tag);
+    serial_install();
     clear_screen(0x000000);
     kprint("Did the GDT work?\n");
     kprint("Did the PMM work?\n");
     kprint("Did the VMM work?\n");
+    write_serial("Did Serial work?\n");
     isr_install();
     asm volatile("sti");
     kprint("Did the ISR load?\n");
     set_pit_freq(1000);
     kprint("Did the timer load?\n");
-    kprint("Allocating memory\n");
-    char x[20];
-    hex_to_ascii_upper(return_highest_page(), x);
-    kprint("Highest Page Value: ");
-    kprint(x);
+    __asm__("int 3");
+    //hex_to_ascii_upper(return_highest_page(), x);
+    //kprint("Highest Page Value: ");
+    //kprint(x);
     for (;;)
         __asm__("hlt");
 }

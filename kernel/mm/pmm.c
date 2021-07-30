@@ -1,42 +1,58 @@
 #include "pmm.h"
+#include "vmm.h"
 #include "../kernel/die.h"
 #include "../klibc/bitman.h"
 #include "../klibc/mem.h"
 #include "../klibc/math.h"
+#include "../klibc/lock.h"
 #include <stivale2.h>
+
 
 static void *bitmap;
 static size_t last_used_index = 0;
 static uintptr_t highest_page = 0;
 
+static lock_t pmm_lock;
 
-void pmm_init(struct stivale2_mmap_entry* memap, size_t memap_entries) {
-    for(size_t i = 0; i < memap_entries; i++) {
-        if(memap[i].type != STIVALE2_MMAP_USABLE)
+void pmm_init(struct stivale2_mmap_entry *memmap, size_t memmap_entries) {
+    // First, calculate how big the bitmap needs to be.
+    for (size_t i = 0; i < memmap_entries; i++) {
+        if (memmap[i].type != STIVALE2_MMAP_USABLE)
             continue;
-        uintptr_t top = memap[i].base + memap[i].length;
-        if(top > highest_page)
+
+        uintptr_t top = memmap[i].base + memmap[i].length;
+
+        if (top > highest_page)
             highest_page = top;
     }
 
-    size_t bitmap_size = DIV_ROUNDUP(highest_page, (size_t)0x1000) / 8;
+    size_t bitmap_size = DIV_ROUNDUP(highest_page, PAGE_SIZE) / 8;
 
-    for(size_t i = 0; i < memap_entries; i++) {
-        if(memap[i].type != STIVALE2_MMAP_USABLE)
+    // Second, find a location with enough free pages to host the bitmap.
+    for (size_t i = 0; i < memmap_entries; i++) {
+        if (memmap[i].type != STIVALE2_MMAP_USABLE)
             continue;
-        if (memap[i].length >= bitmap_size) {
-            bitmap = (void*)(memap[i].base + (uintptr_t)0xffff800000000000);
+
+        if (memmap[i].length >= bitmap_size) {
+            bitmap = (void *)(memmap[i].base + MEM_PHYS_OFFSET);
+
+            // Initialise entire bitmap to 1 (non-free)
             memset(bitmap, 0xff, bitmap_size);
-            memap[i].length -= bitmap_size;
-            memap[i].base += bitmap_size;
+
+            memmap[i].length -= bitmap_size;
+            memmap[i].base += bitmap_size;
+
             break;
         }
     }
-    for(size_t i = 0; i < memap_entries; i++) {
-        if(memap[i].type != STIVALE2_MMAP_USABLE)
+
+    // Third, populate free bitmap entries according to memory map.
+    for (size_t i = 0; i < memmap_entries; i++) {
+        if (memmap[i].type != STIVALE2_MMAP_USABLE)
             continue;
-        for(uintptr_t j = 0; j < memap[i].length; j += 0x1000)
-            bitmap_unset(bitmap, (memap[i].base + j)/0x1000);
+
+        for (uintptr_t j = 0; j < memmap[i].length; j += PAGE_SIZE)
+            bitmap_unset(bitmap, (memmap[i].base + j) / PAGE_SIZE);
     }
 }
 
@@ -50,40 +66,51 @@ static void *inner_alloc(size_t count, size_t limit) {
                 for (size_t i = page; i < last_used_index; i++) {
                     bitmap_set(bitmap, i);
                 }
-                return (void *)(page * 0x1000);
+                return (void*)(page * PAGE_SIZE);
             }
         } else {
             p = 0;
         }
     }
-    return NULL;
 }
 
 void *pmm_alloc(size_t count) {
+    SPINLOCK_ACQUIRE(pmm_lock);
+
     size_t l = last_used_index;
-    void *ret = inner_alloc(count, highest_page / 0x1000);
+    void *ret = inner_alloc(count, highest_page / PAGE_SIZE);
     if (ret == NULL) {
+        die(0xDEAD);
         last_used_index = 0;
         ret = inner_alloc(count, l);
     }
+
+    LOCK_RELEASE(pmm_lock);
     return ret;
 }
 
 void *pmm_allocz(size_t count) {
     char *ret = (char *)pmm_alloc(count);
+
     if (ret == NULL)
         return NULL;
-    uint64_t *ptr = (uint64_t *)(ret + (uintptr_t)0xffff800000000000);
-    for (size_t i = 0; i < count * (0x1000 / sizeof(uint64_t)); i++)
+
+    uint64_t *ptr = (uint64_t *)(ret + MEM_PHYS_OFFSET);
+
+    for (size_t i = 0; i < count * (PAGE_SIZE / sizeof(uint64_t)); i++)
         ptr[i] = 0;
+
     return ret;
 }
 
 void pmm_free(void *ptr, size_t count) {
-    size_t page = (size_t)ptr / 0x1000;
+    SPINLOCK_ACQUIRE(pmm_lock);
+    size_t page = (size_t)ptr / PAGE_SIZE;
     for (size_t i = page; i < page + count; i++)
         bitmap_unset(bitmap, i);
+    LOCK_RELEASE(pmm_lock);
 }
+
 
 uintptr_t return_highest_page() {
     return highest_page;

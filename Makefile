@@ -9,7 +9,7 @@ AS = nasm
 
 #compiler flags
 
-CFLAGS = -Wall -Wextra -O2 -pipe -I stivale/
+CFLAGS = -Wall -Wextra -g -pipe -I stivale/
 
 # internal flags that shouldnt be changed
 
@@ -61,4 +61,7 @@ image:
 	./image.sh
 
 run:
-	qemu-system-x86_64 -hda d.img
+	qemu-system-x86_64 -hda d.img -serial stdio
+
+debug:
+	qemu-system-x86_64 -hda d.img -M q35,smm=off -d int --no-reboot -s

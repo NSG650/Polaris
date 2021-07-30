@@ -56,7 +56,7 @@ init_gdt:
   pushfq
   push CODE_SEG
   push flush
-  iretq
+  retf
   flush:
   mov ax, DATA_SEG
   mov ds, ax
