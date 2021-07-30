@@ -4,7 +4,7 @@
 #include "../klibc/bitman.h"
 #include "../klibc/mem.h"
 #include "../klibc/math.h"
-#include "../klibc/lock.h"
+#include "../serial/serial.h"
 #include <stivale2.h>
 
 
@@ -75,8 +75,6 @@ static void *inner_alloc(size_t count, size_t limit) {
 }
 
 void *pmm_alloc(size_t count) {
-    SPINLOCK_ACQUIRE(pmm_lock);
-
     size_t l = last_used_index;
     void *ret = inner_alloc(count, highest_page / PAGE_SIZE);
     if (ret == NULL) {
@@ -84,8 +82,6 @@ void *pmm_alloc(size_t count) {
         last_used_index = 0;
         ret = inner_alloc(count, l);
     }
-
-    LOCK_RELEASE(pmm_lock);
     return ret;
 }
 
@@ -104,11 +100,9 @@ void *pmm_allocz(size_t count) {
 }
 
 void pmm_free(void *ptr, size_t count) {
-    SPINLOCK_ACQUIRE(pmm_lock);
     size_t page = (size_t)ptr / PAGE_SIZE;
     for (size_t i = page; i < page + count; i++)
         bitmap_unset(bitmap, i);
-    LOCK_RELEASE(pmm_lock);
 }
 
 

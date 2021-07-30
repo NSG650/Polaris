@@ -72,7 +72,6 @@ void _start(struct stivale2_struct *stivale2_struct) {
     kprint("Did the ISR load?\n");
     set_pit_freq(1000);
     kprint("Did the timer load?\n");
-    __asm__("int 3");
     //hex_to_ascii_upper(return_highest_page(), x);
     //kprint("Highest Page Value: ");
     //kprint(x);

@@ -24,18 +24,6 @@ void dieex(int code, int code0, int code1, int code2, int code3) {
 	hex_to_ascii_upper(code1, msg1);
 	hex_to_ascii_upper(code2, msg2);
 	hex_to_ascii_upper(code3, msg3);
-    if(!code0) {
-        strcpy(msg0, "NONE");
-    }
-    if(!code1) {
-        strcpy(msg1, "NONE");
-    }
-    if(!code2) {
-        strcpy(msg2, "NONE");
-    }
-    if(!code3) {
-        strcpy(msg3, "NONE");
-    }
 	kprintbgc("*** STOP: ", 0xFFFFFF, 0xB80000);
 	kprintbgc(msg, 0xFFFFFF, 0xB80000);
 	kprintbgc(" (", 0xFFFFFF, 0xB80000);
