@@ -16,10 +16,11 @@ make clean
 # How to run?
 The kernel is 64 bit so run it with
 ```sh
-qemu-system-x86_64 -hda d.img
+qemu-system-x86_64 -hda d.img -m 512M
 ```
 # What is implemented so far?
 - [x] Long mode
 - [x] Graphics mode
 - [x] Interrupts
 - [x] Timer   
+- [x] Paging 
