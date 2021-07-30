@@ -2,7 +2,7 @@
 #include "ports.h"
 #include "../kernel/die.h"
 
-void isr_install() {
+void isr_install(void) {
   set_idt_gate(0, (uint64_t)isr0);
   set_idt_gate(1, (uint64_t)isr1);
   set_idt_gate(2, (uint64_t)isr2);

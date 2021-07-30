@@ -8,7 +8,7 @@ uint8_t *fb_addr;
 size_t fb_pitch, fb_bpp;
 uint16_t width_s, height_s;
 
-void vidreset() {
+void vidreset(void) {
 	 cursor_x = 0;
 	 cursor_y = 0;
 }
@@ -28,7 +28,7 @@ void draw_px(int x, int y, uint32_t color) {
 }
 
 
-void knewline() {
+void knewline(void) {
     for (uint32_t y = fb_font.height; y != height_s; ++y) {
       void *dest = (void *)(((uintptr_t)fb_addr) + (y - fb_font.height) * fb_pitch);
       const void *src = (void *)(((uintptr_t)fb_addr) + y * fb_pitch);

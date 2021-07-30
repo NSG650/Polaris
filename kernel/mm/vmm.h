@@ -44,7 +44,7 @@ struct pagemap {
 
 void vmm_init(struct stivale2_mmap_entry *memmap, size_t memmap_entries);
 void vmm_switch_pagemap(struct pagemap *pagemap);
-struct pagemap *vmm_new_pagemap();
+struct pagemap *vmm_new_pagemap(void);
 bool vmm_map_page(struct pagemap *pagemap, uintptr_t virt_addr, uintptr_t phys_addr,
                   uintptr_t flags);
 // TODO: implmenet mmap

@@ -10,7 +10,7 @@
 #include <stivale2.h>
 #include "die.h"
 
-extern void init_gdt();
+extern void init_gdt(void);
 
 static uint8_t stack[4096];
 static struct stivale2_header_tag_framebuffer framebuffer_hdr_tag = {

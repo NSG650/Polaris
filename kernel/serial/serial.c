@@ -21,7 +21,7 @@ int serial_install_port(uint16_t PORT) {
 }
 
 
-void serial_install() {
+void serial_install(void) {
     serial_install_port(COM1);
 }
 
