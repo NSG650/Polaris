@@ -1,12 +1,10 @@
 #include "pmm.h"
 #include "vmm.h"
-#include "../kernel/die.h"
 #include "../klibc/bitman.h"
 #include "../klibc/mem.h"
 #include "../klibc/math.h"
 #include "../serial/serial.h"
 #include <stivale2.h>
-
 
 static void *bitmap;
 static size_t last_used_index = 0;
@@ -78,7 +76,6 @@ void *pmm_alloc(size_t count) {
     size_t l = last_used_index;
     void *ret = inner_alloc(count, highest_page / PAGE_SIZE);
     if (ret == NULL) {
-        die(0xDEAD);
         last_used_index = 0;
         ret = inner_alloc(count, l);
     }
