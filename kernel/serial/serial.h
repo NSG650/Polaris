@@ -11,6 +11,6 @@ int serial_install_port(uint16_t PORT);
 void write_serial_char(char word);
 char read_serial(uint16_t PORT);
 void write_serial(char *word);
-void serial_install();
+void serial_install(void);
 
 #endif
