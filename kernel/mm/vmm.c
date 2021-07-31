@@ -28,15 +28,10 @@ void vmm_init(struct stivale2_mmap_entry *memmap, size_t memmap_entries) {
         vmm_map_page(&kernel_pagemap, p, p, 0b11);
         vmm_map_page(&kernel_pagemap, p + MEM_PHYS_OFFSET, p, 0b11);
     }
-    write_serial("finished1");
-
     for (uintptr_t p = 0; p < 2048UL * 1024 * 1024; p += PAGE_SIZE) {
         vmm_map_page(&kernel_pagemap, KERNEL_BASE + p, p, 0b11);
     }
-
-    write_serial("finished");
     vmm_switch_pagemap(&kernel_pagemap);
-
 }
 
 void vmm_switch_pagemap(struct pagemap *pagemap) {

@@ -26,6 +26,7 @@ char *strtruncate(char *str, int n);
 char *strrchr(const char *s, int c);
 char *strchr(const char *s, int c);
 size_t strlen(const char s[]);
+char *strrev(char s[]);
 
 char *hex_to_ascii_upper(int n, char str[]);
 char *hex_to_ascii(int n, char str[]);

@@ -108,7 +108,7 @@ void putchar_color(char c, uint32_t color, uint32_t bgcolor) {
     putchar_at(c, cursor_x, cursor_y, color, bgcolor);
 }
 
-void putchar(char c) {
+void putcharx(char c) {
    putchar_color(c, 0xFFFFFF, 0x000000);
 }
 

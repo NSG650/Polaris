@@ -1,6 +1,7 @@
 #include "pit.h"
-#include "../video/video.h"
-#include "../klibc/string.h"
+#include "ports.h"
+#include "../klibc/debug.h"
+
 volatile uint64_t global_tick = 0;
 
 void timer_handler(registers_t* r) {

@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
+typedef char symbol[];
+
 void *memccpy(void *restrict dest, const void *restrict src, int c, size_t n);
 void *memmove(void *dest, const void *src, size_t nbytes);
 void *mempcpy(void *dest, const void *src, size_t nbytes);

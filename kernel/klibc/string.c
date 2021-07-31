@@ -93,27 +93,33 @@ char *octal_to_ascii(int n) {
     return (str);
 }
 
-int atoi(const char *str) {
-    int n = 0, neg = 0;
-    while (isspace(*str)) {
-        str++;
-    }
+char *itoa( int n, char *str1, unsigned int base ) {
+	int i = 0;
+	unsigned char negative = 0;
+	if (n == 0) {
+		str1[ i++ ] = '0';
+		str1[ i ] = 0;
 
-    switch (*str) {
-        case '-':
-            neg = 1;
-            break;
+		return str1;
+	}
 
-        case '+':
-            str++;
-            break;
-    }
+	if (base == 10 && n < 0) {
+		negative = 1;
+		n = -n;
+	}
 
-    while (isdigit(*str)) {
-        n = 10 * n - (*str++ - '0');
-    }
+	while (n != 0) {
+		int r = n % base;
+		str1[i++] = ((char)r > 9) ? ((char)r - 10) + 'a' : (char)r + '0';
+		n /= base;
+	}
 
-    return neg ? n : -n;
+	if (negative)
+		str1[i++] = '-';
+
+	str1[i] = 0;
+
+	return strrev( str1 );
 }
 
 int startswith(char *str, char *accept) {
@@ -130,7 +136,11 @@ int startswith(char *str, char *accept) {
     return 1;
 }
 
-char *reverse(char s[]) {
+char* strrev(char s[]) {
+    return reverse(s);
+}
+
+char* reverse(char s[]) {
     int i, j;
 
     for (i = 0, j = strlen(s) - 1; i < j; i++, j--) {

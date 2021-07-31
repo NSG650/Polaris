@@ -29,7 +29,6 @@ INTERNALCFLAGS  :=           \
 	-ffreestanding       \
 	-fno-stack-protector \
 	-fno-pic -fpie       \
-	-mgeneral-regs-only  \
 	-mno-red-zone	     \
 	-masm=intel
 

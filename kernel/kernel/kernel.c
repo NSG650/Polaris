@@ -3,12 +3,14 @@
 #include "../video/video.h"
 #include "../cpu/idt.h"
 #include "../cpu/isr.h"
+#include "../acpi/acpi.h"
 #include "../cpu/pit.h"
 #include "../mm/pmm.h"
 #include "../mm/vmm.h"
 #include "../serial/serial.h"
 #include <stivale2.h>
 #include "panic.h"
+#include "../klibc/debug.h"
 
 extern void init_gdt();
 
@@ -57,22 +59,18 @@ void _start(struct stivale2_struct *stivale2_struct) {
     struct stivale2_struct_tag_memmap *memmap_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MEMMAP_ID);
     pmm_init((void *)memmap_tag->memmap, memmap_tag->entries);
     vmm_init((void *)memmap_tag->memmap, memmap_tag->entries);
+    struct stivale2_struct_tag_rsdp *rsdp_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_RSDP_ID);
+    clear_screen(0x000000);
+    acpi_init((void *)rsdp_tag->rsdp + MEM_PHYS_OFFSET);
     if (fb_str_tag == NULL) {
         for (;;)
             __asm__("hlt");
     }
     serial_install();
-    clear_screen(0x000000);
-    kprint("Did the GDT work?\n");
-    kprint("Did the PMM work?\n");
-    kprint("Did the VMM work?\n");
-    write_serial("Did Serial work?\n");
     isr_install();
     asm volatile("sti");
-    kprint("Did the ISR load?\n");
     set_pit_freq(1000);
-    kprint("Did the timer load?\n");
-    __asm__("int 3");
+    kprintf("Hello World!\n");
     for (;;)
         __asm__("hlt");
 }
