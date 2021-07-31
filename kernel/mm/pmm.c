@@ -103,6 +103,6 @@ void pmm_free(void *ptr, size_t count) {
 }
 
 
-uintptr_t return_highest_page() {
+uintptr_t return_highest_page(void) {
     return highest_page;
 }
