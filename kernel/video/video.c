@@ -8,7 +8,7 @@ uint8_t *fb_addr;
 size_t fb_pitch, fb_bpp;
 uint16_t width_s, height_s;
 
-void vidreset() {
+void vid_reset() {
 	 cursor_x = 0;
 	 cursor_y = 0;
 }

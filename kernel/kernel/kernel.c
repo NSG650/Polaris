@@ -8,7 +8,7 @@
 #include "../mm/vmm.h"
 #include "../serial/serial.h"
 #include <stivale2.h>
-#include "die.h"
+#include "panic.h"
 
 extern void init_gdt();
 
@@ -72,9 +72,7 @@ void _start(struct stivale2_struct *stivale2_struct) {
     kprint("Did the ISR load?\n");
     set_pit_freq(1000);
     kprint("Did the timer load?\n");
-    //hex_to_ascii_upper(return_highest_page(), x);
-    //kprint("Highest Page Value: ");
-    //kprint(x);
+    __asm__("int 3");
     for (;;)
         __asm__("hlt");
 }

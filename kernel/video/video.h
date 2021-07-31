@@ -8,7 +8,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-void vidreset();
+void vid_reset();
 void video_init(struct stivale2_struct_tag_framebuffer *framebuffer);
 void putchar_color(char c, uint32_t color, uint32_t bgcolor);
 void putchar(char c);

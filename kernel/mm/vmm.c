@@ -3,7 +3,6 @@
 #include <stdbool.h>
 #include "vmm.h"
 #include "pmm.h"
-#include "../kernel/die.h"
 #include "../klibc/lock.h"
 #include "../klibc/alloc.h"
 #include "../klibc/string.h"
