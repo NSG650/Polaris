@@ -28,7 +28,6 @@ struct rsdt {
 
 static bool use_xsdt;
 static struct rsdt *rsdt;
-volatile uint32_t length = 0;
 /* This function should look for all the ACPI tables and index them for
    later use */
 void acpi_init(struct rsdp *rsdp) {
@@ -43,7 +42,6 @@ void acpi_init(struct rsdp *rsdp) {
         rsdt = (struct rsdt *)((uintptr_t)rsdp->rsdt_addr + MEM_PHYS_OFFSET);
         kprintf("acpi: Found RSDT at %X\n", (uintptr_t)rsdt);
     }
-    length = rsdp->length;
     // Initialised individual tables that need initialisation
     init_madt();
 }
