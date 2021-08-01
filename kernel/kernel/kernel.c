@@ -7,10 +7,12 @@
 #include "../cpu/pit.h"
 #include "../mm/pmm.h"
 #include "../mm/vmm.h"
+#include "../sys/hpet.h"
 #include "../serial/serial.h"
 #include <stivale2.h>
 #include "panic.h"
 #include "../klibc/debug.h"
+#include "../cpu/ports.h"
 
 extern void init_gdt(void);
 
@@ -60,8 +62,10 @@ void _start(struct stivale2_struct *stivale2_struct) {
     pmm_init((void *)memmap_tag->memmap, memmap_tag->entries);
     vmm_init((void *)memmap_tag->memmap, memmap_tag->entries);
     struct stivale2_struct_tag_rsdp *rsdp_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_RSDP_ID);
+    //set_pit_freq(10000);
     clear_screen(0x000000);
     acpi_init((void *)rsdp_tag->rsdp + MEM_PHYS_OFFSET);
+    hpet_init();
     if (fb_str_tag == NULL) {
         for (;;)
             __asm__("hlt");
@@ -69,8 +73,8 @@ void _start(struct stivale2_struct *stivale2_struct) {
     serial_install();
     isr_install();
     asm volatile("sti");
-    set_pit_freq(1000);
     kprintf("Hello World!\n");
+
     for (;;)
         __asm__("hlt");
 }
