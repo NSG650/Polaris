@@ -5,6 +5,7 @@
 #include "mmio.h"
 #include "../acpi/acpi.h"
 #include "../mm/vmm.h"
+#include "../klibc/printf.h"
 
 struct HpetTable {
     struct sdt header;
@@ -41,6 +42,7 @@ void hpet_init(void) {
 
     hpet_table = acpi_find_sdt("HPET");
     hpet       = (void *)(hpet_table->address + MEM_PHYS_OFFSET);
+    printf("HPET address: %D\n", hpet);
 
     clk = hpet->general_capabilities >> 32;
 
