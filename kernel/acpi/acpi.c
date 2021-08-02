@@ -22,7 +22,7 @@ struct rsdp {
 
 struct rsdt {
     struct sdt sdt;
-    symbol ptrs_start;
+    uint32_t* ptrs_start;
 } __attribute__((packed));
 
 static bool use_xsdt;
@@ -49,18 +49,18 @@ void acpi_init(struct rsdp *rsdp) {
 
 /* Find SDT by signature */
 void *acpi_find_sdt(const char *signature) {
-    int cnt = 0;
-
-    for (size_t i = 0; i < rsdt->sdt.length - sizeof(struct sdt); i++) {
-        struct sdt *ptr;
-        if (use_xsdt)
-            ptr = (struct sdt *)(((uint64_t *)rsdt->ptrs_start)[i] + MEM_PHYS_OFFSET);
-        else
-            ptr = (struct sdt *)(((uint32_t *)rsdt->ptrs_start)[i] + MEM_PHYS_OFFSET);
-
-        if (strncmp(ptr->signature, signature, 4)) {
+    int len = rsdt->sdt.length;
+    int entries = (len - 36) / 4;
+     printf("tabels len: %D\n", entries);
+    uint32_t reader = (uint32_t)rsdt->ptrs_start;
+    for (size_t i = 0; i < entries; i++)
+    {
+         struct sdt *ptr = (struct sdt*)reader;
+         printf("tabel: %s, len: %X\n", ptr->signature, ptr->length);
+         if (strncmp(ptr->signature, signature, 4)) {
             return (void*)ptr;
-        }
+         }
+         reader+=ptr->length;
     }
 
     printf("acpi: \"%s\" not found\n", signature);

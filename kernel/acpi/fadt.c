@@ -18,8 +18,8 @@ void init_fadt(){
     }
 
   // search the \_S5 package in the DSDT
-               char *S5Addr = (char *) facp->Dsdt +36; // skip header
-               printf("dsdt address: %X\n", facp->Dsdt);
+               char *S5Addr = (char *) facp->Dsdt+MEM_PHYS_OFFSET +36; // skip header
+               printf("dsdt address: %X\n", facp->Dsdt + MEM_PHYS_OFFSET);
                struct sdt* header = (struct sdt*)(facp->Dsdt + MEM_PHYS_OFFSET);
                //printf("%X", header->length);
               //// int dsdtLength=header->length;
