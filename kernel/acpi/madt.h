@@ -19,14 +19,14 @@ struct madt_header {
 } __attribute__((packed));
 
 struct madt_lapic {
-    struct madt_header;
+    struct madt_header madtHeader;
     uint8_t    processor_id;
     uint8_t    apic_id;
     uint32_t   flags;
 } __attribute__((packed));
 
 struct madt_ioapic {
-    struct madt_header;
+    struct madt_header madtHeader;
     uint8_t    apic_id;
     uint8_t    reserved;
     uint32_t   addr;
@@ -34,7 +34,7 @@ struct madt_ioapic {
 } __attribute__((packed));
 
 struct madt_iso {
-    struct madt_header;
+    struct madt_header madtHeader;
     uint8_t    bus_source;
     uint8_t    irq_source;
     uint32_t   gsi;
@@ -42,7 +42,7 @@ struct madt_iso {
 } __attribute__((packed));
 
 struct madt_nmi {
-    struct madt_header;
+    struct madt_header madtHeader;
     uint8_t    processor;
     uint16_t   flags;
     uint8_t    lint;

@@ -14,7 +14,7 @@ void init_fadt(){
     // search for FADT table
     facp = acpi_find_sdt("FACP");
     if (!facp){
-       panic("FACP tabel cannot be found.", "fadt.c", 1, 17);
+       panic("FACP tabel cannot be found.", "kernel/acpi/fadt.c", 0, 17);
     }
 
   // search the \_S5 package in the DSDT

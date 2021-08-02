@@ -59,7 +59,6 @@ void *acpi_find_sdt(const char *signature) {
             ptr = (struct sdt *)(((uint32_t *)rsdt->ptrs_start)[i] + MEM_PHYS_OFFSET);
 
         if (strncmp(ptr->signature, signature, 4)) {
-            printf("acpi: Found \"%s\" at %X\n", signature, ptr);
             return (void*)ptr;
         }
     }

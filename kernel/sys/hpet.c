@@ -7,7 +7,7 @@
 #include "../mm/vmm.h"
 
 struct HpetTable {
-    struct sdt;
+    struct sdt header;
     uint8_t  hardware_rev_id;
     uint8_t  info;
     uint16_t pci_vendor_id;
@@ -38,6 +38,7 @@ static struct Hpet      *hpet;
 static uint32_t   clk = 0;
 
 void hpet_init(void) {
+
     hpet_table = acpi_find_sdt("HPET");
     hpet       = (void *)(hpet_table->address + MEM_PHYS_OFFSET);
 
