@@ -19,7 +19,7 @@ void init_madt(void) {
          panic("MADT tabel cannot be found.", "kernel/acpi/madt.c", 0, 19);
          return;
     }
-    printf("%p\n", (uint8_t *)madt->madt_entries_begin);
+    //printf("%p\n", (uint8_t *)madt->madt_entries_begin);
     // parse the MADT entries
     for (uint8_t *madt_ptr = (uint8_t *)madt->madt_entries_begin;
         (uintptr_t)madt_ptr < (uintptr_t)madt + sizeof(madt);

@@ -51,12 +51,10 @@ void acpi_init(struct rsdp *rsdp) {
 void *acpi_find_sdt(const char *signature) {
     int len = rsdt->sdt.length;
     int entries = (len - 36) / 4;
-     printf("tabels len: %D\n", entries);
     uint32_t reader = (uint32_t)rsdt->ptrs_start;
     for (size_t i = 0; i < entries; i++)
     {
          struct sdt *ptr = (struct sdt*)reader;
-         printf("tabel: %s, len: %X\n", ptr->signature, ptr->length);
          if (strncmp(ptr->signature, signature, 4)) {
             return (void*)ptr;
          }
