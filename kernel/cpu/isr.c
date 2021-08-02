@@ -356,7 +356,7 @@ void isr_handler(registers_t* r) {
         : "=a"(cr2));
          char x[1024];
          sprintf(x, "System Service Exception Not handled: %s\n", exceptionMessages[r->isrNumber]);
-         panic(x, __FILE__);
+         PANIC(x);
 	}
 	port_byte_out(0xA0, 0x20);
 	port_byte_out(0x20, 0x20);

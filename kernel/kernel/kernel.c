@@ -74,9 +74,7 @@ void _start(struct stivale2_struct *stivale2_struct) {
     acpi_init((void *)rsdp_tag->rsdp + MEM_PHYS_OFFSET);
     //hpet_init();
     printf("Hello World!\n");
-    char x[1000];
     printf("%d\n", get_unix_timestamp());
-    //kprintf(x);
     for (;;)
         __asm__("hlt");
 }
