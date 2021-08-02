@@ -20,6 +20,7 @@ struct sdt {
     uint32_t creator_rev;
 } __attribute__((packed));
 
+
 void acpi_init(struct rsdp *rsdp);
 void *acpi_find_sdt(const char *signature, int index);
 

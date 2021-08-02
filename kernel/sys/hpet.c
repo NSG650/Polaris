@@ -37,7 +37,7 @@ static struct HpetTable *hpet_table;
 static struct Hpet      *hpet;
 static uint32_t   clk = 0;
 
-void hpet_init() {
+void hpet_init(void) {
     hpet_table = acpi_find_sdt("HPET", 0);
     hpet       = (void *)(hpet_table->address + MEM_PHYS_OFFSET);
 

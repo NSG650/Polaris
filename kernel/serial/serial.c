@@ -15,7 +15,6 @@ int serial_install_port(uint16_t PORT) {
 
     uint8_t result = port_byte_in(PORT + 0);
     port_byte_out(PORT + 4, 0x0F);
-    write_serial("\nCOM successfully initialized.\n\r\n");
 
     return 0;
 }

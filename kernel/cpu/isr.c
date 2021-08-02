@@ -1,6 +1,7 @@
 #include "isr.h"
 #include "ports.h"
 #include "../kernel/panic.h"
+#include "../klibc/printf.h"
 
 void isr_install(void) {
   set_idt_gate(0, (uint64_t)isr0);
@@ -353,7 +354,9 @@ void isr_handler(registers_t* r) {
         "cli\n"
         "mov %%cr2, %0"
         : "=a"(cr2));
-		 panic("system service exception not handled");
+         char x[1024];
+         sprintf(x, "System Service Exception Not handled: %s\n", exceptionMessages[r->isrNumber]);
+         panic(x, __FILE__);
 	}
 	port_byte_out(0xA0, 0x20);
 	port_byte_out(0x20, 0x20);

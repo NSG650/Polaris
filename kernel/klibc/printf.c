@@ -119,6 +119,7 @@
 
 void _putchar(char character) {
     putchar_color(character, 0xEEEEEE, 0x000000); // NSG650: use putchar from video driver
+    write_serial_char(character);
 }
 
 // output function type

@@ -20,8 +20,6 @@ struct mmap_range {
 
 static struct pagemap kernel_pagemap;
 
-inline static uint64_t read_cr3(void) { uint64_t val; asm volatile ("mov %0, %%cr3" : "=r"(val)); return val; }
-
 void vmm_init(struct stivale2_mmap_entry *memmap, size_t memmap_entries) {
     kernel_pagemap.top_level = pmm_allocz(1);
     for (uintptr_t p = 0; p < 4096UL * 1024 * 1024; p += PAGE_SIZE) {
@@ -30,6 +28,10 @@ void vmm_init(struct stivale2_mmap_entry *memmap, size_t memmap_entries) {
     }
     for (uintptr_t p = 0; p < 2048UL * 1024 * 1024; p += PAGE_SIZE) {
         vmm_map_page(&kernel_pagemap, KERNEL_BASE + p, p, 0b11);
+    }
+    for (size_t i = 0; i < memmap_entries; i++) {
+        for (uintptr_t p = 0; p < memmap[i].length; p += PAGE_SIZE)
+            vmm_map_page(&kernel_pagemap, MEM_PHYS_OFFSET + p, p, 0b11);
     }
     vmm_switch_pagemap(&kernel_pagemap);
 }

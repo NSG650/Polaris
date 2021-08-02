@@ -1,10 +1,9 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
-
+#include "../klibc/printf.h"
 #include "../mm/vmm.h"
 #include "acpi.h"
-#include "../klibc/debug.h"
 #include "madt.h"
 #include "../klibc/string.h"
 
@@ -28,19 +27,20 @@ struct rsdt {
 
 static bool use_xsdt;
 static struct rsdt *rsdt;
+
 /* This function should look for all the ACPI tables and index them for
    later use */
 void acpi_init(struct rsdp *rsdp) {
-    kprintf("acpi: Revision: %u\n", rsdp->rev);
+    printf("acpi: Revision: %u\n", rsdp->rev);
 
     if (rsdp->rev >= 2 && rsdp->xsdt_addr) {
         use_xsdt = true;
         rsdt = (struct rsdt *)((uintptr_t)rsdp->xsdt_addr + MEM_PHYS_OFFSET);
-        kprintf("acpi: Found XSDT at %X\n", (uintptr_t)rsdt);
+        printf("acpi: Found XSDT at %X\n", (uintptr_t)rsdt);
     } else {
         use_xsdt = false;
         rsdt = (struct rsdt *)((uintptr_t)rsdp->rsdt_addr + MEM_PHYS_OFFSET);
-        kprintf("acpi: Found RSDT at %X\n", (uintptr_t)rsdt);
+        printf("acpi: Found RSDT at %X\n", (uintptr_t)rsdt);
     }
     // Initialised individual tables that need initialisation
     init_madt();
@@ -58,11 +58,11 @@ void *acpi_find_sdt(const char *signature, int index) {
             ptr = (struct sdt *)(((uint32_t *)rsdt->ptrs_start)[i] + MEM_PHYS_OFFSET);
 
         if (!strncmp(ptr->signature, signature, 4) && cnt++ == index) {
-            kprintf("acpi: Found \"%s\" at %X\n", signature, ptr);
+            printf("acpi: Found \"%s\" at %X\n", signature, ptr);
             return (void*)ptr;
         }
     }
 
-    kprintf("acpi: \"%s\" not found\n", signature);
+    printf("acpi: \"%s\" not found\n", signature);
     return NULL;
 }
