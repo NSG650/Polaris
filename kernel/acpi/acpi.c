@@ -44,10 +44,11 @@ void acpi_init(struct rsdp *rsdp) {
     }
     // Initialised individual tables that need initialisation
     init_madt();
+    init_fadt();
 }
 
 /* Find SDT by signature */
-void *acpi_find_sdt(const char *signature, int index) {
+void *acpi_find_sdt(const char *signature) {
     int cnt = 0;
 
     for (size_t i = 0; i < rsdt->sdt.length - sizeof(struct sdt); i++) {
@@ -57,7 +58,7 @@ void *acpi_find_sdt(const char *signature, int index) {
         else
             ptr = (struct sdt *)(((uint32_t *)rsdt->ptrs_start)[i] + MEM_PHYS_OFFSET);
 
-        if (strncmp(ptr->signature, signature, 4) && cnt++ == index) {
+        if (strncmp(ptr->signature, signature, 4)) {
             printf("acpi: Found \"%s\" at %X\n", signature, ptr);
             return (void*)ptr;
         }

@@ -3,7 +3,8 @@
 *.o
 *.kdev4
 .kdev4/
-.vscode/*
+.vscode/
+img_mount/
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json

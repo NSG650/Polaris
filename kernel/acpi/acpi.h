@@ -22,6 +22,6 @@ struct sdt {
 
 
 void acpi_init(struct rsdp *rsdp);
-void *acpi_find_sdt(const char *signature, int index);
+void *acpi_find_sdt(const char *signature);
 
 #endif
