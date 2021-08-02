@@ -58,21 +58,22 @@ void _start(struct stivale2_struct *stivale2_struct) {
     init_gdt();
     struct stivale2_struct_tag_framebuffer *fb_str_tag;
     fb_str_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_FRAMEBUFFER_ID);
+    if (fb_str_tag == NULL) {
+       write_serial("FAILED TO AQUIRE A FRAMEBUFFER\n\nHALTING");
+       for (;;)
+            __asm__("hlt");
+    }
     video_init(fb_str_tag);
     struct stivale2_struct_tag_memmap *memmap_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MEMMAP_ID);
     pmm_init((void*)memmap_tag->memmap, memmap_tag->entries);
     vmm_init((void*)memmap_tag->memmap, memmap_tag->entries);
     struct stivale2_struct_tag_rsdp *rsdp_tag = stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_RSDP_ID);
-    if (fb_str_tag == NULL) {
-       for (;;)
-            __asm__("hlt");
-    }
     serial_install();
     isr_install();
     __asm__ volatile("sti");
-    set_pit_freq(100);
+    //set_pit_freq(100);
     acpi_init((void *)rsdp_tag->rsdp + MEM_PHYS_OFFSET);
-    //hpet_init();
+    hpet_init();
     printf("Hello World!\n");
     printf("%d\n", get_unix_timestamp());
     for (;;)

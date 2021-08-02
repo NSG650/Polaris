@@ -31,7 +31,7 @@ static struct rsdt *rsdt;
 /* This function should look for all the ACPI tables and index them for
    later use */
 void acpi_init(struct rsdp *rsdp) {
-    printf("acpi: Revision: %u\n", rsdp->rev);
+    printf("acpi: Revision: %d\n", rsdp->rev);
 
     if (rsdp->rev >= 2 && rsdp->xsdt_addr) {
         use_xsdt = true;
@@ -57,7 +57,7 @@ void *acpi_find_sdt(const char *signature, int index) {
         else
             ptr = (struct sdt *)(((uint32_t *)rsdt->ptrs_start)[i] + MEM_PHYS_OFFSET);
 
-        if (!strncmp(ptr->signature, signature, 4) && cnt++ == index) {
+        if (strncmp(ptr->signature, signature, 4) && cnt++ == index) {
             printf("acpi: Found \"%s\" at %X\n", signature, ptr);
             return (void*)ptr;
         }
