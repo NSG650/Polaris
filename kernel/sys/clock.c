@@ -59,7 +59,7 @@ static datetime_t rtc_get_date_time() {
     // Calculate the full (4-digit) year
 
     date_time.year += 2000;
-    printf("The date is %d\\%d\\%d\n", date_time.day, date_time.month, date_time.century);
+    printf("The date is %d\\%d\\%d\n", date_time.day, date_time.month, date_time.year);
     return date_time;
 }
 
