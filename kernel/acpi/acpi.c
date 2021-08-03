@@ -55,7 +55,7 @@ void *acpi_find_sdt(const char *signature) {
     for (size_t i = 0; i < entries; i++)
     {
          struct sdt *ptr = (struct sdt*)reader;
-         if (strncmp(ptr->signature, signature, 4)) {
+         if (!strncmp(ptr->signature, signature, 4)) {
             return (void*)ptr;
          }
          reader+=ptr->length;

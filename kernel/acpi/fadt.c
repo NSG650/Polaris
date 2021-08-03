@@ -14,14 +14,16 @@ void init_fadt(){
     // search for FADT table
     facp = acpi_find_sdt("FACP");
     if (!facp){
-       panic("FACP tabel cannot be found.", "kernel/acpi/fadt.c", 0, 17);
+       PANIC("FACP tabel cannot be found.");
     }
 
   // search the \_S5 package in the DSDT
                char *S5Addr = (char *) facp->Dsdt+MEM_PHYS_OFFSET +36; // skip header
-               printf("FACP dsdt address: %X\n", facp->Dsdt + MEM_PHYS_OFFSET);
-               struct sdt* header = (struct sdt*)(facp->Dsdt + MEM_PHYS_OFFSET);
-               //printf("%X", header->length);
+               printf("FACP tabel address: %X\n", (uint32_t)facp);
+               int offset=facp->Dsdt + MEM_PHYS_OFFSET;
+               printf("FACP dsdt address: %X\n", offset);
+               struct sdt* header = (struct sdt*)(offset);
+               //printf("dsdt hdr len: %X", header->length);
               //// int dsdtLength=header->length;
               // while (0 < dsdtLength--)
                //{

@@ -6,20 +6,29 @@
 #include "../acpi/acpi.h"
 #include "../mm/vmm.h"
 #include "../klibc/printf.h"
+#include "../kernel/panic.h"
+
+struct address_structure
+{
+    uint8_t address_space_id;    // 0 - system memory, 1 - system I/O
+    uint8_t register_bit_width;
+    uint8_t register_bit_offset;
+    //uint8_t reserved;
+    uint64_t address;
+} __attribute__((packed));
 
 struct HpetTable {
     struct sdt header;
     uint8_t  hardware_rev_id;
-    uint8_t  info;
-    uint16_t pci_vendor_id;
-    uint8_t  address_space_id;
-    uint8_t  register_bit_width;
-    uint8_t  register_bit_offset;
-    uint8_t  reserved1;
-    uint64_t address;
-    uint8_t  hpet_number;
-    uint16_t minimum_tick;
-    uint8_t  page_protection;
+    uint8_t  comparator_count;
+    uint8_t counter_size;
+    uint8_t  reserved;
+    uint8_t  legacy_replacement;
+    uint16_t  pci_vendor_id;
+    struct address_structure address;
+    uint8_t hpet_number;
+    uint16_t  minimum_tick;
+    uint8_t page_protection;
 } __attribute__((packed));
 
 struct Hpet {
@@ -41,14 +50,22 @@ static uint32_t   clk = 0;
 void hpet_init(void) {
 
     hpet_table = acpi_find_sdt("HPET");
-    hpet       = (void *)(hpet_table->address + MEM_PHYS_OFFSET);
-    printf("HPET address: %D\n", hpet);
+    if (!hpet_table){
+        PANIC("osdev64 requires an HPET to be installed.");
+    }
+     printf("HPET acpi tabel address: %X\n", (uint32_t)hpet_table);
+    hpet       = (struct HpetTable *)(hpet_table->address.address + MEM_PHYS_OFFSET);
+    printf("HPET BAR address: %X\n", hpet_table->address.address + MEM_PHYS_OFFSET);
+    printf("offset: %X", (uint32_t)((uint32_t)(&hpet_table->address) - (uint32_t)hpet_table));
 
     clk = hpet->general_capabilities >> 32;
 
     mmoutq(&hpet->general_configuration, 0);
     mmoutq(&hpet->main_counter_value,    0);
     mmoutq(&hpet->general_configuration, 1);
+
+    hpet_usleep(1);
+
 }
 
 void hpet_usleep(uint64_t us) {
