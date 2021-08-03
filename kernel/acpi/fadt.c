@@ -17,27 +17,31 @@ void init_fadt(){
        PANIC("FACP tabel cannot be found.");
     }
 
-  // search the \_S5 package in the DSDT
-               char *S5Addr = (char *) facp->Dsdt+MEM_PHYS_OFFSET +36; // skip header
-               printf("FACP tabel address: %X\n", (uint32_t)facp);
-               int offset=facp->Dsdt + MEM_PHYS_OFFSET;
-               printf("FACP dsdt address: %X\n", offset);
-               struct sdt* header = (struct sdt*)(offset);
-               //printf("dsdt hdr len: %X", header->length);
-              //// int dsdtLength=header->length;
-              // while (0 < dsdtLength--)
-               //{
-               //   if ( strncmp(S5Addr, "_S5_", 4) == 0)
-               //      break;
-               //   S5Addr++;
-               //}
+    // search the \_S5 package in the DSDT
+    uint8_t *S5Addr = (uint8_t *) facp->Dsdt + 36 + MEM_PHYS_OFFSET; // skip header
+    
+    printf("FACP tabel address: %X\n", (uint32_t)facp);
+    int offset=facp->Dsdt + MEM_PHYS_OFFSET;
+    printf("FACP dsdt address: %X\n", offset);
+    struct sdt* header = (struct sdt*)(offset);
+    int dsdtLength=header->length;
+    printf("dsdt len: %X\n", dsdtLength);
+    while (0 < dsdtLength--)
+    {
+      printf("a");
+        if (S5Addr[0] == 0x44 && S5Addr[1] == 0x53 && S5Addr[2] == 0x44 && S5Addr[3] == 0x54)
+            break;
+            printf("b");
+        S5Addr++;
+             printf("c");
+    }
 
     // check if \_S5 was found
-    //if (dsdtLength > 0)
-    //{
+    if (dsdtLength > 0)
+    {
 
-    //}
-   // else{
-    //     printf("acpi: _S5 object not found!");
-    //}
+    }
+    else{
+         printf("acpi: _S5 object not found!\n");
+    }
 }

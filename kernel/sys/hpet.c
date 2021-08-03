@@ -53,10 +53,7 @@ void hpet_init(void) {
     if (!hpet_table){
         PANIC("osdev64 requires an HPET to be installed.");
     }
-     printf("HPET acpi tabel address: %X\n", (uint32_t)hpet_table);
-    hpet       = (struct HpetTable *)(hpet_table->address.address + MEM_PHYS_OFFSET);
-    printf("HPET BAR address: %X\n", hpet_table->address.address + MEM_PHYS_OFFSET);
-    printf("offset: %X", (uint32_t)((uint32_t)(&hpet_table->address) - (uint32_t)hpet_table));
+    hpet = (struct HpetTable *)(hpet_table->address.address + MEM_PHYS_OFFSET);
 
     clk = hpet->general_capabilities >> 32;
 
