@@ -17,7 +17,7 @@ struct facp
 {
     struct sdt theSdt;
     uint32_t FirmwareCtrl;
-    int *Dsdt;
+    uint32_t Dsdt;
  
     // field used in ACPI 1.0; no longer in use, for compatibility only
     uint8_t  Reserved;
@@ -82,5 +82,8 @@ struct facp
 } __attribute__((packed));
 
 void init_fadt(void);
+void acpi_enable(void);
+void fadt_acpi_shutdown();
+void fadt_acpi_reboot();
 
 #endif

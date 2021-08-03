@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include "../klibc/dynarray.h"
 #include "../klibc/printf.h"
+#include "../kernel/panic.h"
 #include "madt.h"
 #include "acpi.h"
 
@@ -16,7 +17,7 @@ void init_madt(void) {
     // search for MADT table
     madt = acpi_find_sdt("APIC");
     if (!madt){
-         panic("MADT tabel cannot be found.", "kernel/acpi/madt.c", 0, 19);
+         PANIC("MADT tabel cannot be found.");
          return;
     }
     //printf("%p\n", (uint8_t *)madt->madt_entries_begin);

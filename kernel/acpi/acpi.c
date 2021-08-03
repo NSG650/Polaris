@@ -3,8 +3,8 @@
 #include <stdbool.h>
 #include "../klibc/printf.h"
 #include "../mm/vmm.h"
-#include "acpi.h"
 #include "madt.h"
+#include "fadt.h"
 #include "../klibc/string.h"
 
 struct rsdp {
@@ -63,4 +63,15 @@ void *acpi_find_sdt(const char *signature) {
 
     printf("acpi: \"%s\" not found\n", signature);
     return NULL;
+}
+
+void acpi_start(){
+    acpi_enable();
+}
+
+void acpi_shutdown(){
+    fadt_acpi_shutdown();
+}
+void acpi_reboot(){
+    fadt_acpi_reboot();
 }

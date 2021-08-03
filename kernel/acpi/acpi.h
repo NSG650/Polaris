@@ -4,8 +4,6 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#include "madt.h"
-
 struct rsdp;
 
 struct sdt {
@@ -23,5 +21,8 @@ struct sdt {
 
 void acpi_init(struct rsdp *rsdp);
 void *acpi_find_sdt(const char *signature);
+void acpi_start();
+void acpi_shutdown();
+void acpi_reboot();
 
 #endif
