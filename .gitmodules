@@ -1,0 +1,3 @@
+[submodule "stivale"]
+	path = stivale
+	url = https://github.com/stivale/stivale
