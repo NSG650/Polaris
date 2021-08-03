@@ -1,8 +1,8 @@
 #ifndef MEM_H
 #define MEM_H
 
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
 typedef char symbol[];
 
