@@ -51,7 +51,7 @@ void hpet_init(void) {
 
     hpet_table = acpi_find_sdt("HPET");
     if (!hpet_table){
-        PANIC("osdev64 requires an HPET to be installed.");
+        PANIC("D requires an HPET to be installed.");
     }
     hpet = (struct HpetTable *)(hpet_table->address.address + MEM_PHYS_OFFSET);
 

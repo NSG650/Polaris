@@ -71,15 +71,11 @@ void _start(struct stivale2_struct *stivale2_struct) {
     serial_install();
     isr_install();
     __asm__ volatile("sti");
-    //set_pit_freq(100);
-    printf("Starting ACPI\n");
     acpi_init((void *)rsdp_tag->rsdp + MEM_PHYS_OFFSET);
     acpi_start();
-    printf("HPET init\n");
     hpet_init();
     printf("Hello World!\n");
     printf("%d\n", get_unix_timestamp());
-    acpi_reboot();
     for (;;)
         __asm__("hlt");
 }
