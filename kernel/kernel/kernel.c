@@ -79,7 +79,6 @@ void _start(struct stivale2_struct *stivale2_struct) {
     hpet_init();
     printf("Hello World!\n");
     printf("%d\n", get_unix_timestamp());
-    acpi_reboot();
     for (;;)
         __asm__("hlt");
 }

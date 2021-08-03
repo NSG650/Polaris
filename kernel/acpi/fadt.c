@@ -37,10 +37,8 @@ void init_fadt(){
 
     printf("FACP tabel address: %X\n", (uint32_t)facp);
     uint32_t offset=(uint32_t)(facp->Dsdt + MEM_PHYS_OFFSET);
-    printf("FACP dsdt address: %X\n", offset);
     struct sdt* header = (struct sdt*)(offset);
     int dsdtLength=header->length;
-    printf("dsdt len: %X\n", dsdtLength);
     while (0 < dsdtLength--)
     {
          if (!strncmp(S5Addr, "_S5_", 4)) {
