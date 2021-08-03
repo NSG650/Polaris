@@ -1,6 +1,7 @@
 #include "string.h"
 #include "ctype.h"
 #include "mem.h"
+#include "../klibc/printf.h"
 
 #define BITOP(a,b,op) \
  ((a)[(size_t)(b) / (8*sizeof *(a))] op (size_t)1 << ((size_t)(b) % (8*sizeof *(a))))
@@ -182,16 +183,27 @@ int strcmp(const char s1[], const char s2[]) {
     return s1[i] - s2[i];
 }
 
-int strncmp(const char s1[], const char s2[], size_t n) {
-    int i;
+int strncmp(const char *s1, const char *s2, size_t n) {
+    int count = 0;
+	while (count < n)
+	{
+		if (s1[count] == s2[count])
+		{
+			if (s1[count] == '\0')
+			{
+                //Found null termination
+                return 0;
+            }
+			else
+            {
+                count++;
+            }
+		}
+		else
+			return s1[count] - s2[count];
+	}
 
-    for (i = 0; n && s1[i] == s2[i]; ++i, --n) {
-        if (s1[i] == '\0') {
-            return 0;
-        }
-    }
-
-    return (s1[i] - s2[i]);
+    return 0;
 }
 
 size_t strlen(const char *s) {

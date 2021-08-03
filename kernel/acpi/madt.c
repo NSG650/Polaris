@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include "../klibc/dynarray.h"
 #include "../klibc/printf.h"
+#include "../kernel/panic.h"
 #include "madt.h"
 #include "acpi.h"
 
@@ -14,8 +15,12 @@ DYNARRAY_GLOBAL(madt_nmis);
 
 void init_madt(void) {
     // search for MADT table
-    madt = acpi_find_sdt("APIC", 0);
-    printf("%p\n", (uint8_t *)madt->madt_entries_begin);
+    madt = acpi_find_sdt("APIC");
+    if (!madt){
+         PANIC("MADT tabel cannot be found.");
+         return;
+    }
+    //printf("%p\n", (uint8_t *)madt->madt_entries_begin);
     // parse the MADT entries
     for (uint8_t *madt_ptr = (uint8_t *)madt->madt_entries_begin;
         (uintptr_t)madt_ptr < (uintptr_t)madt + sizeof(madt);

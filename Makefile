@@ -16,7 +16,6 @@ CFLAGS = -Wall -Wextra -g -pipe -I stivale/
 INTERNALLDFLAGS :=     \
 	-fno-pic -fpie \
 	-Wl,-static \
-	-static-pie    \
 	-nostdlib      \
 	-T kernel/linker.ld    \
 	-z max-page-size=0x1000
