@@ -59,7 +59,7 @@ image:
 	./image.sh
 
 run:
-	qemu-system-x86_64 -hda d.img -serial stdio
+	qemu-system-x86_64 -hda d.img -serial stdio -m 512M
 
 debug:
-	qemu-system-x86_64 -hda d.img -M q35,smm=off -d int --no-reboot -s
+	qemu-system-x86_64 -hda d.img -M q35,smm=off -d int --no-reboot -s -m 512M
