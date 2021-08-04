@@ -66,7 +66,7 @@ void putchar_at(char c, int position_x, int position_y, uint32_t color,
 			return;
 
 		case '\t':
-			cursor_x += 5;
+			cursor_x += 4;
 			return;
 
 		case '\b':
