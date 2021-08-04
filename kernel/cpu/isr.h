@@ -1,11 +1,11 @@
 #ifndef ISR_H
 #define ISR_H
 
-#include <stdint.h>
-#include <stddef.h>
 #include "idt.h"
-#include "reg.h"
 #include "pit.h"
+#include "reg.h"
+#include <stddef.h>
+#include <stdint.h>
 
 void isr1(void);
 void isr2(void);
@@ -264,8 +264,9 @@ void isr253(void);
 void isr254(void);
 void isr255(void);
 
-typedef void (*eventHandlers_t)(registers_t*);
+typedef void (*eventHandlers_t)(registers_t *);
 
 void isr_install(void);
 extern void isr_handler(registers_t *r);
+
 #endif
