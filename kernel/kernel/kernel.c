@@ -10,6 +10,7 @@
 #include "../sys/clock.h"
 #include "../sys/hpet.h"
 #include "../video/video.h"
+#include "../klibc/rand.h"
 #include "panic.h"
 #include <stddef.h>
 #include <stdint.h>
@@ -74,6 +75,8 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	hpet_init();
 	printf("Hello World!\n");
 	printf("%d\n", get_unix_timestamp());
+	for(int i = 0; i < 11; i++)
+		printf("Random number: %u\n", rand());
 	for (;;)
 		__asm__("hlt");
 }

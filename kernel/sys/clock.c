@@ -1,6 +1,5 @@
 #include "clock.h"
 #include "../cpu/ports.h"
-#include "../klibc/printf.h"
 
 static int is_updating(void) {
 	port_byte_out(0x70, 0x0A);
@@ -24,8 +23,6 @@ static time rtc_get_time(void) {
 	ret_time.hour = read(0x4);
 	ret_time.minute = read(0x2);
 	ret_time.second = read(0);
-	printf("The time is %d:%d:%d\n", bcdtobin(ret_time.hour),
-		   bcdtobin(ret_time.minute), bcdtobin(ret_time.second));
 	return ret_time;
 }
 
@@ -60,8 +57,6 @@ static datetime_t rtc_get_date_time(void) {
 	// Calculate the full (4-digit) year
 
 	date_time.year += 2000;
-	printf("The date is %d\\%d\\%d\n", date_time.day, date_time.month,
-		   date_time.year);
 	return date_time;
 }
 
