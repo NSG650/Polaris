@@ -76,7 +76,7 @@ else
       sudo cp -v /usr/local/share/limine/BOOTX64.EFI img_mount/EFI/BOOT/
    } 2> /dev/null
 
-   # Alternative path used as default in limine AUR package.
+   # Alternative path used as default in Limine AUR package.
    if [[ $? != 0 ]]; then
       sudo cp -v /usr/share/limine/limine.sys img_mount/
       sudo cp -v /usr/share/limine/BOOTX64.EFI img_mount/EFI/BOOT/
