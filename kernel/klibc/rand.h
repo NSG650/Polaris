@@ -7,5 +7,3 @@ uint64_t rand(void);
 void srand(uint64_t seed);
 
 #endif
-
-
