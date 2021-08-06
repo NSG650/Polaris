@@ -70,8 +70,17 @@ else
    echo ""
    echo "==> Copying necessary files..."
    sudo mkdir -p img_mount/EFI/BOOT/
-   sudo cp -v d.elf limine.cfg /usr/local/share/limine/limine.sys img_mount/
-   sudo cp -v /usr/local/share/limine/BOOTX64.EFI img_mount/EFI/BOOT/
+   sudo cp -v d.elf limine.cfg img_mount/
+   {
+      sudo cp -v /usr/local/share/limine/limine.sys img_mount/
+      sudo cp -v /usr/local/share/limine/BOOTX64.EFI img_mount/EFI/BOOT/
+   } 2> /dev/null
+
+   # Alternative path used as default in limine AUR package.
+   if [[ $? != 0 ]]; then
+      sudo cp -v /usr/share/limine/limine.sys img_mount/
+      sudo cp -v /usr/share/limine/BOOTX64.EFI img_mount/EFI/BOOT/
+   fi
 
    # Sync system cache and unmount partition and loopback device.
    echo ""
