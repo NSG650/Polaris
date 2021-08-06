@@ -3,14 +3,15 @@
 #include "../cpu/isr.h"
 #include "../cpu/pit.h"
 #include "../cpu/ports.h"
+#include "../klibc/liballoc.h"
 #include "../klibc/printf.h"
+#include "../klibc/rand.h"
 #include "../mm/pmm.h"
 #include "../mm/vmm.h"
 #include "../serial/serial.h"
 #include "../sys/clock.h"
 #include "../sys/hpet.h"
 #include "../video/video.h"
-#include "../klibc/rand.h"
 #include "panic.h"
 #include <stddef.h>
 #include <stdint.h>
@@ -74,8 +75,20 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	acpi_start();
 	hpet_init();
 	printf("Hello World!\n");
+	printf("A (4 bytes): %p\n", kmalloc(4));
+	void *ptr = kmalloc(8);
+	printf("B (8 bytes): %p\n", ptr);
+	kfree(ptr);
+	printf("Freed B\n");
+	void *ptr2 = kmalloc(16);
+	printf("C (16 bytes): %p\n", ptr2);
+	void *ptr3 = kmalloc(32);
+	printf("D (32 bytes): %p\n", ptr3);
+	printf("C (16 bytes to 32 bytes realloc): %p\n", krealloc(ptr2, 32));
+	printf("D (32 bytes after C realloc): %p\n", ptr3);
+	printf("E (5 int calloc): %p\n", kcalloc(5, sizeof(int)));
 	printf("%d\n", get_unix_timestamp());
-	for(int i = 0; i < 11; i++)
+	for (int i = 0; i < 11; i++)
 		printf("Random number: %u\n", rand());
 	for (;;)
 		__asm__("hlt");

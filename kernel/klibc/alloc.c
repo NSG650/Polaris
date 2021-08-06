@@ -64,3 +64,25 @@ void *realloc(void *ptr, size_t new_size) {
 
 	return new_ptr;
 }
+
+void *liballoc_alloc(size_t sz) {
+	return alloc(sz);
+}
+
+int liballoc_free(void *ptr, size_t ignored) {
+	free(ptr);
+	/* Unused as free() already knows size */
+	(void)ignored;
+	return 0;
+}
+
+int liballoc_lock() {
+	/* We don't have threads yet... This should be enough */
+	asm volatile("cli");
+	return 0;
+}
+
+int liballoc_unlock() {
+	asm volatile("sti");
+	return 0;
+}
