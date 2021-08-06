@@ -51,7 +51,7 @@ void hpet_init(void) {
 	if (!hpet_table) {
 		PANIC("D requires an HPET to be installed.");
 	}
-	hpet = (struct HpetTable *)(hpet_table->address.address + MEM_PHYS_OFFSET);
+	hpet = (struct Hpet *)(hpet_table->address.address + MEM_PHYS_OFFSET);
 
 	clk = hpet->general_capabilities >> 32;
 

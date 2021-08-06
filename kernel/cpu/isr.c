@@ -276,7 +276,7 @@ void isr_install(void) {
 	set_idt();
 }
 
-inline const char *exceptionMessages[] = {"Divide by zero",
+static const char *exceptionMessages[] = {"Divide by zero",
 										  "Debug",
 										  "NMI",
 										  "Breakpoint",
@@ -312,7 +312,7 @@ inline const char *exceptionMessages[] = {"Divide by zero",
 										  "Triple Fault",
 										  "FPU error"};
 
-inline eventHandlers_t eventHandlers[] = {
+static eventHandlers_t eventHandlers[] = {
   NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
   NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
   NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, timer_handler,

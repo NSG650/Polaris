@@ -1,29 +1,27 @@
-#name of the final executable
+# Name of the final executable
 
 KERNEL := d.elf
 
-#the compiler we are using
+# The compiler we are using
 
 CC = x86_64-elf-gcc
 AS = nasm
 
-#compiler flags
+# Compiler flags
 
 CFLAGS = -Wall -Wextra -g -pipe -I stivale/
 
-# internal flags that shouldnt be changed
+# Internal flags that shouldn't be changed
 
-INTERNALLDFLAGS :=     \
-	-fno-pic -fpie \
-	-Wl,-static \
-	-nostdlib      \
-	-T kernel/linker.ld    \
-	-z max-page-size=0x1000
+INTERNALLDFLAGS :=          \
+	-fno-pic -fpie          \
+	-Wl,-static             \
+	-nostdlib               \
+	-T kernel/linker.ld     \
+	-z max-page-size=0x1000 \
+	-lgcc
 
-# internal flags that shouldnt be changed
-
-INTERNALCFLAGS  :=           \
-	-I.                  \
+INTERNALCFLAGS :=        \
 	-std=gnu11           \
 	-ffreestanding       \
 	-fno-stack-protector \
@@ -31,7 +29,7 @@ INTERNALCFLAGS  :=           \
 	-mno-red-zone	     \
 	-masm=intel
 
-#c files and object
+# C files and objects
 
 CFILES := $(wildcard kernel/*/*.c)
 ASMFILES := $(wildcard kernel/*/*.asm)
@@ -48,7 +46,7 @@ $(KERNEL): $(OBJ)
 	$(CC) $(CFLAGS) $(INTERNALCFLAGS) -c $< -o $@
 
 %.o: %.asm
-	$(AS) -felf64 $< -o $@
+	$(AS) -f elf64 $< -o $@
 
 
 clean:

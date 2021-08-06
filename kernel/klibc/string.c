@@ -195,7 +195,7 @@ int strcmp(const char s1[], const char s2[]) {
 }
 
 int strncmp(const char *s1, const char *s2, size_t n) {
-	int count = 0;
+	size_t count = 0;
 	while (count < n) {
 		if (s1[count] == s2[count]) {
 			if (s1[count] == '\0') {

@@ -10,8 +10,6 @@ static void *bitmap;
 static size_t last_used_index = 0;
 static uintptr_t highest_page = 0;
 
-static lock_t pmm_lock;
-
 void pmm_init(struct stivale2_mmap_entry *memmap, size_t memmap_entries) {
 	// First, calculate how big the bitmap needs to be.
 	for (size_t i = 0; i < memmap_entries; i++) {
@@ -70,6 +68,8 @@ static void *inner_alloc(size_t count, size_t limit) {
 			p = 0;
 		}
 	}
+
+	return NULL;
 }
 
 void *pmm_alloc(size_t count) {

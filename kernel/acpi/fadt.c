@@ -35,14 +35,14 @@ void init_fadt(void) {
 	uint8_t *S5Addr =
 	  (uint8_t *)(facp->Dsdt + 36 + MEM_PHYS_OFFSET); // skip header
 
-	printf("FACP tabel address: %X\n", (uint32_t)facp);
+	printf("FACP tabel address: %X\n", (uintptr_t)facp);
 	uint32_t offset = (uint32_t)(facp->Dsdt + MEM_PHYS_OFFSET);
 	printf("FACP dsdt address: %X\n", offset);
-	struct sdt *header = (struct sdt *)(offset);
+	struct sdt *header = (struct sdt *)((uintptr_t)offset);
 	int dsdtLength = header->length;
 	printf("dsdt len: %X\n", dsdtLength);
 	while (0 < dsdtLength--) {
-		if (!strncmp(S5Addr, "_S5_", 4)) {
+		if (!strncmp((char *)S5Addr, "_S5_", 4)) {
 			break;
 		}
 		S5Addr++;
@@ -66,7 +66,7 @@ void init_fadt(void) {
 				S5Addr++; // skip byteprefix
 			SLP_TYPb = *(S5Addr) << 10;
 
-			SMI_CMD = (uint32_t *)facp->SMI_CommandPort;
+			SMI_CMD = (uint32_t *)((uintptr_t)facp->SMI_CommandPort);
 
 			ACPI_ENABLE = facp->AcpiEnable;
 			ACPI_DISABLE = facp->AcpiDisable;
@@ -93,7 +93,7 @@ void acpi_enable(void) {
 	if ((port_word_in((unsigned short)PM1a_CNT) & SCI_EN) == 0) {
 		// check if acpi can be enabled
 		if (SMI_CMD != 0 && ACPI_ENABLE != 0) {
-			port_byte_out((uint16_t)SMI_CMD,
+			port_byte_out((uint16_t)((uintptr_t)SMI_CMD),
 						  ACPI_ENABLE); // send acpi enable command
 			// give 3 seconds time to enable acpi
 			int i;
