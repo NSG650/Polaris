@@ -4,6 +4,7 @@
 volatile uint64_t global_tick = 0;
 
 void timer_handler(registers_t *r) {
+	(void)r;
 	global_tick++;
 }
 

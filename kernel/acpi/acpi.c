@@ -51,9 +51,9 @@ void acpi_init(struct rsdp *rsdp) {
 void *acpi_find_sdt(const char *signature) {
 	int len = rsdt->sdt.length;
 	int entries = (len - 36) / 4;
-	uint32_t reader = (uint32_t)rsdt->ptrs_start;
-	for (size_t i = 0; i < entries; i++) {
-		struct sdt *ptr = (struct sdt *)reader;
+	uint32_t reader = (uintptr_t)rsdt->ptrs_start;
+	for (int i = 0; i < entries; i++) {
+		struct sdt *ptr = (struct sdt *)((uintptr_t)reader);
 		if (!strncmp(ptr->signature, signature, 4)) {
 			return (void *)ptr;
 		}

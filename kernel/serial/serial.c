@@ -14,7 +14,7 @@ int serial_install_port(uint16_t PORT) {
 	port_byte_out(PORT + 0, 0xAE); // Test serial chip (send byte 0xAE and check
 								   // if serial returns same byte)
 
-	uint8_t result = port_byte_in(PORT + 0);
+	port_byte_in(PORT + 0);
 	port_byte_out(PORT + 4, 0x0F);
 
 	return 0;
