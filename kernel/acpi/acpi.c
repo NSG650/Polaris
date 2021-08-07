@@ -31,16 +31,16 @@ static struct rsdt *rsdt;
 /* This function should look for all the ACPI tables and index them for
    later use */
 void acpi_init(struct rsdp *rsdp) {
-	printf("acpi: Revision: %d\n", rsdp->rev);
+	printf("ACPI: Revision: %d\n", rsdp->rev);
 
 	if (rsdp->rev >= 2 && rsdp->xsdt_addr) {
 		use_xsdt = true;
 		rsdt = (struct rsdt *)((uintptr_t)rsdp->xsdt_addr + MEM_PHYS_OFFSET);
-		printf("acpi: Found XSDT at %X\n", (uintptr_t)rsdt);
+		printf("ACPI: Found XSDT at %X\n", (uintptr_t)rsdt);
 	} else {
 		use_xsdt = false;
 		rsdt = (struct rsdt *)((uintptr_t)rsdp->rsdt_addr + MEM_PHYS_OFFSET);
-		printf("acpi: Found RSDT at %X\n", (uintptr_t)rsdt);
+		printf("ACPI: Found RSDT at %X\n", (uintptr_t)rsdt);
 	}
 	// Initialised individual tables that need initialisation
 	init_madt();
@@ -60,7 +60,7 @@ void *acpi_find_sdt(const char *signature) {
 		reader += ptr->length;
 	}
 
-	printf("acpi: \"%s\" not found\n", signature);
+	printf("ACPI: \"%s\" not found\n", signature);
 	return NULL;
 }
 

@@ -59,7 +59,7 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	if (fb_str_tag == NULL) {
 		write_serial("FAILED TO AQUIRE A FRAMEBUFFER\n\nHALTING");
 		for (;;)
-			__asm__("hlt");
+			asm("hlt");
 	}
 	video_init(fb_str_tag);
 	struct stivale2_struct_tag_memmap *memmap_tag =
@@ -70,7 +70,7 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	  stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_RSDP_ID);
 	serial_install();
 	isr_install();
-	__asm__ volatile("sti");
+	asm volatile("sti");
 	acpi_init((void *)rsdp_tag->rsdp + MEM_PHYS_OFFSET);
 	acpi_start();
 	hpet_init();
@@ -91,5 +91,5 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	for (int i = 0; i < 11; i++)
 		printf("Random number: %u\n", rand());
 	for (;;)
-		__asm__("hlt");
+		asm("hlt");
 }

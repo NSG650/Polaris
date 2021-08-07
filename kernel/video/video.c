@@ -34,9 +34,10 @@ void knewline(void) {
 		const void *src = (void *)(((uintptr_t)fb_addr) + y * fb_pitch);
 		memcpy(dest, src, width_s * 4);
 	}
-	cursor_y--;
 
+	cursor_y--;
 	cursor_x = 131;
+
 	size_t x = (cursor_x * fb_font.width) - fb_font.width,
 		   y = cursor_y * fb_font.height;
 
@@ -78,6 +79,7 @@ void putchar_at(char c, int position_x, int position_y, uint32_t color,
 
 	if ((cursor_y * fb_font.height) >= height_s) {
 		knewline();
+		cursor_x--;
 		putchar_at(c, cursor_x, cursor_y, color, bgcolor);
 		cursor_x--;
 	}
@@ -101,6 +103,7 @@ void putchar_at(char c, int position_x, int position_y, uint32_t color,
 		width_s - (2 * fb_font.width)) {
 		cursor_y++;
 		cursor_x = 0;
+		return;
 	}
 
 	if (c != '\n') {
@@ -122,16 +125,14 @@ void kprint_color(char *string, uint32_t color) {
 	}
 }
 
-void kprint(char *string) {
-	while (*string) {
-		putchar_color(*string++, 0xFFFFFF, 0x000000);
-	}
-}
-
 void kprintbgc(char *string, uint32_t fcolor, uint32_t bcolor) {
 	while (*string) {
 		putchar_color(*string++, fcolor, bcolor);
 	}
+}
+
+void kprint(char *string) {
+	kprintbgc(string, 0xFFFFFF, 0x000000);
 }
 
 void draw_rect(int width, int height, int offx, int offy, uint32_t color) {

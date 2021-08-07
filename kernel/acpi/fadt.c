@@ -28,19 +28,19 @@ void init_fadt(void) {
 	// search for FADT table
 	facp = acpi_find_sdt("FACP");
 	if (!facp) {
-		PANIC("FACP tabel cannot be found.");
+		PANIC("FADT table cannot be found.");
 	}
 
 	// search the \_S5 package in the DSDT
 	uint8_t *S5Addr =
 	  (uint8_t *)(facp->Dsdt + 36 + MEM_PHYS_OFFSET); // skip header
 
-	printf("FACP tabel address: %X\n", (uintptr_t)facp);
+	printf("FADT table address: %X\n", (uintptr_t)facp);
 	uint32_t offset = (uint32_t)(facp->Dsdt + MEM_PHYS_OFFSET);
-	printf("FACP dsdt address: %X\n", offset);
+	printf("FADT DSDT address: %X\n", offset);
 	struct sdt *header = (struct sdt *)((uintptr_t)offset);
 	int dsdtLength = header->length;
-	printf("dsdt len: %X\n", dsdtLength);
+	printf("DSDT len: %X\n", dsdtLength);
 	while (0 < dsdtLength--) {
 		if (!strncmp((char *)S5Addr, "_S5_", 4)) {
 			break;
@@ -81,21 +81,21 @@ void init_fadt(void) {
 
 			return;
 		} else {
-			printf("\\_S5 parse error.\n");
+			printf("\\_S5 parse error\n");
 		}
 	} else {
-		printf("acpi: _S5 object not found!\n");
+		printf("ACPI: _S5 object not found!\n");
 	}
 }
 
 void acpi_enable(void) {
-	// check if acpi is enabled
+	// check if ACPI is enabled
 	if ((port_word_in((unsigned short)PM1a_CNT) & SCI_EN) == 0) {
-		// check if acpi can be enabled
+		// check if ACPI can be enabled
 		if (SMI_CMD != 0 && ACPI_ENABLE != 0) {
 			port_byte_out((uint16_t)((uintptr_t)SMI_CMD),
-						  ACPI_ENABLE); // send acpi enable command
-			// give 3 seconds time to enable acpi
+						  ACPI_ENABLE); // send ACPI enable command
+			// give 3 seconds time to enable ACPI
 			int i;
 			for (i = 0; i < 300; i++) {
 				if ((port_word_in((unsigned int)PM1a_CNT) & SCI_EN) == 1)
@@ -116,9 +116,9 @@ void acpi_enable(void) {
 			}
 
 			if (i < 300) {
-				printf("enabled acpi.\n");
+				printf("Enabled ACPI\n");
 			} else {
-				PANIC("couldn't enable acpi.\n");
+				PANIC("Couldn't enable ACPI\n");
 			}
 		} else {
 			PANIC("Error while enabling ACPI");
@@ -149,8 +149,7 @@ void fadt_acpi_reboot(void) {
 		while (good & 0x02)
 			good = port_byte_in(0x64);
 		port_byte_out(0x64, 0xFE);
-
 	} else {
-		printf("this acpi does not support Reboot");
+		printf("This ACPI revision doesn't support reboot");
 	}
 }

@@ -5,7 +5,7 @@ static uint64_t next = 0x5E8;
 
 static uint64_t get_rdseed(void) {
 	uint64_t r = 9;
-	//__asm__("rdseed %0" : "=r"(r));
+	// asm("rdseed %0" : "=r"(r));
 	r += next / next * next;
 	return r;
 }
