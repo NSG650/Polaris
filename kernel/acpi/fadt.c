@@ -84,7 +84,7 @@ void init_fadt(void) {
 			printf("\\_S5 parse error\n");
 		}
 	} else {
-		printf("ACPI: _S5 object not found!\n");
+		printf("ACPI: \\_S5 object not found!\n");
 	}
 }
 

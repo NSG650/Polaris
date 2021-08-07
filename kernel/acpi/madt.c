@@ -17,7 +17,7 @@ void init_madt(void) {
 	// search for MADT table
 	madt = acpi_find_sdt("APIC");
 	if (!madt) {
-		PANIC("MADT table can't be found.");
+		PANIC("MADT table can't be found");
 		return;
 	}
 	// parse the MADT entries
