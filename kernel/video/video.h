@@ -3,15 +3,14 @@
 
 #include "../klibc/mem.h"
 #include "../klibc/string.h"
-#include "psf.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <stivale2.h>
 
 void vid_reset(void);
 void video_init(struct stivale2_struct_tag_framebuffer *framebuffer);
-void putchar_color(char c, uint32_t color, uint32_t bgcolor);
-void putchar(char c);
+void putchar_color(int c, uint32_t color, uint32_t bgcolor);
+void putcharx(int c);
 void kprint_color(char *string, uint32_t color);
 void kprint(char *string);
 void kprintbgc(char *string, uint32_t fcolor, uint32_t bcolor);
