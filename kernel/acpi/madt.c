@@ -22,7 +22,7 @@ void init_madt(void) {
 	}
 	// parse the MADT entries
 	for (uint8_t *madt_ptr = (uint8_t *)madt->madt_entries_begin;
-		 (uintptr_t)madt_ptr < (uintptr_t)madt + sizeof(madt);
+		 (uintptr_t)madt_ptr < (uintptr_t)madt + madt->sdt.length;
 		 madt_ptr += *(madt_ptr + 1)) {
 		switch (*(madt_ptr)) {
 			case 0:

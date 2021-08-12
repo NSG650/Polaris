@@ -43,6 +43,7 @@ void acpi_init(struct rsdp *rsdp) {
 		printf("ACPI: Found RSDT at %X\n", (uintptr_t)rsdt);
 	}
 	// Initialised individual tables that need initialisation
+	printf("Enabling madt\n");
 	init_madt();
 	init_fadt();
 }
