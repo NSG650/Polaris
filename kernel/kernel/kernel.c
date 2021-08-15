@@ -71,9 +71,9 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	serial_install();
 	isr_install();
 	asm volatile("sti");
-	//acpi_init((void *)rsdp_tag->rsdp + MEM_PHYS_OFFSET);
-	//acpi_start();
-	//hpet_init();
+	acpi_init((void *)rsdp_tag->rsdp + MEM_PHYS_OFFSET);
+	acpi_start();
+	hpet_init();
 	printf("Hello World!\n");
 	printf("A (4 bytes): %p\n", kmalloc(4));
 	void *ptr = kmalloc(8);
