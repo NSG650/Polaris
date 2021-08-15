@@ -18,27 +18,38 @@ struct mmap_range {
 	int flags;
 };
 
-static struct pagemap kernel_pagemap;
+struct pagemap *kernel_pagemap = NULL;
 
 void vmm_init(struct stivale2_mmap_entry *memmap, size_t memmap_entries) {
-	kernel_pagemap.top_level = pmm_allocz(1);
+	kernel_pagemap = vmm_new_pagemap();
 	for (uintptr_t p = 0; p < 4096UL * 1024 * 1024; p += PAGE_SIZE) {
-		vmm_map_page(&kernel_pagemap, p, p, 0b11);
-		vmm_map_page(&kernel_pagemap, p + MEM_PHYS_OFFSET, p, 0b11);
+		vmm_map_page(kernel_pagemap, p, p, 0b11);
+		vmm_map_page(kernel_pagemap, p + MEM_PHYS_OFFSET, p, 0b11);
 	}
 	for (uintptr_t p = 0; p < 2048UL * 1024 * 1024; p += PAGE_SIZE) {
-		vmm_map_page(&kernel_pagemap, KERNEL_BASE + p, p, 0b11);
+		vmm_map_page(kernel_pagemap, KERNEL_BASE + p, p, 0b11);
 	}
 	for (size_t i = 0; i < memmap_entries; i++) {
 		for (uintptr_t p = 0; p < memmap[i].length; p += PAGE_SIZE)
-			vmm_map_page(&kernel_pagemap, MEM_PHYS_OFFSET + p, p, 0b11);
+			vmm_map_page(kernel_pagemap, MEM_PHYS_OFFSET + p, p, 0b11);
 	}
-	vmm_switch_pagemap(&kernel_pagemap);
+	vmm_switch_pagemap(kernel_pagemap);
 }
 
 void vmm_switch_pagemap(struct pagemap *pagemap) {
 	asm volatile("mov cr3, %0" : : "r"(pagemap->top_level) : "memory");
 }
+
+struct pagemap *vmm_new_pagemap(void) {
+    struct pagemap *pagemap = alloc(sizeof(struct pagemap));
+    pagemap->top_level   = pmm_allocz(1);
+    if (kernel_pagemap != NULL) {
+        for (size_t i = 256; i < 512; i++)
+            pagemap->top_level[i] = kernel_pagemap->top_level[i];
+    }
+    return pagemap;
+}
+
 
 static uintptr_t *get_next_level(uintptr_t *current_level, size_t entry) {
 	uintptr_t ret;

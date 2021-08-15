@@ -9,17 +9,17 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	hdiutil create -layout GPTSPUD -size 64m -fs FAT32 -volname d d.dmg
 	echo ""
 	echo "==> Renaming .dmg to .img..."
-	mv d.dmg d.img
+	mv d.dmg d.hdd
 
 	# Installing bootloader
 	echo ""
 	echo "==> Installing the bootloader..."
-	limine-install d.img
+	limine-install d.hdd
 
 	# Mount
 	echo ""
 	echo "==> Mounting the image..."
-	hdiutil mount d.img
+	hdiutil mount d.hdd
 
 	# Copying necessary files
 	echo ""
@@ -38,28 +38,28 @@ else
 	# Create an empty zeroed out 64MiB image file
 	echo ""
 	echo "==> Creating an empty 64 MiB image..."
-	dd if=/dev/zero bs=1M count=0 seek=64 of=d.img
+	dd if=/dev/zero bs=1M count=0 seek=64 of=d.hdd
 
 	# Create a GPT partition table
 	echo ""
 	echo "==> Creating a GPT partition table..."
-	parted -s d.img mklabel gpt
+	parted -s d.hdd mklabel gpt
 
 	# Create an ESP partition that spans the whole disk
 	echo ""
 	echo "==> Creating an ESP partition..."
-	parted -s d.img mkpart ESP fat32 2048s 100%
-	parted -s d.img set 1 esp on
+	parted -s d.hdd mkpart ESP fat32 2048s 100%
+	parted -s d.hdd set 1 esp on
 
 	# Install the Limine BIOS stages onto the image
 	echo ""
 	echo "==> Installing Limine..."
-	limine-install d.img
+	limine-install d.hdd
 
 	# Mount the loopback device
 	echo ""
 	echo "==> Mounting and formatting the image (might request your password)..."
-	USED_LOOPBACK=$(sudo losetup -Pf --show d.img)
+	USED_LOOPBACK=$(sudo losetup -Pf --show d.hdd)
 
 	# Format the ESP partition as FAT32
 	sudo mkfs.fat -F 32 ${USED_LOOPBACK}p1
@@ -94,5 +94,5 @@ fi
 echo "-----------"
 echo "==> Done!"
 echo "==> Now, you can launch D using the following command."
-echo "> qemu-system-x86_64 -hda d.img -m 512M"
+echo "> qemu-system-x86_64 -hda d.hdd -m 512M"
 echo "==> Good luck!"

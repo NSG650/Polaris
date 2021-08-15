@@ -1,8 +1,6 @@
 #ifndef ISR_H
 #define ISR_H
 
-#include "idt.h"
-#include "pit.h"
 #include "reg.h"
 #include <stddef.h>
 #include <stdint.h>

@@ -33,17 +33,16 @@ static struct rsdt *rsdt;
 void acpi_init(struct rsdp *rsdp) {
 	printf("ACPI: Revision: %d\n", rsdp->rev);
 
-	if (rsdp->rev >= 2 && rsdp->xsdt_addr) {
-		use_xsdt = true;
-		rsdt = (struct rsdt *)((uintptr_t)rsdp->xsdt_addr + MEM_PHYS_OFFSET);
-		printf("ACPI: Found XSDT at %X\n", (uintptr_t)rsdt);
-	} else {
+	//if (rsdp->rev >= 2 && rsdp->xsdt_addr) {
+	//	use_xsdt = true;
+	//	rsdt = (struct rsdt *)((uintptr_t)rsdp->xsdt_addr + MEM_PHYS_OFFSET);
+	//	printf("ACPI: Found XSDT at %X\n", (uintptr_t)rsdt);
+	//} else {
 		use_xsdt = false;
 		rsdt = (struct rsdt *)((uintptr_t)rsdp->rsdt_addr + MEM_PHYS_OFFSET);
 		printf("ACPI: Found RSDT at %X\n", (uintptr_t)rsdt);
-	}
+	//}
 	// Initialised individual tables that need initialisation
-	printf("Enabling MADT\n");
 	init_madt();
 	init_fadt();
 }
@@ -51,7 +50,7 @@ void acpi_init(struct rsdp *rsdp) {
 /* Find SDT by signature */
 void *acpi_find_sdt(const char *signature) {
 	int len = rsdt->sdt.length;
-	int entries = (len - 36) / 4;
+	int entries = (len - 36) / 8;
 	uint32_t reader = (uintptr_t)rsdt->ptrs_start;
 	for (int i = 0; i < entries; i++) {
 		struct sdt *ptr = (struct sdt *)((uintptr_t)reader);
