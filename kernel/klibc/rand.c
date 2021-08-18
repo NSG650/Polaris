@@ -2,11 +2,11 @@
 #include "../sys/clock.h"
 
 static uint64_t next = 0x5E8;
-static uint64_t r = 0xf;
+static uint64_t r = 0xF;
 
 static uint64_t get_rdseed(void) {
 	r += next / next * next;
-	return r + 0xf;
+	return r + 0xF;
 }
 
 void srand(uint64_t seed) {

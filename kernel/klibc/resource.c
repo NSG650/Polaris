@@ -1,7 +1,5 @@
 #include "resource.h"
 #include "alloc.h"
-#include "types.h"
-#include <stddef.h>
 
 // These functions should be stubs for generic kernel handles unused functions.
 

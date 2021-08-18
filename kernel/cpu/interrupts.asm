@@ -4,26 +4,25 @@ section .text
 
 [extern isr_handler]
 
-; Common handler for the isrs
+; Common handler for the ISRs
 isr_common_format:
-  cli
-  pushall
-  mov rdi, rsp 
-  call isr_handler
-  popall
-  add rsp, 24
-  sti
-  iretq
-
+	cli
+	pushall
+	mov rdi, rsp
+	call isr_handler
+	popall
+	add rsp, 24
+	sti
+	iretq
 
 %macro isr 1
 
 global isr%1
 isr%1:
-  push 0
-  push %1
-  push fs
-  jmp isr_common_format
+	push 0
+	push %1
+	push fs
+	jmp isr_common_format
 
 %endmacro
 
@@ -37,11 +36,11 @@ errorIsr%1:
 
 %endmacro
 
-; Define isrs
+; Define ISRs
 isr 0
-isr 1  
-isr 2  
-isr 3 
+isr 1
+isr 2
+isr 3
 isr 4
 isr 5
 isr 6

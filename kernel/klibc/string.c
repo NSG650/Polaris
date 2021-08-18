@@ -1,5 +1,4 @@
 #include "string.h"
-#include "../klibc/printf.h"
 #include "ctype.h"
 #include "mem.h"
 

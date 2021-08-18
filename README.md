@@ -7,22 +7,25 @@ Build a x86_64-elf-gcc compiler then
 
 ```sh
 make
-#builds the project
+# Builds the project
 
-make image # or ./image.sh
-#makes a hard drive image
+make image
+# Makes a hard drive image
+```
 
+To clean use
+```sh
 make clean
-#cleans the project
+# Cleans the project
 ```
 # How to run?
-The kernel is 64 bit so run it with
+The kernel is 64-bit so run it with
 ```sh
 qemu-system-x86_64 -hda d.img -m 512M
 ```
 # What is implemented so far?
 - [x] Long mode
-- [x] Graphics mode
+- [x] Graphical mode
 - [x] Interrupts
-- [x] Timer   
-- [x] Paging 
+- [x] Timer
+- [x] Paging

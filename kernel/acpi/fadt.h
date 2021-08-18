@@ -1,10 +1,7 @@
 #ifndef FADT_H
 #define FADT_H
 
-#include "../klibc/dynarray.h"
-#include "../klibc/mem.h"
 #include "acpi.h"
-#include <stddef.h>
 #include <stdint.h>
 
 struct GenericAddressStructure {

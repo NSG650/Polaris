@@ -2,9 +2,7 @@
 #define MADT_H
 
 #include "../klibc/dynarray.h"
-#include "../klibc/mem.h"
 #include "acpi.h"
-#include <stddef.h>
 #include <stdint.h>
 
 struct madt {

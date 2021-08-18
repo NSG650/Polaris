@@ -51,7 +51,7 @@ $(KERNEL): $(OBJ)
 
 clean:
 	rm -rf $(KERNEL) $(OBJ)
-	rm -rf d.img
+	rm -rf d.hdd img_mount
 
 image:
 	./image.sh

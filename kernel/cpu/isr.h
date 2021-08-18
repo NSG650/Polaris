@@ -2,8 +2,6 @@
 #define ISR_H
 
 #include "reg.h"
-#include <stddef.h>
-#include <stdint.h>
 
 void isr1(void);
 void isr2(void);

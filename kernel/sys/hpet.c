@@ -12,17 +12,17 @@ struct address_structure {
 	uint8_t address_space_id; // 0 - system memory, 1 - system I/O
 	uint8_t register_bit_width;
 	uint8_t register_bit_offset;
-	// uint8_t reserved;
+	uint8_t reserved;
 	uint64_t address;
 } __attribute__((packed));
 
 struct HpetTable {
 	struct sdt header;
 	uint8_t hardware_rev_id;
-	uint8_t comparator_count;
-	uint8_t counter_size;
-	uint8_t reserved;
-	uint8_t legacy_replacement;
+	uint8_t comparator_count : 5;
+	uint8_t counter_size : 1;
+	uint8_t reserved : 1;
+	uint8_t legacy_replacement : 1;
 	uint16_t pci_vendor_id;
 	struct address_structure address;
 	uint8_t hpet_number;
@@ -49,7 +49,7 @@ static uint32_t clk = 0;
 void hpet_init(void) {
 	hpet_table = acpi_find_sdt("HPET");
 	if (!hpet_table) {
-		PANIC("D requires an HPET to be installed.");
+		PANIC("D requires a HPET to be installed");
 	}
 	hpet = (struct Hpet *)(hpet_table->address.address + MEM_PHYS_OFFSET);
 
@@ -66,6 +66,7 @@ void hpet_usleep(uint64_t us) {
 	uint64_t target =
 	  mminq(&hpet->main_counter_value) + (us * 1000000000) / clk;
 	while (mminq(&hpet->main_counter_value) < target) {
-			printf("&hpet->main_counter_value: %d\tTarget Value: %d\n", mminq(&hpet->main_counter_value), target);
+		printf("&hpet->main_counter_value: %lld Target Value: %lld\n",
+			   mminq(&hpet->main_counter_value), target);
 	}
 }

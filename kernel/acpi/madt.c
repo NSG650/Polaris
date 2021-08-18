@@ -1,10 +1,6 @@
 #include "madt.h"
 #include "../kernel/panic.h"
-#include "../klibc/dynarray.h"
 #include "../klibc/printf.h"
-#include "acpi.h"
-#include <stddef.h>
-#include <stdint.h>
 
 struct madt *madt;
 

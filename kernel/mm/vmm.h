@@ -10,8 +10,8 @@
 #include <stivale2.h>
 
 #define PAGE_SIZE		((size_t)4096)
-#define MEM_PHYS_OFFSET ((uintptr_t)0xffff800000000000)
-#define KERNEL_BASE		((uintptr_t)0xffffffff80000000)
+#define MEM_PHYS_OFFSET ((uintptr_t)0xFFFF800000000000)
+#define KERNEL_BASE		((uintptr_t)0xFFFFFFFF80000000)
 
 #define PROT_NONE  0x00
 #define PROT_READ  0x01
