@@ -47,7 +47,7 @@ static struct Hpet *hpet;
 static uint32_t clk = 0;
 
 void hpet_init(void) {
-	hpet_table = acpi_find_sdt("HPET");
+	hpet_table = acpi_find_sdt("HPET", 0);
 	if (!hpet_table) {
 		PANIC("D requires a HPET to be installed");
 	}
@@ -66,7 +66,7 @@ void hpet_usleep(uint64_t us) {
 	uint64_t target =
 	  mminq(&hpet->main_counter_value) + (us * 1000000000) / clk;
 	while (mminq(&hpet->main_counter_value) < target) {
-		printf("&hpet->main_counter_value: %lld Target Value: %lld\n",
+		printf("&hpet->main_counter_value: %llu Target Value: %llu\n",
 			   mminq(&hpet->main_counter_value), target);
 	}
 }

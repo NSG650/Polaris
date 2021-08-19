@@ -342,7 +342,7 @@ void isr_handler(registers_t *r) {
 					 "mov %%cr2, %0"
 					 : "=a"(cr2));
 		char x[72];
-		sprintf(x, "System Service Exception Not Handled: %s\n",
+		sprintf(x, "System Service Exception Not Handled: %s",
 				exceptionMessages[r->isrNumber]);
 		PANIC(x);
 	}

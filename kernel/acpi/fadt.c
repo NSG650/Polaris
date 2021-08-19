@@ -22,7 +22,7 @@ uint32_t PM1b_CNT;
 
 void init_fadt(void) {
 	// Search for FADT table
-	facp = acpi_find_sdt("FACP");
+	facp = acpi_find_sdt("FACP", 0);
 	if (!facp) {
 		PANIC("FADT table cannot be found.");
 	}

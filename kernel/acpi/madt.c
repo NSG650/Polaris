@@ -11,7 +11,7 @@ DYNARRAY_GLOBAL(madt_nmis);
 
 void init_madt(void) {
 	// search for MADT table
-	madt = acpi_find_sdt("APIC");
+	madt = acpi_find_sdt("APIC", 0);
 	if (!madt) {
 		PANIC("MADT table can't be found");
 		return;

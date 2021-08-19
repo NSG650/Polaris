@@ -7,29 +7,11 @@
 #include <stddef.h>
 #include <stdint.h>
 
-struct rsdp {
-	char signature[8];
-	uint8_t checksum;
-	char oem_id[6];
-	uint8_t rev;
-	uint32_t rsdt_addr;
-	// ver 2.0 only
-	uint32_t length;
-	uint64_t xsdt_addr;
-	uint8_t ext_checksum;
-	uint8_t reserved[3];
-} __attribute__((packed));
-
-struct rsdt {
-	struct sdt sdt;
-	uint32_t *ptrs_start;
-} __attribute__((packed));
-
 static bool use_xsdt;
 static struct rsdt *rsdt;
 
-/* This function should look for all the ACPI tables and index them for
-   later use */
+// This function should look for all the ACPI tables and index them for later
+// use
 void acpi_init(struct rsdp *rsdp) {
 	printf("ACPI: Revision: %d\n", rsdp->rev);
 
@@ -42,22 +24,40 @@ void acpi_init(struct rsdp *rsdp) {
 		rsdt = (struct rsdt *)((uintptr_t)rsdp->rsdt_addr + MEM_PHYS_OFFSET);
 		printf("ACPI: Found RSDT at %X\n", (uintptr_t)rsdt);
 	}
-	// Initialised individual tables that need initialisation
+	// Individual tables that need initialization
 	init_fadt();
 	init_madt();
 }
 
-/* Find SDT by signature */
-void *acpi_find_sdt(const char *signature) {
-	int len = rsdt->sdt.length;
-	int entries = (len - sizeof(struct sdt)) / use_xsdt ? 8 : 4;
-	uint32_t reader = (uintptr_t)rsdt->ptrs_start;
-	for (int i = 0; i < entries; i++) {
-		struct sdt *ptr = (struct sdt *)((uintptr_t)reader);
-		if (!memcmp(ptr->signature, signature, 4)) {
+// Following function based on
+// https://github.com/managarm/lai/blob/master/helpers/pc-bios.c's function
+// lai_bios_calc_checksum()
+static uint8_t acpi_checksum(void *ptr, size_t size) {
+	uint8_t sum = 0, *_ptr = ptr;
+	for (size_t i = 0; i < size; i++)
+		sum += _ptr[i];
+	return sum;
+}
+
+// Find SDT by signature
+void *acpi_find_sdt(const char *signature, int index) {
+	int cnt = 0;
+
+	size_t entries =
+	  (rsdt->header.length - sizeof(struct sdt)) / (use_xsdt ? 8 : 4);
+
+	for (size_t i = 0; i < entries; i++) {
+		struct sdt *ptr;
+		if (use_xsdt) {
+			ptr = (struct sdt *)(uintptr_t)((uint64_t *)rsdt->ptrs_start)[i];
+		} else {
+			ptr = (struct sdt *)(uintptr_t)((uint32_t *)rsdt->ptrs_start)[i];
+		}
+
+		if (!memcmp(ptr->signature, signature, 4) &&
+			!acpi_checksum(ptr, ptr->length) && cnt++ == index) {
 			return (void *)ptr;
 		}
-		reader += ptr->length;
 	}
 
 	printf("ACPI: \"%s\" not found\n", signature);
