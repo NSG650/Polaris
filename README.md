@@ -29,3 +29,5 @@ qemu-system-x86_64 -hda d.img -m 512M
 - [x] Interrupts
 - [x] Timer
 - [x] Paging
+- [x] ACPI
+- [x] HPET  
