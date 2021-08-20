@@ -12,6 +12,7 @@
 #include "../sys/hpet.h"
 #include "../video/video.h"
 #include "panic.h"
+#include "../cpu/cpu.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <stivale2.h>
@@ -74,6 +75,7 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	acpi_init((void *)rsdp_tag->rsdp + MEM_PHYS_OFFSET);
 	acpi_start();
 	hpet_init();
+	cpu_init();
 	printf("Hello World!\n");
 	printf("A (4 bytes): %p\n", kmalloc(4));
 	void *ptr = kmalloc(8);
@@ -88,9 +90,8 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	printf("D (32 bytes after C realloc): %p\n", ptr3);
 	printf("E (5 int calloc): %p\n", kcalloc(5, sizeof(int)));
 	printf("%d\n", get_unix_timestamp());
-	for (int i = 0; i < 11; i++)
-		printf("Random number: %u\n", rand());
-	hpet_usleep(100);
+	hpet_usleep(1000 * 1000);
+	printf("%d\n", get_unix_timestamp());
 	printf("HPET test works!\n");
 	for (;;)
 		asm("hlt");
