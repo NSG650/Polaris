@@ -1,4 +1,5 @@
 #include "../acpi/acpi.h"
+#include "../cpu/cpu.h"
 #include "../cpu/idt.h"
 #include "../cpu/isr.h"
 #include "../cpu/ports.h"
@@ -12,7 +13,6 @@
 #include "../sys/hpet.h"
 #include "../video/video.h"
 #include "panic.h"
-#include "../cpu/cpu.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <stivale2.h>

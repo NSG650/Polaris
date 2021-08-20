@@ -54,12 +54,11 @@ void hpet_init(void) {
 }
 
 uint64_t hpet_counter_value(void) {
-
+	return mminq(&hpet->main_counter_value);
 }
 
 void hpet_usleep(uint64_t us) {
-	uint64_t target =
-	  mminq(&hpet->main_counter_value) + (us * 1000000000) / clk;
-	while (mminq(&hpet->main_counter_value) < target)
+	uint64_t target = hpet_counter_value() + (us * 1000000000) / clk;
+	while (hpet_counter_value() < target)
 		;
 }
