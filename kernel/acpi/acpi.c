@@ -1,5 +1,4 @@
 #include "../klibc/printf.h"
-#include "../klibc/string.h"
 #include "../mm/vmm.h"
 #include "fadt.h"
 #include "madt.h"

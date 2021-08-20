@@ -10,19 +10,19 @@ DYNARRAY_GLOBAL(madt_isos);
 DYNARRAY_GLOBAL(madt_nmis);
 
 void init_madt(void) {
-	// search for MADT table
+	// Search for MADT table
 	madt = acpi_find_sdt("APIC", 0);
 	if (!madt) {
 		PANIC("MADT table can't be found");
 		return;
 	}
-	// parse the MADT entries
+	// Parse the MADT entries
 	for (uint8_t *madt_ptr = (uint8_t *)madt->madt_entries_begin;
 		 (uintptr_t)madt_ptr < (uintptr_t)madt + madt->sdt.length;
 		 madt_ptr += *(madt_ptr + 1)) {
 		switch (*(madt_ptr)) {
 			case 0:
-				// processor local APIC
+				// Processor local APIC
 				printf("ACPI/MADT: Found local APIC 0x%X\n",
 					   madt_local_apics.length);
 				DYNARRAY_PUSHBACK(madt_local_apics, (void *)madt_ptr);
@@ -34,7 +34,7 @@ void init_madt(void) {
 				DYNARRAY_PUSHBACK(madt_io_apics, (void *)madt_ptr);
 				break;
 			case 2:
-				// interrupt source override
+				// Interrupt Source Override
 				printf("ACPI/MADT: Found ISO 0x%X\n", madt_isos.length);
 				DYNARRAY_PUSHBACK(madt_isos, (void *)madt_ptr);
 				break;
