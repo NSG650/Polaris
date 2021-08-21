@@ -53,11 +53,10 @@ void free(void *ptr) {
 }
 
 void *realloc(void *ptr, size_t new_size) {
-	/* check if 0 */
 	if (!ptr)
 		return alloc(new_size);
 
-	/* Reference metadata page */
+	// Reference metadata page
 	struct alloc_metadata *metadata = ptr - PAGE_SIZE;
 
 	if (DIV_ROUNDUP(metadata->size, PAGE_SIZE) ==
@@ -70,12 +69,13 @@ void *realloc(void *ptr, size_t new_size) {
 	if (new_ptr == NULL)
 		return NULL;
 
-	if (metadata->size > new_size)
-		/* Copy all the data from the old pointer to the new pointer,
-		 * within the range specified by `size`. */
+	if (metadata->size > new_size) {
+		// Copy all the data from the old pointer to the new pointer, within the
+		// range specified by 'size'.
 		memcpy(new_ptr, ptr, new_size);
-	else
+	} else {
 		memcpy(new_ptr, ptr, metadata->size);
+	}
 
 	free(ptr);
 
@@ -88,13 +88,13 @@ void *liballoc_alloc(size_t sz) {
 
 int liballoc_free(void *ptr, size_t ignored) {
 	free(ptr);
-	/* Unused as free() already knows size */
+	// Unused as free() already knows size
 	(void)ignored;
 	return 0;
 }
 
 int liballoc_lock() {
-	/* We don't have threads yet... This should be enough */
+	// We don't have threads yet... This should be enough
 	asm volatile("cli");
 	return 0;
 }
