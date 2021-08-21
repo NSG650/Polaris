@@ -30,9 +30,9 @@ isr%1:
 
 global errorIsr%1
 errorIsr%1:
-  push %1
-  push fs
-  jmp isr_common_format
+	push %1
+	push fs
+	jmp isr_common_format
 
 %endmacro
 

@@ -9,7 +9,7 @@ struct madt {
 	struct sdt sdt;
 	uint32_t local_controller_addr;
 	uint32_t flags;
-	symbol madt_entries_begin;
+	char madt_entries_begin[];
 } __attribute__((packed));
 
 struct madt_header {

@@ -1,13 +1,11 @@
-#include <stddef.h>
-#include <stdint.h>
-
+#include "hpet.h"
 #include "../acpi/acpi.h"
 #include "../acpi/fadt.h"
 #include "../kernel/panic.h"
 #include "../klibc/printf.h"
 #include "../mm/vmm.h"
-#include "hpet.h"
 #include "mmio.h"
+#include <stddef.h>
 
 struct HpetTable {
 	struct sdt header;
