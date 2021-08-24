@@ -1,3 +1,6 @@
+#ifndef CTYPE_H
+#define CTYPE_H
+
 /*
  * Copyright 2021 NSG650
  *
@@ -13,9 +16,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#ifndef CTYPE_H
-#define CTYPE_H
 
 int isxdigit(int c);
 int isblank(int c);

@@ -1,3 +1,6 @@
 [submodule "stivale"]
 	path = stivale
 	url = https://github.com/stivale/stivale
+[submodule "kernel/acpi/lai"]
+	path = kernel/acpi/lai
+	url = https://github.com/managarm/lai

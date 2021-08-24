@@ -16,6 +16,7 @@
  */
 
 #include "mem.h"
+#include <stdint.h>
 
 void *memcpy(void *dest, const void *src, size_t nbytes) {
 	uint8_t *q = (uint8_t *)dest;
@@ -46,7 +47,7 @@ void *mempcpy(void *dest, const void *src, size_t nbytes) {
 	return (char *)memcpy(dest, src, nbytes) + nbytes;
 }
 
-void *memset(void *dest, uint8_t val, size_t len) {
+void *memset(void *dest, int val, size_t len) {
 	uint8_t *temp = (uint8_t *)dest;
 	for (; len != 0; len--)
 		*temp++ = val;

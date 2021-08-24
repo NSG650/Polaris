@@ -21,7 +21,7 @@
 #include "../serial/serial.h"
 #include "../video/video.h"
 
-void panic(char message[], char file[], char assert, uint32_t line) {
+void panic(const char message[], char file[], char assert, uint32_t line) {
 	char x[1024];
 	uint8_t *rip = __builtin_return_address(0);
 	uint64_t *rbp = __builtin_frame_address(0);

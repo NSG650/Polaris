@@ -9,7 +9,7 @@ AS = nasm
 
 # Compiler flags
 
-CFLAGS = -Wall -Wextra -g -I stivale/
+CFLAGS = -Wall -Wextra -g -I stivale/ -I kernel/acpi/lai/include/
 
 # Internal flags that shouldn't be changed
 
@@ -31,7 +31,7 @@ INTERNALCFLAGS :=        \
 
 # C files and objects
 
-CFILES := $(wildcard kernel/*/*.c)
+CFILES := $(wildcard kernel/*/*.c kernel/acpi/lai/*/*.c)
 ASMFILES := $(wildcard kernel/*/*.asm)
 OBJ := $(CFILES:.c=.o) $(ASMFILES:.asm=.o)
 

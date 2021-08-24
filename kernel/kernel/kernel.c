@@ -37,7 +37,7 @@
 
 extern void init_gdt(void);
 
-static uint8_t stack[4096];
+static uint8_t stack[32768];
 static struct stivale2_header_tag_framebuffer framebuffer_hdr_tag = {
   // All tags need to begin with an identifier and a pointer to the next tag.
   .tag = {.identifier = STIVALE2_HEADER_TAG_FRAMEBUFFER_ID, .next = 0},
@@ -55,7 +55,6 @@ __attribute__((section(".stivale2hdr"),
 void *stivale2_get_tag(struct stivale2_struct *stivale2_struct, uint64_t id) {
 	struct stivale2_tag *current_tag = (void *)stivale2_struct->tags;
 	for (;;) {
-
 		if (current_tag == NULL) {
 			return NULL;
 		}
@@ -91,7 +90,6 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	isr_install();
 	asm volatile("sti");
 	acpi_init((void *)rsdp_tag->rsdp + MEM_PHYS_OFFSET);
-	acpi_start();
 	hpet_init();
 	cpu_init();
 	printf("Hello World!\n");

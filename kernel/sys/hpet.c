@@ -18,7 +18,6 @@
 
 #include "hpet.h"
 #include "../acpi/acpi.h"
-#include "../acpi/fadt.h"
 #include "../kernel/panic.h"
 #include "../klibc/printf.h"
 #include "../mm/vmm.h"

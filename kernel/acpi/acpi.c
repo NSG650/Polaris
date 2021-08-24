@@ -16,10 +16,16 @@
  * limitations under the License.
  */
 
+#include "../cpu/ports.h"
+#include "../kernel/panic.h"
+#include "../klibc/liballoc.h"
 #include "../klibc/printf.h"
 #include "../mm/vmm.h"
-#include "fadt.h"
+#include "../sys/pci.h"
 #include "madt.h"
+#include <lai/core.h>
+#include <lai/helpers/sci.h>
+#include <lai/host.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -41,8 +47,9 @@ void acpi_init(struct rsdp *rsdp) {
 		rsdt = (struct rsdt *)((uintptr_t)rsdp->rsdt_addr + MEM_PHYS_OFFSET);
 		printf("ACPI: Found RSDT at %X\n", (uintptr_t)rsdt);
 	}
-	// Individual tables that need initialization
-	init_fadt();
+	lai_set_acpi_revision(rsdp->rev);
+	lai_create_namespace();
+	lai_enable_acpi(0);
 	init_madt();
 }
 
@@ -81,14 +88,104 @@ void *acpi_find_sdt(const char *signature, int index) {
 	return NULL;
 }
 
-void acpi_start(void) {
-	acpi_enable();
+void laihost_log(int level, const char *msg) {
+	switch (level) {
+		case LAI_DEBUG_LOG:
+			printf("ACPI: Debug: %s\n", msg);
+			break;
+		case LAI_WARN_LOG:
+			printf("ACPI: Warning: %s\n", msg);
+			break;
+		default:
+			printf("ACPI: %s\n", msg);
+			break;
+	}
 }
 
-void acpi_shutdown(void) {
-	fadt_acpi_shutdown();
+__attribute__((noreturn)) void laihost_panic(const char *msg) {
+	PANIC(msg);
+	__builtin_unreachable();
 }
 
-void acpi_reboot(void) {
-	fadt_acpi_reboot();
+void *laihost_malloc(size_t size) {
+	return (void *)(uintptr_t)kmalloc(size);
+}
+
+void laihost_free(void *ptr, size_t) {
+	kfree(ptr);
+}
+
+void *laihost_realloc(void *ptr, size_t newsize, size_t) {
+	return (void *)(uintptr_t)krealloc(ptr, newsize);
+}
+
+void *laihost_map(size_t address, size_t) {
+	return (void *)address + MEM_PHYS_OFFSET;
+}
+
+void laihost_outb(uint16_t port, uint8_t val) {
+	port_byte_out(port, val);
+}
+
+void laihost_outw(uint16_t port, uint16_t val) {
+	port_word_out(port, val);
+}
+
+void laihost_outd(uint16_t port, uint32_t val) {
+	port_dword_out(port, val);
+}
+
+uint8_t laihost_inb(uint16_t port) {
+	return port_byte_in(port);
+}
+
+uint16_t laihost_inw(uint16_t port) {
+	return port_word_in(port);
+}
+
+uint32_t laihost_ind(uint16_t port) {
+	return port_dword_in(port);
+}
+
+void laihost_pci_writeb(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t fun,
+						uint16_t offset, uint8_t val) {
+	pci_write(seg, bus, slot, fun, offset, val, 1);
+}
+
+void laihost_pci_writew(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t fun,
+						uint16_t offset, uint16_t val) {
+	pci_write(seg, bus, slot, fun, offset, val, 2);
+}
+
+void laihost_pci_writed(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t fun,
+						uint16_t offset, uint32_t val) {
+	pci_write(seg, bus, slot, fun, offset, val, 4);
+}
+
+uint8_t laihost_pci_readb(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t fun,
+						  uint16_t offset) {
+	return pci_read(seg, bus, slot, fun, offset, 1);
+}
+
+uint16_t laihost_pci_readw(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t fun,
+						   uint16_t offset) {
+	return pci_read(seg, bus, slot, fun, offset, 2);
+}
+
+uint32_t laihost_pci_readd(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t fun,
+						   uint16_t offset) {
+	return pci_read(seg, bus, slot, fun, offset, 4);
+}
+
+void laihost_sleep(uint64_t) {}
+
+void *laihost_scan(const char *signature, size_t index) {
+	// The DSDT must be found using a pointer in the FADT
+	if (!memcmp(signature, "DSDT", 4)) {
+		struct facp *facp = (struct facp *)acpi_find_sdt("FACP", 0);
+
+		return (void *)(uintptr_t)facp->Dsdt + MEM_PHYS_OFFSET;
+	} else {
+		return acpi_find_sdt(signature, index);
+	}
 }

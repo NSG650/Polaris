@@ -1,8 +1,7 @@
-#ifndef PORTS_H
-#define PORTS_H
+#ifndef PCI_H
+#define PCI_H
 
 /*
- * Copyright 2021 NSG650
  * Copyright 2021 Sebastian
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,11 +19,9 @@
 
 #include <stdint.h>
 
-uint8_t port_byte_in(uint16_t port);
-void port_byte_out(uint16_t port, uint8_t data);
-uint16_t port_word_in(uint16_t port);
-void port_word_out(uint16_t port, uint16_t data);
-uint32_t port_dword_in(uint16_t port);
-void port_dword_out(uint16_t port, uint32_t data);
+void pci_write(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t function,
+			   uint16_t offset, uint32_t value, uint8_t access_size);
+uint32_t pci_read(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t function,
+				  uint16_t offset, uint8_t access_size);
 
 #endif

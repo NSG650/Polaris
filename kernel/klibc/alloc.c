@@ -82,14 +82,12 @@ void *realloc(void *ptr, size_t new_size) {
 	return new_ptr;
 }
 
-void *liballoc_alloc(size_t sz) {
-	return alloc(sz);
+void *liballoc_alloc(size_t size) {
+	return pmm_allocz(size) + MEM_PHYS_OFFSET;
 }
 
-int liballoc_free(void *ptr, size_t ignored) {
-	free(ptr);
-	// Unused as free() already knows size
-	(void)ignored;
+int liballoc_free(void *ptr, size_t size) {
+	pmm_free(ptr - MEM_PHYS_OFFSET, size);
 	return 0;
 }
 
