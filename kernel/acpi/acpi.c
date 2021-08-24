@@ -33,8 +33,6 @@
 static bool use_xsdt;
 static struct rsdt *rsdt;
 
-// This function should look for all the ACPI tables and index them for later
-// use
 void acpi_init(struct rsdp *rsdp) {
 	printf("ACPI: Revision: %d\n", rsdp->rev);
 
