@@ -38,9 +38,13 @@
 extern void init_gdt(void);
 
 static uint8_t stack[32768];
+static struct stivale2_header_tag_smp smp_hdr_tag = {
+  .tag = {.identifier = STIVALE2_HEADER_TAG_SMP_ID, .next = 0}, .flags = 1};
+
 static struct stivale2_header_tag_framebuffer framebuffer_hdr_tag = {
   // All tags need to begin with an identifier and a pointer to the next tag.
-  .tag = {.identifier = STIVALE2_HEADER_TAG_FRAMEBUFFER_ID, .next = 0},
+  .tag = {.identifier = STIVALE2_HEADER_TAG_FRAMEBUFFER_ID,
+		  .next = (uintptr_t)&smp_hdr_tag},
   .framebuffer_width = 0,
   .framebuffer_height = 0,
   .framebuffer_bpp = 0};
@@ -91,7 +95,9 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	asm volatile("sti");
 	acpi_init((void *)rsdp_tag->rsdp + MEM_PHYS_OFFSET);
 	hpet_init();
-	cpu_init();
+	struct stivale2_struct_tag_smp *smp_tag =
+	  stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_SMP_ID);
+	cpu_init(smp_tag);
 	printf("Hello World!\n");
 	printf("A (4 bytes): %p\n", kmalloc(4));
 	void *ptr = kmalloc(8);

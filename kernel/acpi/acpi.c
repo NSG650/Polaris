@@ -33,19 +33,19 @@
 static bool use_xsdt;
 static struct rsdt *rsdt;
 
-void acpi_init(struct rsdp *rsdp) {
-	printf("ACPI: Revision: %d\n", rsdp->rev);
+void acpi_init(acpi_xsdp_t *rsdp) {
+	printf("ACPI: Revision: %d\n", rsdp->revision);
 
-	if (rsdp->rev >= 2 && rsdp->xsdt_addr) {
+	if (rsdp->revision >= 2 && rsdp->xsdt) {
 		use_xsdt = true;
-		rsdt = (struct rsdt *)((uintptr_t)rsdp->xsdt_addr + MEM_PHYS_OFFSET);
+		rsdt = (struct rsdt *)((uintptr_t)rsdp->xsdt + MEM_PHYS_OFFSET);
 		printf("ACPI: Found XSDT at %X\n", (uintptr_t)rsdt);
 	} else {
 		use_xsdt = false;
-		rsdt = (struct rsdt *)((uintptr_t)rsdp->rsdt_addr + MEM_PHYS_OFFSET);
+		rsdt = (struct rsdt *)((uintptr_t)rsdp->rsdt + MEM_PHYS_OFFSET);
 		printf("ACPI: Found RSDT at %X\n", (uintptr_t)rsdt);
 	}
-	lai_set_acpi_revision(rsdp->rev);
+	lai_set_acpi_revision(rsdp->revision);
 	lai_create_namespace();
 	lai_enable_acpi(0);
 	init_madt();
@@ -66,14 +66,14 @@ void *acpi_find_sdt(const char *signature, int index) {
 	int cnt = 0;
 
 	size_t entries =
-	  (rsdt->header.length - sizeof(struct sdt)) / (use_xsdt ? 8 : 4);
+	  (rsdt->header.length - sizeof(acpi_header_t)) / (use_xsdt ? 8 : 4);
 
 	for (size_t i = 0; i < entries; i++) {
-		struct sdt *ptr;
+		acpi_header_t *ptr;
 		if (use_xsdt) {
-			ptr = (struct sdt *)(uintptr_t)((uint64_t *)rsdt->ptrs_start)[i];
+			ptr = (acpi_header_t *)(uintptr_t)((uint64_t *)rsdt->ptrs_start)[i];
 		} else {
-			ptr = (struct sdt *)(uintptr_t)((uint32_t *)rsdt->ptrs_start)[i];
+			ptr = (acpi_header_t *)(uintptr_t)((uint32_t *)rsdt->ptrs_start)[i];
 		}
 
 		if (!memcmp(ptr->signature, signature, 4) &&
@@ -180,9 +180,9 @@ void laihost_sleep(uint64_t) {}
 void *laihost_scan(const char *signature, size_t index) {
 	// The DSDT must be found using a pointer in the FADT
 	if (!memcmp(signature, "DSDT", 4)) {
-		struct facp *facp = (struct facp *)acpi_find_sdt("FACP", 0);
+		acpi_fadt_t *facp = (acpi_fadt_t *)acpi_find_sdt("FACP", 0);
 
-		return (void *)(uintptr_t)facp->Dsdt + MEM_PHYS_OFFSET;
+		return (void *)(uintptr_t)facp->dsdt + MEM_PHYS_OFFSET;
 	} else {
 		return acpi_find_sdt(signature, index);
 	}

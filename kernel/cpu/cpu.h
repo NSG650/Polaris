@@ -21,6 +21,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stivale2.h>
 
 extern uint64_t cpu_tsc_frequency;
 extern size_t cpu_fpu_storage_size;
@@ -28,7 +29,7 @@ extern size_t cpu_fpu_storage_size;
 extern void (*cpu_fpu_save)(void *);
 extern void (*cpu_fpu_restore)(void *);
 
-void cpu_init(void);
+void cpu_init(struct stivale2_struct_tag_smp *smp_tag);
 
 #define write_cr(reg, val) \
 	__asm__ volatile("mov cr" reg ", %0" ::"r"(val) : "memory");

@@ -77,7 +77,16 @@ static void fxrstor(void *region) {
 	asm volatile("fxrstor %0" : : "m"(FLAT_PTR(region)) : "memory");
 }
 
-void cpu_init() {
+static void cpu_start(void) {
+	uint64_t rdi = 0;
+	asm("nop" : "=D"(rdi));
+	struct stivale2_smp_info *cpu_info = (void *)rdi;
+	printf("CPU: Hello from processor #%d!\n", cpu_info->lapic_id + 1);
+	for (;;)
+		asm("hlt");
+}
+
+void cpu_init(struct stivale2_struct_tag_smp *smp_tag) {
 	// Firstly enable SSE/SSE2 as it's the baseline for x86_64
 	uint64_t cr0 = 0;
 	cr0 = read_cr("0");
@@ -156,4 +165,16 @@ void cpu_init() {
 			printf("CPU: TSC frequency fixed at %u Hz.\n", cpu_tsc_frequency);
 		}
 	}
+
+	printf("CPU: Processor count: %d\n", smp_tag->cpu_count);
+	printf("CPU: Hello from processor #%d!\n",
+		   smp_tag->smp_info[0].lapic_id + 1);
+	for (size_t i = 1; i < smp_tag->cpu_count; i++) {
+		// Wait 50 milliseconds
+		hpet_usleep(50000);
+		static uint8_t stack[32768];
+		smp_tag->smp_info[i].target_stack = (uintptr_t)stack + sizeof(stack);
+		smp_tag->smp_info[i].goto_address = (uintptr_t)cpu_start;
+	}
+	hpet_usleep(50000);
 }

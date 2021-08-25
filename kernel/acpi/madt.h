@@ -24,7 +24,7 @@
 #include <stdint.h>
 
 struct madt {
-	struct sdt sdt;
+	acpi_header_t sdt;
 	uint32_t local_controller_addr;
 	uint32_t flags;
 	char madt_entries_begin[];

@@ -25,14 +25,14 @@
 #include <stddef.h>
 
 struct HpetTable {
-	struct sdt header;
+	acpi_header_t header;
 	uint8_t hardware_rev_id;
 	uint8_t comparator_count : 5;
 	uint8_t counter_size : 1;
 	uint8_t reserved : 1;
 	uint8_t legacy_replacement : 1;
 	uint16_t pci_vendor_id;
-	struct GenericAddressStructure address;
+	acpi_gas_t address;
 	uint8_t hpet_number;
 	uint16_t minimum_tick;
 	uint8_t page_protection;
@@ -59,7 +59,7 @@ void hpet_init(void) {
 	if (!hpet_table) {
 		PANIC("D requires a HPET to be installed");
 	}
-	hpet = (struct Hpet *)(hpet_table->address.Address + MEM_PHYS_OFFSET);
+	hpet = (struct Hpet *)(hpet_table->address.base + MEM_PHYS_OFFSET);
 
 	clk = hpet->general_capabilities >> 32;
 
