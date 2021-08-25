@@ -16,6 +16,7 @@
  */
 
 #include "video.h"
+#include "../klibc/lock.h"
 #define SSFN_CONSOLEBITMAP_TRUECOLOR
 #include "ssfn.h"
 
@@ -26,6 +27,8 @@ extern unsigned char fb_font;
 uint8_t *fb_addr;
 size_t fb_pitch, fb_bpp;
 uint16_t width_s, height_s;
+DECLARE_LOCK(lock);
+DECLARE_LOCK(lock2);
 
 void vid_reset(void) {
 	cursor_x = 0;
@@ -135,7 +138,9 @@ void putchar_at(int c, int position_x, int position_y, uint32_t color,
 }
 
 void putchar_color(int c, uint32_t color, uint32_t bgcolor) {
+	LOCK(lock);
 	putchar_at(c, cursor_x, cursor_y, color, bgcolor);
+	UNLOCK(lock);
 }
 
 void putcharx(int c) {
@@ -149,9 +154,11 @@ void kprint_color(char *string, uint32_t color) {
 }
 
 void kprintbgc(char *string, uint32_t fcolor, uint32_t bcolor) {
+	LOCK(lock2);
 	while (*string) {
 		putchar_color(ssfn_utf8(&string), fcolor, bcolor);
 	}
+	UNLOCK(lock2);
 }
 
 void kprint(char *string) {

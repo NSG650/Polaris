@@ -18,6 +18,7 @@
 #include "cpu.h"
 #include "../kernel/panic.h"
 #include "../klibc/asm.h"
+#include "../klibc/lock.h"
 #include "../klibc/printf.h"
 #include "../sys/hpet.h"
 #include <cpuid.h>
@@ -30,6 +31,8 @@ size_t cpu_fpu_storage_size;
 
 void (*cpu_fpu_save)(void *);
 void (*cpu_fpu_restore)(void *);
+
+DECLARE_LOCK(cpu_lock);
 
 uint64_t rdtsc() {
 	uint32_t edx, eax;
@@ -78,10 +81,12 @@ static void fxrstor(void *region) {
 }
 
 static void cpu_start(void) {
+	LOCK(cpu_lock);
 	uint64_t rdi = 0;
 	asm("nop" : "=D"(rdi));
 	struct stivale2_smp_info *cpu_info = (void *)rdi;
-	printf("CPU: Hello from processor #%d!\n", cpu_info->lapic_id + 1);
+	printf("CPU: Processor %d online!\n", cpu_info->lapic_id);
+	UNLOCK(cpu_lock);
 	for (;;)
 		asm("hlt");
 }
@@ -166,15 +171,13 @@ void cpu_init(struct stivale2_struct_tag_smp *smp_tag) {
 		}
 	}
 
-	printf("CPU: Processor count: %d\n", smp_tag->cpu_count);
-	printf("CPU: Hello from processor #%d!\n",
-		   smp_tag->smp_info[0].lapic_id + 1);
-	for (size_t i = 1; i < smp_tag->cpu_count; i++) {
-		// Wait 50 milliseconds
-		hpet_usleep(50000);
+	printf("CPU: Total processor count: %d\n", smp_tag->cpu_count);
+	printf("CPU: Processor %d online!\n", smp_tag->smp_info[0].lapic_id);
+	for (size_t i = 0; i < smp_tag->cpu_count; i++) {
 		static uint8_t stack[32768];
 		smp_tag->smp_info[i].target_stack = (uintptr_t)stack + sizeof(stack);
 		smp_tag->smp_info[i].goto_address = (uintptr_t)cpu_start;
 	}
+	// Wait 50 milliseconds
 	hpet_usleep(50000);
 }

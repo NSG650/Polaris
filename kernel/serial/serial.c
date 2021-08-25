@@ -17,6 +17,10 @@
 
 #include "serial.h"
 #include "../cpu/ports.h"
+#include "../klibc/lock.h"
+
+DECLARE_LOCK(spinlock);
+DECLARE_LOCK(spinlock2);
 
 int serial_install_port(uint16_t PORT) {
 	port_byte_out(PORT + 1, 0x00); // Disable all interrupts
@@ -46,7 +50,9 @@ int is_transmit_empty(uint16_t PORT) {
 }
 
 void write_serial(char *word) {
+	LOCK(spinlock);
 	write_serial_port(COM1, word);
+	UNLOCK(spinlock);
 }
 
 void write_serial_port(uint16_t PORT, char *word) {
@@ -70,7 +76,9 @@ void write_serial_port_char(uint16_t PORT, char word) {
 }
 
 void write_serial_char(char word) {
+	LOCK(spinlock2);
 	write_serial_port_char(COM1, word);
+	UNLOCK(spinlock2);
 }
 
 int serial_received(uint16_t PORT) {

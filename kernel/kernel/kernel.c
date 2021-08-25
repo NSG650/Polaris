@@ -22,6 +22,7 @@
 #include "../cpu/isr.h"
 #include "../cpu/ports.h"
 #include "../klibc/liballoc.h"
+#include "../klibc/math.h"
 #include "../klibc/printf.h"
 #include "../klibc/rand.h"
 #include "../mm/pmm.h"

@@ -14,8 +14,7 @@ CFLAGS = -Wall -Wextra -g -I stivale/ -I kernel/acpi/lai/include/
 # Internal flags that shouldn't be changed
 
 INTERNALLDFLAGS :=          \
-	-fno-pic -fpie          \
-	-Wl,-static             \
+	-fpie -Wl,-static       \
 	-nostdlib               \
 	-T kernel/linker.ld     \
 	-z max-page-size=0x1000 \
@@ -25,8 +24,7 @@ INTERNALCFLAGS :=        \
 	-std=gnu11           \
 	-ffreestanding       \
 	-fno-stack-protector \
-	-fno-pic -fpie       \
-	-mno-red-zone	     \
+	-fpie -mno-red-zone	 \
 	-masm=intel
 
 # C files and objects

@@ -18,6 +18,7 @@
 #include "alloc.h"
 #include "../mm/pmm.h"
 #include "../mm/vmm.h"
+#include "lock.h"
 #include "math.h"
 #include "mem.h"
 #include "string.h"
@@ -26,6 +27,8 @@ struct alloc_metadata {
 	size_t pages;
 	size_t size;
 };
+
+DECLARE_LOCK(lib_lock);
 
 void *alloc(size_t size) {
 	size_t page_count = DIV_ROUNDUP(size, PAGE_SIZE);
@@ -92,12 +95,13 @@ int liballoc_free(void *ptr, size_t size) {
 }
 
 int liballoc_lock() {
-	// We don't have threads yet... This should be enough
+	LOCK(lib_lock);
 	asm volatile("cli");
 	return 0;
 }
 
 int liballoc_unlock() {
+	UNLOCK(lib_lock);
 	asm volatile("sti");
 	return 0;
 }

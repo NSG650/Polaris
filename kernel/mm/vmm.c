@@ -19,15 +19,6 @@
 #include "../klibc/alloc.h"
 #include "pmm.h"
 
-struct mmap_range {
-	uintptr_t base;
-	size_t length;
-	struct resource *res;
-	off_t offset;
-	int prot;
-	int flags;
-};
-
 struct pagemap *kernel_pagemap = NULL;
 
 void vmm_init(struct stivale2_mmap_entry *memmap, size_t memmap_entries) {

@@ -21,9 +21,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-
-#include "../klibc/resource.h"
-#include "../klibc/types.h"
 #include <stivale2.h>
 
 #define PAGE_SIZE		((size_t)4096)
@@ -55,7 +52,6 @@
 #define PAGE_COW (1ULL)
 
 struct pagemap {
-	lock_t lock;
 	uintptr_t *top_level;
 };
 
@@ -64,9 +60,5 @@ void vmm_switch_pagemap(struct pagemap *pagemap);
 struct pagemap *vmm_new_pagemap(void);
 bool vmm_map_page(struct pagemap *pagemap, uintptr_t virt_addr,
 				  uintptr_t phys_addr, uintptr_t flags);
-// TODO: implmenet mmap
-// void *mmap(struct pagemap *pm, void *addr, size_t length, int prot, int
-// flags,
-//           struct resource *res, off_t offset);
 
 #endif

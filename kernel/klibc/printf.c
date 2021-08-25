@@ -31,12 +31,11 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
+#include "printf.h"
+#include "../serial/serial.h"
+#include "lock.h"
 #include <stdbool.h>
 #include <stdint.h>
-
-#include "printf.h"
-
-#include "../serial/serial.h"
 
 // define this globally (e.g. gcc -DPRINTF_INCLUDE_CONFIG_H ...) to include the
 // printf_config.h header file
@@ -117,9 +116,10 @@
 	#include <float.h>
 #endif
 
+DECLARE_LOCK(prlock);
+
 void _putchar(char character) {
-	putchar_color(character, 0xEEEEEE,
-				  0x000000); // NSG650: use putchar from video driver
+	putchar_color(character, 0xEEEEEE, 0x000000);
 	write_serial_char(character);
 }
 
@@ -931,11 +931,13 @@ static int _vsnprintf(out_fct_type out, char *buffer, const size_t maxlen,
 ///////////////////////////////////////////////////////////////////////////////
 
 int printf_(const char *format, ...) {
+	LOCK(prlock);
 	va_list va;
 	va_start(va, format);
 	char buffer[1];
 	const int ret = _vsnprintf(_out_char, buffer, (size_t)-1, format, va);
 	va_end(va);
+	UNLOCK(prlock);
 	return ret;
 }
 
