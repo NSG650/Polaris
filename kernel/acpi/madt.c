@@ -32,7 +32,7 @@ void init_madt(void) {
 	madt = acpi_find_sdt("APIC", 0);
 	if (!madt) {
 		PANIC("MADT table can't be found");
-		return;
+		__builtin_unreachable();
 	}
 	// Parse the MADT entries
 	for (uint8_t *madt_ptr = (uint8_t *)madt->madt_entries_begin;

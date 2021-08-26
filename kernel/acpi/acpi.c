@@ -82,7 +82,6 @@ void *acpi_find_sdt(const char *signature, int index) {
 		}
 	}
 
-	printf("ACPI: \"%s\" not found\n", signature);
 	return NULL;
 }
 
@@ -106,7 +105,7 @@ __attribute__((noreturn)) void laihost_panic(const char *msg) {
 }
 
 void *laihost_malloc(size_t size) {
-	return (void *)(uintptr_t)kmalloc(size);
+	return kmalloc(size);
 }
 
 void laihost_free(void *ptr, size_t) {
@@ -114,7 +113,7 @@ void laihost_free(void *ptr, size_t) {
 }
 
 void *laihost_realloc(void *ptr, size_t newsize, size_t) {
-	return (void *)(uintptr_t)krealloc(ptr, newsize);
+	return krealloc(ptr, newsize);
 }
 
 void *laihost_map(size_t address, size_t) {

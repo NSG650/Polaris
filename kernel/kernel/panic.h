@@ -20,7 +20,8 @@
 
 #include <stdint.h>
 
-void panic(const char message[], char file[], char assert, uint32_t line);
+__attribute__((noreturn)) void panic(const char message[], char file[],
+									 char assert, uint32_t line);
 
 #define PANIC(b)  (panic(b, __FILE__, 0, __LINE__));
 #define ASSERT(b) ((b) ? (void)0 : panic(#b, __FILE__, 1, __LINE__));

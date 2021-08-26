@@ -363,6 +363,7 @@ void isr_handler(registers_t *r) {
 		sprintf(x, "System Service Exception Not Handled: %s",
 				exceptionMessages[r->isrNumber]);
 		PANIC(x);
+		__builtin_unreachable();
 	}
 	port_byte_out(0xA0, 0x20);
 	port_byte_out(0x20, 0x20);

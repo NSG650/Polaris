@@ -32,13 +32,13 @@ extern void (*cpu_fpu_restore)(void *);
 void cpu_init(struct stivale2_struct_tag_smp *smp_tag);
 
 #define write_cr(reg, val) \
-	__asm__ volatile("mov cr" reg ", %0" ::"r"(val) : "memory");
+	asm volatile("mov cr" reg ", %0" ::"r"(val) : "memory");
 
-#define read_cr(reg)                                             \
-	({                                                           \
-		size_t cr;                                               \
-		__asm__ volatile("mov %0, cr" reg : "=r"(cr)::"memory"); \
-		cr;                                                      \
+#define read_cr(reg)                                         \
+	({                                                       \
+		size_t cr;                                           \
+		asm volatile("mov %0, cr" reg : "=r"(cr)::"memory"); \
+		cr;                                                  \
 	})
 
 #define CPUID_INVARIANT_TSC (1 << 8)
