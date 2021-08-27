@@ -18,21 +18,15 @@
 
 #include "../acpi/acpi.h"
 #include "../cpu/cpu.h"
-#include "../cpu/idt.h"
 #include "../cpu/isr.h"
-#include "../cpu/ports.h"
 #include "../klibc/liballoc.h"
-#include "../klibc/math.h"
 #include "../klibc/printf.h"
-#include "../klibc/rand.h"
 #include "../mm/pmm.h"
 #include "../mm/vmm.h"
 #include "../serial/serial.h"
 #include "../sys/clock.h"
 #include "../sys/hpet.h"
 #include "../video/video.h"
-#include "panic.h"
-#include <stddef.h>
 #include <stdint.h>
 #include <stivale2.h>
 
@@ -43,7 +37,7 @@ static struct stivale2_header_tag_smp smp_hdr_tag = {
   .tag = {.identifier = STIVALE2_HEADER_TAG_SMP_ID, .next = 0}, .flags = 1};
 
 static struct stivale2_header_tag_framebuffer framebuffer_hdr_tag = {
-  // All tags need to begin with an identifier and a pointer to the next tag.
+  // All tags need to begin with an identifier and a pointer to the next tag
   .tag = {.identifier = STIVALE2_HEADER_TAG_FRAMEBUFFER_ID,
 		  .next = (uintptr_t)&smp_hdr_tag},
   .framebuffer_width = 0,
