@@ -32,6 +32,7 @@
 
 static bool use_xsdt;
 static struct rsdt *rsdt;
+static uint8_t revision;
 
 void acpi_init(acpi_xsdp_t *rsdp) {
 	printf("ACPI: Revision: %d\n", rsdp->revision);
@@ -45,7 +46,8 @@ void acpi_init(acpi_xsdp_t *rsdp) {
 		rsdt = (struct rsdt *)((uintptr_t)rsdp->rsdt + MEM_PHYS_OFFSET);
 		printf("ACPI: Found RSDT at %X\n", (uintptr_t)rsdt);
 	}
-	lai_set_acpi_revision(rsdp->revision);
+	revision = rsdp->revision;
+	lai_set_acpi_revision(revision);
 	lai_create_namespace();
 	lai_enable_acpi(0);
 	init_madt();
@@ -176,12 +178,24 @@ uint32_t laihost_pci_readd(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t fun,
 
 void laihost_sleep(uint64_t) {}
 
+static bool is_canonical(uint64_t addr) {
+	return ((addr <= 0x00007FFFFFFFFFFF) ||
+			((addr >= 0xFFFF800000000000) && (addr <= 0xFFFFFFFFFFFFFFFF)));
+}
+
 void *laihost_scan(const char *signature, size_t index) {
 	// The DSDT must be found using a pointer in the FADT
 	if (!memcmp(signature, "DSDT", 4)) {
 		acpi_fadt_t *facp = (acpi_fadt_t *)acpi_find_sdt("FACP", 0);
+		uint64_t dsdt_addr = 0;
 
-		return (void *)(uintptr_t)facp->dsdt + MEM_PHYS_OFFSET;
+		if (is_canonical(facp->x_dsdt) && revision >= 2) {
+			dsdt_addr = facp->x_dsdt;
+		} else {
+			dsdt_addr = facp->dsdt;
+		}
+
+		return (void *)(uintptr_t)dsdt_addr + MEM_PHYS_OFFSET;
 	} else {
 		return acpi_find_sdt(signature, index);
 	}
