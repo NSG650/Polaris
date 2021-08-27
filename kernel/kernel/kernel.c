@@ -96,9 +96,10 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	asm volatile("sti");
 	acpi_init((void *)rsdp_tag->rsdp + MEM_PHYS_OFFSET);
 	hpet_init();
+	cpu_init();
 	struct stivale2_struct_tag_smp *smp_tag =
 	  stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_SMP_ID);
-	cpu_init(smp_tag);
+	smp_init(smp_tag);
 	printf("Hello World!\n");
 	printf("A (4 bytes): %p\n", kmalloc(4));
 	void *ptr = kmalloc(8);

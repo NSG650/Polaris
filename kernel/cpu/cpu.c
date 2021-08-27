@@ -86,12 +86,25 @@ static void cpu_start(void) {
 	asm("nop" : "=D"(rdi));
 	struct stivale2_smp_info *cpu_info = (void *)rdi;
 	printf("CPU: Processor %d online!\n", cpu_info->lapic_id);
+	cpu_init();
 	UNLOCK(cpu_lock);
 	for (;;)
 		asm("hlt");
 }
 
-void cpu_init(struct stivale2_struct_tag_smp *smp_tag) {
+void smp_init(struct stivale2_struct_tag_smp *smp_tag) {
+	printf("CPU: Total processor count: %d\n", smp_tag->cpu_count);
+	printf("CPU: Processor %d online!\n", smp_tag->smp_info[0].lapic_id);
+	for (size_t i = 0; i < smp_tag->cpu_count; i++) {
+		static uint8_t stack[32768];
+		smp_tag->smp_info[i].target_stack = (uintptr_t)stack + sizeof(stack);
+		smp_tag->smp_info[i].goto_address = (uintptr_t)cpu_start;
+	}
+	// Wait 50 milliseconds
+	hpet_usleep(50000);
+}
+
+void cpu_init(void) {
 	// Firstly enable SSE/SSE2 as it's the baseline for x86_64
 	uint64_t cr0 = 0;
 	cr0 = read_cr("0");
@@ -104,14 +117,45 @@ void cpu_init(struct stivale2_struct_tag_smp *smp_tag) {
 	cr4 |= (3 << 9);
 	write_cr("4", cr4);
 
-	// Initialise the PAT
+	// Assume TSC is supported, is way older than x86_64
+	cr4 = read_cr("4");
+	cr4 |= (1 << 2);
+	write_cr("4", cr4);
+
+	// Enable some modern minor x86_64 features, ported from Sigma OS
+	uint32_t a, b, c, d;
+	if (__get_cpuid(7, &a, &b, &c, &d)) {
+		if ((b & CPUID_SMEP)) {
+			cr4 = read_cr("4");
+			cr4 |= (1 << 20); // Enable SMEP
+			write_cr("4", cr4);
+		}
+	}
+
+	if (__get_cpuid(7, &a, &b, &c, &d)) {
+		if ((b & CPUID_SMAP)) {
+			cr4 = read_cr("4");
+			cr4 |= (1 << 21); // Enable SMAP
+			write_cr("4", cr4);
+			asm("clac");
+		}
+	}
+
+	if (__get_cpuid(7, &a, &b, &c, &d)) {
+		if ((c & CPUID_UMIP)) {
+			cr4 = read_cr("4");
+			cr4 |= (1 << 11); // Enable UMIP
+			write_cr("4", cr4);
+		}
+	}
+
+	// Initialize the PAT
 	uint64_t pat_msr = rdmsr(0x277);
 	pat_msr &= 0xFFFFFFFF;
 	// write-protect / write-combining
 	pat_msr |= (uint64_t)0x0105 << 32;
 	wrmsr(0x277, pat_msr);
 
-	uint32_t a, b, c, d;
 	__get_cpuid(1, &a, &b, &c, &d);
 	if ((c & bit_XSAVE)) {
 		cr4 = read_cr("4");
@@ -143,41 +187,4 @@ void cpu_init(struct stivale2_struct_tag_smp *smp_tag) {
 		cpu_fpu_save = fxsave;
 		cpu_fpu_restore = fxrstor;
 	}
-	__get_cpuid(1, &a, &b, &c, &d);
-	if ((c & CPUID_TSC_DEADLINE)) {
-		// Check for invariant TSC
-		__get_cpuid(0x80000007, &a, &b, &c, &d);
-		if ((d & CPUID_INVARIANT_TSC)) {
-			// Calibrate the TSC
-			for (int i = 0; i < MAX_TSC_CALIBRATIONS; i++) {
-				uint64_t initial_tsc_reading = rdtsc();
-
-				// Wait 1 millisecond
-				hpet_usleep(1000);
-
-				uint64_t final_tsc_reading = rdtsc();
-
-				uint64_t freq =
-				  (final_tsc_reading - initial_tsc_reading) * 1000;
-				printf("CPU: TSC reading #%d yielded a frequency of %u Hz.\n",
-					   i, freq);
-
-				cpu_tsc_frequency += freq;
-			}
-
-			// Average out all readings
-			cpu_tsc_frequency /= MAX_TSC_CALIBRATIONS;
-			printf("CPU: TSC frequency fixed at %u Hz.\n", cpu_tsc_frequency);
-		}
-	}
-
-	printf("CPU: Total processor count: %d\n", smp_tag->cpu_count);
-	printf("CPU: Processor %d online!\n", smp_tag->smp_info[0].lapic_id);
-	for (size_t i = 0; i < smp_tag->cpu_count; i++) {
-		static uint8_t stack[32768];
-		smp_tag->smp_info[i].target_stack = (uintptr_t)stack + sizeof(stack);
-		smp_tag->smp_info[i].goto_address = (uintptr_t)cpu_start;
-	}
-	// Wait 50 milliseconds
-	hpet_usleep(50000);
 }

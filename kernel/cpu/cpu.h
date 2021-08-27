@@ -29,7 +29,8 @@ extern size_t cpu_fpu_storage_size;
 extern void (*cpu_fpu_save)(void *);
 extern void (*cpu_fpu_restore)(void *);
 
-void cpu_init(struct stivale2_struct_tag_smp *smp_tag);
+void smp_init(struct stivale2_struct_tag_smp *smp_tag);
+void cpu_init(void);
 
 #define write_cr(reg, val) \
 	asm volatile("mov cr" reg ", %0" ::"r"(val) : "memory");
@@ -43,5 +44,8 @@ void cpu_init(struct stivale2_struct_tag_smp *smp_tag);
 
 #define CPUID_INVARIANT_TSC (1 << 8)
 #define CPUID_TSC_DEADLINE	(1 << 24)
+#define CPUID_SMEP			(1 << 7)
+#define CPUID_SMAP			(1 << 20)
+#define CPUID_UMIP			(1 << 2)
 
 #endif
