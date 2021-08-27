@@ -17,21 +17,83 @@
 
 #include "rand.h"
 #include "../sys/clock.h"
+#include <cpuid.h>
 
-static uint64_t next = 0x5E8;
-static uint64_t r = 0xF;
+// Mersenne Twister
+// Based on mt19937ar.c found here:
+// http://www.math.sci.hiroshima-u.ac.jp/m-mat/MT/MT2002/CODES/mt19937ar.c
 
-static uint64_t get_rdseed(void) {
-	r += next / next * next;
-	return r + 0xF;
+#define W 64
+#define N 312
+#define M 156
+#define R 31
+
+#define A 0xB5026F5AA96619E9ULL
+#define U 29
+#define D 0x5555555555555555ULL
+#define S 17
+#define B 0x71D67FFFEDA60000ULL
+#define T 37
+#define C 0xFFF7EEE000000000ULL
+#define L 43
+#define F 6364136223846793005
+
+#define MASK_LOW ((1ULL << R) - 1)
+#define MASK_UPP (~MASK_LOW)
+
+static uint64_t state[N];
+static uint32_t index = N + 1;
+
+static void twist(void) {
+	for (uint32_t i = 0; i < N; ++i) {
+		uint64_t x = (state[i] & MASK_UPP) + (state[(i + 1) % N] & MASK_LOW);
+		uint64_t xa = x >> 1;
+		if (x & 1) {
+			xa ^= A;
+		}
+		state[i] = state[(i + M) % N] ^ xa;
+	}
+	index = 0;
+}
+
+// Generate number that can be used as seed
+uint64_t get_rdseed(void) {
+	uint64_t rdseed;
+	uint32_t a, b, c, d;
+
+	// Use rdseed when possible
+	__get_cpuid(7, &a, &b, &c, &d);
+	if ((b & bit_RDSEED)) {
+		asm("rdseed %0" : "=r"(rdseed));
+	} else {
+		rdseed = get_unix_timestamp();
+	}
+
+	return rdseed;
 }
 
 void srand(uint64_t seed) {
-	next = seed;
+	state[0] = seed;
+	index = N;
+	for (uint32_t i = 1; i < N; ++i) {
+		state[i] = F * (state[i - 1] ^ (state[i - 1] >> (W - 2))) + i;
+	}
 }
 
 uint64_t rand(void) {
-	next = next ^ (get_rdseed() / get_unix_timestamp());
-	next = next * 1103515245 + 12345;
-	return next;
+	if (index >= N) {
+		if (index > N) {
+			srand(5489);
+		}
+		twist();
+	}
+
+	uint64_t y = state[index];
+	y ^= (y >> U) & D;
+	y ^= (y << S) & B;
+	y ^= (y << T) & C;
+	y ^= y >> L;
+
+	++index;
+	return y;
 }

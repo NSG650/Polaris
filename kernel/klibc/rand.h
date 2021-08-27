@@ -22,5 +22,6 @@
 
 uint64_t rand(void);
 void srand(uint64_t seed);
+uint64_t get_rdseed(void);
 
 #endif
