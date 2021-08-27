@@ -33,3 +33,4 @@ qemu-system-x86_64 -hda d.img -m 512M
 - [x] Paging
 - [x] ACPI
 - [x] HPET  
+- [x] SMP 
