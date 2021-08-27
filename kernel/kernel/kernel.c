@@ -19,7 +19,6 @@
 #include "../acpi/acpi.h"
 #include "../cpu/cpu.h"
 #include "../cpu/isr.h"
-#include "../klibc/liballoc.h"
 #include "../klibc/printf.h"
 #include "../mm/pmm.h"
 #include "../mm/vmm.h"
@@ -27,6 +26,7 @@
 #include "../sys/clock.h"
 #include "../sys/hpet.h"
 #include "../video/video.h"
+#include <liballoc.h>
 #include <stdint.h>
 #include <stivale2.h>
 

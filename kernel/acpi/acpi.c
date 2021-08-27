@@ -18,7 +18,6 @@
 
 #include "../cpu/ports.h"
 #include "../kernel/panic.h"
-#include "../klibc/liballoc.h"
 #include "../klibc/printf.h"
 #include "../mm/vmm.h"
 #include "../sys/pci.h"
@@ -26,6 +25,7 @@
 #include <lai/core.h>
 #include <lai/helpers/sci.h>
 #include <lai/host.h>
+#include <liballoc.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>

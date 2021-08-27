@@ -1,18 +1,17 @@
 # Name of the final executable
-
 KERNEL := d.elf
 
 # The compiler we are using
-
-CC = x86_64-elf-gcc
-AS = nasm
+CC := x86_64-elf-gcc
+AS := nasm
 
 # Compiler flags
-
-CFLAGS = -Wall -Wextra -g -I stivale/ -I kernel/acpi/lai/include/
+CFLAGS :=                             \
+	-Wall -Wextra -g -I stivale/      \
+	-I kernel/klibc/liballoc/include/ \
+	-I kernel/acpi/lai/include/
 
 # Internal flags that shouldn't be changed
-
 INTERNALLDFLAGS :=          \
 	-fpie -Wl,-static       \
 	-nostdlib               \
@@ -28,8 +27,8 @@ INTERNALCFLAGS :=        \
 	-masm=intel
 
 # C files and objects
-
-CFILES := $(wildcard kernel/*/*.c kernel/acpi/lai/*/*.c)
+CFILES := $(wildcard kernel/*/*.c kernel/acpi/lai/*/*.c \
+			kernel/klibc/liballoc/liballoc.c)
 ASMFILES := $(wildcard kernel/*/*.asm)
 OBJ := $(CFILES:.c=.o) $(ASMFILES:.asm=.o)
 
@@ -46,13 +45,12 @@ $(KERNEL): $(OBJ)
 %.o: %.asm
 	$(AS) -f elf64 $< -o $@
 
-
 clean:
 	rm -rf $(KERNEL) $(OBJ)
 	rm -rf d.hdd img_mount
 
 image:
-	./image.sh
+	@./image.sh
 
 run:
 	qemu-system-x86_64 -hda d.hdd -serial stdio -m 512M
