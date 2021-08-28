@@ -123,7 +123,7 @@ void cpu_init(void) {
 	write_cr("4", cr4);
 
 	// Enable some modern minor x86_64 features, ported from Sigma OS
-	uint32_t a, b, c, d;
+	uint32_t a = 0, b = 0, c = 0, d = 0;
 	if (__get_cpuid(7, &a, &b, &c, &d)) {
 		if ((b & CPUID_SMEP)) {
 			cr4 = read_cr("4");

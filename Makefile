@@ -11,6 +11,9 @@ CFLAGS :=                             \
 	-I kernel/klibc/liballoc/include/ \
 	-I kernel/acpi/lai/include/
 
+# Assembler flags
+ASFLAGS := -g
+
 # Internal flags that shouldn't be changed
 INTERNALLDFLAGS :=          \
 	-fpie -Wl,-static       \
@@ -43,7 +46,7 @@ $(KERNEL): $(OBJ)
 	$(CC) $(CFLAGS) $(INTERNALCFLAGS) -c $< -o $@
 
 %.o: %.asm
-	$(AS) -f elf64 $< -o $@
+	$(AS) $(ASFLAGS) -f elf64 $< -o $@
 
 clean:
 	rm -rf $(KERNEL) $(OBJ)

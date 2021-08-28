@@ -83,11 +83,11 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	pmm_reclaim_memory((void *)memmap_tag->memmap, memmap_tag->entries);
 	pmm_init((void *)memmap_tag->memmap, memmap_tag->entries);
 	vmm_init((void *)memmap_tag->memmap, memmap_tag->entries);
-	struct stivale2_struct_tag_rsdp *rsdp_tag =
-	  stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_RSDP_ID);
 	serial_install();
 	isr_install();
 	asm volatile("sti");
+	struct stivale2_struct_tag_rsdp *rsdp_tag =
+	  stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_RSDP_ID);
 	acpi_init((void *)rsdp_tag->rsdp + MEM_PHYS_OFFSET);
 	hpet_init();
 	cpu_init();

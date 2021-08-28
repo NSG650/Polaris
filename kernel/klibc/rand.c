@@ -59,7 +59,7 @@ static void twist(void) {
 // Generate number that can be used as seed
 uint64_t get_rdseed(void) {
 	uint64_t rdseed;
-	uint32_t a, b, c, d;
+	uint32_t a = 0, b = 0, c = 0, d = 0;
 
 	// Use rdseed when possible
 	__get_cpuid(7, &a, &b, &c, &d);
