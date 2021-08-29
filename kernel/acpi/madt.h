@@ -58,18 +58,11 @@ struct madt_iso {
 	uint16_t flags;
 } __attribute__((packed));
 
-struct madt_nmi {
-	struct madt_header madtHeader;
-	uint8_t processor;
-	uint16_t flags;
-	uint8_t lint;
-} __attribute__((packed));
-
 DYNARRAY_EXTERN(struct madt_lapic *, madt_local_apics);
 DYNARRAY_EXTERN(struct madt_ioapic *, madt_io_apics);
 DYNARRAY_EXTERN(struct madt_iso *, madt_isos);
-DYNARRAY_EXTERN(struct madt_nmi *, madt_nmis);
 
+uintptr_t acpi_get_lapic(void);
 void init_madt(void);
 
 #endif

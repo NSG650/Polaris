@@ -49,7 +49,7 @@ void acpi_init(acpi_xsdp_t *rsdp) {
 	revision = rsdp->revision;
 	lai_set_acpi_revision(revision);
 	lai_create_namespace();
-	lai_enable_acpi(0);
+	lai_enable_acpi(1);
 	init_madt();
 }
 

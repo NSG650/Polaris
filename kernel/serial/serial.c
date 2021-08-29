@@ -51,8 +51,10 @@ int is_transmit_empty(uint16_t PORT) {
 
 void write_serial(char *word) {
 	LOCK(spinlock);
+	asm volatile("cli");
 	write_serial_port(COM1, word);
 	UNLOCK(spinlock);
+	asm volatile("sti");
 }
 
 void write_serial_port(uint16_t PORT, char *word) {

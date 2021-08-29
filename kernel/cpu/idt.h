@@ -20,27 +20,22 @@
 
 #include <stdint.h>
 
-#define KERNEL_CS 0x08
-
 typedef struct {
-	uint16_t low_offset;
-	uint16_t sel;
-	uint8_t always0;
-
+	uint16_t offset_lo;
+	uint16_t selector;
+	uint8_t ist;
 	uint8_t flags;
-	uint16_t mid_offset;
-	uint32_t high_offset;
-	uint32_t always0again;
+	uint16_t offset_mid;
+	uint32_t offset_hi;
+	uint32_t zero;
 } __attribute__((packed)) idt_gate_t;
 
 typedef struct {
-	uint16_t limit;
-	uint64_t base;
+	uint16_t size;
+	uint64_t address;
 } __attribute__((packed)) idt_register_t;
 
-#define IDT_ENTRIES 256
-
-void set_idt_gate(int n, uint64_t handler);
+void set_idt_gate(int n, void *handler);
 void set_idt(void);
 
 #endif

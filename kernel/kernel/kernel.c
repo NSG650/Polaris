@@ -17,8 +17,10 @@
  */
 
 #include "../acpi/acpi.h"
+#include "../cpu/apic.h"
 #include "../cpu/cpu.h"
 #include "../cpu/isr.h"
+#include "../cpu/pic.h"
 #include "../klibc/printf.h"
 #include "../mm/pmm.h"
 #include "../mm/vmm.h"
@@ -86,11 +88,14 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	serial_install();
 	isr_install();
 	asm volatile("sti");
+	cpu_init();
 	struct stivale2_struct_tag_rsdp *rsdp_tag =
 	  stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_RSDP_ID);
 	acpi_init((void *)rsdp_tag->rsdp + MEM_PHYS_OFFSET);
 	hpet_init();
-	cpu_init();
+	pic_init();
+	apic_init();
+	apic_timer_init();
 	struct stivale2_struct_tag_smp *smp_tag =
 	  stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_SMP_ID);
 	smp_init(smp_tag);

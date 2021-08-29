@@ -25,7 +25,12 @@ struct madt *madt;
 DYNARRAY_GLOBAL(madt_local_apics);
 DYNARRAY_GLOBAL(madt_io_apics);
 DYNARRAY_GLOBAL(madt_isos);
-DYNARRAY_GLOBAL(madt_nmis);
+
+uintptr_t lapic_addr = 0;
+
+uintptr_t acpi_get_lapic(void) {
+	return lapic_addr;
+}
 
 void init_madt(void) {
 	// Search for MADT table
@@ -34,6 +39,7 @@ void init_madt(void) {
 		PANIC("MADT table can't be found");
 		__builtin_unreachable();
 	}
+	lapic_addr = madt->local_controller_addr;
 	// Parse the MADT entries
 	for (uint8_t *madt_ptr = (uint8_t *)madt->madt_entries_begin;
 		 (uintptr_t)madt_ptr < (uintptr_t)madt + madt->sdt.length;
@@ -52,14 +58,13 @@ void init_madt(void) {
 				DYNARRAY_PUSHBACK(madt_io_apics, (void *)madt_ptr);
 				break;
 			case 2:
-				// Interrupt Source Override
+				// Interrupt source override
 				printf("ACPI/MADT: Found ISO 0x%X\n", madt_isos.length);
 				DYNARRAY_PUSHBACK(madt_isos, (void *)madt_ptr);
 				break;
-			case 4:
-				// NMI
-				printf("ACPI/MADT: Found NMI 0x%X\n", madt_nmis.length);
-				DYNARRAY_PUSHBACK(madt_nmis, (void *)madt_ptr);
+			case 5:
+				// Local APIC address override
+				lapic_addr = *(uint64_t *)madt_ptr + 4;
 				break;
 		}
 	}

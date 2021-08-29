@@ -932,12 +932,14 @@ static int _vsnprintf(out_fct_type out, char *buffer, const size_t maxlen,
 
 int printf_(const char *format, ...) {
 	LOCK(prlock);
+	asm volatile("cli");
 	va_list va;
 	va_start(va, format);
 	char buffer[1];
 	const int ret = _vsnprintf(_out_char, buffer, (size_t)-1, format, va);
 	va_end(va);
 	UNLOCK(prlock);
+	asm volatile("sti");
 	return ret;
 }
 

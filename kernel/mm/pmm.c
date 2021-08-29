@@ -128,7 +128,3 @@ void pmm_free(void *ptr, size_t count) {
 	for (size_t i = page; i < page + count; i++)
 		bitmap_unset(bitmap, i);
 }
-
-uintptr_t return_highest_page(void) {
-	return highest_page;
-}

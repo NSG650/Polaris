@@ -1,0 +1,23 @@
+#include "pic.h"
+#include "ports.h"
+
+static void pic_disable(void) {
+	port_byte_out(0xA1, 0xFF);
+	port_byte_out(0x21, 0xFF);
+}
+
+void pic_init(void) {
+	// Remap the PIC
+	port_byte_out(0x20, 0x11);
+	port_byte_out(0xA0, 0x11);
+	port_byte_out(0x21, 0x20);
+	port_byte_out(0xA1, 0x28);
+	port_byte_out(0x21, 0x04);
+	port_byte_out(0xA1, 0x02);
+	port_byte_out(0x21, 0x01);
+	port_byte_out(0xA1, 0x01);
+	port_byte_out(0x21, 0x0);
+	port_byte_out(0xA1, 0x0);
+
+	pic_disable();
+}

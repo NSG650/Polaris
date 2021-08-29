@@ -18,8 +18,7 @@
  * limitations under the License.
  */
 
-#include "alloc.h"
-#include "mem.h"
+#include <liballoc.h>
 #include <stddef.h>
 
 #define DYNARRAY_STRUCT(TYPE) \
@@ -37,26 +36,26 @@
 
 #define DYNARRAY_NEW(TYPE, THIS) DYNARRAY_STRUCT(TYPE) THIS = {0}
 
-#define DYNARRAY_INIT(THIS, INITIAL_SIZE)                               \
-	{                                                                   \
-		(THIS).storage_size = INITIAL_SIZE;                             \
-		(THIS).storage =                                                \
-		  alloc((THIS).storage_size * sizeof(typeof(*(THIS).storage))); \
+#define DYNARRAY_INIT(THIS, INITIAL_SIZE)                                 \
+	{                                                                     \
+		(THIS).storage_size = INITIAL_SIZE;                               \
+		(THIS).storage =                                                  \
+		  kmalloc((THIS).storage_size * sizeof(typeof(*(THIS).storage))); \
 	}
 
 #define DYNARRAY_DEL(THIS) \
-	{ free((THIS).storage); }
+	{ kfree((THIS).storage); }
 
-#define DYNARRAY_GROW(THIS)                                                   \
-	{                                                                         \
-		if ((THIS).storage == NULL) {                                         \
-			DYNARRAY_INIT(THIS, 1);                                           \
-		} else {                                                              \
-			(THIS).storage_size *= 2;                                         \
-			(THIS).storage =                                                  \
-			  realloc((THIS).storage,                                         \
-					  (THIS).storage_size * sizeof(typeof(*(THIS).storage))); \
-		}                                                                     \
+#define DYNARRAY_GROW(THIS)                                                    \
+	{                                                                          \
+		if ((THIS).storage == NULL) {                                          \
+			DYNARRAY_INIT(THIS, 1);                                            \
+		} else {                                                               \
+			(THIS).storage_size *= 2;                                          \
+			(THIS).storage =                                                   \
+			  krealloc((THIS).storage,                                         \
+					   (THIS).storage_size * sizeof(typeof(*(THIS).storage))); \
+		}                                                                      \
 	}
 
 #define DYNARRAY_PUSHBACK(THIS, ITEM)             \

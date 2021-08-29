@@ -155,10 +155,12 @@ void kprint_color(char *string, uint32_t color) {
 
 void kprintbgc(char *string, uint32_t fcolor, uint32_t bcolor) {
 	LOCK(lock2);
+	asm volatile("cli");
 	while (*string) {
 		putchar_color(ssfn_utf8(&string), fcolor, bcolor);
 	}
 	UNLOCK(lock2);
+	asm volatile("sti");
 }
 
 void kprint(char *string) {

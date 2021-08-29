@@ -281,5 +281,6 @@ typedef void (*eventHandlers_t)(registers_t *);
 
 void isr_install(void);
 extern void isr_handler(registers_t *r);
+void isr_register_handler(int n, void *handler);
 
 #endif
