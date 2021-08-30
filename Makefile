@@ -9,7 +9,8 @@ AS := nasm
 CFLAGS :=                             \
 	-Wall -Wextra -g -I stivale/      \
 	-I kernel/klibc/liballoc/include/ \
-	-I kernel/acpi/lai/include/
+	-I kernel/acpi/lai/include/ -MMD  \
+	-MP
 
 # Assembler flags
 ASFLAGS := -g
@@ -19,7 +20,7 @@ INTERNALLDFLAGS :=          \
 	-fpie -Wl,-static       \
 	-nostdlib               \
 	-T kernel/linker.ld     \
-	-z max-page-size=0x1000 \
+	-z max-page-size=4096   \
 	-lgcc
 
 INTERNALCFLAGS :=        \
@@ -29,28 +30,30 @@ INTERNALCFLAGS :=        \
 	-fpie -mno-red-zone	 \
 	-masm=intel
 
-# C files and objects
 CFILES := $(wildcard kernel/*/*.c kernel/acpi/lai/*/*.c \
 			kernel/klibc/liballoc/liballoc.c)
 ASMFILES := $(wildcard kernel/*/*.asm)
-OBJ := $(CFILES:.c=.o) $(ASMFILES:.asm=.o)
+OBJECTS := $(CFILES:.c=.o) $(ASMFILES:.asm=.o)
+DEPENDS := $(CFILES:.c=.d)
 
 .PHONY: all clean
 
 all: $(KERNEL)
 
-$(KERNEL): $(OBJ)
-	$(CC) $(INTERNALLDFLAGS) $(OBJ) -o $@
+$(KERNEL): $(OBJECTS)
+	$(CC) $(INTERNALLDFLAGS) $^ -o $@
 
-%.o: %.c
+-include $(DEPENDS)
+
+%.o: %.c Makefile
 	$(CC) $(CFLAGS) $(INTERNALCFLAGS) -c $< -o $@
 
 %.o: %.asm
 	$(AS) $(ASFLAGS) -f elf64 $< -o $@
 
 clean:
-	rm -rf $(KERNEL) $(OBJ)
-	rm -rf d.hdd img_mount
+	$(RM) $(OBJECTS) $(DEPENDS) $(KERNEL)
+	$(RM) -r d.hdd img_mount
 
 image:
 	@./image.sh

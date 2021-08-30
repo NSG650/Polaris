@@ -1,5 +1,26 @@
 #!/bin/sh
 
+unmount_and_exit() {
+	if [[ "$OSTYPE" == "darwin"* ]]; then
+		if [ -d /Volumes/D ]; then
+			sync
+			hdiutil unmount /Volumes/D
+		fi
+	else
+		if [ -d img_mount ]; then
+			sync
+			sudo umount img_mount
+		fi
+
+		if [ -n "$(losetup --list | grep "d.hdd" | cut -d " " -f1)" ]; then
+			sudo losetup -d $(losetup --list | grep "d.hdd" | cut -d " " -f1)
+		fi
+	fi
+	exit 1
+}
+
+trap 'unmount_and_exit' ERR
+
 if [[ "$OSTYPE" == "darwin"* ]]; then
 	echo "==> Making an image on macOS..."
 
@@ -8,7 +29,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	echo "==> Creating a .dmg file (limitation from hdiutil), FAT32, 64MB..."
 	hdiutil create -layout GPTSPUD -size 64m -fs FAT32 -volname d d.dmg
 	echo ""
-	echo "==> Renaming .dmg to .img..."
+	echo "==> Renaming .dmg to .hdd..."
 	mv d.dmg d.hdd
 
 	# Installing bootloader
@@ -76,10 +97,11 @@ else
 	{
 		sudo cp -v /usr/local/share/limine/limine.sys img_mount/
 		sudo cp -v /usr/local/share/limine/BOOTX64.EFI img_mount/EFI/BOOT/
-	} 2> /dev/null
+		error_code = $?
+	} 2> /dev/null | true
 
 	# Alternative path used as default in Limine AUR package
-	if [[ $? != 0 ]]; then
+	if [[ error_code != 0 ]]; then
 		sudo cp -v /usr/share/limine/limine.sys img_mount/
 		sudo cp -v /usr/share/limine/BOOTX64.EFI img_mount/EFI/BOOT/
 	fi
