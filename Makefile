@@ -48,7 +48,7 @@ $(KERNEL): $(OBJECTS)
 %.o: %.c Makefile
 	$(CC) $(CFLAGS) $(INTERNALCFLAGS) -c $< -o $@
 
-%.o: %.asm
+%.o: %.asm Makefile
 	$(AS) $(ASFLAGS) -f elf64 $< -o $@
 
 clean:

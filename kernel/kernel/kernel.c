@@ -95,7 +95,6 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	hpet_init();
 	pic_init();
 	apic_init();
-	apic_timer_init();
 	struct stivale2_struct_tag_smp *smp_tag =
 	  stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_SMP_ID);
 	smp_init(smp_tag);

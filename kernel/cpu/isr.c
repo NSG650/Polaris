@@ -322,19 +322,15 @@ static eventHandlers_t eventHandlers[256] = {NULL};
 
 void isr_handler(registers_t *r) {
 	if (r->isrNumber < 32) {
-		uint64_t cr2;
-		asm volatile("cli\n"
-					 "mov %%cr2, %0"
-					 : "=a"(cr2));
 		char x[72];
 		sprintf(x, "System Service Exception Not Handled: %s",
 				exceptionMessages[r->isrNumber]);
 		PANIC(x);
 		__builtin_unreachable();
 	}
-	apic_eoi();
 	if (eventHandlers[r->isrNumber] != NULL)
 		eventHandlers[r->isrNumber](r);
+	apic_eoi();
 }
 
 void isr_register_handler(int n, void *handler) {

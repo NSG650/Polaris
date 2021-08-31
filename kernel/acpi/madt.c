@@ -18,6 +18,7 @@
 
 #include "madt.h"
 #include "../kernel/panic.h"
+#include "../klibc/asm.h"
 #include "../klibc/printf.h"
 
 struct madt *madt;
@@ -25,6 +26,7 @@ struct madt *madt;
 DYNARRAY_GLOBAL(madt_local_apics);
 DYNARRAY_GLOBAL(madt_io_apics);
 DYNARRAY_GLOBAL(madt_isos);
+DYNARRAY_GLOBAL(madt_nmis);
 
 uintptr_t lapic_addr = 0;
 
@@ -62,9 +64,14 @@ void init_madt(void) {
 				printf("ACPI/MADT: Found ISO 0x%X\n", madt_isos.length);
 				DYNARRAY_PUSHBACK(madt_isos, (void *)madt_ptr);
 				break;
+			case 4:
+				// NMI
+				printf("ACPI/MADT: Found NMI 0x%X\n", madt_nmis.length);
+				DYNARRAY_PUSHBACK(madt_nmis, (void *)madt_ptr);
+				break;
 			case 5:
 				// Local APIC address override
-				lapic_addr = *(uint64_t *)madt_ptr + 4;
+				lapic_addr = QWORD_PTR(madt_ptr + 4);
 				break;
 		}
 	}

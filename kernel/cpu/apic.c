@@ -16,47 +16,74 @@
 
 #include "apic.h"
 #include "../acpi/madt.h"
-#include "../klibc/printf.h"
 #include "../mm/vmm.h"
-#include "../sys/hpet.h"
-#include <stdint.h>
+#include "../sys/mmio.h"
+#include "isr.h"
+#include <lai/helpers/pm.h>
+#include <lai/helpers/sci.h>
 
 static uintptr_t lapic_addr = 0;
+typeof(madt_nmis) nmis;
 
 static uint32_t lapic_read(uint32_t reg) {
-	return *((volatile uint32_t *)(lapic_addr + MEM_PHYS_OFFSET + reg));
+	return mmind((void *)lapic_addr + MEM_PHYS_OFFSET + reg);
 }
 
 static void lapic_write(uint32_t reg, uint32_t value) {
-	*((volatile uint32_t *)(lapic_addr + MEM_PHYS_OFFSET + reg)) = value;
+	mmoutd((void *)lapic_addr + MEM_PHYS_OFFSET + reg, value);
 }
 
-void lapic_enable_spurious(void) {
+static void lapic_set_nmi(uint8_t vec, uint16_t flags, uint8_t lint) {
+	uint32_t nmi = 0x800 | vec;
+
+	if (flags & 2) {
+		nmi |= 1 << 13;
+	}
+
+	if (flags & 8) {
+		nmi |= 1 << 15;
+	}
+
+	if (lint == 0) {
+		lapic_write(0x350, nmi);
+	} else if (lint == 1) {
+		lapic_write(0x360, nmi);
+	}
+}
+
+void lapic_init(void) {
+	lapic_write(0x80, 0);
 	lapic_write(0xF0, lapic_read(0xF0) | 0x100);
+	lapic_write(0xE0, 0xFFFFFFFF);
+	lapic_write(0xD0, 0x1000000);
+	nmis = madt_nmis;
+	for (size_t i = 0; i < nmis.length; i++) {
+		struct madt_nmi *nmi = nmis.storage[i];
+		lapic_set_nmi(2, nmi->flags, nmi->lint);
+	}
 }
 
 typeof(madt_io_apics) ioapics;
 
 static uint32_t ioapic_read(uintptr_t ioapic_address, size_t reg) {
-	*((volatile uint32_t *)(ioapic_address + MEM_PHYS_OFFSET)) = reg;
-	return *((volatile uint32_t *)(ioapic_address + MEM_PHYS_OFFSET + 16));
+	mmoutd((void *)ioapic_address + MEM_PHYS_OFFSET, reg & 0xFF);
+	return mmind((void *)ioapic_address + MEM_PHYS_OFFSET + 16);
 }
 
 static void ioapic_write(uintptr_t ioapic_address, size_t reg, uint32_t data) {
-	*((volatile uint32_t *)(ioapic_address + MEM_PHYS_OFFSET)) = reg;
-	*((volatile uint32_t *)(ioapic_address + MEM_PHYS_OFFSET + 16)) = data;
+	mmoutd((void *)ioapic_address + MEM_PHYS_OFFSET, reg & 0xFF);
+	mmoutd((void *)ioapic_address + MEM_PHYS_OFFSET + 16, data);
 }
 
 static uint32_t get_gsi_count(uintptr_t ioapic_address) {
-	return (ioapic_read(ioapic_address, 0x1) & 0xFF0000) >> 16;
+	return (ioapic_read(ioapic_address, 1) & 0xFF0000) >> 16;
 }
 
 static struct madt_ioapic *get_ioapic_by_gsi(uint32_t gsi) {
 	for (size_t i = 0; i < ioapics.length; i++) {
 		struct madt_ioapic *ioapic = ioapics.storage[i];
 		if (ioapic->gsib <= gsi &&
-			ioapic->gsib + get_gsi_count(ioapic->addr + MEM_PHYS_OFFSET) >
-			  gsi) {
+			ioapic->gsib + get_gsi_count(ioapic->addr) > gsi) {
 			return ioapic;
 		}
 	}
@@ -68,47 +95,58 @@ void ioapic_init(void) {
 	ioapics = madt_io_apics;
 }
 
-void ioapic_redirect_gsi(uint8_t lapic_id, uint32_t gsi, uint8_t vec,
-						 uint16_t flags, bool status) {
-	size_t io_apic = get_ioapic_by_gsi(gsi)->apic_id;
+void ioapic_redirect_gsi(uint32_t gsi, uint8_t vec, uint16_t flags) {
+	size_t io_apic = get_ioapic_by_gsi(gsi)->addr;
 
-	uint64_t redirect = vec;
+	uint32_t low_index = 0x10 + (gsi - get_ioapic_by_gsi(gsi)->gsib) * 2;
+	uint32_t high_index = low_index + 1;
+
+	uint32_t high = ioapic_read(io_apic, high_index);
+
+	// Set APIC ID
+	high &= ~0xFF000000;
+	high |= ioapic_read(io_apic, 0) << 24;
+	ioapic_write(io_apic, high_index, high);
+
+	uint32_t low = ioapic_read(io_apic, low_index);
+
+	// Unmask the IRQ
+	low &= ~(1 << 16);
+
+	// Set to physical delivery mode
+	low &= ~(1 << 11);
+
+	// Set to fixed delivery mode
+	low &= ~0x700;
+
+	// Set delivery vector
+	low &= ~0xFF;
+	low |= vec;
 
 	// Active high(0) or low(1)
 	if (flags & 2) {
-		redirect |= (1 << 13);
+		low |= 1 << 13;
 	}
 
 	// Edge(0) or level(1) triggered
 	if (flags & 8) {
-		redirect |= (1 << 15);
+		low |= 1 << 15;
 	}
 
-	if (!status) {
-		// Set mask bit
-		redirect |= (1 << 16);
-	}
-
-	// Set target APIC ID
-	redirect |= ((uint64_t)lapic_id) << 56;
-	uint32_t ioredtbl = (gsi - ioapics.storage[io_apic]->gsib) * 2 + 16;
-
-	ioapic_write(io_apic, ioredtbl + 0, (uint32_t)redirect);
-	ioapic_write(io_apic, ioredtbl + 1, (uint32_t)(redirect >> 32));
+	ioapic_write(io_apic, low_index, low);
 }
 
-void ioapic_redirect_irq(uint8_t lapic_id, uint8_t irq, uint8_t vect,
-						 bool status) {
+void ioapic_redirect_irq(uint32_t irq, uint8_t vect) {
 	typeof(madt_isos) isos = madt_isos;
 	for (size_t i = 0; i < isos.length; i++) {
 		if (isos.storage[i]->irq_source == irq) {
-			ioapic_redirect_gsi(lapic_id, vect, isos.storage[i]->gsi,
-								isos.storage[i]->flags, status);
+			ioapic_redirect_gsi(isos.storage[i]->gsi, vect,
+								isos.storage[i]->flags);
 			return;
 		}
 	}
 
-	ioapic_redirect_gsi(lapic_id, vect, irq, 0, status);
+	ioapic_redirect_gsi(irq, vect, 0);
 }
 
 void apic_send_ipi(uint8_t lapic_id, uint8_t vector) {
@@ -120,24 +158,20 @@ void apic_eoi(void) {
 	lapic_write(0x0B0, 0);
 }
 
-void apic_timer_init(void) {
-	lapic_addr = acpi_get_lapic();
+void sci_interrupt(registers_t *) {
+	uint16_t ev = lai_get_sci_event();
 
-	lapic_write(0x3E0, 0x3);
-	lapic_write(0x380, 0xFFFFFFFF);
-
-	hpet_usleep(10000);
-	lapic_write(0x320, 0x10000);
-
-	uint32_t tickIn10ms = 0xFFFFFFFF - lapic_read(0x390);
-
-	lapic_write(0x320, 32 | 0x20000);
-	lapic_write(0x3E0, 0x3);
-	lapic_write(0x380, tickIn10ms);
+	if (ev & ACPI_POWER_BUTTON) {
+		lai_enter_sleep(5);
+	}
 }
 
 void apic_init(void) {
 	lapic_addr = acpi_get_lapic();
-	lapic_enable_spurious();
+	lapic_init();
 	ioapic_init();
+	// Register SCI interrupt
+	acpi_fadt_t *facp = (acpi_fadt_t *)acpi_find_sdt("FACP", 0);
+	ioapic_redirect_irq(facp->sci_irq, 73);
+	isr_register_handler(73, sci_interrupt);
 }

@@ -4,4 +4,3 @@
 [submodule "kernel/acpi/lai"]
 	path = kernel/acpi/lai
 	url = https://github.com/managarm/lai
-	ignore = untracked
