@@ -21,13 +21,11 @@ section .text
 
 ; Common handler for the ISRs
 isr_common_format:
-	cli
 	pushall
 	mov rdi, rsp
 	call isr_handler
 	popall
 	add rsp, 24
-	sti
 	iretq
 
 %macro isr 1
