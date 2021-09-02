@@ -72,8 +72,7 @@ static datetime_t rtc_get_date_time(void) {
 	}
 
 	// Calculate the full (4-digit) year
-
-	date_time.year += 2000;
+	date_time.year += 2000; // I dont expect this project to survive in the 22nd century so here you go
 	return date_time;
 }
 

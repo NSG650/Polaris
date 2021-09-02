@@ -158,7 +158,8 @@ void apic_eoi(void) {
 	lapic_write(0x0B0, 0);
 }
 
-void sci_interrupt(registers_t *) {
+void sci_interrupt(registers_t *reg) {
+	(void)reg;
 	uint16_t ev = lai_get_sci_event();
 
 	if (ev & ACPI_POWER_BUTTON) {

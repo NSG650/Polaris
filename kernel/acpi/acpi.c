@@ -110,15 +110,18 @@ void *laihost_malloc(size_t size) {
 	return kmalloc(size);
 }
 
-void laihost_free(void *ptr, size_t) {
+void laihost_free(void *ptr, size_t size) {
+	(void)size;
 	kfree(ptr);
 }
 
-void *laihost_realloc(void *ptr, size_t newsize, size_t) {
+void *laihost_realloc(void *ptr, size_t newsize, size_t oldsize) {
+	(void)oldsize;
 	return krealloc(ptr, newsize);
 }
 
-void *laihost_map(size_t address, size_t) {
+void *laihost_map(size_t address, size_t size) {
+	(void)size;
 	return (void *)address + MEM_PHYS_OFFSET;
 }
 
@@ -176,7 +179,9 @@ uint32_t laihost_pci_readd(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t fun,
 	return pci_read(seg, bus, slot, fun, offset, 4);
 }
 
-void laihost_sleep(uint64_t) {}
+void laihost_sleep(uint64_t ms) {
+	(void)ms;
+}
 
 static bool is_canonical(uint64_t addr) {
 	return ((addr <= 0x00007FFFFFFFFFFF) ||
