@@ -110,8 +110,8 @@ void *laihost_malloc(size_t size) {
 	return kmalloc(size);
 }
 
-void laihost_free(void *ptr, size_t size) {
-	(void)size;
+void laihost_free(void *ptr, size_t oldsize) {
+	(void)oldsize;
 	kfree(ptr);
 }
 
