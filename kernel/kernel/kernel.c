@@ -71,8 +71,7 @@ void *stivale2_get_tag(struct stivale2_struct *stivale2_struct, uint64_t id) {
 void _start(struct stivale2_struct *stivale2_struct) {
 	stivale2_struct = (void *)stivale2_struct + MEM_PHYS_OFFSET;
 	init_gdt();
-	struct stivale2_struct_tag_framebuffer *fb_str_tag;
-	fb_str_tag =
+	struct stivale2_struct_tag_framebuffer *fb_str_tag =
 	  stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_FRAMEBUFFER_ID);
 	if (fb_str_tag == NULL) {
 		write_serial("FAILED TO AQUIRE A FRAMEBUFFER\n\nHALTING");
@@ -82,13 +81,13 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	video_init(fb_str_tag);
 	struct stivale2_struct_tag_memmap *memmap_tag =
 	  stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MEMMAP_ID);
+	cpu_init();
 	pmm_reclaim_memory((void *)memmap_tag->memmap, memmap_tag->entries);
 	pmm_init((void *)memmap_tag->memmap, memmap_tag->entries);
 	vmm_init((void *)memmap_tag->memmap, memmap_tag->entries);
 	serial_install();
 	isr_install();
 	asm volatile("sti");
-	cpu_init();
 	struct stivale2_struct_tag_rsdp *rsdp_tag =
 	  stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_RSDP_ID);
 	acpi_init((void *)rsdp_tag->rsdp + MEM_PHYS_OFFSET);

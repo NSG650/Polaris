@@ -44,10 +44,10 @@ void video_init(struct stivale2_struct_tag_framebuffer *framebuffer) {
 
 	ssfn_src = (ssfn_font_t *)&fb_font;
 
-	ssfn_dst.ptr = (uint8_t *)framebuffer->framebuffer_addr;
-	ssfn_dst.w = framebuffer->framebuffer_width;
-	ssfn_dst.h = framebuffer->framebuffer_height;
-	ssfn_dst.p = framebuffer->framebuffer_pitch;
+	ssfn_dst.ptr = fb_addr;
+	ssfn_dst.p = fb_pitch;
+	ssfn_dst.w = width_s;
+	ssfn_dst.h = height_s;
 	ssfn_dst.x = ssfn_dst.y = 0;
 }
 

@@ -86,9 +86,9 @@ static void cpu_start(void) {
 	uint64_t rdi = 0;
 	asm("nop" : "=D"(rdi));
 	struct stivale2_smp_info *cpu_info = (void *)rdi;
-	printf("CPU: Processor %d online!\n", cpu_info->lapic_id);
 	cpu_init();
 	lapic_init(cpu_info->processor_id);
+	printf("CPU: Processor %d online!\n", cpu_info->lapic_id);
 	UNLOCK(cpu_lock);
 	for (;;)
 		asm("hlt");

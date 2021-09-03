@@ -48,9 +48,72 @@ void *mempcpy(void *dest, const void *src, size_t nbytes) {
 }
 
 void *memset(void *dest, int val, size_t len) {
-	uint8_t *temp = (uint8_t *)dest;
-	for (; len != 0; len--)
-		*temp++ = val;
+	unsigned char *s = dest;
+	size_t k;
+
+	if (!len)
+		return dest;
+	s[0] = val;
+	s[len - 1] = val;
+	if (len <= 2)
+		return dest;
+	s[1] = val;
+	s[2] = val;
+	s[len - 2] = val;
+	s[len - 3] = val;
+	if (len <= 6)
+		return dest;
+	s[3] = val;
+	s[len - 4] = val;
+	if (len <= 8)
+		return dest;
+
+	k = -(uintptr_t)s & 3;
+	s += k;
+	len -= k;
+	len &= -4;
+
+#ifdef __GNUC__
+	typedef uint32_t __attribute__((__may_alias__)) u32;
+	typedef uint64_t __attribute__((__may_alias__)) u64;
+
+	u32 c32 = ((u32)-1) / 255 * (unsigned char)val;
+
+	*(u32 *)(s + 0) = c32;
+	*(u32 *)(s + len - 4) = c32;
+	if (len <= 8)
+		return dest;
+	*(u32 *)(s + 4) = c32;
+	*(u32 *)(s + 8) = c32;
+	*(u32 *)(s + len - 12) = c32;
+	*(u32 *)(s + len - 8) = c32;
+	if (len <= 24)
+		return dest;
+	*(u32 *)(s + 12) = c32;
+	*(u32 *)(s + 16) = c32;
+	*(u32 *)(s + 20) = c32;
+	*(u32 *)(s + 24) = c32;
+	*(u32 *)(s + len - 28) = c32;
+	*(u32 *)(s + len - 24) = c32;
+	*(u32 *)(s + len - 20) = c32;
+	*(u32 *)(s + len - 16) = c32;
+
+	k = 24 + ((uintptr_t)s & 4);
+	s += k;
+	len -= k;
+
+	u64 c64 = c32 | ((u64)c32 << 32);
+	for (; len >= 32; len -= 32, s += 32) {
+		*(u64 *)(s + 0) = c64;
+		*(u64 *)(s + 8) = c64;
+		*(u64 *)(s + 16) = c64;
+		*(u64 *)(s + 24) = c64;
+	}
+#else
+	for (; len; len--, s++)
+		*s = val;
+#endif
+
 	return dest;
 }
 
