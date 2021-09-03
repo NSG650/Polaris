@@ -21,6 +21,7 @@
 #include "../klibc/lock.h"
 #include "../klibc/printf.h"
 #include "../sys/hpet.h"
+#include "apic.h"
 #include <cpuid.h>
 
 #define MAX_TSC_CALIBRATIONS 4
@@ -87,6 +88,7 @@ static void cpu_start(void) {
 	struct stivale2_smp_info *cpu_info = (void *)rdi;
 	printf("CPU: Processor %d online!\n", cpu_info->lapic_id);
 	cpu_init();
+	lapic_init(cpu_info->processor_id);
 	UNLOCK(cpu_lock);
 	for (;;)
 		asm("hlt");

@@ -37,8 +37,8 @@ static int bcdtobin(int val) {
 
 static time rtc_get_time(void) {
 	time ret_time;
-	ret_time.hour = read(0x4);
-	ret_time.minute = read(0x2);
+	ret_time.hour = read(4);
+	ret_time.minute = read(2);
 	ret_time.second = read(0);
 	return ret_time;
 }
@@ -46,16 +46,15 @@ static time rtc_get_time(void) {
 static datetime_t rtc_get_date_time(void) {
 	datetime_t date_time;
 
-	date_time.day = read(0x7);
-	date_time.month = read(0x8);
-	date_time.year = read(0x9);
+	date_time.day = read(7);
+	date_time.month = read(8);
+	date_time.year = read(9);
 
 	date_time.time = rtc_get_time();
 
-	int registerB = read(0x0B);
+	int registerB = read(0xB);
 
 	// BCD conversion
-
 	if (~registerB & registerB_DataMode) {
 		date_time.time.second = bcdtobin(date_time.time.second);
 		date_time.time.minute = bcdtobin(date_time.time.minute);
@@ -66,13 +65,12 @@ static datetime_t rtc_get_date_time(void) {
 	}
 
 	// Convert 12 hour clock to 24 hour clock if necessary
-
 	if (!(registerB & 0x02) && (date_time.time.hour & 0x80)) {
 		date_time.time.hour = ((date_time.time.hour & 0x7F) + 12) % 24;
 	}
 
 	// Calculate the full (4-digit) year
-	date_time.year += 2000; // I dont expect this project to survive in the 22nd century so here you go
+	date_time.year += 2000; // NOTE: Only works for the 21nd century
 	return date_time;
 }
 

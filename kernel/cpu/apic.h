@@ -22,5 +22,6 @@
 void apic_eoi(void);
 void apic_init(void);
 void ioapic_redirect_irq(uint32_t irq, uint8_t vect);
+void lapic_init(uint8_t processor_id);
 
 #endif
