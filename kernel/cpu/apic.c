@@ -153,7 +153,7 @@ void apic_send_ipi(uint8_t lapic_id, uint8_t vector) {
 }
 
 void apic_eoi(void) {
-	lapic_write(0x0B0, 0);
+	lapic_write(0xB0, 0);
 }
 
 void sci_interrupt(registers_t *reg) {
