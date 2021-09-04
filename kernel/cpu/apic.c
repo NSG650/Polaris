@@ -40,7 +40,7 @@ static void lapic_set_nmi(uint8_t vec, uint8_t current_processor_id,
 		}
 	}
 
-	uint32_t nmi = 0x800 | vec;
+	uint32_t nmi = 0x400 | vec;
 
 	if (flags & 2) {
 		nmi |= 1 << 13;
