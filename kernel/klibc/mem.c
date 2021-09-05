@@ -152,7 +152,7 @@ void *memrchr(const void *buf, int c, size_t n) {
 	c = (uint8_t)c;
 	while (n--) {
 		if (s[n] == c) {
-			return (void *)(s + n);
+			return (void *)s + n;
 		}
 	}
 

@@ -40,11 +40,11 @@ void acpi_init(acpi_xsdp_t *rsdp) {
 	if (rsdp->revision >= 2 && rsdp->xsdt) {
 		use_xsdt = true;
 		rsdt = (struct rsdt *)((uintptr_t)rsdp->xsdt + MEM_PHYS_OFFSET);
-		printf("ACPI: Found XSDT at %X\n", (uintptr_t)rsdt);
+		printf("ACPI: Found XSDT at %llX\n", (uintptr_t)rsdt);
 	} else {
 		use_xsdt = false;
 		rsdt = (struct rsdt *)((uintptr_t)rsdp->rsdt + MEM_PHYS_OFFSET);
-		printf("ACPI: Found RSDT at %X\n", (uintptr_t)rsdt);
+		printf("ACPI: Found RSDT at %llX\n", (uintptr_t)rsdt);
 	}
 	revision = rsdp->revision;
 	lai_set_acpi_revision(revision);
@@ -80,7 +80,7 @@ void *acpi_find_sdt(const char *signature, int index) {
 
 		if (!memcmp(ptr->signature, signature, 4) &&
 			!acpi_checksum(ptr, ptr->length) && cnt++ == index) {
-			return (void *)ptr;
+			return (void *)ptr + MEM_PHYS_OFFSET;
 		}
 	}
 

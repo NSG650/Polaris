@@ -50,7 +50,7 @@ __attribute__((section(".stivale2hdr"),
 			   used)) static struct stivale2_header stivale_hdr = {
   .entry_point = 0,
   .stack = (uintptr_t)stack + sizeof(stack),
-  .flags = 0,
+  .flags = (1 << 1) | (1 << 2),
   .tags = (uintptr_t)&framebuffer_hdr_tag};
 
 void *stivale2_get_tag(struct stivale2_struct *stivale2_struct, uint64_t id) {
@@ -69,7 +69,6 @@ void *stivale2_get_tag(struct stivale2_struct *stivale2_struct, uint64_t id) {
 }
 
 void _start(struct stivale2_struct *stivale2_struct) {
-	stivale2_struct = (void *)stivale2_struct + MEM_PHYS_OFFSET;
 	init_gdt();
 	struct stivale2_struct_tag_framebuffer *fb_str_tag =
 	  stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_FRAMEBUFFER_ID);
@@ -79,9 +78,9 @@ void _start(struct stivale2_struct *stivale2_struct) {
 			asm("hlt");
 	}
 	video_init(fb_str_tag);
+	cpu_init();
 	struct stivale2_struct_tag_memmap *memmap_tag =
 	  stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MEMMAP_ID);
-	cpu_init();
 	pmm_reclaim_memory((void *)memmap_tag->memmap, memmap_tag->entries);
 	pmm_init((void *)memmap_tag->memmap, memmap_tag->entries);
 	vmm_init((void *)memmap_tag->memmap, memmap_tag->entries);
@@ -90,7 +89,7 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	asm volatile("sti");
 	struct stivale2_struct_tag_rsdp *rsdp_tag =
 	  stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_RSDP_ID);
-	acpi_init((void *)rsdp_tag->rsdp + MEM_PHYS_OFFSET);
+	acpi_init((void *)rsdp_tag->rsdp);
 	hpet_init();
 	pic_init();
 	apic_init();
@@ -109,7 +108,7 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	printf("D (32 bytes): %p\n", ptr3);
 	printf("C (16 bytes to 32 bytes realloc): %p\n", krealloc(ptr2, 32));
 	printf("D (32 bytes after C realloc): %p\n", ptr3);
-	printf("E (5 int calloc): %p\n", kcalloc(5, sizeof(int)));
+	printf("E (4 int calloc): %p\n", kcalloc(4, sizeof(int)));
 	printf("%d\n", get_unix_timestamp());
 	hpet_usleep(1000 * 1000);
 	printf("%d\n", get_unix_timestamp());

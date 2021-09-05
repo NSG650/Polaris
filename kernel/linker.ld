@@ -1,28 +1,45 @@
+OUTPUT_FORMAT(elf64-x86-64)
+OUTPUT_ARCH(i386:x86-64)
+
 ENTRY(_start)
+
+PHDRS {
+	null    PT_NULL    FLAGS(0);
+	text    PT_LOAD    FLAGS((1 << 0) | (1 << 2)); /* Execute + Read */
+	rodata  PT_LOAD    FLAGS((1 << 2));            /* Read only */
+	data    PT_LOAD    FLAGS((1 << 1) | (1 << 2)); /* Write + Read */
+	dynamic PT_DYNAMIC FLAGS((1 << 1) | (1 << 2)); /* Dynamic segment needed for PIE */
+}
 
 SECTIONS {
 	. = 0xFFFFFFFF80200000;
 
-	/* Name required by spec */
-	.stivale2hdr : ALIGN(4K) {
-		KEEP(*(.stivale2hdr))
-	}
-
-	/* Actual kernel */
-	.text : ALIGN(4K) {
+	.text : {
 		*(.text*)
-	}
+	} :text
 
-	.rodata : ALIGN(4K) {
+	. += 0x1000;
+
+	.stivale2hdr : {
+		KEEP(*(.stivale2hdr))
+	} :rodata
+
+	.rodata : {
 		*(.rodata*)
-	}
+	} :rodata
 
-	.data : ALIGN(4K) {
+	. += 0x1000;
+
+	.data : {
 		*(.data*)
-	}
+	} :data
 
-	.bss : ALIGN(4K) {
+	.dynamic : {
+		*(.dynamic)
+	} :data :dynamic
+
+	.bss : {
 		*(COMMON)
 		*(.bss*)
-	}
+	} :data
 }

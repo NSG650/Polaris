@@ -10,18 +10,18 @@ CFLAGS :=                             \
 	-Wall -Wextra -g -I stivale/      \
 	-I kernel/klibc/liballoc/include/ \
 	-I kernel/acpi/lai/include/ -MMD  \
-	-MP
+	-MP -pipe
 
 # Assembler flags
 ASFLAGS := -g
 
 # Internal flags that shouldn't be changed
 INTERNALLDFLAGS :=          \
-	-fpie -Wl,-static       \
-	-nostdlib               \
 	-T kernel/linker.ld     \
+	-nostdlib               \
+	-static -pie            \
 	-z max-page-size=4096   \
-	-lgcc
+	-z text -lgcc
 
 INTERNALCFLAGS :=        \
 	-std=gnu11           \
