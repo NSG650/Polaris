@@ -109,8 +109,6 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	printf("C (16 bytes to 32 bytes realloc): %p\n", krealloc(ptr2, 32));
 	printf("D (32 bytes after C realloc): %p\n", ptr3);
 	printf("E (5 int calloc): %p\n", kcalloc(5, sizeof(int)));
-	kfree(ptr);
-	ptr = "ABCDEF";
 	printf("%d\n", get_unix_timestamp());
 	hpet_usleep(1000 * 1000);
 	printf("%d\n", get_unix_timestamp());
