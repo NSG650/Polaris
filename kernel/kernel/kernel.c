@@ -27,12 +27,11 @@
 #include "../serial/serial.h"
 #include "../sys/clock.h"
 #include "../sys/hpet.h"
+#include "../sys/gdt.h"
 #include "../video/video.h"
 #include <liballoc.h>
 #include <stdint.h>
 #include <stivale2.h>
-
-extern void init_gdt(void);
 
 static uint8_t stack[32768];
 static struct stivale2_header_tag_smp smp_hdr_tag = {
@@ -70,7 +69,7 @@ void *stivale2_get_tag(struct stivale2_struct *stivale2_struct, uint64_t id) {
 
 void _start(struct stivale2_struct *stivale2_struct) {
 	stivale2_struct = (void *)stivale2_struct + MEM_PHYS_OFFSET;
-	init_gdt();
+	gdt_init();
 	struct stivale2_struct_tag_framebuffer *fb_str_tag =
 	  stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_FRAMEBUFFER_ID);
 	if (fb_str_tag == NULL) {
@@ -110,6 +109,8 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	printf("C (16 bytes to 32 bytes realloc): %p\n", krealloc(ptr2, 32));
 	printf("D (32 bytes after C realloc): %p\n", ptr3);
 	printf("E (5 int calloc): %p\n", kcalloc(5, sizeof(int)));
+	kfree(ptr);
+	ptr = "ABCDEF";
 	printf("%d\n", get_unix_timestamp());
 	hpet_usleep(1000 * 1000);
 	printf("%d\n", get_unix_timestamp());
