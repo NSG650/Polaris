@@ -57,7 +57,7 @@ void pmm_init(struct stivale2_mmap_entry *memmap, size_t memmap_entries) {
 			continue;
 
 		if (memmap[i].length >= bitmap_size) {
-			bitmap = (void *)(memmap[i].base + MEM_PHYS_OFFSET);
+			bitmap = (void *)memmap[i].base + MEM_PHYS_OFFSET;
 
 			// Initialise entire bitmap to 1 (non-free)
 			memset(bitmap, 0xFF, bitmap_size);

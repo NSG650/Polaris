@@ -60,7 +60,7 @@ static void lapic_set_nmi(uint8_t vec, uint8_t current_processor_id,
 void lapic_init(uint8_t processor_id) {
 	lapic_write(0x80, 0);
 	lapic_write(0xF0, lapic_read(0xF0) | 0x100);
-	lapic_write(0xE0, 0xFFFFFFFF);
+	lapic_write(0xE0, 0xF0000000);
 	lapic_write(0xD0, 0x1000000);
 	for (size_t i = 0; i < madt_nmis.length; i++) {
 		struct madt_nmi *nmi = madt_nmis.storage[i];
