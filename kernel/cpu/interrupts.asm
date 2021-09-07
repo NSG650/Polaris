@@ -1,5 +1,3 @@
-section .text
-
 ; Copyright 2021 NSG650
 ; Copyright 2021 Sebastian
 ;

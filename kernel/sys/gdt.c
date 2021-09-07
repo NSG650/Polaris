@@ -1,5 +1,6 @@
 /*
  * Copyright 2021 NSG650
+ * Copyright 2021 Sebastian
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +18,7 @@
 #include "gdt.h"
 #include <stdint.h>
 
-struct GDTEntry {
+struct gdt_desc {
 	uint16_t limit;
 	uint16_t base_low;
 	uint8_t base_mid;
@@ -26,7 +27,7 @@ struct GDTEntry {
 	uint8_t base_hi;
 } __attribute__((packed));
 
-struct TSSEntry {
+struct tss_desc {
 	uint16_t length;
 	uint16_t base_low;
 	uint8_t base_mid;
@@ -37,72 +38,40 @@ struct TSSEntry {
 	uint32_t reserved;
 } __attribute__((packed));
 
-struct GDT {
-	struct GDTEntry entries[5];
-	struct TSSEntry tss;
-} __attribute__((packed));
-
-struct GDTPointer {
+struct gdt_ptr {
 	uint16_t limit;
 	uint64_t ptr;
 } __attribute__((packed));
 
-struct GDT gdt;
-struct GDTPointer gdt_pointer;
+struct gdtr {
+	struct gdt_desc entries[5];
+	struct tss_desc tss;
+} __attribute__((packed));
+
+struct gdtr gdt = {0};
+struct gdt_ptr gdt_pointer = {0};
 
 extern void gdt_reload(void);
 extern void tss_reload(void);
 
 void gdt_init(void) {
-	// Null descriptor
-	gdt.entries[0].limit = 0;
-	gdt.entries[0].base_low = 0;
-	gdt.entries[0].base_mid = 0;
-	gdt.entries[0].access = 0;
-	gdt.entries[0].granularity = 0;
-	gdt.entries[0].base_hi = 0;
-
-	// Kernel code 64
-	gdt.entries[1].limit = 0;
-	gdt.entries[1].base_low = 0;
-	gdt.entries[1].base_mid = 0;
+	// Kernel code
 	gdt.entries[1].access = 0b10011010;
 	gdt.entries[1].granularity = 0b00100000;
-	gdt.entries[1].base_hi = 0;
 
-	// Kernel data 64
-	gdt.entries[2].limit = 0;
-	gdt.entries[2].base_low = 0;
-	gdt.entries[2].base_mid = 0;
+	// Kernel data
 	gdt.entries[2].access = 0b10010010;
-	gdt.entries[2].granularity = 0;
-	gdt.entries[2].base_hi = 0;
 
-	// User data 64
-	gdt.entries[3].limit = 0;
-	gdt.entries[3].base_low = 0;
-	gdt.entries[3].base_mid = 0;
+	// User data
 	gdt.entries[3].access = 0b11110010;
-	gdt.entries[3].granularity = 0;
-	gdt.entries[3].base_hi = 0;
 
-	// User code 64
-	gdt.entries[4].limit = 0;
-	gdt.entries[4].base_low = 0;
-	gdt.entries[4].base_mid = 0;
+	// User code
 	gdt.entries[4].access = 0b11111010;
 	gdt.entries[4].granularity = 0b00100000;
-	gdt.entries[4].base_hi = 0;
 
 	// TSS
 	gdt.tss.length = 104;
-	gdt.tss.base_low = 0;
-	gdt.tss.base_mid = 0;
 	gdt.tss.flags1 = 0b10001001;
-	gdt.tss.flags2 = 0;
-	gdt.tss.base_hi = 0;
-	gdt.tss.base_upper32 = 0;
-	gdt.tss.reserved = 0;
 
 	// Set the pointer
 	gdt_pointer.limit = sizeof(gdt) - 1;
@@ -116,10 +85,8 @@ void gdt_load_tss(size_t addr) {
 	gdt.tss.base_low = (uint16_t)addr;
 	gdt.tss.base_mid = (uint8_t)(addr >> 16);
 	gdt.tss.flags1 = 0b10001001;
-	gdt.tss.flags2 = 0;
 	gdt.tss.base_hi = (uint8_t)(addr >> 24);
 	gdt.tss.base_upper32 = (uint32_t)(addr >> 32);
-	gdt.tss.reserved = 0;
 
 	gdt_reload();
 	tss_reload();
