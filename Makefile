@@ -30,8 +30,7 @@ INTERNALCFLAGS :=        \
 	-fpie -mno-red-zone	 \
 	-masm=intel
 
-CFILES := $(wildcard kernel/*/*.c kernel/acpi/lai/*/*.c \
-			kernel/klibc/liballoc/liballoc.c)
+CFILES := $(wildcard kernel/*/*.c kernel/acpi/lai/*/*.c kernel/klibc/*/*.c)
 ASMFILES := $(wildcard kernel/*/*.asm)
 OBJECTS := $(CFILES:.c=.o) $(ASMFILES:.asm=.o)
 DEPENDS := $(CFILES:.c=.d)
