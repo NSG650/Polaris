@@ -35,13 +35,7 @@ void (*cpu_fpu_restore)(void *);
 
 DECLARE_LOCK(cpu_lock);
 
-uint64_t rdtsc() {
-	uint32_t edx, eax;
-	asm volatile("rdtsc" : "=a"(eax), "=d"(edx));
-	return ((uint64_t)edx << 32) | eax;
-}
-
-uint64_t rdmsr(uint32_t msr) {
+static uint64_t rdmsr(uint32_t msr) {
 	uint32_t edx, eax;
 	asm volatile("rdmsr" : "=a"(eax), "=d"(edx) : "c"(msr) : "memory");
 	return ((uint64_t)edx << 32) | eax;
