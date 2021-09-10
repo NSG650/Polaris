@@ -13,7 +13,7 @@ CFLAGS :=                             \
 	-MP -pipe
 
 # Assembler flags
-ASFLAGS := -g
+ASFLAGS := -g -MD -MP
 
 # Internal flags that shouldn't be changed
 INTERNALLDFLAGS :=          \
@@ -33,7 +33,7 @@ INTERNALCFLAGS :=        \
 CFILES := $(wildcard kernel/*/*.c kernel/acpi/lai/*/*.c kernel/klibc/*/*.c)
 ASMFILES := $(wildcard kernel/*/*.asm)
 OBJECTS := $(CFILES:.c=.o) $(ASMFILES:.asm=.o)
-DEPENDS := $(CFILES:.c=.d)
+DEPENDS := $(CFILES:.c=.d) $(ASMFILES:.asm=.o.d)
 
 .PHONY: all clean
 
