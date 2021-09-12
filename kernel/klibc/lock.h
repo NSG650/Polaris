@@ -22,7 +22,8 @@
 
 #define LOCK(name)                                             \
 	while (!__sync_bool_compare_and_swap(&name##Locked, 0, 1)) \
-		;
+		while (name##Locked)                                   \
+			asm volatile("pause");
 
 #define UNLOCK(name) __sync_lock_release(&name##Locked);
 
