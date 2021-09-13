@@ -25,6 +25,6 @@
 		while (name)                                   \
 			asm volatile("pause");
 
-#define UNLOCK(name) __sync_lock_release(&name);
+#define UNLOCK(name) __sync_lock_release(&name)
 
 #endif

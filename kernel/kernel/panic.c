@@ -20,7 +20,7 @@
 #include "../serial/serial.h"
 #include "../video/video.h"
 
-__attribute__((noreturn)) void panic(const char message[], char file[],
+__attribute__((noreturn)) void panic(const char *message, char *file,
 									 bool assert, size_t line) {
 	char x[1024];
 	const void *rip = __builtin_return_address(0);
