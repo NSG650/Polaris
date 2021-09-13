@@ -18,13 +18,13 @@
  * limitations under the License.
  */
 
-#define DECLARE_LOCK(name) volatile int name##Locked
+#define DECLARE_LOCK(name) static volatile int name
 
-#define LOCK(name)                                             \
-	while (!__sync_bool_compare_and_swap(&name##Locked, 0, 1)) \
-		while (name##Locked)                                   \
+#define LOCK(name)                                     \
+	while (!__sync_bool_compare_and_swap(&name, 0, 1)) \
+		while (name)                                   \
 			asm volatile("pause");
 
-#define UNLOCK(name) __sync_lock_release(&name##Locked);
+#define UNLOCK(name) __sync_lock_release(&name);
 
 #endif

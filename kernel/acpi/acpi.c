@@ -67,7 +67,7 @@ static uint8_t acpi_checksum(void *ptr, size_t size) {
 void *acpi_find_sdt(const char *signature, int index) {
 	int cnt = 0;
 
-	size_t entries =
+	const size_t entries =
 	  (rsdt->header.length - sizeof(acpi_header_t)) / (use_xsdt ? 8 : 4);
 
 	for (size_t i = 0; i < entries; i++) {
@@ -200,7 +200,7 @@ void *laihost_scan(const char *signature, size_t index) {
 			dsdt_addr = facp->dsdt;
 		}
 
-		return (void *)(uintptr_t)dsdt_addr + MEM_PHYS_OFFSET;
+		return (void *)dsdt_addr + MEM_PHYS_OFFSET;
 	} else {
 		return acpi_find_sdt(signature, index);
 	}
