@@ -26,19 +26,11 @@ static void *bitmap;
 static size_t last_used_index = 0;
 static uintptr_t highest_page = 0;
 
-void pmm_reclaim_memory(struct stivale2_mmap_entry *memmap,
-						size_t memmap_entries) {
-	for (size_t i = 0; i < memmap_entries; i++) {
-		if (memmap[i].type != STIVALE2_MMAP_BOOTLOADER_RECLAIMABLE)
-			continue;
-		pmm_free((void *)memmap[i].base, memmap[i].length / PAGE_SIZE);
-	}
-}
-
 void pmm_init(struct stivale2_mmap_entry *memmap, size_t memmap_entries) {
-	// First, calculate how big the bitmap needs to be.
+	// First, calculate how big the bitmap needs to be
 	for (size_t i = 0; i < memmap_entries; i++) {
 		if (memmap[i].type != STIVALE2_MMAP_USABLE &&
+			memmap[i].type != STIVALE2_MMAP_ACPI_RECLAIMABLE &&
 			memmap[i].type != STIVALE2_MMAP_BOOTLOADER_RECLAIMABLE &&
 			memmap[i].type != STIVALE2_MMAP_KERNEL_AND_MODULES)
 			continue;
@@ -51,9 +43,11 @@ void pmm_init(struct stivale2_mmap_entry *memmap, size_t memmap_entries) {
 
 	size_t bitmap_size = DIV_ROUNDUP(highest_page, PAGE_SIZE) / 8;
 
-	// Second, find a location with enough free pages to host the bitmap.
+	// Second, find a location with enough free pages to host the bitmap
 	for (size_t i = 0; i < memmap_entries; i++) {
-		if (memmap[i].type != STIVALE2_MMAP_USABLE)
+		if (memmap[i].type != STIVALE2_MMAP_USABLE &&
+			memmap[i].type != STIVALE2_MMAP_ACPI_RECLAIMABLE &&
+			memmap[i].type != STIVALE2_MMAP_BOOTLOADER_RECLAIMABLE)
 			continue;
 
 		if (memmap[i].length >= bitmap_size) {
@@ -69,9 +63,11 @@ void pmm_init(struct stivale2_mmap_entry *memmap, size_t memmap_entries) {
 		}
 	}
 
-	// Third, populate free bitmap entries according to memory map.
+	// Third, populate free bitmap entries according to memory map
 	for (size_t i = 0; i < memmap_entries; i++) {
-		if (memmap[i].type != STIVALE2_MMAP_USABLE)
+		if (memmap[i].type != STIVALE2_MMAP_USABLE &&
+			memmap[i].type != STIVALE2_MMAP_ACPI_RECLAIMABLE &&
+			memmap[i].type != STIVALE2_MMAP_BOOTLOADER_RECLAIMABLE)
 			continue;
 
 		for (uintptr_t j = 0; j < memmap[i].length; j += PAGE_SIZE)
@@ -115,10 +111,9 @@ void *pmm_allocz(size_t count) {
 	if (ret == NULL)
 		return NULL;
 
-	uint64_t *ptr = (uint64_t *)(ret + MEM_PHYS_OFFSET);
+	void *ptr = (void *)ret + MEM_PHYS_OFFSET;
 
-	for (size_t i = 0; i < count * (PAGE_SIZE / sizeof(uint64_t)); i++)
-		ptr[i] = 0;
+	memset(ptr, 0, count * PAGE_SIZE);
 
 	return ret;
 }
