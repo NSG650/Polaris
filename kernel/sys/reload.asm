@@ -2,9 +2,10 @@ extern gdt_pointer
 global gdt_reload
 
 gdt_reload:
-	lgdt [gdt_pointer]
+	lgdt [rel gdt_pointer]
 	push 8
-	push .flush
+	lea rax, [rel .flush]
+	push rax
 	retfq
 .flush:
 	mov eax, 0x10

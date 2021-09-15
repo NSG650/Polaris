@@ -16,11 +16,12 @@ CFLAGS :=                             \
 ASFLAGS := -g -MD -MP
 
 # Internal flags that shouldn't be changed
-INTERNALLDFLAGS :=          \
-	-T kernel/linker.ld     \
-	-nostdlib               \
-	-static -pie            \
-	-z max-page-size=4096   \
+INTERNALLDFLAGS :=           \
+	-T kernel/linker.ld      \
+	-nostdlib                \
+	-Wl,-static,-pie         \
+	-Wl,--no-dynamic-linker  \
+	-z max-page-size=4096    \
 	-z text -lgcc
 
 INTERNALCFLAGS :=        \

@@ -80,7 +80,6 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	cpu_init();
 	struct stivale2_struct_tag_memmap *memmap_tag =
 	  stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MEMMAP_ID);
-	pmm_reclaim_memory((void *)memmap_tag->memmap, memmap_tag->entries);
 	pmm_init((void *)memmap_tag->memmap, memmap_tag->entries);
 	struct stivale2_struct_tag_pmrs *pmrs_tag =
 	  stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_PMRS_ID);
