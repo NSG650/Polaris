@@ -17,6 +17,7 @@
 
 #include "cpu.h"
 #include "../kernel/panic.h"
+#include "../klibc/alloc.h"
 #include "../klibc/asm.h"
 #include "../klibc/lock.h"
 #include "../klibc/printf.h"
@@ -91,8 +92,8 @@ static void cpu_start(void) {
 void smp_init(struct stivale2_struct_tag_smp *smp_tag) {
 	printf("CPU: Total processor count: %d\n", smp_tag->cpu_count);
 	printf("CPU: Processor %d online!\n", smp_tag->smp_info[0].lapic_id);
-	for (size_t i = 0; i < smp_tag->cpu_count; i++) {
-		static uint8_t stack[32768];
+	for (size_t i = 0; i < smp_tag->cpu_count; ++i) {
+		uint8_t *stack = alloc(32768);
 		smp_tag->smp_info[i].target_stack = (uintptr_t)stack + sizeof(stack);
 		smp_tag->smp_info[i].goto_address = (uintptr_t)cpu_start;
 	}
