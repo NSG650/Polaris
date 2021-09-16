@@ -15,7 +15,7 @@
 
 %include "kernel/cpu/stackop.inc"
 
-[extern isr_handler]
+extern isr_handler
 
 ; Common handler for the ISRs
 isr_common_format:
