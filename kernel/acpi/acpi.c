@@ -23,6 +23,7 @@
 #include "../sys/pci.h"
 #include "madt.h"
 #include <lai/core.h>
+#include <lai/drivers/ec.h>
 #include <lai/helpers/sci.h>
 #include <lai/host.h>
 #include <liballoc.h>
@@ -34,8 +35,37 @@ static bool use_xsdt;
 static struct rsdt *rsdt;
 static uint8_t revision;
 
+static void init_ec(void) {
+	LAI_CLEANUP_STATE lai_state_t state;
+	lai_init_state(&state);
+
+	LAI_CLEANUP_VAR lai_variable_t pnp_id = LAI_VAR_INITIALIZER;
+	lai_eisaid(&pnp_id, ACPI_EC_PNP_ID);
+
+	struct lai_ns_iterator it = LAI_NS_ITERATOR_INITIALIZER;
+	lai_nsnode_t *node;
+	while ((node = lai_ns_iterate(&it))) {
+		if (lai_check_device_pnp_id(node, &pnp_id, &state)) // This is not an EC
+			continue;
+
+		// Found one
+		struct lai_ec_driver *driver = kmalloc(sizeof(
+		  struct lai_ec_driver));  // Dynamically allocate the memory since -
+		lai_init_ec(node, driver); // we dont know how many ECs there could be
+
+		struct lai_ns_child_iterator child_it =
+		  LAI_NS_CHILD_ITERATOR_INITIALIZER(node);
+		lai_nsnode_t *child_node;
+		while ((child_node = lai_ns_child_iterate(&child_it))) {
+			if (lai_ns_get_node_type(child_node) == LAI_NODETYPE_OPREGION)
+				lai_ns_override_opregion(child_node, &lai_ec_opregion_override,
+										 driver);
+		}
+	}
+}
+
 void acpi_init(acpi_xsdp_t *rsdp) {
-	printf("ACPI: Revision: %d\n", rsdp->revision);
+	printf("ACPI: Revision: %hhu\n", rsdp->revision);
 
 	if (rsdp->revision >= 2 && rsdp->xsdt) {
 		use_xsdt = true;
@@ -51,6 +81,7 @@ void acpi_init(acpi_xsdp_t *rsdp) {
 	lai_create_namespace();
 	lai_enable_acpi(1);
 	init_madt();
+	init_ec();
 }
 
 // Following function based on
