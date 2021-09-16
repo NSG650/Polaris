@@ -25,24 +25,33 @@ void vmm_init(struct stivale2_mmap_entry *memmap, size_t memmap_entries,
 			  struct stivale2_pmr *pmrs, size_t pmr_entries) {
 	kernel_pagemap = vmm_new_pagemap();
 	for (uintptr_t p = 0; p < 4096UL * 1024 * 1024; p += PAGE_SIZE) {
-		vmm_map_page(kernel_pagemap, p, p, 0b11);
-		vmm_map_page(kernel_pagemap, p + MEM_PHYS_OFFSET, p, 0b11);
+		vmm_map_page(kernel_pagemap, p, p, 0b11 | 1UL << 63);
+		vmm_map_page(kernel_pagemap, p + MEM_PHYS_OFFSET, p, 0b11 | 1UL << 63);
 	}
 	for (size_t i = 0; i < pmr_entries; i++) {
 		for (uintptr_t p = 0; p < pmrs[i].length; p += PAGE_SIZE) {
 			if (pmrs[i].permissions & STIVALE2_PMR_WRITABLE) {
-				vmm_map_page(kernel_pagemap, pmrs[i].base + p,
-							 (pmrs[i].base - KERNEL_BASE) + p, 0b11);
-			} else if ((pmrs[i].permissions & STIVALE2_PMR_READABLE) ||
-					   (pmrs[i].permissions & STIVALE2_PMR_EXECUTABLE)) {
+				if (pmrs[i].permissions & STIVALE2_PMR_EXECUTABLE) {
+					vmm_map_page(kernel_pagemap, pmrs[i].base + p,
+								 (pmrs[i].base - KERNEL_BASE) + p, 0b11);
+				} else {
+					vmm_map_page(kernel_pagemap, pmrs[i].base + p,
+								 (pmrs[i].base - KERNEL_BASE) + p,
+								 0b11 | 1UL << 63);
+				}
+			} else if (pmrs[i].permissions & STIVALE2_PMR_EXECUTABLE) {
 				vmm_map_page(kernel_pagemap, pmrs[i].base + p,
 							 (pmrs[i].base - KERNEL_BASE) + p, 1);
+			} else {
+				vmm_map_page(kernel_pagemap, pmrs[i].base + p,
+							 (pmrs[i].base - KERNEL_BASE) + p, 1 | 1UL << 63);
 			}
 		}
 	}
 	for (size_t i = 0; i < memmap_entries; i++) {
 		for (uintptr_t p = 0; p < memmap[i].length; p += PAGE_SIZE)
-			vmm_map_page(kernel_pagemap, MEM_PHYS_OFFSET + p, p, 0b11);
+			vmm_map_page(kernel_pagemap, MEM_PHYS_OFFSET + p, p,
+						 0b11 | 1UL << 63);
 	}
 	vmm_switch_pagemap(kernel_pagemap);
 }
