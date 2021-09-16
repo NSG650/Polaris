@@ -19,8 +19,8 @@
 #include "../klibc/printf.h"
 
 static uint32_t make_pci_address(uint32_t bus, uint32_t slot, uint32_t function,
-								 uint32_t offset) {
-	return ((bus << 16) | (slot << 11) | (function << 8) | (offset & 0xFC) |
+								 uint16_t offset) {
+	return ((bus << 16) | (slot << 11) | (function << 8) | (offset & 0xFFFC) |
 			(1u << 31));
 }
 
@@ -30,13 +30,13 @@ uint32_t pci_read(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t function,
 	port_dword_out(0xCF8, make_pci_address(bus, slot, function, offset));
 	switch (access_size) {
 		case 1:
-			return port_byte_in(0xCFC + (offset % 4));
+			return port_byte_in(0xCFC + (offset & 3));
 		case 2:
-			return port_word_in(0xCFC + (offset % 4));
+			return port_word_in(0xCFC + (offset & 2));
 		case 4:
-			return port_dword_in(0xCFC + (offset % 4));
+			return port_dword_in(0xCFC);
 		default:
-			printf("PCI unknown access size: %d\n", access_size);
+			printf("PCI unknown access size: %hhu\n", access_size);
 			return 0;
 	}
 }
@@ -47,16 +47,16 @@ void pci_write(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t function,
 	port_dword_out(0xCF8, make_pci_address(bus, slot, function, offset));
 	switch (access_size) {
 		case 1:
-			port_byte_out(0xCFC + (offset % 4), value);
+			port_byte_out(0xCFC + (offset & 3), value);
 			break;
 		case 2:
-			port_word_out(0xCFC + (offset % 4), value);
+			port_word_out(0xCFC + (offset & 2), value);
 			break;
 		case 4:
-			port_dword_out(0xCFC + (offset % 4), value);
+			port_dword_out(0xCFC, value);
 			break;
 		default:
-			printf("PCI unknown access size: %d\n", access_size);
+			printf("PCI unknown access size: %hhu\n", access_size);
 			break;
 	}
 }

@@ -23,7 +23,7 @@ void set_idt_gate(int n, void *handler) {
 	uint64_t p = (uint64_t)handler;
 
 	idt[n].offset_lo = (uint16_t)p;
-	idt[n].selector = 0x08;
+	idt[n].selector = 8;
 	idt[n].ist = 0;
 	idt[n].flags = 0x8E;
 	idt[n].offset_mid = (uint16_t)(p >> 16);
