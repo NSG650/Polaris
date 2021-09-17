@@ -222,7 +222,7 @@ static bool is_canonical(uint64_t addr) {
 void *laihost_scan(const char *signature, size_t index) {
 	// The DSDT must be found using a pointer in the FADT
 	if (!memcmp(signature, "DSDT", 4)) {
-		acpi_fadt_t *facp = (acpi_fadt_t *)acpi_find_sdt("FACP", 0);
+		acpi_fadt_t *facp = acpi_find_sdt("FACP", 0);
 		uint64_t dsdt_addr = 0;
 
 		if (is_canonical(facp->x_dsdt) && revision >= 2) {

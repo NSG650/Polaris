@@ -169,7 +169,7 @@ void apic_init(void) {
 	lapic_addr = acpi_get_lapic();
 	lapic_init(madt_local_apics.storage[0]->processor_id);
 	// Register SCI interrupt
-	acpi_fadt_t *facp = (acpi_fadt_t *)acpi_find_sdt("FACP", 0);
+	acpi_fadt_t *facp = acpi_find_sdt("FACP", 0);
 	ioapic_redirect_irq(facp->sci_irq, 73);
 	isr_register_handler(73, sci_interrupt);
 }

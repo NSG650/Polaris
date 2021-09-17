@@ -26,6 +26,8 @@ DYNARRAY_GLOBAL(madt_io_apics);
 DYNARRAY_GLOBAL(madt_isos);
 DYNARRAY_GLOBAL(madt_nmis);
 
+struct madt *madt;
+
 uintptr_t lapic_addr = 0;
 
 uintptr_t acpi_get_lapic(void) {
@@ -34,7 +36,7 @@ uintptr_t acpi_get_lapic(void) {
 
 void init_madt(void) {
 	// Search for MADT table
-	struct madt *madt = acpi_find_sdt("APIC", 0);
+	madt = acpi_find_sdt("APIC", 0);
 	if (!madt) {
 		PANIC("MADT table can't be found");
 		__builtin_unreachable();

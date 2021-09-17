@@ -65,6 +65,8 @@ struct madt_nmi {
 	uint8_t lint;
 } __attribute__((packed));
 
+extern struct madt *madt;
+
 DYNARRAY_EXTERN(struct madt_lapic *, madt_local_apics);
 DYNARRAY_EXTERN(struct madt_ioapic *, madt_io_apics);
 DYNARRAY_EXTERN(struct madt_iso *, madt_isos);

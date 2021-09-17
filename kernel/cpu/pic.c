@@ -15,6 +15,7 @@
  */
 
 #include "pic.h"
+#include "../acpi/madt.h"
 #include "ports.h"
 
 static void pic_disable(void) {
@@ -23,17 +24,21 @@ static void pic_disable(void) {
 }
 
 void pic_init(void) {
+	// There isn't any PIC
+	if (!(madt->flags & 1)) {
+		return;
+	}
 	// Remap the PIC
 	port_byte_out(0x20, 0x11);
 	port_byte_out(0xA0, 0x11);
 	port_byte_out(0x21, 0x20);
 	port_byte_out(0xA1, 0x28);
-	port_byte_out(0x21, 0x04);
-	port_byte_out(0xA1, 0x02);
-	port_byte_out(0x21, 0x01);
-	port_byte_out(0xA1, 0x01);
-	port_byte_out(0x21, 0x0);
-	port_byte_out(0xA1, 0x0);
+	port_byte_out(0x21, 4);
+	port_byte_out(0xA1, 2);
+	port_byte_out(0x21, 1);
+	port_byte_out(0xA1, 1);
+	port_byte_out(0x21, 0);
+	port_byte_out(0xA1, 0);
 
 	pic_disable();
 }
