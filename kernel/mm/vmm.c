@@ -72,7 +72,7 @@ struct pagemap *vmm_new_pagemap(void) {
 
 static uintptr_t *get_next_level(uintptr_t *current_level, size_t entry) {
 	uintptr_t ret;
-	if ((current_level[entry] & 0x1)) {
+	if (current_level[entry] & 1) {
 		// Present flag set
 		ret = current_level[entry] & ~((uintptr_t)0xFFF);
 	} else {

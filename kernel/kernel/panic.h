@@ -24,7 +24,7 @@
 __attribute__((noreturn)) void panic(const char *message, char *file,
 									 bool assert, size_t line);
 
-#define PANIC(b)  (panic(b, __FILE__, false, __LINE__))
+#define PANIC(b) (panic(b, __FILE__, false, __LINE__))
 #define ASSERT(b) ((b) ? (void)0 : panic(#b, __FILE__, true, __LINE__))
 
 #endif

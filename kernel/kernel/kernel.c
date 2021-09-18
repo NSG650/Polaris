@@ -35,22 +35,22 @@
 
 static uint8_t stack[32768];
 static struct stivale2_header_tag_smp smp_hdr_tag = {
-  .tag = {.identifier = STIVALE2_HEADER_TAG_SMP_ID, .next = 0}, .flags = 1};
+	.tag = {.identifier = STIVALE2_HEADER_TAG_SMP_ID, .next = 0}, .flags = 1};
 
 static struct stivale2_header_tag_framebuffer framebuffer_hdr_tag = {
-  // All tags need to begin with an identifier and a pointer to the next tag
-  .tag = {.identifier = STIVALE2_HEADER_TAG_FRAMEBUFFER_ID,
-		  .next = (uintptr_t)&smp_hdr_tag},
-  .framebuffer_width = 0,
-  .framebuffer_height = 0,
-  .framebuffer_bpp = 0};
+	// All tags need to begin with an identifier and a pointer to the next tag
+	.tag = {.identifier = STIVALE2_HEADER_TAG_FRAMEBUFFER_ID,
+			.next = (uintptr_t)&smp_hdr_tag},
+	.framebuffer_width = 0,
+	.framebuffer_height = 0,
+	.framebuffer_bpp = 0};
 
 __attribute__((section(".stivale2hdr"),
 			   used)) static struct stivale2_header stivale_hdr = {
-  .entry_point = 0,
-  .stack = (uintptr_t)stack + sizeof(stack),
-  .flags = (1 << 1) | (1 << 2),
-  .tags = (uintptr_t)&framebuffer_hdr_tag};
+	.entry_point = 0,
+	.stack = (uintptr_t)stack + sizeof(stack),
+	.flags = (1 << 1) | (1 << 2),
+	.tags = (uintptr_t)&framebuffer_hdr_tag};
 
 void *stivale2_get_tag(struct stivale2_struct *stivale2_struct, uint64_t id) {
 	struct stivale2_tag *current_tag = (void *)stivale2_struct->tags;
@@ -70,7 +70,7 @@ void *stivale2_get_tag(struct stivale2_struct *stivale2_struct, uint64_t id) {
 void _start(struct stivale2_struct *stivale2_struct) {
 	gdt_init();
 	struct stivale2_struct_tag_framebuffer *fb_str_tag =
-	  stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_FRAMEBUFFER_ID);
+		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_FRAMEBUFFER_ID);
 	if (fb_str_tag == NULL) {
 		write_serial("FAILED TO AQUIRE A FRAMEBUFFER\n\nHALTING");
 		for (;;)
@@ -79,23 +79,23 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	video_init(fb_str_tag);
 	cpu_init();
 	struct stivale2_struct_tag_memmap *memmap_tag =
-	  stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MEMMAP_ID);
+		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MEMMAP_ID);
 	pmm_init((void *)memmap_tag->memmap, memmap_tag->entries);
 	struct stivale2_struct_tag_pmrs *pmrs_tag =
-	  stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_PMRS_ID);
+		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_PMRS_ID);
 	vmm_init((void *)memmap_tag->memmap, memmap_tag->entries,
 			 (void *)pmrs_tag->pmrs, pmrs_tag->entries);
 	serial_install();
 	isr_install();
 	asm volatile("sti");
 	struct stivale2_struct_tag_rsdp *rsdp_tag =
-	  stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_RSDP_ID);
+		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_RSDP_ID);
 	acpi_init((void *)rsdp_tag->rsdp);
 	hpet_init();
 	pic_init();
 	apic_init();
 	struct stivale2_struct_tag_smp *smp_tag =
-	  stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_SMP_ID);
+		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_SMP_ID);
 	smp_init(smp_tag);
 	printf("Hello World!\n");
 	printf("A (4 bytes): %p\n", kmalloc(4));

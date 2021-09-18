@@ -36,11 +36,11 @@
 
 #define DYNARRAY_NEW(TYPE, THIS) DYNARRAY_STRUCT(TYPE) THIS = {0}
 
-#define DYNARRAY_INIT(THIS, INITIAL_SIZE)                                 \
-	{                                                                     \
-		(THIS).storage_size = INITIAL_SIZE;                               \
-		(THIS).storage =                                                  \
-		  kmalloc((THIS).storage_size * sizeof(typeof(*(THIS).storage))); \
+#define DYNARRAY_INIT(THIS, INITIAL_SIZE)                                   \
+	{                                                                       \
+		(THIS).storage_size = INITIAL_SIZE;                                 \
+		(THIS).storage =                                                    \
+			kmalloc((THIS).storage_size * sizeof(typeof(*(THIS).storage))); \
 	}
 
 #define DYNARRAY_DEL(THIS) \
@@ -53,8 +53,8 @@
 		} else {                                                               \
 			(THIS).storage_size *= 2;                                          \
 			(THIS).storage =                                                   \
-			  krealloc((THIS).storage,                                         \
-					   (THIS).storage_size * sizeof(typeof(*(THIS).storage))); \
+				krealloc((THIS).storage, (THIS).storage_size *                 \
+											 sizeof(typeof(*(THIS).storage))); \
 		}                                                                      \
 	}
 

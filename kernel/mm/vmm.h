@@ -23,9 +23,9 @@
 #include <stdint.h>
 #include <stivale2.h>
 
-#define PAGE_SIZE		((size_t)4096)
+#define PAGE_SIZE ((size_t)4096)
 #define MEM_PHYS_OFFSET ((uintptr_t)0xFFFF800000000000)
-#define KERNEL_BASE		((uintptr_t)0xFFFFFFFF80000000)
+#define KERNEL_BASE ((uintptr_t)0xFFFFFFFF80000000)
 
 struct pagemap {
 	uintptr_t *top_level;

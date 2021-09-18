@@ -21,8 +21,8 @@
 
 #define FLAT_PTR(PTR) (*((uintptr_t(*)[])(PTR)))
 
-#define BYTE_PTR(PTR)  (*((uint8_t *)(PTR)))
-#define WORD_PTR(PTR)  (*((uint16_t *)(PTR)))
+#define BYTE_PTR(PTR) (*((uint8_t *)(PTR)))
+#define WORD_PTR(PTR) (*((uint16_t *)(PTR)))
 #define DWORD_PTR(PTR) (*((uint32_t *)(PTR)))
 #define QWORD_PTR(PTR) (*((uint64_t *)(PTR)))
 

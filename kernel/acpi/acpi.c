@@ -50,11 +50,11 @@ static void init_ec(void) {
 
 		// Found one
 		struct lai_ec_driver *driver = kmalloc(sizeof(
-		  struct lai_ec_driver));  // Dynamically allocate the memory since -
-		lai_init_ec(node, driver); // we dont know how many ECs there could be
+			struct lai_ec_driver)); // Dynamically allocate the memory since -
+		lai_init_ec(node, driver);	// we dont know how many ECs there could be
 
 		struct lai_ns_child_iterator child_it =
-		  LAI_NS_CHILD_ITERATOR_INITIALIZER(node);
+			LAI_NS_CHILD_ITERATOR_INITIALIZER(node);
 		lai_nsnode_t *child_node;
 		while ((child_node = lai_ns_child_iterate(&child_it))) {
 			if (lai_ns_get_node_type(child_node) == LAI_NODETYPE_OPREGION)
@@ -99,7 +99,7 @@ void *acpi_find_sdt(const char *signature, int index) {
 	int cnt = 0;
 
 	const size_t entries =
-	  (rsdt->header.length - sizeof(acpi_header_t)) / (use_xsdt ? 8 : 4);
+		(rsdt->header.length - sizeof(acpi_header_t)) / (use_xsdt ? 8 : 4);
 
 	for (size_t i = 0; i < entries; i++) {
 		acpi_header_t *ptr;
