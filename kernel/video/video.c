@@ -17,6 +17,7 @@
 
 #include "video.h"
 #include "../klibc/lock.h"
+#include "../serial/serial.h"
 #define SSFN_CONSOLEBITMAP_TRUECOLOR
 #include "ssfn.h"
 
@@ -59,7 +60,7 @@ void draw_px(int x, int y, uint32_t color) {
 void knewline(void) {
 	for (uint32_t y = ssfn_src->height; y != height_s; ++y) {
 		void *dest =
-		  (void *)(((uintptr_t)fb_addr) + (y - ssfn_src->height) * fb_pitch);
+			(void *)(((uintptr_t)fb_addr) + (y - ssfn_src->height) * fb_pitch);
 		const void *src = (void *)(((uintptr_t)fb_addr) + y * fb_pitch);
 		memcpy(dest, src, width_s * 4);
 	}
@@ -142,6 +143,11 @@ void putchar_color(int c, uint32_t color, uint32_t bgcolor) {
 
 void putcharx(int c) {
 	putchar_color(c, 0xFFFFFF, 0x000000);
+}
+
+void _putchar(char character) {
+	putchar_color(character, 0xEEEEEE, 0x000000);
+	write_serial_char(character);
 }
 
 void kprint_color(char *string, uint32_t color) {
