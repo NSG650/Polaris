@@ -22,19 +22,18 @@
 
 #define registerB_DataMode (1 << 2)
 
-typedef struct {
-	uint32_t hour;
-	uint32_t second;
-	uint32_t minute;
-} time;
+struct time {
+	uint8_t second;
+	uint8_t minute;
+	uint8_t hour;
+};
 
-typedef struct {
-	uint32_t day;
-	uint32_t month;
-	uint32_t year;
-	uint32_t century;
-	time time;
-} datetime_t;
+struct datetime {
+	struct time time;
+	uint8_t day;
+	uint8_t month;
+	uint16_t year;
+};
 
 uint64_t get_unix_timestamp(void);
 
