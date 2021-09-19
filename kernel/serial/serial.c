@@ -19,7 +19,7 @@
 #include "../cpu/ports.h"
 #include "../klibc/lock.h"
 
-DECLARE_LOCK(spinlock);
+lock_t serial_lock;
 
 int serial_install_port(uint16_t PORT) {
 	port_byte_out(PORT + 1, 0x00); // Disable all interrupts
@@ -49,10 +49,10 @@ int is_transmit_empty(uint16_t PORT) {
 }
 
 void write_serial(char *word) {
-	LOCK(spinlock);
+	LOCK(serial_lock);
 	asm volatile("cli");
 	write_serial_port(COM1, word);
-	UNLOCK(spinlock);
+	UNLOCK(serial_lock);
 	asm volatile("sti");
 }
 

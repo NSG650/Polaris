@@ -28,8 +28,6 @@ struct alloc_metadata {
 	size_t size;
 };
 
-DECLARE_LOCK(lib_lock);
-
 void *alloc(size_t size) {
 	size_t page_count = DIV_ROUNDUP(size, PAGE_SIZE);
 
@@ -94,14 +92,16 @@ int liballoc_free(void *ptr, size_t size) {
 	return 0;
 }
 
+lock_t alloc_lock;
+
 int liballoc_lock() {
-	LOCK(lib_lock);
+	LOCK(alloc_lock);
 	asm volatile("cli");
 	return 0;
 }
 
 int liballoc_unlock() {
-	UNLOCK(lib_lock);
+	UNLOCK(alloc_lock);
 	asm volatile("sti");
 	return 0;
 }

@@ -28,7 +28,7 @@ extern unsigned char fb_font;
 uint8_t *fb_addr;
 size_t fb_pitch, fb_bpp;
 uint16_t width_s, height_s;
-DECLARE_LOCK(lock);
+lock_t video_lock;
 
 void vid_reset(void) {
 	cursor_x = 0;
@@ -157,12 +157,12 @@ void kprint_color(char *string, uint32_t color) {
 }
 
 void kprintbgc(char *string, uint32_t fcolor, uint32_t bcolor) {
-	LOCK(lock);
+	LOCK(video_lock);
 	asm volatile("cli");
 	while (*string) {
 		putchar_color(ssfn_utf8(&string), fcolor, bcolor);
 	}
-	UNLOCK(lock);
+	UNLOCK(video_lock);
 	asm volatile("sti");
 }
 

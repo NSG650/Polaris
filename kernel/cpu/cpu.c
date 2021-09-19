@@ -34,7 +34,7 @@ size_t cpu_fpu_storage_size;
 void (*cpu_fpu_save)(void *);
 void (*cpu_fpu_restore)(void *);
 
-DECLARE_LOCK(cpu_lock);
+lock_t cpu_lock;
 
 static uint64_t rdmsr(uint32_t msr) {
 	uint32_t edx, eax;

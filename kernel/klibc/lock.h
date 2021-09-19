@@ -18,7 +18,9 @@
  * limitations under the License.
  */
 
-#define DECLARE_LOCK(name) static volatile int name
+#include <stdbool.h>
+
+typedef volatile bool lock_t;
 
 #define LOCK(name)                                     \
 	while (!__sync_bool_compare_and_swap(&name, 0, 1)) \
