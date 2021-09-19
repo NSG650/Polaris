@@ -71,11 +71,6 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	gdt_init();
 	struct stivale2_struct_tag_framebuffer *fb_str_tag =
 		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_FRAMEBUFFER_ID);
-	if (fb_str_tag == NULL) {
-		write_serial("FAILED TO AQUIRE A FRAMEBUFFER\n\nHALTING");
-		for (;;)
-			asm("hlt");
-	}
 	video_init(fb_str_tag);
 	cpu_init();
 	struct stivale2_struct_tag_memmap *memmap_tag =
