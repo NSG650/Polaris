@@ -21,7 +21,11 @@
 #include "../cpu/cpu.h"
 #include "../cpu/isr.h"
 #include "../cpu/pic.h"
+#include "../fs/devtmpfs.h"
+#include "../fs/tmpfs.h"
+#include "../fs/vfs.h"
 #include "../klibc/printf.h"
+#include "../klibc/resource.h"
 #include "../mm/pmm.h"
 #include "../mm/vmm.h"
 #include "../serial/serial.h"
@@ -106,9 +110,32 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	printf("D (32 bytes after C realloc): %p\n", ptr3);
 	printf("E (4 int calloc): %p\n", kcalloc(4, sizeof(int)));
 	printf("%llu\n", get_unix_timestamp());
-	hpet_usleep(1000 * 1000);
-	printf("%llu\n", get_unix_timestamp());
 	printf("HPET test works!\n");
+	vfs_dump_nodes(NULL, "");
+	vfs_install_fs(&devtmpfs);
+	vfs_install_fs(&tmpfs);
+	vfs_mount("tmpfs", "/", "tmpfs");
+	vfs_new_node_deep(NULL, "/dev/kot"); // if i comment this out it works but
+										 // if it is uncommented PAGE FAULT
+	vfs_dump_nodes(NULL, "");
+	vfs_mount("devtmpfs", "/dev", "devtmpfs");
+	printf("Opening a file /test.txt and writing hello world to it\n");
+	struct resource *h = vfs_open("/test.txt", O_RDWR | O_CREAT, 0644);
+	if (h == NULL)
+		printf("Failed to get handle during write\n");
+	printf("Handle: %p\n", h);
+	h->write(h, "hello world\n", 0, 12); // it page fauls here
+	// some more information the page fault only occurs when the a new vfs deep
+	// node is created eg /dev/funny
+	printf("Opening a file /test.txt and reading the contents and storing it "
+		   "in buf\n");
+	struct resource *h1 = vfs_open("/test.txt", O_RDWR, 0644);
+	if (h1 == NULL)
+		printf("Failed to get handle during read\n");
+	char buf[20];
+	h1->read(h1, buf, 0, 12);
+	printf("hello world");
+	printf(buf);
 	for (;;)
 		asm("hlt");
 }
