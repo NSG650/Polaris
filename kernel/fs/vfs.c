@@ -125,10 +125,21 @@ static struct vfs_node *path2node(struct vfs_node *parent, const char *_path,
 	if (_path == NULL)
 		return NULL;
 
+	if (*_path == 0)
+        return NULL;
+
 	char l_path[strlen(_path) + 1];
 	strcpy(l_path, _path);
 
 	char *path = l_path;
+
+	// Get rid of trailing slashes
+    for (ssize_t i = strlen(path) - 1; i > 0; i--) {
+        if (path[i] == '/')
+            path[i] = 0;
+        else
+            break;
+    }
 
 	struct vfs_node *cur_parent =
 		*path == '/' || parent == NULL ? &root_node : parent;

@@ -1,4 +1,7 @@
 ### C ###
+# Initramfs
+*.gz
+
 # Prerequisites
 *.d
 

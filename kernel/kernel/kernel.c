@@ -33,6 +33,7 @@
 #include "../sys/gdt.h"
 #include "../sys/hpet.h"
 #include "../video/video.h"
+#include "../dev/initramfs.h"
 #include <liballoc.h>
 #include <stdint.h>
 #include <stivale2.h>
@@ -111,28 +112,20 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	printf("E (4 int calloc): %p\n", kcalloc(4, sizeof(int)));
 	printf("%llu\n", get_unix_timestamp());
 	printf("HPET test works!\n");
-	vfs_dump_nodes(NULL, "");
-	vfs_install_fs(&devtmpfs);
-	vfs_install_fs(&tmpfs);
-	vfs_mount("tmpfs", "/", "tmpfs");
-	vfs_dump_nodes(NULL, "");
-	vfs_mkdir(NULL, "/dev", 0755, true);
-	vfs_dump_nodes(NULL, "");
-	vfs_mount("devtmpfs", "/dev", "devtmpfs");
-	printf("Opening a file /test.txt and writing hello world to it\n");
-	struct resource *h = vfs_open("/test.txt", O_RDWR | O_CREAT, 0644);
-	if (h == NULL)
-		printf("Failed to get handle during write\n");
-	printf("Handle: %p\n", h);
-	h->write(h, "hello world\n", 0, 12);
-	printf("Opening a file /test.txt and reading the contents and storing it "
-		   "in buf\n");
-	struct resource *h1 = vfs_open("/test.txt", O_RDWR, 0644);
-	if (h1 == NULL)
-		printf("Failed to get handle during read\n");
-	char buf[20];
-	h1->read(h1, buf, 0, 12);
-	printf(buf);
+    vfs_install_fs(&tmpfs);
+    vfs_install_fs(&devtmpfs);
+    vfs_mount("tmpfs", "/", "tmpfs");
+    vfs_mkdir(NULL, "/dev", 0755, true);
+    vfs_mount("devtmpfs", "/dev", "devtmpfs");
+	struct stivale2_struct_tag_modules *modules_tag =
+        stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MODULES_ID);
+    initramfs_init(modules_tag);
+	struct resource *h = vfs_open("/root/initramfs.txt", O_RDWR, 0644);
+    if (h == NULL)
+        return;
+    char buf[30] = {0};
+    h->read(h, buf, 0, strlen("Hello initramfs"));
+	printf("reading initramfs.txt: %s\n", buf);
 	vfs_dump_nodes(NULL, "");
 	for (;;)
 		asm("hlt");

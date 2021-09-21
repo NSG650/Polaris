@@ -23,7 +23,7 @@ trap 'unmount_and_exit' ERR
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
 	echo "==> Making an image on macOS..."
-
+	tar -zcvf initramfs.tar.gz root/
 	# Image creation
 	echo ""
 	echo "==> Creating a .dmg file (limitation from hdiutil), FAT32, 64MB..."
@@ -46,7 +46,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	echo ""
 	echo "==> Copying necessary files..."
 	mkdir -p /Volumes/D/EFI/BOOT/
-	cp -v d.elf limine.cfg /usr/local/share/limine/limine.sys /Volumes/D/
+	cp -v d.elf initramfs.tar.gz limine.cfg /usr/local/share/limine/limine.sys /Volumes/D/
 	cp -v /usr/local/share/limine/BOOTX64.EFI /Volumes/D/EFI/BOOT/
 
 	# Sync the system cache and unmount
@@ -56,6 +56,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	hdiutil unmount /Volumes/D
 else
 	echo "==> Making an image on $OSTYPE..."
+	tar -zcvf initramfs.tar.gz root/
 	# Create an empty zeroed out 64MiB image file
 	echo ""
 	echo "==> Creating an empty 64 MiB image..."
@@ -93,7 +94,7 @@ else
 	echo ""
 	echo "==> Copying necessary files..."
 	sudo mkdir -p img_mount/EFI/BOOT/
-	sudo cp -v d.elf limine.cfg img_mount/
+	sudo cp -v d.elf initramfs.tar.gz limine.cfg img_mount/
 	{
 		sudo cp -v /usr/local/share/limine/limine.sys img_mount/
 		sudo cp -v /usr/local/share/limine/BOOTX64.EFI img_mount/EFI/BOOT/

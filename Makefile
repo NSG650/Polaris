@@ -54,6 +54,7 @@ $(KERNEL): $(OBJECTS)
 clean:
 	$(RM) $(OBJECTS) $(DEPENDS) $(KERNEL)
 	$(RM) -r d.hdd img_mount
+	$(RM) -r *.gz
 
 image:
 	@./image.sh
