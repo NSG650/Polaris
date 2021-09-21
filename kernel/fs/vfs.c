@@ -1,3 +1,19 @@
+/*
+ * Copyright 2021 NSG650
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "vfs.h"
 #include "../dev/dev.h"
 #include "../klibc/dynarray.h"
@@ -104,36 +120,46 @@ enum { NO_CREATE = 0, CREATE_SHALLOW, CREATE_DEEP };
 
 static struct vfs_node *path2node(struct vfs_node *parent, const char *_path,
 								  int create) {
-	char *abs_path = kmalloc(strlen(_path) + 2);
 	bool last = false;
 
-	vfs_get_absolute_path(abs_path, _path, "/");
-
-	char *path = abs_path + 1;
-
-	if (*path == 0) {
-		return &root_node;
-	}
-
-	if (root_node.mount_gate == NULL)
+	if (_path == NULL)
 		return NULL;
 
-	struct vfs_node *cur_parent = parent;
-	struct vfs_node *cur_node = NULL;
+	char l_path[strlen(_path) + 1];
+	strcpy(l_path, _path);
+
+	char *path = l_path;
+
+	struct vfs_node *cur_parent =
+		*path == '/' || parent == NULL ? &root_node : parent;
+	if (cur_parent->mount_gate)
+		cur_parent = cur_parent->mount_gate;
+	struct vfs_node *cur_node = cur_parent->child;
+
+	while (*path == '/') {
+		path++;
+		if (!*path)
+			return &root_node;
+	}
 
 next:;
 	char *elem = path;
-	while (*path != 0 && *path != '/')
+	while (*path != 0) {
+		if (*path == '/') {
+			if (*(path + 1) == '/') {
+				path++;
+				continue;
+			} else {
+				break;
+			}
+		}
 		path++;
+	}
 	if (*path == '/')
 		*path++ = 0;
 	else /* path == 0 */
 		last = true;
 
-	if (cur_parent == NULL)
-		cur_parent = root_node.mount_gate;
-	if (cur_node == NULL)
-		cur_node = cur_parent->child;
 	if (cur_node == NULL)
 		goto epilogue;
 
@@ -177,11 +203,7 @@ epilogue:
 		} else {
 			if (create == CREATE_SHALLOW)
 				return NULL;
-			struct vfs_node *new_dir = vfs_new_node(cur_parent, elem);
-			new_dir->res = resource_create(sizeof(struct resource));
-			new_dir->res->st.st_dev = cur_parent->backing_dev_id;
-			new_dir->res->st.st_mode = (0755 & ~S_IFMT) | S_IFDIR;
-			cur_parent = new_dir;
+			cur_parent = vfs_mkdir(cur_parent, elem, 0755, false);
 			goto next;
 		}
 	}
@@ -248,7 +270,41 @@ bool vfs_mount(const char *source, const char *target, const char *fstype) {
 	return true;
 }
 
+struct vfs_node *vfs_mkdir(struct vfs_node *parent, const char *name,
+						   mode_t mode, bool recurse) {
+	if (parent == NULL)
+		parent = &root_node;
+
+	struct vfs_node *new_dir = path2node(parent, name, NO_CREATE);
+
+	if (new_dir != NULL)
+		return NULL;
+
+	new_dir = path2node(parent, name, recurse ? CREATE_DEEP : CREATE_SHALLOW);
+
+	if (new_dir == NULL)
+		return NULL;
+
+	new_dir->res = new_dir->fs->mkdir(new_dir, mode);
+
+	struct vfs_node *dot = vfs_new_node(new_dir, ".");
+	dot->child = new_dir;
+	dot->res = new_dir->res;
+
+	struct vfs_node *dotdot = vfs_new_node(new_dir, "..");
+	dotdot->child = parent;
+	dotdot->res = parent->res;
+
+	return new_dir;
+}
+
 struct vfs_node *vfs_new_node(struct vfs_node *parent, const char *name) {
+	if (parent == NULL)
+		parent = &root_node;
+
+	if (parent->mount_gate)
+		parent = parent->mount_gate;
+
 	struct vfs_node *new_node = path2node(parent, name, NO_CREATE);
 
 	if (new_node != NULL)
@@ -311,15 +367,16 @@ struct resource *vfs_open(const char *path, int oflags, mode_t mode) {
 
 void vfs_dump_nodes(struct vfs_node *node, const char *parent) {
 	struct vfs_node *cur_node = node ? node : &root_node;
-	while (cur_node) {
+	for (; cur_node; cur_node = cur_node->next) {
 		printf("%s - %s\n", parent, cur_node->name);
+		if (!strcmp(cur_node->name, ".") || !strcmp(cur_node->name, ".."))
+			continue;
 		if (cur_node->mount_gate != NULL &&
 			cur_node->mount_gate->child != NULL) {
 			vfs_dump_nodes(cur_node->mount_gate->child, cur_node->name);
 		} else if (cur_node->child != NULL && cur_node->mount_gate == NULL) {
 			vfs_dump_nodes(cur_node->child, cur_node->name);
 		}
-		cur_node = cur_node->next;
 	}
 }
 

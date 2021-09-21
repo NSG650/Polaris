@@ -1,3 +1,19 @@
+/*
+ * Copyright 2021 NSG650
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "devtmpfs.h"
 #include "../klibc/lock.h"
 #include "../klibc/mem.h"
@@ -11,6 +27,8 @@ struct tmpfs_resource {
 	size_t allocated_size;
 	char *data;
 };
+
+static ino_t inode_counter = 1;
 
 static struct vfs_node devfs_mount_gate = {.name = "/dev",
 										   .res = NULL,
@@ -92,12 +110,26 @@ static struct resource *devtmpfs_open(struct vfs_node *node, bool create,
 	res->res.st.st_size = 0;
 	res->res.st.st_blocks = 0;
 	res->res.st.st_blksize = 512;
-	res->res.st.st_ino = (uintptr_t)res->data;
+	res->res.st.st_ino = inode_counter++;
 	res->res.st.st_mode = (mode & ~S_IFMT) | S_IFREG;
 	res->res.st.st_nlink = 1;
 	res->res.close = devtmpfs_close;
 	res->res.read = devtmpfs_read;
 	res->res.write = devtmpfs_write;
+
+	return (void *)res;
+}
+
+static struct resource *devtmpfs_mkdir(struct vfs_node *node, mode_t mode) {
+	struct resource *res = resource_create(sizeof(struct resource));
+
+	res->st.st_dev = node->backing_dev_id;
+	res->st.st_size = 0;
+	res->st.st_blocks = 0;
+	res->st.st_blksize = 512;
+	res->st.st_ino = inode_counter++;
+	res->st.st_mode = (mode & ~S_IFMT) | S_IFDIR;
+	res->st.st_nlink = 1;
 
 	return (void *)res;
 }
@@ -111,4 +143,5 @@ struct filesystem devtmpfs = {.name = "devtmpfs",
 							  .needs_backing_device = false,
 							  .mount = devtmpfs_mount,
 							  .open = devtmpfs_open,
+							  .mkdir = devtmpfs_mkdir,
 							  .populate = devtmpfs_populate};

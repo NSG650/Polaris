@@ -115,8 +115,8 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	vfs_install_fs(&devtmpfs);
 	vfs_install_fs(&tmpfs);
 	vfs_mount("tmpfs", "/", "tmpfs");
-	vfs_new_node_deep(NULL, "/dev/kot"); // if i comment this out it works but
-										 // if it is uncommented PAGE FAULT
+	vfs_dump_nodes(NULL, "");
+	vfs_mkdir(NULL, "/dev", 0755, true);
 	vfs_dump_nodes(NULL, "");
 	vfs_mount("devtmpfs", "/dev", "devtmpfs");
 	printf("Opening a file /test.txt and writing hello world to it\n");
@@ -134,7 +134,6 @@ void _start(struct stivale2_struct *stivale2_struct) {
 		printf("Failed to get handle during read\n");
 	char buf[20];
 	h1->read(h1, buf, 0, 12);
-	printf("hello world");
 	printf(buf);
 	for (;;)
 		asm("hlt");
