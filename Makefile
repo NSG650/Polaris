@@ -1,5 +1,5 @@
 # Name of the final executable
-KERNEL := d.elf
+KERNEL := polaris.elf
 
 # The compiler we are using
 CC := x86_64-elf-gcc
@@ -60,7 +60,7 @@ image:
 	@./image.sh
 
 run:
-	qemu-system-x86_64 -M q35,smm=off -hda d.hdd -serial stdio -m 512M
+	qemu-system-x86_64 -M q35,smm=off -hda polaris.hdd -serial stdio -m 512M
 
 debug:
-	qemu-system-x86_64 -hda d.hdd -M q35,smm=off -d int -no-reboot -s -m 512M
+	qemu-system-x86_64 -hda polaris.hdd -M q35,smm=off -d int -no-reboot -s -m 512M

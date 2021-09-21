@@ -12,8 +12,8 @@ unmount_and_exit() {
 			sudo umount img_mount
 		fi
 
-		if [ -n "$(losetup --list | grep "d.hdd" | cut -d " " -f1)" ]; then
-			sudo losetup -d $(losetup --list | grep "d.hdd" | cut -d " " -f1)
+		if [ -n "$(losetup --list | grep "polaris.hdd" | cut -d " " -f1)" ]; then
+			sudo losetup -d $(losetup --list | grep "polaris.hdd" | cut -d " " -f1)
 		fi
 	fi
 	exit 1
@@ -30,23 +30,23 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	hdiutil create -layout GPTSPUD -size 64m -fs FAT32 -volname d d.dmg
 	echo ""
 	echo "==> Renaming .dmg to .hdd..."
-	mv d.dmg d.hdd
+	mv polaris.dmg polaris.hdd
 
 	# Installing bootloader
 	echo ""
 	echo "==> Installing the bootloader..."
-	limine-install d.hdd
+	limine-install polaris.hdd
 
 	# Mount
 	echo ""
 	echo "==> Mounting the image..."
-	hdiutil mount d.hdd
+	hdiutil mount polaris.hdd
 
 	# Copying necessary files
 	echo ""
 	echo "==> Copying necessary files..."
 	mkdir -p /Volumes/D/EFI/BOOT/
-	cp -v d.elf initramfs.tar.gz limine.cfg /usr/local/share/limine/limine.sys /Volumes/D/
+	cp -v polaris.elf initramfs.tar.gz limine.cfg /usr/local/share/limine/limine.sys /Volumes/D/
 	cp -v /usr/local/share/limine/BOOTX64.EFI /Volumes/D/EFI/BOOT/
 
 	# Sync the system cache and unmount
@@ -60,28 +60,28 @@ else
 	# Create an empty zeroed out 64MiB image file
 	echo ""
 	echo "==> Creating an empty 64 MiB image..."
-	dd if=/dev/zero bs=1M count=0 seek=64 of=d.hdd
+	dd if=/dev/zero bs=1M count=0 seek=64 of=polaris.hdd
 
 	# Create a GPT partition table
 	echo ""
 	echo "==> Creating a GPT partition table..."
-	parted -s d.hdd mklabel gpt
+	parted -s polaris.hdd mklabel gpt
 
 	# Create an ESP partition that spans the whole disk
 	echo ""
 	echo "==> Creating an ESP partition..."
-	parted -s d.hdd mkpart ESP fat32 2048s 100%
-	parted -s d.hdd set 1 esp on
+	parted -s polaris.hdd mkpart ESP fat32 2048s 100%
+	parted -s polaris.hdd set 1 esp on
 
 	# Install the Limine BIOS stages onto the image
 	echo ""
 	echo "==> Installing Limine..."
-	limine-install d.hdd
+	limine-install polaris.hdd
 
 	# Mount the loopback device
 	echo ""
 	echo "==> Mounting and formatting the image (might request your password)..."
-	USED_LOOPBACK=$(sudo losetup -Pf --show d.hdd)
+	USED_LOOPBACK=$(sudo losetup -Pf --show polaris.hdd)
 
 	# Format the ESP partition as FAT32
 	sudo mkfs.fat -F 32 ${USED_LOOPBACK}p1
@@ -94,7 +94,7 @@ else
 	echo ""
 	echo "==> Copying necessary files..."
 	sudo mkdir -p img_mount/EFI/BOOT/
-	sudo cp -v d.elf initramfs.tar.gz limine.cfg img_mount/
+	sudo cp -v polaris.elf initramfs.tar.gz limine.cfg img_mount/
 	{
 		sudo cp -v /usr/local/share/limine/limine.sys img_mount/
 		sudo cp -v /usr/local/share/limine/BOOTX64.EFI img_mount/EFI/BOOT/
@@ -117,5 +117,5 @@ fi
 echo "-----------"
 echo "==> Done!"
 echo "==> Now, you can launch D using the following command."
-echo "> qemu-system-x86_64 -hda d.hdd -m 512M"
+echo "> qemu-system-x86_64 -hda polaris.hdd -m 512M"
 echo "==> Good luck!"
