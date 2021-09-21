@@ -28,14 +28,16 @@ __attribute__((noreturn)) void panic(const char *message, char *file,
 	if (assert) {
 		clear_screen(0x00B800);
 		sprintf(x,
-				"*** ASSERTION FAILURE: %s\nFile: %s\nLine: %zu\nRIP: "
-				"0x%p\nRBP: 0x%p\n",
-				message, file, line, rip, rbp);
+				"*** ASSERTION FAILURE: %s\nFile: %s\nLine: %zu\n\nRIP: "
+				"0x%p\nRBP: 0x%p\nKernel build: %s\n",
+				message, file, line, rip, rbp, KVERSION);
 		kprintbgc(x, 0xFFFFFF, 0x00B800);
 	} else {
 		clear_screen(0xB80000);
-		sprintf(x, "*** PANIC: %s\nFile: %s\nLine: %zu\nRIP: 0x%p\nRBP: 0x%p\n",
-				message, file, line, rip, rbp);
+		sprintf(x,
+				"*** PANIC: %s\nFile: %s\nLine: %zu\n\nRIP: 0x%p\nRBP: "
+				"0x%p\nKernel Build: %s\n",
+				message, file, line, rip, rbp, KVERSION);
 		kprintbgc(x, 0xFFFFFF, 0xB80000);
 	}
 	write_serial(x);

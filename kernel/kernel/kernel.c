@@ -86,6 +86,7 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	vmm_init((void *)memmap_tag->memmap, memmap_tag->entries,
 			 (void *)pmrs_tag->pmrs, pmrs_tag->entries);
 	serial_install();
+	printf("Kernel build: %s\n", KVERSION);
 	isr_install();
 	asm volatile("sti");
 	struct stivale2_struct_tag_rsdp *rsdp_tag =
