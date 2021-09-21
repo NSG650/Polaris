@@ -24,6 +24,7 @@
 #include "../klibc/printf.h"
 #include "../mm/pmm.h"
 #include "../mm/vmm.h"
+#include "../sched/scheduler.h"
 #include "../serial/serial.h"
 #include "../sys/clock.h"
 #include "../sys/gdt.h"
@@ -33,7 +34,7 @@
 #include <stdint.h>
 #include <stivale2.h>
 
-static uint8_t stack[32768];
+uint8_t stack[32768];
 static struct stivale2_header_tag_smp smp_hdr_tag = {
 	.tag = {.identifier = STIVALE2_HEADER_TAG_SMP_ID, .next = 0}, .flags = 1};
 
@@ -92,6 +93,7 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	struct stivale2_struct_tag_smp *smp_tag =
 		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_SMP_ID);
 	smp_init(smp_tag);
+	sched_init();
 	printf("Hello World!\n");
 	printf("A (4 bytes): %p\n", kmalloc(4));
 	void *ptr = kmalloc(8);
