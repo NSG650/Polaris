@@ -124,9 +124,7 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	if (h == NULL)
 		printf("Failed to get handle during write\n");
 	printf("Handle: %p\n", h);
-	h->write(h, "hello world\n", 0, 12); // it page fauls here
-	// some more information the page fault only occurs when the a new vfs deep
-	// node is created eg /dev/funny
+	h->write(h, "hello world\n", 0, 12);
 	printf("Opening a file /test.txt and reading the contents and storing it "
 		   "in buf\n");
 	struct resource *h1 = vfs_open("/test.txt", O_RDWR, 0644);
@@ -135,6 +133,7 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	char buf[20];
 	h1->read(h1, buf, 0, 12);
 	printf(buf);
+	vfs_dump_nodes(NULL, "");
 	for (;;)
 		asm("hlt");
 }
