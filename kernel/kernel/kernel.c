@@ -24,6 +24,7 @@
 #include "../fs/devtmpfs.h"
 #include "../fs/tmpfs.h"
 #include "../fs/vfs.h"
+#include "panic.h"
 #include "../klibc/printf.h"
 #include "../klibc/resource.h"
 #include "../mm/pmm.h"
@@ -128,6 +129,7 @@ void _start(struct stivale2_struct *stivale2_struct) {
     h->read(h, buf, 0, strlen("Hello initramfs"));
 	printf("reading initramfs.txt: %s\n", buf);
 	vfs_dump_nodes(NULL, "");
+	PANIC("panic test");
 	for (;;)
 		asm("hlt");
 }
