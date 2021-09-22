@@ -24,18 +24,18 @@
 #include <stivale2.h>
 
 #define PAGE_SIZE ((size_t)4096)
-#define MEM_PHYS_OFFSET ((uintptr_t)0xFFFF800000000000)
-#define KERNEL_BASE ((uintptr_t)0xFFFFFFFF80000000)
+#define MEM_PHYS_OFFSET ((uint64_t)0xFFFF800000000000)
+#define KERNEL_BASE ((uint64_t)0xFFFFFFFF80000000)
 
 struct pagemap {
-	uintptr_t *top_level;
+	void *top_level;
 };
 
 void vmm_init(struct stivale2_mmap_entry *memmap, size_t memmap_entries,
 			  struct stivale2_pmr *pmrs, size_t pmr_entries);
 void vmm_switch_pagemap(struct pagemap *pagemap);
 struct pagemap *vmm_new_pagemap(void);
-bool vmm_map_page(struct pagemap *pagemap, uintptr_t virt_addr,
-				  uintptr_t phys_addr, uintptr_t flags);
+bool vmm_map_page(struct pagemap *pagemap, uint64_t virt_addr,
+				  uint64_t phys_addr, uint64_t flags, bool hugepages);
 
 #endif
