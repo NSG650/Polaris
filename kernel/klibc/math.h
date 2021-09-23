@@ -27,8 +27,8 @@
 
 #define ALIGN_UP(A, B)                  \
 	({                                  \
-		typeof(A) _a__ = A;           \
-		typeof(B) _b__ = B;           \
+		typeof(A) _a__ = A;             \
+		typeof(B) _b__ = B;             \
 		DIV_ROUNDUP(_a__, _b__) * _b__; \
 	})
 

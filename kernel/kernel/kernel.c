@@ -21,10 +21,10 @@
 #include "../cpu/cpu.h"
 #include "../cpu/isr.h"
 #include "../cpu/pic.h"
+#include "../dev/initramfs.h"
 #include "../fs/devtmpfs.h"
 #include "../fs/tmpfs.h"
 #include "../fs/vfs.h"
-#include "panic.h"
 #include "../klibc/printf.h"
 #include "../klibc/resource.h"
 #include "../mm/pmm.h"
@@ -34,7 +34,7 @@
 #include "../sys/gdt.h"
 #include "../sys/hpet.h"
 #include "../video/video.h"
-#include "../dev/initramfs.h"
+#include "panic.h"
 #include <liballoc.h>
 #include <stdint.h>
 #include <stivale2.h>
@@ -114,19 +114,19 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	printf("E (4 int calloc): %p\n", kcalloc(4, sizeof(int)));
 	printf("%llu\n", get_unix_timestamp());
 	printf("HPET test works!\n");
-    vfs_install_fs(&tmpfs);
-    vfs_install_fs(&devtmpfs);
-    vfs_mount("tmpfs", "/", "tmpfs");
-    vfs_mkdir(NULL, "/dev", 0755, true);
-    vfs_mount("devtmpfs", "/dev", "devtmpfs");
+	vfs_install_fs(&tmpfs);
+	vfs_install_fs(&devtmpfs);
+	vfs_mount("tmpfs", "/", "tmpfs");
+	vfs_mkdir(NULL, "/dev", 0755, true);
+	vfs_mount("devtmpfs", "/dev", "devtmpfs");
 	struct stivale2_struct_tag_modules *modules_tag =
-        stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MODULES_ID);
-    initramfs_init(modules_tag);
+		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MODULES_ID);
+	initramfs_init(modules_tag);
 	struct resource *h = vfs_open("/root/initramfs.txt", O_RDWR, 0644);
-    if (h == NULL)
-        return;
-    char buf[30] = {0};
-    h->read(h, buf, 0, strlen("Hello initramfs"));
+	if (h == NULL)
+		return;
+	char buf[30] = {0};
+	h->read(h, buf, 0, strlen("Hello initramfs"));
 	printf("reading initramfs.txt: %s\n", buf);
 	vfs_dump_nodes(NULL, "");
 	PANIC("panic test");

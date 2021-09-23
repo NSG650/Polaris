@@ -27,13 +27,13 @@ __attribute__((noreturn)) void panic(const char *message, char *file,
 	if (assert) {
 		clear_screen(0x00B800);
 		printf("*** ASSERTION FAILURE: %s\nFile: %s\nLine: %zu\n\nRIP: "
-				"0x%p\nRBP: 0x%p\nKernel build: %s\n",
-				message, file, line, rip, rbp, KVERSION);
+			   "0x%p\nRBP: 0x%p\nKernel build: %s\n",
+			   message, file, line, rip, rbp, KVERSION);
 	} else {
 		clear_screen(0xB80000);
 		printf("*** PANIC: %s\nFile: %s\nLine: %zu\n\nRIP: 0x%p\nRBP: "
-				"0x%p\nKernel Build: %s\n",
-				message, file, line, rip, rbp, KVERSION);
+			   "0x%p\nKernel Build: %s\n",
+			   message, file, line, rip, rbp, KVERSION);
 	}
 	for (;;)
 		asm("cli\nhlt");
