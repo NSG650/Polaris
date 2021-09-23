@@ -20,11 +20,8 @@
 #include "../klibc/math.h"
 #include "../klibc/printf.h"
 #include "../klibc/string.h"
-#include "../mm/vmm.h"
 #include "dev.h"
-#include <stddef.h>
 #include <stdint.h>
-#include <stivale2.h>
 
 struct ustar_header {
 	char name[100];
@@ -68,7 +65,7 @@ static uint64_t octal_to_int(const char *s) {
 	return ret;
 }
 
-bool initramfs_init(struct stivale2_struct_tag_modules *modules_tag) {
+void initramfs_init(struct stivale2_struct_tag_modules *modules_tag) {
 	if (modules_tag->module_count < 1) {
 		PANIC("No initramfs found!");
 	}
