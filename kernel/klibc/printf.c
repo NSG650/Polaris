@@ -34,8 +34,7 @@
 #include <stdint.h>
 
 #include "printf.h"
-#include "../video/video.h"
-#include "../serial/serial.h"
+
 #include "lock.h"
 
 
@@ -866,8 +865,6 @@ lock_t print_lock;
 
 int printf_(const char* format, ...)
 {
-  kprint("k: ");
-  write_serial("k: ");
   LOCK(print_lock);
   asm volatile("cli");
   va_list va;
