@@ -22,12 +22,11 @@
 
 typedef volatile bool lock_t;
 
-#define LOCK(name)                                                           \
-	while (!__atomic_compare_exchange_n(&name, (void *)false, true, false,   \
-										__ATOMIC_ACQ_REL, __ATOMIC_RELAXED)) \
-		while (name)                                                         \
+#define LOCK(name)                                     \
+	while (!__sync_bool_compare_and_swap(&name, 0, 1)) \
+		while (name)                                   \
 			asm volatile("pause");
 
-#define UNLOCK(name) __atomic_store_n(&name, false, __ATOMIC_RELEASE)
+#define UNLOCK(name) __sync_lock_release(&name)
 
 #endif
