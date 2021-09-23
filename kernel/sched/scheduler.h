@@ -24,6 +24,8 @@ struct cpu_state {
 	struct process *running_proc;
 };
 
+extern struct cpu_state *cpu_state;
+
 struct process *running_proc(void);
 void yield_to_scheduler(void);
 void sched_init(void);
