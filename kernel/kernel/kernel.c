@@ -34,7 +34,6 @@
 #include "../sys/gdt.h"
 #include "../sys/hpet.h"
 #include "../video/video.h"
-#include "panic.h"
 #include <liballoc.h>
 #include <stdint.h>
 #include <stivale2.h>
@@ -113,6 +112,8 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	printf("D (32 bytes after C realloc): %p\n", ptr3);
 	printf("E (4 int calloc): %p\n", kcalloc(4, sizeof(int)));
 	printf("%llu\n", get_unix_timestamp());
+	hpet_usleep(1000 * 1000);
+	printf("%llu\n", get_unix_timestamp());
 	printf("HPET test works!\n");
 	vfs_install_fs(&tmpfs);
 	vfs_install_fs(&devtmpfs);
@@ -129,7 +130,6 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	h->read(h, buf, 0, strlen("Hello initramfs"));
 	printf("reading initramfs.txt: %s\n", buf);
 	vfs_dump_nodes(NULL, "");
-	PANIC("panic test");
 	for (;;)
 		asm("hlt");
 }
