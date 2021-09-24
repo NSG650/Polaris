@@ -31,29 +31,28 @@ struct ustar_header {
 	char size[12];
 	char mtime[12];
 	char checksum[8];
-	uint8_t type;
-	char link_name[100];
+	char type;
+	char linkname[100];
 	char signature[6];
 	char version[2];
 	char owner[32];
 	char group[32];
-	char device_maj[8];
-	char device_min[8];
+	char devmajor[8];
+	char devminor[8];
 	char prefix[155];
 };
 
 enum {
-	USTAR_FILE = '0',
+	USTAR_REGULAR = 0,
+	USTAR_NORMAL = '0',
 	USTAR_HARD_LINK = '1',
 	USTAR_SYM_LINK = '2',
 	USTAR_CHAR_DEV = '3',
 	USTAR_BLOCK_DEV = '4',
-	USTAR_DIR = '5',
-	USTAR_FIFO = '6'
+	USTAR_DIRECTORY = '5',
+	USTAR_FIFO = '6',
+	USTAR_CONTIGOUS = '7'
 };
-
-static uintptr_t initramfs_addr;
-static uintptr_t initramfs_size;
 
 static uint64_t octal_to_int(const char *s) {
 	uint64_t ret = 0;
@@ -72,11 +71,11 @@ void initramfs_init(struct stivale2_struct_tag_modules *modules_tag) {
 
 	struct stivale2_module *module = &modules_tag->modules[0];
 
-	initramfs_addr = module->begin;
-	initramfs_size = module->end - module->begin;
+	uintptr_t initramfs_addr = module->begin;
+	uint64_t initramfs_size = module->end - module->begin;
 
 	printf("initramfs: Address: %p\n", initramfs_addr);
-	printf("initramfs: Size:    %d\n", initramfs_size);
+	printf("initramfs: Size: %lld\n", initramfs_size);
 
 	struct ustar_header *h = (void *)initramfs_addr;
 	for (;;) {
@@ -85,13 +84,16 @@ void initramfs_init(struct stivale2_struct_tag_modules *modules_tag) {
 		uintptr_t size = octal_to_int(h->size);
 
 		switch (h->type) {
-			case USTAR_DIR: {
-				vfs_mkdir(NULL, h->name, octal_to_int(h->mode), false);
+			case USTAR_DIRECTORY: {
+				vfs_mkdir(NULL, h->name, octal_to_int(h->mode) & 0777, false);
 				break;
 			}
-			case USTAR_FILE: {
+			case USTAR_REGULAR:
+			case USTAR_NORMAL:
+			case USTAR_CONTIGOUS: {
 				struct resource *r =
-					vfs_open(h->name, O_RDWR | O_CREAT, octal_to_int(h->mode));
+					vfs_open(h->name, O_WRONLY | O_CREAT | O_TRUNC,
+							 octal_to_int(h->mode) & 0777);
 				void *buf = (void *)h + 512;
 				r->write(r, buf, 0, size);
 				r->close(r);
