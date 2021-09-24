@@ -20,6 +20,7 @@
 #include "../kernel/panic.h"
 #include "../klibc/printf.h"
 #include "../mm/vmm.h"
+#include "../sys/hpet.h"
 #include "../sys/pci.h"
 #include "madt.h"
 #include <lai/core.h>
@@ -66,6 +67,7 @@ static void init_ec(void) {
 
 void acpi_init(acpi_xsdp_t *rsdp) {
 	printf("ACPI: Revision: %hhu\n", rsdp->revision);
+	revision = rsdp->revision;
 
 	if (rsdp->revision >= 2 && rsdp->xsdt) {
 		use_xsdt = true;
@@ -76,7 +78,7 @@ void acpi_init(acpi_xsdp_t *rsdp) {
 		rsdt = (struct rsdt *)((uintptr_t)rsdp->rsdt + MEM_PHYS_OFFSET);
 		printf("ACPI: Found RSDT at %llX\n", (uintptr_t)rsdt);
 	}
-	revision = rsdp->revision;
+	hpet_init();
 	lai_set_acpi_revision(revision);
 	lai_create_namespace();
 	lai_enable_acpi(1);
@@ -211,7 +213,8 @@ uint32_t laihost_pci_readd(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t fun,
 }
 
 void laihost_sleep(uint64_t ms) {
-	(void)ms;
+	// Convert to microseconds
+	hpet_usleep(ms * 1000);
 }
 
 static bool is_canonical(uint64_t addr) {

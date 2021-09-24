@@ -92,7 +92,6 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	struct stivale2_struct_tag_rsdp *rsdp_tag =
 		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_RSDP_ID);
 	acpi_init((void *)rsdp_tag->rsdp);
-	hpet_init();
 	pic_init();
 	apic_init();
 	struct stivale2_struct_tag_smp *smp_tag =

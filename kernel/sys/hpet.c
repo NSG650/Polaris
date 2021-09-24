@@ -19,7 +19,6 @@
 #include "hpet.h"
 #include "../acpi/acpi.h"
 #include "../kernel/panic.h"
-#include "../klibc/printf.h"
 #include "../mm/vmm.h"
 #include "mmio.h"
 #include <stddef.h>
