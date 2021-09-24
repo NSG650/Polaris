@@ -128,10 +128,8 @@ static struct vfs_node *path2node(struct vfs_node *parent, const char *_path,
 	if (*_path == 0)
 		return NULL;
 
-	char l_path[strlen(_path) + 1];
-	strcpy(l_path, _path);
-
-	char *path = l_path;
+	char *path = kmalloc(strlen(_path) + 1);
+	strcpy(path, _path);
 
 	// Get rid of trailing slashes
 	for (ssize_t i = strlen(path) - 1; i > 0; i--) {
