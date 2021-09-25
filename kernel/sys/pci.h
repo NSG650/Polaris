@@ -48,12 +48,12 @@ uint32_t pci_read(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t function,
 typedef struct pci_device
 {
 	uint32_t id;
-    uint16_t vendorId;
-    uint16_t deviceId;
+    uint16_t vendorid;
+    uint16_t deviceid;
 
-    uint8_t classCode;
+    uint8_t classcode;
     uint8_t subclass;
-    uint8_t progIntf;
+    uint8_t progintf;
 
 	//Device location
 	uint8_t bus;
@@ -71,6 +71,6 @@ typedef struct pci_bar
     uint32_t flags;
 } pci_bar;
 
-extern struct pci_device* PCIDevicesArray[100];
+extern struct pci_device* pci_devices[100];
 void PciGetBar(struct pci_bar *bar, uint32_t id, uint32_t index);
 #endif

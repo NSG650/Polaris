@@ -22,7 +22,7 @@
 #include "mmio.h"
 #include <stdint.h>
 
-struct pci_device *PCIDevicesArray[100];
+struct pci_device *pci_devices[100];
 int i = 0;
 DYNARRAY_GLOBAL(mcfg_entries);
 
@@ -167,18 +167,18 @@ void pci_write(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t function,
 	internal_write(seg, bus, slot, function, offset, value, access_size);
 }
 
-uint32_t pci_GetVendor(uint8_t bus, uint8_t slot) {
+uint32_t pci_getvendor(uint8_t bus, uint8_t slot) {
 	return pci_read(0, bus, slot, 0, 0, 2);
 }
-uint32_t pci_GetDevice(uint8_t bus, uint8_t slot) {
+uint32_t pci_getdevice(uint8_t bus, uint8_t slot) {
 	return pci_read(0, bus, slot, 0, 2, 2);
 }
-uint32_t pci_GetHeaderType(uint8_t bus, uint8_t slot) {
+uint32_t pci_getheadertype(uint8_t bus, uint8_t slot) {
 	return pci_read(0, bus, slot, 0, 0x0E, 2);
 }
 
 bool pci_checkIfDeviceExists(uint8_t bus, uint8_t device) {
-	uint16_t vendorID = pci_GetVendor(bus, device);
+	uint16_t vendorID = pci_getvendor(bus, device);
 	if (vendorID == 0xFFFF)
 		return false; // Device doesn't exist
 	else
@@ -186,26 +186,26 @@ bool pci_checkIfDeviceExists(uint8_t bus, uint8_t device) {
 }
 
 struct pci_device *pci_getDevice(uint8_t bus, uint8_t device) {
-	uint16_t vendorID = pci_GetVendor(bus, device);
-	if (vendorID == 0xFFFF)
+	uint16_t vendorid = pci_getvendor(bus, device);
+	if (vendorid == 0xFFFF)
 		return NULL; // Device doesn't exist
-	uint16_t deviceID = pci_GetDevice(bus, device);
+	uint16_t deviceid = pci_getdevice(bus, device);
 	uint8_t classCode = pci_read(0, bus, device, 0, 0x0b, 1);
 	uint8_t subclass = pci_read(0, bus, device, 0, 0x0a, 1);
-	uint8_t progIntf = pci_read(0, bus, device, 0, 0x09, 1);
+	uint8_t progintf = pci_read(0, bus, device, 0, 0x09, 1);
 
-	uint16_t headerType = pci_GetHeaderType(bus, device);
+	uint16_t headerType = pci_getheadertype(bus, device);
 	uint32_t functionCount = headerType & 0x80 ? 8 : 1;
 	printf("Pci: found device: VendorID: %X DeviceID: %X Class code: %X Sub "
 		   "class: %X progIntf: %X\n",
-		   vendorID, deviceID, classCode, subclass, progIntf);
+		   vendorid, deviceid, classCode, subclass, progintf);
 
 	struct pci_device *pcidevice = alloc(sizeof(struct pci_device));
-	pcidevice->vendorId = vendorID;
-	pcidevice->deviceId = deviceID;
-	pcidevice->classCode = classCode;
+	pcidevice->vendorid = vendorid;
+	pcidevice->deviceid = deviceid;
+	pcidevice->classcode = classCode;
 	pcidevice->subclass = subclass;
-	pcidevice->progIntf = progIntf;
+	pcidevice->progintf = progintf;
 	pcidevice->bus = bus;
 	pcidevice->device = device;
 	return pcidevice;
@@ -218,7 +218,7 @@ void checkBus(uint8_t bus) {
 		struct pci_device *dev = pci_getDevice(bus, device);
 		if (dev != NULL) {
 			dev->id = i;
-			PCIDevicesArray[i] = dev;
+			pci_devices[i] = dev;
 			i++;
 		}
 	}
@@ -247,7 +247,7 @@ void pci_init(void) {
 	uint8_t function;
 	uint8_t bus;
 
-	uint16_t headerType = pci_GetHeaderType(0, 0);
+	uint16_t headerType = pci_getheadertype(0, 0);
 	if ((headerType & 0x80) == 0) {
 		/* Single PCI host controller */
 		checkBus(0);
@@ -264,7 +264,7 @@ void pci_init(void) {
 }
 void pci_read_bar(uint32_t id, uint32_t index, uint32_t *address,
 				  uint32_t *mask) {
-	struct pci_device *dev = PCIDevicesArray[id];
+	struct pci_device *dev = pci_devices[id];
 	uint32_t reg = 0x10 + index * sizeof(uint32_t);
 
 	// Get address
@@ -275,7 +275,7 @@ void pci_read_bar(uint32_t id, uint32_t index, uint32_t *address,
 	*mask = pci_read(0, dev->bus, dev->device, 0, reg, 4);
 
 	// Restore adddress
-	pci_write(0, dev->bus, dev->device, 0, reg, address, 4);
+	pci_write(0, dev->bus, dev->device, 0, reg, (uint32_t)address, 4);
 }
 
 void PciGetBar(struct pci_bar *bar, uint32_t id, uint32_t index) {

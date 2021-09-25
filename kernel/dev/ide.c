@@ -239,17 +239,17 @@ void ide_write_sector(uint32_t device_index, uint32_t lba, uint8_t *buffer) {
 }
 
 void ide_init(void) {
-	struct pci_device *ideDrive;
+	struct pci_device *ide_drive;
 	for (size_t i = 0; i < 100; i++) {
-		struct pci_device *dev = PCIDevicesArray[i];
+		struct pci_device *dev = pci_devices[i];
 		if (dev != NULL) {
-			if (dev->classCode == 0x1 && dev->subclass == 0x01) {
-				ideDrive = dev;
+			if (dev->classcode == 0x1 && dev->subclass == 0x01) {
+				ide_drive = dev;
 				break;
 			}
 		}
 	}
-	if (ideDrive == NULL) {
+	if (ide_drive == NULL) {
 		printf("ide: NO IDE controller found\n");
 		return;
 	} else {
