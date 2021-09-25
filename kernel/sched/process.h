@@ -65,6 +65,7 @@ struct process {
 
 extern struct process ptable[];
 
+void process_create(uintptr_t addr, uint64_t args, enum process_priority priority);
 void process_init(uintptr_t addr);
 void process_block(enum process_block_on reason);
 void process_exit(void);

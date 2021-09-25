@@ -22,6 +22,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stivale2.h>
+#include "../sched/scheduler.h"
 
 struct cpu_local {
 	uint64_t cpu_number;
@@ -30,6 +31,7 @@ struct cpu_local {
 	size_t   fpu_storage_size;
 	void   (*fpu_save)(void *);
 	void   (*fpu_restore)(void *);
+	struct cpu_state *cpu_state;
 };
 
 extern struct cpu_local *cpu_locals;
@@ -45,6 +47,8 @@ extern struct cpu_local *cpu_locals;
     &cpu_locals[cpu_number];       \
 })
 
+uint64_t return_bsp_lapic(void);
+uint64_t return_installed_cpus(void);
 void smp_init(struct stivale2_struct_tag_smp *smp_tag);
 
 #define write_cr(reg, val) \

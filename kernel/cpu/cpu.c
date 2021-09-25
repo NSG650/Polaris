@@ -21,6 +21,7 @@
 #include "../klibc/asm.h"
 #include "../klibc/lock.h"
 #include "../klibc/printf.h"
+#include "../klibc/mem.h"
 #include "../sys/hpet.h"
 #include "apic.h"
 #include <cpuid.h>
@@ -29,6 +30,7 @@
 #include "../sys/gdt.h"
 
 struct cpu_local *cpu_locals;
+uint64_t cpu_count;
 
 static void cpu_init(struct stivale2_smp_info *smp_info);
 
@@ -189,13 +191,15 @@ static void cpu_init(struct stivale2_smp_info *smp_info) {
 		this_cpu->fpu_save = fxsave;
 		this_cpu->fpu_restore = fxrstor;
 	}
+	memset(this_cpu->cpu_state, 0, sizeof(struct cpu_state));
 	UNLOCK(cpu_lock);
+	cpu_count++;
 	if (this_cpu->lapic_id != bsp_lapic_id) {
-		uint64_t cpu_number;
-		asm volatile ("mov %0, qword ptr gs:[0]" : "=r" (cpu_number) : : "memory");
-		printf("Hello I am CPU %d ready to go!\n", cpu_number);
-		for(;;)
-			asm("hlt");
+		sched_init();
 	}
 	printf("Hello I am the BSP CPU\n");
+}
+
+uint64_t return_installed_cpus(void) {
+	return cpu_count;
 }

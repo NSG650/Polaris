@@ -17,16 +17,19 @@
 #include "scheduler.h"
 #include "../cpu/apic.h"
 #include "../klibc/lock.h"
+#include "../klibc/printf.h"
+#include "../kernel/kernel.h"
+#include "../cpu/cpu.h"
 
 lock_t sched_lock;
-
-struct cpu_state *cpu_state = {NULL};
 
 extern void context_switch(struct process_context **old,
 						   struct process_context *new);
 
 void sched_init(void) {
-	process_init((uintptr_t)__builtin_return_address(0));
+	printf("Hello I am CPU %d running the scheduler!\n", this_cpu->cpu_number);
+	if(this_cpu->cpu_number == 0)
+		process_init((uintptr_t)main);
 	while (1) {
 		asm volatile("sti");
 		LOCK(sched_lock);
@@ -45,12 +48,12 @@ void sched_init(void) {
 
 		size_t next_sched_tick = timer_tick + toproc->timeslice;
 		while (timer_tick < next_sched_tick && toproc->state == READY) {
-			cpu_state->running_proc = toproc;
+			this_cpu->cpu_state->running_proc = toproc;
 			toproc->state = RUNNING;
 
-			context_switch(&cpu_state->scheduler, toproc->context);
+			context_switch(&this_cpu->cpu_state->scheduler, toproc->context);
 
-			cpu_state->running_proc = NULL;
+			this_cpu->cpu_state->running_proc = NULL;
 		}
 
 		UNLOCK(sched_lock);
@@ -59,7 +62,7 @@ void sched_init(void) {
 
 inline struct process *running_proc(void) {
 	asm volatile("cli");
-	struct process *proc = cpu_state->running_proc;
+	struct process *proc = this_cpu->cpu_state->running_proc;
 	asm volatile("sti");
 
 	return proc;
@@ -69,6 +72,6 @@ void yield_to_scheduler(void) {
 	asm volatile("cli");
 	struct process *proc = running_proc();
 	if (proc->state != RUNNING) {
-		context_switch(&proc->context, cpu_state->scheduler);
+		context_switch(&proc->context, this_cpu->cpu_state->scheduler);
 	}
 }

@@ -24,10 +24,12 @@
 #include "../klibc/string.h"
 #include "../mm/vmm.h"
 #include "scheduler.h"
+#include "../klibc/rand.h"
 
 struct process ptable[MAX_PROCS];
 struct process *initproc;
 static uint8_t next_pid = 1;
+static uint8_t is_init = 0;
 lock_t process_lock;
 
 static struct process *alloc_new_process(void) {
@@ -73,7 +75,22 @@ static struct process *alloc_new_process(void) {
 
 extern uint8_t stack[KSTACK_SIZE];
 
+void process_create(uintptr_t addr, uint64_t args, enum process_priority priority) {
+	struct process *proc = alloc_new_process();
+	sprintf(proc->name, "process%d", rand());
+    proc->parent = NULL;
+	proc->context->rip = addr;
+	proc->context->rdi = args;
+	proc->timeslice = 1;
+	proc->priority = priority;
+	LOCK(process_lock);
+	proc->state = READY;
+	UNLOCK(process_lock);
+}
+
 void process_init(uintptr_t addr) {
+	if(is_init)
+		return;
 	for (size_t i = 0; i < MAX_PROCS; ++i)
 		ptable[i].state = UNUSED;
 
@@ -91,6 +108,7 @@ void process_init(uintptr_t addr) {
 	LOCK(process_lock);
 	proc->state = READY;
 	UNLOCK(process_lock);
+	is_init = 1;
 }
 
 int8_t process_fork(uint8_t timeslice) {

@@ -21,6 +21,7 @@
 #include "../sched/scheduler.h"
 #include "../sys/hpet.h"
 #include "../sys/mmio.h"
+#include "cpu.h"
 #include "isr.h"
 #include <lai/helpers/pm.h>
 #include <lai/helpers/sci.h>
@@ -210,8 +211,6 @@ void apic_init(void) {
 	acpi_fadt_t *facp = acpi_find_sdt("FACP", 0);
 	ioapic_redirect_irq(facp->sci_irq, 73);
 	isr_register_handler(73, sci_interrupt);
-	// Initialize CPU state to avoid page faults
-	memset(cpu_state, 0, sizeof(struct cpu_state));
 	// Timer
 	ioapic_redirect_irq(0, 72);
 	isr_register_handler(72, timer_interrupt);
