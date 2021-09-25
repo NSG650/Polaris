@@ -17,8 +17,27 @@
  * limitations under the License.
  */
 
+#include "../acpi/acpi.h"
+#include "../klibc/dynarray.h"
 #include <stdint.h>
 
+struct mcfg_entry {
+	uint64_t base;
+	uint16_t seg;
+	uint8_t start_bus_number;
+	uint8_t end_bus_number;
+	uint32_t reserved;
+} __attribute__((packed));
+
+struct mcfg {
+	acpi_header_t header;
+	uint64_t reserved;
+	struct mcfg_entry entries[];
+} __attribute__((packed));
+
+DYNARRAY_EXTERN(struct mcfg_entry *, mcfg_entries);
+
+void pci_init(void);
 void pci_write(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t function,
 			   uint16_t offset, uint32_t value, uint8_t access_size);
 uint32_t pci_read(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t function,

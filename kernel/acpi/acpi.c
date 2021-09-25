@@ -79,6 +79,7 @@ void acpi_init(acpi_xsdp_t *rsdp) {
 		printf("ACPI: Found RSDT at %llX\n", (uintptr_t)rsdt);
 	}
 	hpet_init();
+	pci_init();
 	lai_set_acpi_revision(revision);
 	lai_create_namespace();
 	lai_enable_acpi(1);

@@ -17,6 +17,14 @@
 #include "pci.h"
 #include "../cpu/ports.h"
 #include "../klibc/printf.h"
+#include "../mm/vmm.h"
+
+DYNARRAY_GLOBAL(mcfg_entries);
+
+static uint32_t (*internal_read)(uint16_t, uint8_t, uint8_t, uint8_t, uint16_t,
+								 uint8_t);
+static void (*internal_write)(uint16_t, uint8_t, uint8_t, uint8_t, uint16_t,
+							  uint32_t, uint8_t);
 
 static uint32_t make_pci_address(uint32_t bus, uint32_t slot, uint32_t function,
 								 uint16_t offset) {
@@ -24,8 +32,9 @@ static uint32_t make_pci_address(uint32_t bus, uint32_t slot, uint32_t function,
 			(1u << 31));
 }
 
-uint32_t pci_read(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t function,
-				  uint16_t offset, uint8_t access_size) {
+static uint32_t legacy_pci_read(uint16_t seg, uint8_t bus, uint8_t slot,
+								uint8_t function, uint16_t offset,
+								uint8_t access_size) {
 	(void)seg;
 	port_dword_out(0xCF8, make_pci_address(bus, slot, function, offset));
 	switch (access_size) {
@@ -36,13 +45,14 @@ uint32_t pci_read(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t function,
 		case 4:
 			return port_dword_in(0xCFC);
 		default:
-			printf("PCI unknown access size: %hhu\n", access_size);
+			printf("PCI: Unknown access size: %hhu\n", access_size);
 			return 0;
 	}
 }
 
-void pci_write(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t function,
-			   uint16_t offset, uint32_t value, uint8_t access_size) {
+static void legacy_pci_write(uint16_t seg, uint8_t bus, uint8_t slot,
+							 uint8_t function, uint16_t offset, uint32_t value,
+							 uint8_t access_size) {
 	(void)seg;
 	port_dword_out(0xCF8, make_pci_address(bus, slot, function, offset));
 	switch (access_size) {
@@ -56,7 +66,128 @@ void pci_write(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t function,
 			port_dword_out(0xCFC, value);
 			break;
 		default:
-			printf("PCI unknown access size: %hhu\n", access_size);
+			printf("PCI: Unknown access size: %hhu\n", access_size);
 			break;
 	}
+}
+
+static uint32_t mcfg_pci_read(uint16_t seg, uint8_t bus, uint8_t slot,
+							  uint8_t function, uint16_t offset,
+							  uint8_t access_size) {
+	for (size_t i = 0; i < mcfg_entries.length; i++) {
+		struct mcfg_entry *entry = mcfg_entries.storage[i];
+		if (entry->seg == seg) {
+			if ((bus >= entry->start_bus_number) &&
+				(bus <= entry->end_bus_number)) {
+				uint64_t addr =
+					(entry->base + (((bus - entry->start_bus_number) << 20) |
+									(slot << 15) | (function << 12))) |
+					offset;
+				switch (access_size) {
+					case 1: {
+						volatile uint8_t *ptr =
+							(volatile uint8_t *)(addr + MEM_PHYS_OFFSET);
+						return *ptr;
+					}
+
+					case 2: {
+						volatile uint16_t *ptr =
+							(volatile uint16_t *)(addr + MEM_PHYS_OFFSET);
+						return *ptr;
+					}
+
+					case 4: {
+						volatile uint32_t *ptr =
+							(volatile uint32_t *)(addr + MEM_PHYS_OFFSET);
+						return *ptr;
+					}
+
+					default:
+						printf("PCI: Unknown access size: %hhu\n", access_size);
+						break;
+				}
+			}
+		}
+	}
+
+	printf("PCI: Tried to read from nonexistent device, %hx:%hhx:%hhx:%hhx\n",
+		   seg, bus, slot, function);
+	return 0;
+}
+
+static void mcfg_pci_write(uint16_t seg, uint8_t bus, uint8_t slot,
+						   uint8_t function, uint16_t offset, uint32_t value,
+						   uint8_t access_size) {
+	for (size_t i = 0; i < mcfg_entries.length; i++) {
+		struct mcfg_entry *entry = mcfg_entries.storage[i];
+		if (entry->seg == seg) {
+			if ((bus >= entry->start_bus_number) &&
+				(bus <= entry->end_bus_number)) {
+				uint64_t addr =
+					(entry->base + (((bus - entry->start_bus_number) << 20) |
+									(slot << 15) | (function << 12))) +
+					offset;
+				switch (access_size) {
+					case 1: {
+						volatile uint8_t *ptr =
+							(volatile uint8_t *)(addr + MEM_PHYS_OFFSET);
+						*ptr = (uint8_t)value;
+						break;
+					}
+
+					case 2: {
+						volatile uint16_t *ptr =
+							(volatile uint16_t *)(addr + MEM_PHYS_OFFSET);
+						*ptr = (uint16_t)value;
+						break;
+					}
+
+					case 4: {
+						volatile uint32_t *ptr =
+							(volatile uint32_t *)(addr + MEM_PHYS_OFFSET);
+						*ptr = value;
+						break;
+					}
+
+					default:
+						printf("PCI: Unknown access size: %hhu\n", access_size);
+						break;
+				}
+				return;
+			}
+		}
+	}
+
+	printf("PCI: Tried to write to nonexistent device, %hx:%hhx:%hhx:%hhx\n",
+		   seg, bus, slot, function);
+}
+
+void pci_init(void) {
+	struct mcfg *mcfg = (struct mcfg *)acpi_find_sdt("MCFG", 0);
+	if (mcfg == NULL) {
+		internal_read = legacy_pci_read;
+		internal_write = legacy_pci_write;
+	} else {
+		const size_t entries =
+			(mcfg->header.length - (sizeof(acpi_header_t) + sizeof(uint64_t))) /
+			sizeof(struct mcfg_entry);
+		for (uint64_t i = 0; i < entries; i++) {
+			struct mcfg_entry *entry = &mcfg->entries[i];
+
+			DYNARRAY_PUSHBACK(mcfg_entries, (void *)entry);
+		}
+
+		internal_read = mcfg_pci_read;
+		internal_write = mcfg_pci_write;
+	}
+}
+
+uint32_t pci_read(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t function,
+				  uint16_t offset, uint8_t access_size) {
+	return internal_read(seg, bus, slot, function, offset, access_size);
+}
+
+void pci_write(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t function,
+			   uint16_t offset, uint32_t value, uint8_t access_size) {
+	internal_write(seg, bus, slot, function, offset, value, access_size);
 }
