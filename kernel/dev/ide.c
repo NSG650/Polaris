@@ -105,8 +105,6 @@ struct ide_device *ide_device_init(bool Primary, bool Master) {
 		// Floating device
 		return atadevice;
 	}
-
-	printf("Device status: %X\n", port_byte_in(bus + ATA_REG_STATUS));
 	uint8_t deviceStatus = (uint8_t)port_byte_in(bus + ATA_REG_STATUS);
 	if (deviceStatus == 0) {
 		// Non existant device
@@ -117,10 +115,10 @@ struct ide_device *ide_device_init(bool Primary, bool Master) {
 		if (type_id == 0xEB14 || type_id == 0x9669) {
 			// ATAPI device
 			atadevice->type = 1;
-			printf("ATAPI device\n");
+			printf("ide: found ATAPI device\n");
 		} else {
 			// Not a device
-			printf("Invaild device\n");
+			printf("ide: found an Invaild device\n");
 			return atadevice;
 		}
 	} else if (deviceStatus & ATA_SR_DRQ) {
@@ -138,9 +136,7 @@ struct ide_device *ide_device_init(bool Primary, bool Master) {
 
 	for (int i = 0; i < 256; ++i) {
 		buf[i] = port_word_in(bus);
-		// printf("%X,", buf[i]);
 	}
-	// printf("\n");
 
 	device = (struct ata_identify_t *)buf;
 
@@ -149,9 +145,7 @@ struct ide_device *ide_device_init(bool Primary, bool Master) {
 	ide_get_string(device->firmware, 8);
 	ide_get_string(device->serial, 20);
 
-	printf("ATA device model: %s\n", device->model);
-	printf("sectors_48 = %X\n", (uint32_t)device->sectors_48);
-	printf("sectors_28 = %X\n", device->sectors_28);
+	printf("ide: ATA device model: %s\n", device->model);
 
 	// port_byte_out(bus + ATA_REG_CONTROL, 0x02);
 	return atadevice;
@@ -190,13 +184,12 @@ void ide_read_sector(uint32_t device_index, uint32_t lba, uint8_t *buffer) {
 	port_byte_out(bus + ATA_REG_COMMAND, ATA_CMD_READ_PIO);
 
 	if (ata_wait(bus, 1)) {
-		printf("Error during ATA read");
+		printf("ide: Error during ATA read");
 	}
 	int size = 256;
 
 	for (int i = 0; i < size; ++i) {
 		buffer[i] = port_word_in(bus);
-		printf("%X,", buffer[i]);
 	}
 	ata_wait(bus, 0);
 }
@@ -257,10 +250,10 @@ void ide_init(void) {
 		}
 	}
 	if (ideDrive == NULL) {
-		printf("IDE: NO IDE controller found\n");
+		printf("ide: NO IDE controller found\n");
 		return;
 	} else {
-		printf("IDE: Found IDE controller\n");
+		printf("ide: Found IDE controller\n");
 	}
 	ide_devices[0] = ide_device_init(true, true);  // Primary master
 	ide_devices[1] = ide_device_init(true, false); // Primary slave

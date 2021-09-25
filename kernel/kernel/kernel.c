@@ -106,10 +106,26 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	pic_init();
 	apic_init();
 	smp_init(smp_tag);
+	//Test stuff
+	printf("Hello World!\n");
+	printf("A (4 bytes): %p\n", kmalloc(4));
+	void *ptr = kmalloc(8);
+	printf("B (8 bytes): %p\n", ptr);
+	kfree(ptr);
+	printf("Freed B\n");
+	void *ptr2 = kmalloc(16);
+	printf("C (16 bytes): %p\n", ptr2);
+	void *ptr3 = kmalloc(32);
+	printf("D (32 bytes): %p\n", ptr3);
+	printf("C (16 bytes to 32 bytes realloc): %p\n", krealloc(ptr2, 32));
+	printf("D (32 bytes after C realloc): %p\n", ptr3);
+	printf("E (4 int calloc): %p\n", kcalloc(4, sizeof(int)));
+	printf("%llu\n", get_unix_timestamp());
+	hpet_usleep(1000 * 1000);
+	printf("%llu\n", get_unix_timestamp());
+	printf("HPET test works!\n");
 	//Start storage drivers
 	ide_init();
-
-	kmalloc(4); // If removed, this will cause page faults
 
 	//Init VFS
 	vfs_install_fs(&tmpfs);
