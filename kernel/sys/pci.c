@@ -18,6 +18,7 @@
 #include "../cpu/ports.h"
 #include "../klibc/printf.h"
 #include "../mm/vmm.h"
+#include "mmio.h"
 
 DYNARRAY_GLOBAL(mcfg_entries);
 
@@ -79,27 +80,21 @@ static uint32_t mcfg_pci_read(uint16_t seg, uint8_t bus, uint8_t slot,
 		if (entry->seg == seg) {
 			if ((bus >= entry->start_bus_number) &&
 				(bus <= entry->end_bus_number)) {
-				uint64_t addr =
-					(entry->base + (((bus - entry->start_bus_number) << 20) |
-									(slot << 15) | (function << 12))) |
-					offset;
+				void *addr = (void *)((entry->base +
+									  (((bus - entry->start_bus_number) << 20) |
+									   (slot << 15) | (function << 12))) |
+							 offset);
 				switch (access_size) {
 					case 1: {
-						volatile uint8_t *ptr =
-							(volatile uint8_t *)(addr + MEM_PHYS_OFFSET);
-						return *ptr;
+						return mminb(addr + MEM_PHYS_OFFSET);
 					}
 
 					case 2: {
-						volatile uint16_t *ptr =
-							(volatile uint16_t *)(addr + MEM_PHYS_OFFSET);
-						return *ptr;
+						return mminw(addr + MEM_PHYS_OFFSET);
 					}
 
 					case 4: {
-						volatile uint32_t *ptr =
-							(volatile uint32_t *)(addr + MEM_PHYS_OFFSET);
-						return *ptr;
+						return mmind(addr + MEM_PHYS_OFFSET);
 					}
 
 					default:
@@ -123,29 +118,23 @@ static void mcfg_pci_write(uint16_t seg, uint8_t bus, uint8_t slot,
 		if (entry->seg == seg) {
 			if ((bus >= entry->start_bus_number) &&
 				(bus <= entry->end_bus_number)) {
-				uint64_t addr =
-					(entry->base + (((bus - entry->start_bus_number) << 20) |
-									(slot << 15) | (function << 12))) +
-					offset;
+				void *addr = (void *)((entry->base +
+									  (((bus - entry->start_bus_number) << 20) |
+									   (slot << 15) | (function << 12))) +
+							 offset);
 				switch (access_size) {
 					case 1: {
-						volatile uint8_t *ptr =
-							(volatile uint8_t *)(addr + MEM_PHYS_OFFSET);
-						*ptr = (uint8_t)value;
+						mmoutb(addr + MEM_PHYS_OFFSET, value);
 						break;
 					}
 
 					case 2: {
-						volatile uint16_t *ptr =
-							(volatile uint16_t *)(addr + MEM_PHYS_OFFSET);
-						*ptr = (uint16_t)value;
+						mmoutw(addr + MEM_PHYS_OFFSET, value);
 						break;
 					}
 
 					case 4: {
-						volatile uint32_t *ptr =
-							(volatile uint32_t *)(addr + MEM_PHYS_OFFSET);
-						*ptr = value;
+						mmoutd(addr + MEM_PHYS_OFFSET, value);
 						break;
 					}
 
