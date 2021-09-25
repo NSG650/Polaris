@@ -206,6 +206,8 @@ struct pci_device *pci_getDevice(uint8_t bus, uint8_t device) {
 	pcidevice->classCode = classCode;
 	pcidevice->subclass = subclass;
 	pcidevice->progIntf = progIntf;
+	pcidevice->bus = bus;
+	pcidevice->device = device;
 	return pcidevice;
 }
 
@@ -215,6 +217,7 @@ void checkBus(uint8_t bus) {
 	for (device = 0; device < 32; device++) {
 		struct pci_device *dev = pci_getDevice(bus, device);
 		if (dev != NULL) {
+			dev->id = i;
 			PCIDevicesArray[i] = dev;
 			i++;
 		}
@@ -257,5 +260,49 @@ void pci_init(void) {
 			bus = function;
 			checkBus(bus);
 		}
+	}
+}
+void pci_read_bar(uint32_t id, uint32_t index, uint32_t *address,
+				  uint32_t *mask) {
+	struct pci_device *dev = PCIDevicesArray[id];
+	uint32_t reg = 0x10 + index * sizeof(uint32_t);
+
+	// Get address
+	*address = pci_read(0, dev->bus, dev->device, 0, reg, 4);
+
+	// Find the size of the bar
+	pci_write(0, dev->bus, dev->device, 0, reg, 0xffffffff, 4);
+	*mask = pci_read(0, dev->bus, dev->device, 0, reg, 4);
+
+	// Restore adddress
+	pci_write(0, dev->bus, dev->device, 0, reg, address, 4);
+}
+
+void PciGetBar(struct pci_bar *bar, uint32_t id, uint32_t index) {
+	// Read pci bar register
+	uint32_t addressLow;
+	uint32_t maskLow;
+	pci_read_bar(id, index, &addressLow, &maskLow);
+
+	if (addressLow & 0x04) {
+		// 64-bit mmio
+		uint32_t addressHigh;
+		uint32_t maskHigh;
+		pci_read_bar(id, index + 1, &addressHigh, &maskHigh);
+
+		bar->u.address =
+			(void *)(((uintptr_t)addressHigh << 32) | (addressLow & ~0xf));
+		bar->size = ~(((uint64_t)maskHigh << 32) | (maskLow & ~0xf)) + 1;
+		bar->flags = addressLow & 0xf;
+	} else if (addressLow & 0x01) {
+		// IO register
+		bar->u.port = (uint16_t)(addressLow & ~0x3);
+		bar->size = (uint16_t)(~(maskLow & ~0x3) + 1);
+		bar->flags = addressLow & 0x3;
+	} else {
+		// 32-bit mmio
+		bar->u.address = (void *)(uintptr_t)(addressLow & ~0xf);
+		bar->size = ~(maskLow & ~0xf) + 1;
+		bar->flags = addressLow & 0xf;
 	}
 }
