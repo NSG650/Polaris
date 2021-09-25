@@ -59,6 +59,8 @@ dkms.conf
 *.kdev4
 .kdev4/
 
+.idea/
+
 ### VisualStudioCode ###
 .vscode/*
 !.vscode/settings.json

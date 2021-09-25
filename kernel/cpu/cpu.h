@@ -23,14 +23,29 @@
 #include <stdint.h>
 #include <stivale2.h>
 
-extern uint64_t cpu_tsc_frequency;
-extern size_t cpu_fpu_storage_size;
+struct cpu_local {
+	uint64_t cpu_number;
+	uint32_t lapic_id;
+	uint64_t tsc_frequency;
+	size_t   fpu_storage_size;
+	void   (*fpu_save)(void *);
+	void   (*fpu_restore)(void *);
+};
 
-extern void (*cpu_fpu_save)(void *);
-extern void (*cpu_fpu_restore)(void *);
+extern struct cpu_local *cpu_locals;
+
+#define this_cpu ({                \
+    uint64_t cpu_number;           \
+    asm volatile (                 \
+        "mov %0, qword ptr gs:[0]" \
+        : "=r" (cpu_number)        \
+        :                          \
+        : "memory"                 \
+    );                             \
+    &cpu_locals[cpu_number];       \
+})
 
 void smp_init(struct stivale2_struct_tag_smp *smp_tag);
-void cpu_init(void);
 
 #define write_cr(reg, val) \
 	asm volatile("mov cr" reg ", %0" ::"r"(val) : "memory");

@@ -24,17 +24,18 @@
 #include "../sys/hpet.h"
 #include "apic.h"
 #include <cpuid.h>
+#include "../mm/vmm.h"
+#include "../mm/pmm.h"
+#include "../sys/gdt.h"
+
+struct cpu_local *cpu_locals;
+
+static void cpu_init(struct stivale2_smp_info *smp_info);
 
 #define MAX_TSC_CALIBRATIONS 4
 
-uint64_t cpu_tsc_frequency;
-
-size_t cpu_fpu_storage_size;
-
-void (*cpu_fpu_save)(void *);
-void (*cpu_fpu_restore)(void *);
-
 lock_t cpu_lock;
+uint64_t bsp_lapic_id;
 
 static uint64_t rdmsr(uint32_t msr) {
 	uint32_t edx, eax;
@@ -76,32 +77,36 @@ static void fxrstor(void *region) {
 	asm volatile("fxrstor %0" : : "m"(FLAT_PTR(region)) : "memory");
 }
 
-static void cpu_start(void) {
-	LOCK(cpu_lock);
-	uint64_t rdi = 0;
-	asm("nop" : "=D"(rdi));
-	struct stivale2_smp_info *cpu_info = (void *)rdi;
-	cpu_init();
-	lapic_init(cpu_info->processor_id);
-	printf("CPU: Processor %d online!\n", cpu_info->lapic_id);
-	UNLOCK(cpu_lock);
-	for (;;)
-		asm("hlt");
-}
-
 void smp_init(struct stivale2_struct_tag_smp *smp_tag) {
 	printf("CPU: Total processor count: %d\n", smp_tag->cpu_count);
-	printf("CPU: Processor %d online!\n", smp_tag->smp_info[0].lapic_id);
+	printf("CPU: BSD lapic ID: %d\n", smp_tag->bsp_lapic_id);
+	bsp_lapic_id = smp_tag->bsp_lapic_id;
+	cpu_locals = alloc(sizeof(struct cpu_local) * smp_tag->cpu_count);
 	for (size_t i = 0; i < smp_tag->cpu_count; ++i) {
-		uint8_t *stack = alloc(32768);
+		smp_tag->smp_info[i].extra_argument = (uint64_t)&cpu_locals[i];
+		if(smp_tag->smp_info[i].lapic_id == bsp_lapic_id) {
+			cpu_init((void *)&smp_tag->smp_info[i] - MEM_PHYS_OFFSET);
+			continue;
+		}
+		cpu_locals[i].cpu_number = i;
+		uint64_t stack = (uintptr_t)pmm_alloc(8) + MEM_PHYS_OFFSET;
 		smp_tag->smp_info[i].target_stack = (uintptr_t)stack + sizeof(stack);
-		smp_tag->smp_info[i].goto_address = (uintptr_t)cpu_start;
+		smp_tag->smp_info[i].goto_address = (uintptr_t)cpu_init;
 	}
-	// Wait 50 milliseconds
+	// Wait 50 millisecond
 	hpet_usleep(50000);
 }
 
-void cpu_init(void) {
+static void cpu_init(struct stivale2_smp_info *smp_info) {
+	LOCK(cpu_lock);
+	smp_info = (void *)smp_info + MEM_PHYS_OFFSET;
+	gdt_init();
+	// Load CPU local address in gsbase
+	wrmsr(0xc0000101, (uintptr_t)smp_info->extra_argument);
+	printf("CPU %d online!\n", this_cpu->cpu_number);
+
+	this_cpu->lapic_id = smp_info->lapic_id;
+
 	// Firstly enable SSE/SSE2 as it's the baseline for x86_64
 	uint64_t cr0 = 0;
 	cr0 = read_cr("0");
@@ -175,13 +180,22 @@ void cpu_init(void) {
 		}
 		wrxcr(0, xcr0);
 
-		cpu_fpu_storage_size = (size_t)c;
+		this_cpu->fpu_storage_size = (size_t)c;
 
-		cpu_fpu_save = xsave;
-		cpu_fpu_restore = xrstor;
+		this_cpu->fpu_save = xsave;
+		this_cpu->fpu_restore = xrstor;
 	} else {
-		cpu_fpu_storage_size = 512; // Legacy size for fxsave
-		cpu_fpu_save = fxsave;
-		cpu_fpu_restore = fxrstor;
+		this_cpu->fpu_storage_size = 512; // Legacy size for fxsave
+		this_cpu->fpu_save = fxsave;
+		this_cpu->fpu_restore = fxrstor;
 	}
+	UNLOCK(cpu_lock);
+	if (this_cpu->lapic_id != bsp_lapic_id) {
+		uint64_t cpu_number;
+		asm volatile ("mov %0, qword ptr gs:[0]" : "=r" (cpu_number) : : "memory");
+		printf("Hello I am CPU %d ready to go!\n", cpu_number);
+		for(;;)
+			asm("hlt");
+	}
+	printf("Hello I am the BSP CPU\n");
 }
