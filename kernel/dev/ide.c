@@ -27,18 +27,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-unsigned char ide_buf[2048] = {0};
-unsigned char ide_irq_invoked = 0;
-unsigned char atapi_packet[12] = {0xA8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 struct ide_device *ide_devices[4];
-
-inline void Theinsl(uint32_t port, void *addr, int cnt) {
-	asm volatile("cld;"
-				 "repne; insl;"
-				 : "=D"(addr), "=c"(cnt)
-				 : "d"(port), "0"(addr), "1"(cnt)
-				 : "memory", "cc");
-}
 
 void ata_io_wait(uint16_t bus) {
 	port_byte_in(bus + ATA_REG_ALTSTATUS);
@@ -168,6 +157,94 @@ struct ide_device *ide_device_init(bool Primary, bool Master) {
 	return atadevice;
 }
 
+void ide_read_sector(uint32_t device_index, uint32_t lba, uint8_t *buffer) {
+	struct ide_device *device = ide_devices[device_index];
+	if (device->exists == 0) {
+		printf("ERROR: ide_read_sector() called with a device that does NOT "
+			   "exist\n");
+		return;
+	}
+	if (device->type == 1) {
+		printf("ERROR: ide_read_sector() called with a device that is a ATAPI "
+			   "device, which is not yet supported!\n");
+		return;
+	}
+
+	uint16_t bus;
+	if (device->channel == 0) {
+		bus = 0x1F0;
+	} else {
+		bus = 0x170;
+	}
+	port_byte_out(bus + ATA_REG_CONTROL, 0x02); // PIO mode
+	// Set device
+	ata_wait_ready(bus);
+	port_byte_out(bus + ATA_REG_HDDEVSEL,
+				  0xe0 | device->channel << 4 | (lba & 0x0f000000) >> 24);
+
+	port_byte_out(bus + ATA_REG_FEATURES, 0x00);
+	port_byte_out(bus + ATA_REG_SECCOUNT0, 1);
+	port_byte_out(bus + ATA_REG_LBA0, (lba & 0x000000ff) >> 0);
+	port_byte_out(bus + ATA_REG_LBA1, (lba & 0x0000ff00) >> 8);
+	port_byte_out(bus + ATA_REG_LBA2, (lba & 0x00ff0000) >> 16);
+	port_byte_out(bus + ATA_REG_COMMAND, ATA_CMD_READ_PIO);
+
+	if (ata_wait(bus, 1)) {
+		printf("Error during ATA read");
+	}
+	int size = 256;
+
+	for (int i = 0; i < size; ++i) {
+		buffer[i] = port_word_in(bus);
+		printf("%X,", buffer[i]);
+	}
+	ata_wait(bus, 0);
+}
+
+void ide_write_sector(uint32_t device_index, uint32_t lba, uint8_t *buffer) {
+	struct ide_device *device = ide_devices[device_index];
+	if (device->exists == 0) {
+		printf("ERROR: ide_write_sector() called with a device that does NOT "
+			   "exist\n");
+		return;
+	}
+	if (device->type == 1) {
+		printf("ERROR: ide_write_sector() called with a device that is a ATAPI "
+			   "device, which is not yet supported!\n");
+		return;
+	}
+
+	uint16_t bus;
+	if (device->channel == 0) {
+		bus = 0x1F0;
+	} else {
+		bus = 0x170;
+	}
+	port_byte_out(bus + ATA_REG_CONTROL, 0x02);
+
+	ata_wait_ready(bus);
+
+	port_byte_out(bus + ATA_REG_HDDEVSEL,
+				  0xe0 | device->channel << 4 | (lba & 0x0f000000) >> 24);
+	ata_wait(bus, 0);
+	port_byte_out(bus + ATA_REG_FEATURES, 0x00);
+	port_byte_out(bus + ATA_REG_SECCOUNT0, 0x01);
+	port_byte_out(bus + ATA_REG_LBA0, (lba & 0x000000ff) >> 0);
+	port_byte_out(bus + ATA_REG_LBA1, (lba & 0x0000ff00) >> 8);
+	port_byte_out(bus + ATA_REG_LBA2, (lba & 0x00ff0000) >> 16);
+	port_byte_out(bus + ATA_REG_COMMAND, ATA_CMD_WRITE_PIO);
+	ata_wait(bus, 0);
+
+	//Send the new sector
+	uint16_t *buffer2 = (uint16_t *)buffer;
+	for (size_t i = 0; i < 256; i++) {
+		port_word_out(bus, buffer2[i]);
+	}
+
+	port_byte_out(bus + 0x07, ATA_CMD_CACHE_FLUSH);
+	ata_wait(bus, 0);
+}
+
 void ide_init(void) {
 	struct pci_device *ideDrive;
 	for (size_t i = 0; i < 100; i++) {
@@ -180,14 +257,19 @@ void ide_init(void) {
 		}
 	}
 	if (ideDrive == NULL) {
-		printf("IDE: NO Ide controller found\n");
+		printf("IDE: NO IDE controller found\n");
 		return;
 	} else {
-		printf("Found IDE controller\n");
+		printf("IDE: Found IDE controller\n");
 	}
 	ide_devices[0] = ide_device_init(true, true);  // Primary master
 	ide_devices[1] = ide_device_init(true, false); // Primary slave
 
 	ide_devices[2] = ide_device_init(false, true);	// Secondary master
 	ide_devices[3] = ide_device_init(false, false); // Secondary slave
+
+	ide_read_sector(0, 0, alloc(512));
+	ide_read_sector(1, 0, alloc(512));
+	ide_read_sector(2, 0, alloc(512));
+	ide_read_sector(3, 0, alloc(512));
 }
