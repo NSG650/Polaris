@@ -16,10 +16,14 @@
 
 #include "pci.h"
 #include "../cpu/ports.h"
+#include "../klibc/alloc.h"
 #include "../klibc/printf.h"
 #include "../mm/vmm.h"
 #include "mmio.h"
+#include <stdint.h>
 
+struct pci_device *PCIDevicesArray[100];
+int i = 0;
 DYNARRAY_GLOBAL(mcfg_entries);
 
 static uint32_t (*internal_read)(uint16_t, uint8_t, uint8_t, uint8_t, uint16_t,
@@ -80,9 +84,10 @@ static uint32_t mcfg_pci_read(uint16_t seg, uint8_t bus, uint8_t slot,
 		if (entry->seg == seg) {
 			if ((bus >= entry->start_bus_number) &&
 				(bus <= entry->end_bus_number)) {
-				void *addr = (void *)((entry->base +
-									  (((bus - entry->start_bus_number) << 20) |
-									   (slot << 15) | (function << 12))) |
+				void *addr =
+					(void *)((entry->base +
+							  (((bus - entry->start_bus_number) << 20) |
+							   (slot << 15) | (function << 12))) |
 							 offset);
 				switch (access_size) {
 					case 1: {
@@ -118,9 +123,10 @@ static void mcfg_pci_write(uint16_t seg, uint8_t bus, uint8_t slot,
 		if (entry->seg == seg) {
 			if ((bus >= entry->start_bus_number) &&
 				(bus <= entry->end_bus_number)) {
-				void *addr = (void *)((entry->base +
-									  (((bus - entry->start_bus_number) << 20) |
-									   (slot << 15) | (function << 12))) +
+				void *addr =
+					(void *)((entry->base +
+							  (((bus - entry->start_bus_number) << 20) |
+							   (slot << 15) | (function << 12))) +
 							 offset);
 				switch (access_size) {
 					case 1: {
@@ -151,6 +157,70 @@ static void mcfg_pci_write(uint16_t seg, uint8_t bus, uint8_t slot,
 		   seg, bus, slot, function);
 }
 
+uint32_t pci_read(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t function,
+				  uint16_t offset, uint8_t access_size) {
+	return internal_read(seg, bus, slot, function, offset, access_size);
+}
+
+void pci_write(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t function,
+			   uint16_t offset, uint32_t value, uint8_t access_size) {
+	internal_write(seg, bus, slot, function, offset, value, access_size);
+}
+
+uint32_t pci_GetVendor(uint8_t bus, uint8_t slot) {
+	return pci_read(0, bus, slot, 0, 0, 2);
+}
+uint32_t pci_GetDevice(uint8_t bus, uint8_t slot) {
+	return pci_read(0, bus, slot, 0, 2, 2);
+}
+uint32_t pci_GetHeaderType(uint8_t bus, uint8_t slot) {
+	return pci_read(0, bus, slot, 0, 0x0E, 2);
+}
+
+bool pci_checkIfDeviceExists(uint8_t bus, uint8_t device) {
+	uint16_t vendorID = pci_GetVendor(bus, device);
+	if (vendorID == 0xFFFF)
+		return false; // Device doesn't exist
+	else
+		return true;
+}
+
+struct pci_device *pci_getDevice(uint8_t bus, uint8_t device) {
+	uint16_t vendorID = pci_GetVendor(bus, device);
+	if (vendorID == 0xFFFF)
+		return NULL; // Device doesn't exist
+	uint16_t deviceID = pci_GetDevice(bus, device);
+	uint8_t classCode = pci_read(0, bus, device, 0, 0x0b, 1);
+	uint8_t subclass = pci_read(0, bus, device, 0, 0x0a, 1);
+	uint8_t progIntf = pci_read(0, bus, device, 0, 0x09, 1);
+
+	uint16_t headerType = pci_GetHeaderType(bus, device);
+	uint32_t functionCount = headerType & 0x80 ? 8 : 1;
+	printf("Pci: found device: VendorID: %X DeviceID: %X Class code: %X Sub "
+		   "class: %X progIntf: %X\n",
+		   vendorID, deviceID, classCode, subclass, progIntf);
+
+	struct pci_device *pcidevice = alloc(sizeof(struct pci_device));
+	pcidevice->vendorId = vendorID;
+	pcidevice->deviceId = deviceID;
+	pcidevice->classCode = classCode;
+	pcidevice->subclass = subclass;
+	pcidevice->progIntf = progIntf;
+	return pcidevice;
+}
+
+void checkBus(uint8_t bus) {
+	uint8_t device;
+
+	for (device = 0; device < 32; device++) {
+		struct pci_device *dev = pci_getDevice(bus, device);
+		if (dev != NULL) {
+			PCIDevicesArray[i] = dev;
+			i++;
+		}
+	}
+}
+
 void pci_init(void) {
 	struct mcfg *mcfg = (struct mcfg *)acpi_find_sdt("MCFG", 0);
 	if (mcfg == NULL) {
@@ -169,14 +239,23 @@ void pci_init(void) {
 		internal_read = mcfg_pci_read;
 		internal_write = mcfg_pci_write;
 	}
-}
 
-uint32_t pci_read(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t function,
-				  uint16_t offset, uint8_t access_size) {
-	return internal_read(seg, bus, slot, function, offset, access_size);
-}
+	// Scan PCI Devices
+	uint8_t function;
+	uint8_t bus;
 
-void pci_write(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t function,
-			   uint16_t offset, uint32_t value, uint8_t access_size) {
-	internal_write(seg, bus, slot, function, offset, value, access_size);
+	uint16_t headerType = pci_GetHeaderType(0, 0);
+	if ((headerType & 0x80) == 0) {
+		/* Single PCI host controller */
+		checkBus(0);
+	} else {
+		/* Multiple PCI host controllers */
+		for (function = 0; function < 8; function++) {
+			uint32_t vendorID = pci_read(0, 0, 0, function, 0, 2);
+			if (vendorID != 0xFFFF)
+				break;
+			bus = function;
+			checkBus(bus);
+		}
+	}
 }

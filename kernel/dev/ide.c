@@ -17,7 +17,25 @@
  */
 
 #include "ide.h"
+#include "../sys/pci.h"
+#include "../klibc/printf.h"
 
-void ide_init(){
-	
+void ide_init() {
+	struct pci_device *ideDrive;
+	for (size_t i = 0; i < 100; i++) {
+		struct pci_device *dev = PCIDevicesArray[i];
+		if (dev != NULL) {
+			if (dev->classCode == 0x1 && dev->subclass == 0x01) {
+				ideDrive = dev;
+				break;
+			}
+		}
+	}
+	if (ideDrive == NULL) {
+		printf("IDE: NO Ide controller found\n");
+		return;
+	}
+	else{
+		printf("Found IDE controller\n");
+	}
 }

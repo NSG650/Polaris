@@ -43,4 +43,16 @@ void pci_write(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t function,
 uint32_t pci_read(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t function,
 				  uint16_t offset, uint8_t access_size);
 
+
+
+typedef struct pci_device
+{
+    uint16_t vendorId;
+    uint16_t deviceId;
+
+    uint8_t classCode;
+    uint8_t subclass;
+    uint8_t progIntf;
+};
+extern struct pci_device* PCIDevicesArray[100];
 #endif
