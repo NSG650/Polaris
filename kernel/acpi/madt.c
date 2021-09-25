@@ -27,6 +27,7 @@ DYNARRAY_GLOBAL(madt_isos);
 DYNARRAY_GLOBAL(madt_nmis);
 
 struct madt *madt;
+//#define MADT_DEBUG
 
 uintptr_t lapic_addr = 0;
 
@@ -49,24 +50,32 @@ void init_madt(void) {
 		switch (*(madt_ptr)) {
 			case 0:
 				// Processor local APIC
+#ifdef MADT_DEBUG
 				printf("ACPI/MADT: Found local APIC 0x%X\n",
 					   madt_local_apics.length);
+#endif
 				DYNARRAY_PUSHBACK(madt_local_apics, (void *)madt_ptr);
 				break;
 			case 1:
 				// I/O APIC
+#ifdef MADT_DEBUG
 				printf("ACPI/MADT: Found I/O APIC 0x%X\n",
 					   madt_io_apics.length);
+#endif
 				DYNARRAY_PUSHBACK(madt_io_apics, (void *)madt_ptr);
 				break;
 			case 2:
 				// Interrupt source override
+#ifdef MADT_DEBUG
 				printf("ACPI/MADT: Found ISO 0x%X\n", madt_isos.length);
+#endif
 				DYNARRAY_PUSHBACK(madt_isos, (void *)madt_ptr);
 				break;
 			case 4:
 				// NMI
+#ifdef MADT_DEBUG
 				printf("ACPI/MADT: Found NMI 0x%X\n", madt_nmis.length);
+#endif
 				DYNARRAY_PUSHBACK(madt_nmis, (void *)madt_ptr);
 				break;
 			case 5:

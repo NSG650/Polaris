@@ -74,53 +74,47 @@ void *stivale2_get_tag(struct stivale2_struct *stivale2_struct, uint64_t id) {
 
 void _start(struct stivale2_struct *stivale2_struct) {
 	gdt_init();
+	//Get needed tags
 	struct stivale2_struct_tag_framebuffer *fb_str_tag =
 		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_FRAMEBUFFER_ID);
-	video_init(fb_str_tag);
-	cpu_init();
 	struct stivale2_struct_tag_memmap *memmap_tag =
 		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MEMMAP_ID);
-	pmm_init((void *)memmap_tag->memmap, memmap_tag->entries);
 	struct stivale2_struct_tag_pmrs *pmrs_tag =
 		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_PMRS_ID);
+	struct stivale2_struct_tag_rsdp *rsdp_tag =
+		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_RSDP_ID);
+	struct stivale2_struct_tag_smp *smp_tag =
+		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_SMP_ID);
+	struct stivale2_struct_tag_modules *modules_tag =
+		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MODULES_ID);
+
+	//Init video, cpu, pmm, and vmm
+	video_init(fb_str_tag);
+	cpu_init();
+	pmm_init((void *)memmap_tag->memmap, memmap_tag->entries);
+
 	vmm_init((void *)memmap_tag->memmap, memmap_tag->entries,
 			 (void *)pmrs_tag->pmrs, pmrs_tag->entries);
 	serial_install();
 	printf("Kernel build: %s\n", KVERSION);
+	//Install ISR
 	isr_install();
 	asm volatile("sti");
-	struct stivale2_struct_tag_rsdp *rsdp_tag =
-		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_RSDP_ID);
+	//Init ACPI, pic, apic and SMP
 	acpi_init((void *)rsdp_tag->rsdp);
 	pic_init();
 	apic_init();
-	struct stivale2_struct_tag_smp *smp_tag =
-		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_SMP_ID);
 	smp_init(smp_tag);
-	printf("Hello World!\n");
-	printf("A (4 bytes): %p\n", kmalloc(4));
-	void *ptr = kmalloc(8);
-	printf("B (8 bytes): %p\n", ptr);
-	kfree(ptr);
-	printf("Freed B\n");
-	void *ptr2 = kmalloc(16);
-	printf("C (16 bytes): %p\n", ptr2);
-	void *ptr3 = kmalloc(32);
-	printf("D (32 bytes): %p\n", ptr3);
-	printf("C (16 bytes to 32 bytes realloc): %p\n", krealloc(ptr2, 32));
-	printf("D (32 bytes after C realloc): %p\n", ptr3);
-	printf("E (4 int calloc): %p\n", kcalloc(4, sizeof(int)));
-	printf("%llu\n", get_unix_timestamp());
-	hpet_usleep(1000 * 1000);
-	printf("%llu\n", get_unix_timestamp());
-	printf("HPET test works!\n");
+
+	kmalloc(4); // If removed, this will cause page faults
+
+	//Init VFS
 	vfs_install_fs(&tmpfs);
 	vfs_install_fs(&devtmpfs);
 	vfs_mount("tmpfs", "/", "tmpfs");
 	vfs_mkdir(NULL, "/dev", 0755, true);
 	vfs_mount("devtmpfs", "/dev", "devtmpfs");
-	struct stivale2_struct_tag_modules *modules_tag =
-		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MODULES_ID);
+
 	initramfs_init(modules_tag);
 	struct resource *h = vfs_open("/root/initramfs.txt", O_RDWR, 0644);
 	if (h == NULL)
@@ -129,6 +123,8 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	h->read(h, buf, 0, strlen("Hello initramfs"));
 	printf("reading initramfs.txt: %s\n", buf);
 	vfs_dump_nodes(NULL, "");
+
+	//End
 	for (;;)
 		asm("hlt");
 }
