@@ -105,6 +105,8 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	pic_init();
 	apic_init();
 	smp_init(smp_tag);
+	//Start storage drivers
+	ide_init();
 
 	kmalloc(4); // If removed, this will cause page faults
 
