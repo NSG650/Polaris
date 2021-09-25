@@ -32,8 +32,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-//#define ACPI_DEBUG // uncomment to enable ACPI debug
-
 static bool use_xsdt;
 static struct rsdt *rsdt;
 static uint8_t revision;
@@ -68,23 +66,17 @@ static void init_ec(void) {
 }
 
 void acpi_init(acpi_xsdp_t *rsdp) {
-	#ifdef ACPI_DEBUG
 	printf("ACPI: Revision: %hhu\n", rsdp->revision);
-	#endif
 	revision = rsdp->revision;
 
 	if (rsdp->revision >= 2 && rsdp->xsdt) {
 		use_xsdt = true;
 		rsdt = (struct rsdt *)((uintptr_t)rsdp->xsdt + MEM_PHYS_OFFSET);
-		#ifdef ACPI_DEBUG
 		printf("ACPI: Found XSDT at %llX\n", (uintptr_t)rsdt);
-		#endif
 	} else {
 		use_xsdt = false;
 		rsdt = (struct rsdt *)((uintptr_t)rsdp->rsdt + MEM_PHYS_OFFSET);
-		#ifdef ACPI_DEBUG
 		printf("ACPI: Found RSDT at %llX\n", (uintptr_t)rsdt);
-		#endif
 	}
 	hpet_init();
 	pci_init();
@@ -130,7 +122,6 @@ void *acpi_find_sdt(const char *signature, int index) {
 }
 
 void laihost_log(int level, const char *msg) {
-#ifdef ACPI_DEBUG
 	switch (level) {
 		case LAI_DEBUG_LOG:
 			printf("ACPI: Debug: %s\n", msg);
@@ -142,7 +133,6 @@ void laihost_log(int level, const char *msg) {
 			printf("ACPI: %s\n", msg);
 			break;
 	}
-#endif
 }
 
 __attribute__((noreturn)) void laihost_panic(const char *msg) {
