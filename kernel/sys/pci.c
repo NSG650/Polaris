@@ -78,23 +78,25 @@ static uint32_t mcfg_pci_read(uint16_t seg, uint8_t bus, uint8_t slot,
 	for (size_t i = 0; i < mcfg_entries.length; i++) {
 		struct mcfg_entry *entry = mcfg_entries.storage[i];
 		if (entry->seg == seg) {
-			if ((bus >= entry->start_bus_number) &&
-				(bus <= entry->end_bus_number)) {
-				void *addr = (void *)((entry->base +
-									  (((bus - entry->start_bus_number) << 20) |
-									   (slot << 15) | (function << 12))) |
-							 offset);
+			if (bus >= entry->start_bus_number &&
+				bus <= entry->end_bus_number) {
+				void *addr =
+					(void *)(((entry->base +
+							   (((bus - entry->start_bus_number) << 20) |
+								(slot << 15) | (function << 12))) |
+							  offset) +
+							 MEM_PHYS_OFFSET);
 				switch (access_size) {
 					case 1: {
-						return mminb(addr + MEM_PHYS_OFFSET);
+						return mminb(addr);
 					}
 
 					case 2: {
-						return mminw(addr + MEM_PHYS_OFFSET);
+						return mminw(addr);
 					}
 
 					case 4: {
-						return mmind(addr + MEM_PHYS_OFFSET);
+						return mmind(addr);
 					}
 
 					default:
@@ -116,25 +118,27 @@ static void mcfg_pci_write(uint16_t seg, uint8_t bus, uint8_t slot,
 	for (size_t i = 0; i < mcfg_entries.length; i++) {
 		struct mcfg_entry *entry = mcfg_entries.storage[i];
 		if (entry->seg == seg) {
-			if ((bus >= entry->start_bus_number) &&
-				(bus <= entry->end_bus_number)) {
-				void *addr = (void *)((entry->base +
-									  (((bus - entry->start_bus_number) << 20) |
-									   (slot << 15) | (function << 12))) +
-							 offset);
+			if (bus >= entry->start_bus_number &&
+				bus <= entry->end_bus_number) {
+				void *addr =
+					(void *)(((entry->base +
+							   (((bus - entry->start_bus_number) << 20) |
+								(slot << 15) | (function << 12))) +
+							  offset) +
+							 MEM_PHYS_OFFSET);
 				switch (access_size) {
 					case 1: {
-						mmoutb(addr + MEM_PHYS_OFFSET, value);
+						mmoutb(addr, value);
 						break;
 					}
 
 					case 2: {
-						mmoutw(addr + MEM_PHYS_OFFSET, value);
+						mmoutw(addr, value);
 						break;
 					}
 
 					case 4: {
-						mmoutd(addr + MEM_PHYS_OFFSET, value);
+						mmoutd(addr, value);
 						break;
 					}
 
@@ -161,9 +165,7 @@ void pci_init(void) {
 			(mcfg->header.length - (sizeof(acpi_header_t) + sizeof(uint64_t))) /
 			sizeof(struct mcfg_entry);
 		for (uint64_t i = 0; i < entries; i++) {
-			struct mcfg_entry *entry = &mcfg->entries[i];
-
-			DYNARRAY_PUSHBACK(mcfg_entries, (void *)entry);
+			DYNARRAY_PUSHBACK(mcfg_entries, (void *)&mcfg->entries[i]);
 		}
 
 		internal_read = mcfg_pci_read;
