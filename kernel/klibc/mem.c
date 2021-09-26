@@ -18,158 +18,286 @@
 #include "mem.h"
 #include <stdint.h>
 
-void *memcpy(void *dest, const void *src, size_t nbytes) {
-	uint8_t *q = (uint8_t *)dest;
-	uint8_t *p = (uint8_t *)src;
-	uint8_t *end = p + nbytes;
-
-	while (p != end) {
-		*q++ = *p++;
-	}
-
-	return dest;
-}
-
-void *memccpy(void *restrict dest, const void *restrict src, int c, size_t n) {
+void *memcpy(void *restrict dest, const void *restrict src, size_t n) {
 	uint8_t *d = dest;
 	const uint8_t *s = src;
 
-	c = (uint8_t)c;
-	for (; n && (*d = *s) != c; n--, s++, d++)
-		;
-	if (n) {
-		return d + 1;
+#ifdef __GNUC__
+	typedef uint32_t __attribute__((__may_alias__)) u32;
+	uint32_t w, x;
+
+	for (; (uintptr_t)s % 4 && n; n--)
+		*d++ = *s++;
+
+	if ((uintptr_t)d % 4 == 0) {
+		for (; n >= 16; s += 16, d += 16, n -= 16) {
+			*(u32 *)(d + 0) = *(u32 *)(s + 0);
+			*(u32 *)(d + 4) = *(u32 *)(s + 4);
+			*(u32 *)(d + 8) = *(u32 *)(s + 8);
+			*(u32 *)(d + 12) = *(u32 *)(s + 12);
+		}
+		if (n & 8) {
+			*(u32 *)(d + 0) = *(u32 *)(s + 0);
+			*(u32 *)(d + 4) = *(u32 *)(s + 4);
+			d += 8;
+			s += 8;
+		}
+		if (n & 4) {
+			*(u32 *)(d + 0) = *(u32 *)(s + 0);
+			d += 4;
+			s += 4;
+		}
+		if (n & 2) {
+			*d++ = *s++;
+			*d++ = *s++;
+		}
+		if (n & 1) {
+			*d = *s;
+		}
+		return dest;
 	}
-	return 0;
+
+	if (n >= 32)
+		switch ((uintptr_t)d % 4) {
+			case 1:
+				w = *(u32 *)s;
+				*d++ = *s++;
+				*d++ = *s++;
+				*d++ = *s++;
+				n -= 3;
+				for (; n >= 17; s += 16, d += 16, n -= 16) {
+					x = *(u32 *)(s + 1);
+					*(u32 *)(d + 0) = (w >> 24) | (x << 8);
+					w = *(u32 *)(s + 5);
+					*(u32 *)(d + 4) = (x >> 24) | (w << 8);
+					x = *(u32 *)(s + 9);
+					*(u32 *)(d + 8) = (w >> 24) | (x << 8);
+					w = *(u32 *)(s + 13);
+					*(u32 *)(d + 12) = (x >> 24) | (w << 8);
+				}
+				break;
+			case 2:
+				w = *(u32 *)s;
+				*d++ = *s++;
+				*d++ = *s++;
+				n -= 2;
+				for (; n >= 18; s += 16, d += 16, n -= 16) {
+					x = *(u32 *)(s + 2);
+					*(u32 *)(d + 0) = (w >> 16) | (x << 16);
+					w = *(u32 *)(s + 6);
+					*(u32 *)(d + 4) = (x >> 16) | (w << 16);
+					x = *(u32 *)(s + 10);
+					*(u32 *)(d + 8) = (w >> 16) | (x << 16);
+					w = *(u32 *)(s + 14);
+					*(u32 *)(d + 12) = (x >> 16) | (w << 16);
+				}
+				break;
+			case 3:
+				w = *(u32 *)s;
+				*d++ = *s++;
+				n -= 1;
+				for (; n >= 19; s += 16, d += 16, n -= 16) {
+					x = *(u32 *)(s + 3);
+					*(u32 *)(d + 0) = (w >> 8) | (x << 24);
+					w = *(u32 *)(s + 7);
+					*(u32 *)(d + 4) = (x >> 8) | (w << 24);
+					x = *(u32 *)(s + 11);
+					*(u32 *)(d + 8) = (w >> 8) | (x << 24);
+					w = *(u32 *)(s + 15);
+					*(u32 *)(d + 12) = (x >> 8) | (w << 24);
+				}
+				break;
+		}
+	if (n & 16) {
+		*d++ = *s++;
+		*d++ = *s++;
+		*d++ = *s++;
+		*d++ = *s++;
+		*d++ = *s++;
+		*d++ = *s++;
+		*d++ = *s++;
+		*d++ = *s++;
+		*d++ = *s++;
+		*d++ = *s++;
+		*d++ = *s++;
+		*d++ = *s++;
+		*d++ = *s++;
+		*d++ = *s++;
+		*d++ = *s++;
+		*d++ = *s++;
+	}
+	if (n & 8) {
+		*d++ = *s++;
+		*d++ = *s++;
+		*d++ = *s++;
+		*d++ = *s++;
+		*d++ = *s++;
+		*d++ = *s++;
+		*d++ = *s++;
+		*d++ = *s++;
+	}
+	if (n & 4) {
+		*d++ = *s++;
+		*d++ = *s++;
+		*d++ = *s++;
+		*d++ = *s++;
+	}
+	if (n & 2) {
+		*d++ = *s++;
+		*d++ = *s++;
+	}
+	if (n & 1) {
+		*d = *s;
+	}
+	return dest;
+#endif
+
+	for (; n; n--)
+		*d++ = *s++;
+	return dest;
 }
 
-void *mempcpy(void *dest, const void *src, size_t nbytes) {
-	return (char *)memcpy(dest, src, nbytes) + nbytes;
-}
-
-void *memset(void *dest, int val, size_t len) {
-	unsigned char *s = dest;
+void *memset(void *dest, int c, size_t n) {
+	uint8_t *s = dest;
 	size_t k;
 
-	if (!len)
+	if (!n)
 		return dest;
-	s[0] = val;
-	s[len - 1] = val;
-	if (len <= 2)
+	s[0] = c;
+	s[n - 1] = c;
+	if (n <= 2)
 		return dest;
-	s[1] = val;
-	s[2] = val;
-	s[len - 2] = val;
-	s[len - 3] = val;
-	if (len <= 6)
+	s[1] = c;
+	s[2] = c;
+	s[n - 2] = c;
+	s[n - 3] = c;
+	if (n <= 6)
 		return dest;
-	s[3] = val;
-	s[len - 4] = val;
-	if (len <= 8)
+	s[3] = c;
+	s[n - 4] = c;
+	if (n <= 8)
 		return dest;
 
 	k = -(uintptr_t)s & 3;
 	s += k;
-	len -= k;
-	len &= -4;
+	n -= k;
+	n &= -4;
 
 #ifdef __GNUC__
 	typedef uint32_t __attribute__((__may_alias__)) u32;
 	typedef uint64_t __attribute__((__may_alias__)) u64;
 
-	u32 c32 = ((u32)-1) / 255 * (unsigned char)val;
+	u32 c32 = ((u32)-1) / 255 * (uint8_t)c;
 
 	*(u32 *)(s + 0) = c32;
-	*(u32 *)(s + len - 4) = c32;
-	if (len <= 8)
+	*(u32 *)(s + n - 4) = c32;
+	if (n <= 8)
 		return dest;
 	*(u32 *)(s + 4) = c32;
 	*(u32 *)(s + 8) = c32;
-	*(u32 *)(s + len - 12) = c32;
-	*(u32 *)(s + len - 8) = c32;
-	if (len <= 24)
+	*(u32 *)(s + n - 12) = c32;
+	*(u32 *)(s + n - 8) = c32;
+	if (n <= 24)
 		return dest;
 	*(u32 *)(s + 12) = c32;
 	*(u32 *)(s + 16) = c32;
 	*(u32 *)(s + 20) = c32;
 	*(u32 *)(s + 24) = c32;
-	*(u32 *)(s + len - 28) = c32;
-	*(u32 *)(s + len - 24) = c32;
-	*(u32 *)(s + len - 20) = c32;
-	*(u32 *)(s + len - 16) = c32;
+	*(u32 *)(s + n - 28) = c32;
+	*(u32 *)(s + n - 24) = c32;
+	*(u32 *)(s + n - 20) = c32;
+	*(u32 *)(s + n - 16) = c32;
 
 	k = 24 + ((uintptr_t)s & 4);
 	s += k;
-	len -= k;
+	n -= k;
 
 	u64 c64 = c32 | ((u64)c32 << 32);
-	for (; len >= 32; len -= 32, s += 32) {
+	for (; n >= 32; n -= 32, s += 32) {
 		*(u64 *)(s + 0) = c64;
 		*(u64 *)(s + 8) = c64;
 		*(u64 *)(s + 16) = c64;
 		*(u64 *)(s + 24) = c64;
 	}
 #else
-	for (; len; len--, s++)
-		*s = val;
+	for (; n; n--, s++)
+		*s = c;
 #endif
 
 	return dest;
 }
 
-void *memmove(void *dest, const void *src, size_t nbytes) {
-	uint8_t *p = (uint8_t *)src;
-	uint8_t *q = (uint8_t *)dest;
-	uint8_t *end = p + nbytes;
+#ifdef __GNUC__
+typedef __attribute__((__may_alias__)) size_t WT;
+#define WS (sizeof(WT))
+#endif
 
-	if (q > p && q < end) {
-		p = end;
-		q += nbytes;
+void *memmove(void *dest, const void *src, size_t n) {
+	char *d = dest;
+	const char *s = src;
 
-		while (p != src) {
-			*--q = *--p;
+	if (d == s)
+		return d;
+	if ((uintptr_t)s - (uintptr_t)d - n <= -2 * n)
+		return memcpy(d, s, n);
+
+	if (d < s) {
+#ifdef __GNUC__
+		if ((uintptr_t)s % WS == (uintptr_t)d % WS) {
+			while ((uintptr_t)d % WS) {
+				if (!n--)
+					return dest;
+				*d++ = *s++;
+			}
+			for (; n >= WS; n -= WS, d += WS, s += WS)
+				*(WT *)d = *(WT *)s;
 		}
+#endif
+		for (; n; n--)
+			*d++ = *s++;
 	} else {
-		while (p != end) {
-			*q++ = *p++;
+#ifdef __GNUC__
+		if ((uintptr_t)s % WS == (uintptr_t)d % WS) {
+			while ((uintptr_t)(d + n) % WS) {
+				if (!n--)
+					return dest;
+				d[n] = s[n];
+			}
+			while (n >= WS)
+				n -= WS, *(WT *)(d + n) = *(WT *)(s + n);
 		}
+#endif
+		while (n)
+			n--, d[n] = s[n];
 	}
 
 	return dest;
 }
 
-void *memchr(const void *buf, int c, size_t n) {
-	const uint8_t *p = (uint8_t *)buf;
+void *memchr(const void *src, int c, size_t n) {
+	const uint8_t *s = src;
 	c = (uint8_t)c;
-
-	for (; n && *p != c; p++, n--)
+#ifdef __GNUC__
+	for (; ((uintptr_t)s & (sizeof(size_t) - 1)) && n && *s != c; s++, n--)
 		;
-	return n ? (void *)p : 0;
+	if (n && *s != c) {
+		typedef size_t __attribute__((__may_alias__)) word;
+		const word *w;
+		size_t k = ONES * c;
+		for (w = (const void *)s; n >= (sizeof(size_t)) && !HASZERO(*w ^ k);
+			 w++, n -= (sizeof(size_t)))
+			;
+		s = (const void *)w;
+	}
+#endif
+	for (; n && *s != c; s++, n--)
+		;
+	return n ? (void *)s : 0;
 }
 
-void *memrchr(const void *buf, int c, size_t n) {
-	const uint8_t *s = buf;
-	c = (uint8_t)c;
-	while (n--) {
-		if (s[n] == c) {
-			return (void *)s + n;
-		}
-	}
-
-	return 0;
-}
-
-int memcmp(const void *s1, const void *s2, size_t n) {
-	uint8_t *byte1 = (uint8_t *)s1;
-	uint8_t *byte2 = (uint8_t *)s2;
-	while ((*byte1 == *byte2) && (n > 0)) {
-		++byte1;
-		++byte2;
-		--n;
-	}
-
-	if (n == 0) {
-		return 0;
-	}
-	return *byte1 - *byte2;
+int memcmp(const void *vl, const void *vr, size_t n) {
+	const uint8_t *l = vl, *r = vr;
+	for (; n && *l == *r; n--, l++, r++)
+		;
+	return n ? *l - *r : 0;
 }

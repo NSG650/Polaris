@@ -10,8 +10,7 @@ CFLAGS :=                             \
 	-Wall -Wextra -g -I stivale/      \
 	-I kernel/klibc/liballoc/include/ \
 	-I kernel/acpi/lai/include/ -MMD  \
-	-D KVERSION=\"git-$(shell git log -1 --pretty=format:%h)\" \
-	-MP -pipe
+	-MP -pipe -DKVERSION=\"git-$(shell git log -1 --pretty=format:%h)\"
 
 # Assembler flags
 ASFLAGS := -g -MD -MP
