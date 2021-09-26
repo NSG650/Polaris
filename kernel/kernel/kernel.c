@@ -94,7 +94,6 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	smp_init(smp_tag);
 	sched_init();
 	printf("Hello World!\n");
-	printf("I'm running from CPU %d\n", this_cpu->cpu_number);
 	printf("A (4 bytes): %p\n", kmalloc(4));
 	void *ptr = kmalloc(8);
 	printf("B (8 bytes): %p\n", ptr);
