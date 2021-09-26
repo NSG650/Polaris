@@ -211,6 +211,10 @@ void apic_init(void) {
 	acpi_fadt_t *facp = acpi_find_sdt("FACP", 0);
 	ioapic_redirect_irq(facp->sci_irq, 73);
 	isr_register_handler(73, sci_interrupt);
+	// Initialize memory to avoid possible page faults
+	memset(ptable, 0, sizeof(struct process) * MAX_PROCS);
+	memset(cpu_locals, 0, sizeof(struct cpu_local));
+	memset(this_cpu->cpu_state, 0, sizeof(struct cpu_state));
 	// Timer
 	ioapic_redirect_irq(0, 72);
 	isr_register_handler(72, timer_interrupt);
