@@ -18,34 +18,33 @@
  * limitations under the License.
  */
 
+#include "../sched/scheduler.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stivale2.h>
-#include "../sched/scheduler.h"
 
 struct cpu_local {
 	uint64_t cpu_number;
 	uint32_t lapic_id;
 	uint64_t tsc_frequency;
-	size_t   fpu_storage_size;
-	void   (*fpu_save)(void *);
-	void   (*fpu_restore)(void *);
+	size_t fpu_storage_size;
+	void (*fpu_save)(void *);
+	void (*fpu_restore)(void *);
 	struct cpu_state *cpu_state;
 };
 
 extern struct cpu_local *cpu_locals;
 
-#define this_cpu ({                \
-    uint64_t cpu_number;           \
-    asm volatile (                 \
-        "mov %0, qword ptr gs:[0]" \
-        : "=r" (cpu_number)        \
-        :                          \
-        : "memory"                 \
-    );                             \
-    &cpu_locals[cpu_number];       \
-})
+#define this_cpu                                \
+	({                                          \
+		uint64_t cpu_number;                    \
+		asm volatile("mov %0, qword ptr gs:[0]" \
+					 : "=r"(cpu_number)         \
+					 :                          \
+					 : "memory");               \
+		&cpu_locals[cpu_number];                \
+	})
 
 uint64_t return_bsp_lapic(void);
 uint64_t return_installed_cpus(void);

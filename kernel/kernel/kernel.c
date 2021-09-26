@@ -33,7 +33,6 @@
 #include <liballoc.h>
 #include <stdint.h>
 #include <stivale2.h>
-#include "kernel.h"
 
 uint8_t stack[32768];
 static struct stivale2_header_tag_smp smp_hdr_tag = {
@@ -69,33 +68,11 @@ void *stivale2_get_tag(struct stivale2_struct *stivale2_struct, uint64_t id) {
 	}
 }
 
-void main(void) {
-	printf("Hello World!\n");
-	printf("A (4 bytes): %p\n", kmalloc(4));
-	void *ptr = kmalloc(8);
-	printf("B (8 bytes): %p\n", ptr);
-	kfree(ptr);
-	printf("Freed B\n");
-	void *ptr2 = kmalloc(16);
-	printf("C (16 bytes): %p\n", ptr2);
-	void *ptr3 = kmalloc(32);
-	printf("D (32 bytes): %p\n", ptr3);
-	printf("C (16 bytes to 32 bytes realloc): %p\n", krealloc(ptr2, 32));
-	printf("D (32 bytes after C realloc): %p\n", ptr3);
-	printf("E (4 int calloc): %p\n", kcalloc(4, sizeof(int)));
-	printf("%llu\n", get_unix_timestamp());
-	hpet_usleep(1000 * 1000);
-	printf("%llu\n", get_unix_timestamp());
-	printf("HPET test works!\n");
-	for (;;)
-		asm("hlt");
-}
-
 void _start(struct stivale2_struct *stivale2_struct) {
 	gdt_init();
-	struct stivale2_struct_tag_framebuffer *fb_str_tag =
+	struct stivale2_struct_tag_framebuffer *fb_tag =
 		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_FRAMEBUFFER_ID);
-	video_init(fb_str_tag);
+	video_init(fb_tag);
 	struct stivale2_struct_tag_memmap *memmap_tag =
 		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MEMMAP_ID);
 	pmm_init((void *)memmap_tag->memmap, memmap_tag->entries);
@@ -116,6 +93,24 @@ void _start(struct stivale2_struct *stivale2_struct) {
 		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_SMP_ID);
 	smp_init(smp_tag);
 	sched_init();
-	for(;;)
+	printf("Hello World!\n");
+	printf("I'm running from CPU %d\n", this_cpu->cpu_number);
+	printf("A (4 bytes): %p\n", kmalloc(4));
+	void *ptr = kmalloc(8);
+	printf("B (8 bytes): %p\n", ptr);
+	kfree(ptr);
+	printf("Freed B\n");
+	void *ptr2 = kmalloc(16);
+	printf("C (16 bytes): %p\n", ptr2);
+	void *ptr3 = kmalloc(32);
+	printf("D (32 bytes): %p\n", ptr3);
+	printf("C (16 bytes to 32 bytes realloc): %p\n", krealloc(ptr2, 32));
+	printf("D (32 bytes after C realloc): %p\n", ptr3);
+	printf("E (4 int calloc): %p\n", kcalloc(4, sizeof(int)));
+	printf("%llu\n", get_unix_timestamp());
+	hpet_usleep(1000 * 1000);
+	printf("%llu\n", get_unix_timestamp());
+	printf("HPET test works!\n");
+	for (;;)
 		asm("hlt");
 }

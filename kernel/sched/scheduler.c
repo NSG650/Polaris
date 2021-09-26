@@ -16,10 +16,9 @@
 
 #include "scheduler.h"
 #include "../cpu/apic.h"
+#include "../cpu/cpu.h"
 #include "../klibc/lock.h"
 #include "../klibc/printf.h"
-#include "../kernel/kernel.h"
-#include "../cpu/cpu.h"
 
 lock_t sched_lock;
 
@@ -27,9 +26,8 @@ extern void context_switch(struct process_context **old,
 						   struct process_context *new);
 
 void sched_init(void) {
-	printf("Hello I am CPU %d running the scheduler!\n", this_cpu->cpu_number);
-	if(this_cpu->cpu_number == 0)
-		process_init((uintptr_t)main);
+	if (this_cpu->cpu_number == 0)
+		process_init((uintptr_t)__builtin_return_address(0));
 	while (1) {
 		asm volatile("sti");
 		LOCK(sched_lock);

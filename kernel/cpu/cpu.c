@@ -20,14 +20,14 @@
 #include "../klibc/alloc.h"
 #include "../klibc/asm.h"
 #include "../klibc/lock.h"
-#include "../klibc/printf.h"
 #include "../klibc/mem.h"
-#include "../sys/hpet.h"
-#include "apic.h"
-#include <cpuid.h>
+#include "../klibc/printf.h"
 #include "../mm/vmm.h"
 #include "../mm/pmm.h"
 #include "../sys/gdt.h"
+#include "../sys/hpet.h"
+#include "apic.h"
+#include <cpuid.h>
 
 struct cpu_local *cpu_locals;
 uint64_t cpu_count;
@@ -37,7 +37,7 @@ static void cpu_init(struct stivale2_smp_info *smp_info);
 #define MAX_TSC_CALIBRATIONS 4
 
 lock_t cpu_lock;
-uint64_t bsp_lapic_id;
+uint64_t bsp_lapic_id = 0;
 
 static uint64_t rdmsr(uint32_t msr) {
 	uint32_t edx, eax;
@@ -81,31 +81,30 @@ static void fxrstor(void *region) {
 
 void smp_init(struct stivale2_struct_tag_smp *smp_tag) {
 	printf("CPU: Total processor count: %d\n", smp_tag->cpu_count);
-	printf("CPU: BSD lapic ID: %d\n", smp_tag->bsp_lapic_id);
+	memset(cpu_locals, 0, sizeof(struct cpu_local) * smp_tag->cpu_count);
 	bsp_lapic_id = smp_tag->bsp_lapic_id;
 	cpu_locals = alloc(sizeof(struct cpu_local) * smp_tag->cpu_count);
 	for (size_t i = 0; i < smp_tag->cpu_count; ++i) {
 		smp_tag->smp_info[i].extra_argument = (uint64_t)&cpu_locals[i];
-		if(smp_tag->smp_info[i].lapic_id == bsp_lapic_id) {
-			cpu_init((void *)&smp_tag->smp_info[i] - MEM_PHYS_OFFSET);
+		if (smp_tag->smp_info[i].lapic_id == bsp_lapic_id) {
+			cpu_init((void *)&smp_tag->smp_info[i]);
 			continue;
 		}
 		cpu_locals[i].cpu_number = i;
-		uint64_t stack = (uintptr_t)pmm_alloc(8) + MEM_PHYS_OFFSET;
-		smp_tag->smp_info[i].target_stack = (uintptr_t)stack + sizeof(stack);
+		uintptr_t stack = (uintptr_t)alloc(32768);
+		smp_tag->smp_info[i].target_stack = stack + sizeof(stack);
 		smp_tag->smp_info[i].goto_address = (uintptr_t)cpu_init;
 	}
-	// Wait 50 millisecond
+	// Wait 50 milliseconds
 	hpet_usleep(50000);
 }
 
 static void cpu_init(struct stivale2_smp_info *smp_info) {
 	LOCK(cpu_lock);
-	smp_info = (void *)smp_info + MEM_PHYS_OFFSET;
 	gdt_init();
 	// Load CPU local address in gsbase
-	wrmsr(0xc0000101, (uintptr_t)smp_info->extra_argument);
-	printf("CPU %d online!\n", this_cpu->cpu_number);
+	wrmsr(0xC0000101, (uintptr_t)smp_info->extra_argument);
+	printf("CPU: Processor %d online!\n", this_cpu->cpu_number);
 
 	this_cpu->lapic_id = smp_info->lapic_id;
 
@@ -197,7 +196,6 @@ static void cpu_init(struct stivale2_smp_info *smp_info) {
 	if (this_cpu->lapic_id != bsp_lapic_id) {
 		sched_init();
 	}
-	printf("Hello I am the BSP CPU\n");
 }
 
 uint64_t return_installed_cpus(void) {
