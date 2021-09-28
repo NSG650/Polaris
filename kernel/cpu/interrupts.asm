@@ -20,6 +20,7 @@ extern isr_handler
 ; Common handler for the ISRs
 isr_common_format:
 	pushall
+	cld
 	mov rdi, rsp
 	call isr_handler
 	popall
