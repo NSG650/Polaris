@@ -144,19 +144,48 @@ void *laihost_malloc(size_t size) {
 	return kmalloc(size);
 }
 
-void laihost_free(void *ptr, size_t oldsize) {
-	(void)oldsize;
-	kfree(ptr);
-}
-
 void *laihost_realloc(void *ptr, size_t newsize, size_t oldsize) {
 	(void)oldsize;
 	return krealloc(ptr, newsize);
 }
 
+void laihost_free(void *ptr, size_t oldsize) {
+	(void)oldsize;
+	kfree(ptr);
+}
+
 void *laihost_map(size_t address, size_t size) {
 	(void)size;
 	return (void *)address + MEM_PHYS_OFFSET;
+}
+
+void laihost_unmap(void *pointer, size_t count) {
+	// We don't want to unmap kernel mapped memory
+	(void)pointer;
+	(void)count;
+}
+
+__attribute__((always_inline)) inline bool is_canonical(uint64_t addr) {
+	return ((addr <= 0x00007FFFFFFFFFFF) ||
+			((addr >= 0xFFFF800000000000) && (addr <= 0xFFFFFFFFFFFFFFFF)));
+}
+
+void *laihost_scan(const char *signature, size_t index) {
+	// The DSDT must be found using a pointer in the FADT
+	if (!memcmp(signature, "DSDT", 4)) {
+		acpi_fadt_t *facp = acpi_find_sdt("FACP", 0);
+		uint64_t dsdt_addr = 0;
+
+		if (is_canonical(facp->x_dsdt) && revision >= 2) {
+			dsdt_addr = facp->x_dsdt;
+		} else {
+			dsdt_addr = facp->dsdt;
+		}
+
+		return (void *)dsdt_addr + MEM_PHYS_OFFSET;
+	} else {
+		return acpi_find_sdt(signature, index);
+	}
 }
 
 void laihost_outb(uint16_t port, uint8_t val) {
@@ -218,25 +247,7 @@ void laihost_sleep(uint64_t ms) {
 	hpet_usleep(ms * 1000);
 }
 
-static bool is_canonical(uint64_t addr) {
-	return ((addr <= 0x00007FFFFFFFFFFF) ||
-			((addr >= 0xFFFF800000000000) && (addr <= 0xFFFFFFFFFFFFFFFF)));
-}
-
-void *laihost_scan(const char *signature, size_t index) {
-	// The DSDT must be found using a pointer in the FADT
-	if (!memcmp(signature, "DSDT", 4)) {
-		acpi_fadt_t *facp = acpi_find_sdt("FACP", 0);
-		uint64_t dsdt_addr = 0;
-
-		if (is_canonical(facp->x_dsdt) && revision >= 2) {
-			dsdt_addr = facp->x_dsdt;
-		} else {
-			dsdt_addr = facp->dsdt;
-		}
-
-		return (void *)dsdt_addr + MEM_PHYS_OFFSET;
-	} else {
-		return acpi_find_sdt(signature, index);
-	}
+uint64_t laihost_timer(void) {
+	// Convert to 100 nanosecond units
+	return hpet_counter_value() / 100000000;
 }
