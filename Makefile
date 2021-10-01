@@ -7,7 +7,7 @@ AS := nasm
 
 # Compiler flags
 CFLAGS :=                             \
-	-Wall -Wextra -g -I stivale/      \
+	-Wall -Wextra -g -Og -I stivale/  \
 	-I kernel/klibc/liballoc/include/ \
 	-I kernel/acpi/lai/include/ -MMD  \
 	-MP -pipe -DKVERSION=\"git-$(shell git log -1 --pretty=format:%h)\"
