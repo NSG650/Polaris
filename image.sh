@@ -27,7 +27,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	# Image creation
 	echo ""
 	echo "==> Creating a .dmg file (limitation from hdiutil), FAT32, 64MB..."
-	hdiutil create -layout GPTSPUD -size 64m -fs FAT32 -volname d d.dmg
+	hdiutil create -layout GPTSPUD -size 64m -fs FAT32 -volname d polaris.dmg
 	echo ""
 	echo "==> Renaming .dmg to .hdd..."
 	mv polaris.dmg polaris.hdd
@@ -45,15 +45,15 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	# Copying necessary files
 	echo ""
 	echo "==> Copying necessary files..."
-	mkdir -p /Volumes/D/EFI/BOOT/
-	cp -v polaris.elf initramfs.tar.gz limine.cfg /usr/local/share/limine/limine.sys /Volumes/D/
-	cp -v /usr/local/share/limine/BOOTX64.EFI /Volumes/D/EFI/BOOT/
+	mkdir -p /Volumes/Polaris/EFI/BOOT/
+	cp -v polaris.elf initramfs.tar.gz limine.cfg /usr/local/share/limine/limine.sys /Volumes/Polaris/
+	cp -v /usr/local/share/limine/BOOTX64.EFI /Volumes/Polaris/EFI/BOOT/
 
 	# Sync the system cache and unmount
 	echo ""
 	echo "==> Finishing up..."
 	sync
-	hdiutil unmount /Volumes/D
+	hdiutil unmount /Volumes/Polaris
 else
 	echo "==> Making an image on $OSTYPE..."
 	tar -zcvf initramfs.tar.gz root/
