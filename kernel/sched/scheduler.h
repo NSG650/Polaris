@@ -26,6 +26,6 @@ struct cpu_state {
 
 struct process *running_proc(void);
 void yield_to_scheduler(void);
-void sched_init(void);
+void sched_init(uint64_t args);
 
 #endif

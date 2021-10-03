@@ -68,6 +68,11 @@ void *stivale2_get_tag(struct stivale2_struct *stivale2_struct, uint64_t id) {
 	}
 }
 
+void a(void) {
+	printf("A\nRunning on CPU%d\n", this_cpu->cpu_number);
+	process_exit();
+}
+
 void _start(struct stivale2_struct *stivale2_struct) {
 	gdt_init();
 	struct stivale2_struct_tag_framebuffer *fb_tag =
@@ -92,7 +97,7 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	struct stivale2_struct_tag_smp *smp_tag =
 		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_SMP_ID);
 	smp_init(smp_tag);
-	sched_init();
+	sched_init((uint64_t)&stivale2_struct);
 	printf("Hello World!\n");
 	printf("A (4 bytes): %p\n", kmalloc(4));
 	void *ptr = kmalloc(8);
@@ -110,6 +115,7 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	hpet_usleep(1000 * 1000);
 	printf("%llu\n", get_unix_timestamp());
 	printf("HPET test works!\n");
+	process_create((uintptr_t)a, 0, HIGH);
 	for (;;)
 		asm("hlt");
 }

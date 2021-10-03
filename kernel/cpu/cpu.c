@@ -194,7 +194,7 @@ static void cpu_init(struct stivale2_smp_info *smp_info) {
 	UNLOCK(cpu_lock);
 	cpu_count++;
 	if (this_cpu->lapic_id != bsp_lapic_id) {
-		sched_init();
+		sched_init(0);
 	}
 }
 

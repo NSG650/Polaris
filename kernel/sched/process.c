@@ -89,7 +89,7 @@ void process_create(uintptr_t addr, uint64_t args,
 	UNLOCK(process_lock);
 }
 
-void process_init(uintptr_t addr) {
+void process_init(uintptr_t addr, uint64_t args) {
 	if (is_init)
 		return;
 	for (size_t i = 0; i < MAX_PROCS; ++i)
@@ -101,7 +101,7 @@ void process_init(uintptr_t addr) {
 	proc->parent = NULL;
 
 	proc->context->rip = addr;
-
+	proc->context->rdi = args;
 	proc->timeslice = 1;
 	initproc = proc;
 	proc->killed = false;
