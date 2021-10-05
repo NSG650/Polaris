@@ -160,15 +160,14 @@ void pci_init(void) {
 	if (mcfg == NULL) {
 		internal_read = legacy_pci_read;
 		internal_write = legacy_pci_write;
-	} else if (mcfg->header.length < sizeof(acpi_header_t) + sizeof(uint64_t) +
-										 sizeof(struct mcfg_entry)) {
+	} else if (mcfg->header.length <
+			   sizeof(struct mcfg) + sizeof(struct mcfg_entry)) {
 		// There isn't any entry in the MCFG, assume legacy PCI
 		internal_read = legacy_pci_read;
 		internal_write = legacy_pci_write;
 	} else {
-		const size_t entries =
-			(mcfg->header.length - (sizeof(acpi_header_t) + sizeof(uint64_t))) /
-			sizeof(struct mcfg_entry);
+		const size_t entries = (mcfg->header.length - sizeof(struct mcfg)) /
+							   sizeof(struct mcfg_entry);
 		for (uint64_t i = 0; i < entries; i++) {
 			DYNARRAY_PUSHBACK(mcfg_entries, (void *)&mcfg->entries[i]);
 		}
