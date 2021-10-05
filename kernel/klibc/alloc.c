@@ -20,8 +20,6 @@
 #include "../mm/vmm.h"
 #include "lock.h"
 #include "math.h"
-#include "mem.h"
-#include "string.h"
 
 struct alloc_metadata {
 	size_t pages;
@@ -51,36 +49,6 @@ void free(void *ptr) {
 	struct alloc_metadata *metadata = ptr - PAGE_SIZE;
 
 	pmm_free((void *)metadata - MEM_PHYS_OFFSET, metadata->pages + 1);
-}
-
-void *realloc(void *ptr, size_t new_size) {
-	if (!ptr)
-		return alloc(new_size);
-
-	// Reference metadata page
-	struct alloc_metadata *metadata = ptr - PAGE_SIZE;
-
-	if (DIV_ROUNDUP(metadata->size, PAGE_SIZE) ==
-		DIV_ROUNDUP(new_size, PAGE_SIZE)) {
-		metadata->size = new_size;
-		return ptr;
-	}
-
-	void *new_ptr = alloc(new_size);
-	if (new_ptr == NULL)
-		return NULL;
-
-	if (metadata->size > new_size) {
-		// Copy all the data from the old pointer to the new pointer, within the
-		// range specified by 'size'.
-		memcpy(new_ptr, ptr, new_size);
-	} else {
-		memcpy(new_ptr, ptr, metadata->size);
-	}
-
-	free(ptr);
-
-	return new_ptr;
 }
 
 void *liballoc_alloc(size_t size) {
