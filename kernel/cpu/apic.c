@@ -17,7 +17,11 @@
 #include "apic.h"
 #include "../acpi/madt.h"
 #include "../mm/vmm.h"
+#include "../sched/process.h"
+#include "../sched/scheduler.h"
+#include "../sys/hpet.h"
 #include "../sys/mmio.h"
+#include "cpu.h"
 #include "isr.h"
 #include <lai/helpers/pm.h>
 #include <lai/helpers/sci.h>
@@ -156,12 +160,47 @@ void apic_eoi(void) {
 	lapic_write(0xB0, 0);
 }
 
+void apic_timer_init(void) {
+	lapic_write(0x3E0, 3);
+	lapic_write(0x380, 0xFFFFFFFF);
+
+	hpet_usleep(10000);
+	lapic_write(0x320, 0x10000);
+
+	uint64_t tickIn10ms = 0xFFFFFFFF - lapic_read(0x390);
+
+	lapic_write(0x320, 32 | 0x20000);
+	lapic_write(0x3E0, 3);
+	lapic_write(0x380, tickIn10ms);
+}
+
 void sci_interrupt(registers_t *reg) {
 	(void)reg;
 	uint16_t ev = lai_get_sci_event();
 
 	if (ev & ACPI_POWER_BUTTON) {
 		lai_enter_sleep(5);
+	}
+}
+
+size_t timer_tick = 0;
+
+void timer_interrupt(registers_t *reg) {
+	(void)reg;
+	timer_tick++;
+
+	for (struct process *proc = ptable; proc < &ptable[MAX_PROCS]; ++proc) {
+		if (proc->state == BLOCKED && proc->block_on == ON_SLEEP &&
+			timer_tick >= proc->target_tick) {
+			proc->target_tick = 0;
+			process_unblock(proc);
+		}
+	}
+
+	struct process *proc = running_proc();
+	if (proc != NULL && proc->state == RUNNING) {
+		proc->state = READY;
+		yield_to_scheduler();
 	}
 }
 
@@ -172,4 +211,12 @@ void apic_init(void) {
 	acpi_fadt_t *facp = acpi_find_sdt("FACP", 0);
 	ioapic_redirect_irq(facp->sci_irq, 73);
 	isr_register_handler(73, sci_interrupt);
+	// Initialize memory to avoid possible page faults
+	memset(ptable, 0, sizeof(struct process) * MAX_PROCS);
+	memset(cpu_locals, 0, sizeof(struct cpu_local));
+	memset(this_cpu->cpu_state, 0, sizeof(struct cpu_state));
+	// Timer
+	ioapic_redirect_irq(0, 72);
+	isr_register_handler(72, timer_interrupt);
+	apic_timer_init();
 }

@@ -1,5 +1,5 @@
-#ifndef APIC_H
-#define APIC_H
+#ifndef SCHEDULER_H
+#define SCHEDULER_H
 
 /*
  * Copyright 2021 Sebastian
@@ -17,14 +17,15 @@
  * limitations under the License.
  */
 
-#include <stddef.h>
-#include <stdint.h>
+#include "process.h"
 
-extern size_t timer_tick;
+struct cpu_state {
+	struct process_context *scheduler;
+	struct process *running_proc;
+};
 
-void apic_eoi(void);
-void apic_init(void);
-void ioapic_redirect_irq(uint32_t irq, uint8_t vect);
-void lapic_init(uint8_t processor_id);
+struct process *running_proc(void);
+void yield_to_scheduler(void);
+void sched_init(uint64_t args);
 
 #endif

@@ -47,8 +47,8 @@ void write_serial(char *word) {
 	LOCK(serial_lock);
 	asm volatile("cli");
 
-	while (*word++ != '\0') {
-		write_serial_char(*word);
+	while (*word != '\0') {
+		write_serial_char(*word++);
 	}
 
 	UNLOCK(serial_lock);

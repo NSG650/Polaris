@@ -32,7 +32,7 @@ qemu-system-x86_64 -hda polaris.img -m 512M
 - [x] Timer
 - [x] Paging
 - [x] ACPI
-- [x] HPET  
-- [x] SMP 
+- [x] HPET
+- [x] SMP
 - [x] VFS
-- [x] Initramfs  
+- [x] Initramfs

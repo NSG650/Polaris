@@ -29,6 +29,7 @@
 #include "../klibc/resource.h"
 #include "../mm/pmm.h"
 #include "../mm/vmm.h"
+#include "../sched/scheduler.h"
 #include "../serial/serial.h"
 #include "../sys/clock.h"
 #include "../sys/gdt.h"
@@ -38,7 +39,7 @@
 #include <stdint.h>
 #include <stivale2.h>
 
-static uint8_t stack[32768];
+uint8_t stack[32768];
 static struct stivale2_header_tag_smp smp_hdr_tag = {
 	.tag = {.identifier = STIVALE2_HEADER_TAG_SMP_ID, .next = 0}, .flags = 1};
 
@@ -72,12 +73,16 @@ void *stivale2_get_tag(struct stivale2_struct *stivale2_struct, uint64_t id) {
 	}
 }
 
+void a(void) {
+	printf("A\nRunning on CPU%d\n", this_cpu->cpu_number);
+	process_exit();
+}
+
 void _start(struct stivale2_struct *stivale2_struct) {
 	gdt_init();
-	struct stivale2_struct_tag_framebuffer *fb_str_tag =
+	struct stivale2_struct_tag_framebuffer *fb_tag =
 		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_FRAMEBUFFER_ID);
-	video_init(fb_str_tag);
-	cpu_init();
+	video_init(fb_tag);
 	struct stivale2_struct_tag_memmap *memmap_tag =
 		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MEMMAP_ID);
 	pmm_init((void *)memmap_tag->memmap, memmap_tag->entries);
@@ -89,14 +94,31 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	printf("Kernel build: %s\n", KVERSION);
 	isr_install();
 	asm volatile("sti");
+	wsmp_cpu_init();
 	struct stivale2_struct_tag_rsdp *rsdp_tag =
 		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_RSDP_ID);
 	acpi_init((void *)rsdp_tag->rsdp);
 	pic_init();
 	apic_init();
+	vfs_install_fs(&tmpfs);
+	vfs_install_fs(&devtmpfs);
+	vfs_mount("tmpfs", "/", "tmpfs");
+	vfs_mkdir(NULL, "/dev", 0755, true);
+	vfs_mount("devtmpfs", "/dev", "devtmpfs");
+	struct stivale2_struct_tag_modules *modules_tag =
+		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MODULES_ID);
+	initramfs_init(modules_tag);
+	struct resource *h = vfs_open("/root/initramfs.txt", O_RDWR, 0644);
+	if (h == NULL)
+		return;
+	char buf[30] = {0};
+	h->read(h, buf, 0, strlen("Hello initramfs"));
+	printf("reading initramfs.txt: %s\n", buf);
+	vfs_dump_nodes(NULL, "");
 	struct stivale2_struct_tag_smp *smp_tag =
 		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_SMP_ID);
 	smp_init(smp_tag);
+	sched_init((uint64_t)&stivale2_struct);
 	printf("Hello World!\n");
 	printf("A (4 bytes): %p\n", kmalloc(4));
 	void *ptr = kmalloc(8);
@@ -114,21 +136,7 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	hpet_usleep(1000 * 1000);
 	printf("%llu\n", get_unix_timestamp());
 	printf("HPET test works!\n");
-	vfs_install_fs(&tmpfs);
-	vfs_install_fs(&devtmpfs);
-	vfs_mount("tmpfs", "/", "tmpfs");
-	vfs_mkdir(NULL, "/dev", 0755, true);
-	vfs_mount("devtmpfs", "/dev", "devtmpfs");
-	struct stivale2_struct_tag_modules *modules_tag =
-		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MODULES_ID);
-	initramfs_init(modules_tag);
-	struct resource *h = vfs_open("/root/initramfs.txt", O_RDWR, 0644);
-	if (h == NULL)
-		return;
-	char buf[30] = {0};
-	h->read(h, buf, 0, strlen("Hello initramfs"));
-	printf("reading initramfs.txt: %s\n", buf);
-	vfs_dump_nodes(NULL, "");
+	process_create((uintptr_t)a, 0, HIGH);
 	for (;;)
 		asm("hlt");
 }
