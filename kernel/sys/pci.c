@@ -20,7 +20,7 @@
 #include "../mm/vmm.h"
 #include "mmio.h"
 
-DYNARRAY_GLOBAL(mcfg_entries);
+mcfg_vec_t mcfg_entries;
 
 static uint32_t (*internal_read)(uint16_t, uint8_t, uint8_t, uint8_t, uint16_t,
 								 uint8_t);
@@ -75,8 +75,8 @@ static void legacy_pci_write(uint16_t seg, uint8_t bus, uint8_t slot,
 static uint32_t mcfg_pci_read(uint16_t seg, uint8_t bus, uint8_t slot,
 							  uint8_t function, uint16_t offset,
 							  uint8_t access_size) {
-	for (size_t i = 0; i < mcfg_entries.length; i++) {
-		struct mcfg_entry *entry = mcfg_entries.storage[i];
+	for (int i = 0; i < mcfg_entries.length; i++) {
+		struct mcfg_entry *entry = mcfg_entries.data[i];
 		if (entry->seg == seg) {
 			if (bus >= entry->start_bus_number &&
 				bus <= entry->end_bus_number) {
@@ -115,8 +115,8 @@ static uint32_t mcfg_pci_read(uint16_t seg, uint8_t bus, uint8_t slot,
 static void mcfg_pci_write(uint16_t seg, uint8_t bus, uint8_t slot,
 						   uint8_t function, uint16_t offset, uint32_t value,
 						   uint8_t access_size) {
-	for (size_t i = 0; i < mcfg_entries.length; i++) {
-		struct mcfg_entry *entry = mcfg_entries.storage[i];
+	for (int i = 0; i < mcfg_entries.length; i++) {
+		struct mcfg_entry *entry = mcfg_entries.data[i];
 		if (entry->seg == seg) {
 			if (bus >= entry->start_bus_number &&
 				bus <= entry->end_bus_number) {
@@ -166,10 +166,11 @@ void pci_init(void) {
 		internal_read = legacy_pci_read;
 		internal_write = legacy_pci_write;
 	} else {
+		vec_init(&mcfg_entries);
 		const size_t entries = (mcfg->header.length - sizeof(struct mcfg)) /
 							   sizeof(struct mcfg_entry);
-		for (uint64_t i = 0; i < entries; i++) {
-			DYNARRAY_PUSHBACK(mcfg_entries, (void *)&mcfg->entries[i]);
+		for (size_t i = 0; i < entries; i++) {
+			vec_push(&mcfg_entries, (void *)&mcfg->entries[i]);
 		}
 
 		internal_read = mcfg_pci_read;

@@ -66,8 +66,8 @@ void lapic_init(uint8_t processor_id) {
 	lapic_write(0xF0, lapic_read(0xF0) | 0x100);
 	lapic_write(0xE0, 0xF0000000);
 	lapic_write(0xD0, lapic_read(0x20));
-	for (size_t i = 0; i < madt_nmis.length; i++) {
-		struct madt_nmi *nmi = madt_nmis.storage[i];
+	for (int i = 0; i < madt_nmis.length; i++) {
+		struct madt_nmi *nmi = madt_nmis.data[i];
 		lapic_set_nmi(2, processor_id, nmi->processor, nmi->flags, nmi->lint);
 	}
 }
@@ -87,8 +87,8 @@ static uint32_t get_gsi_count(uintptr_t ioapic_address) {
 }
 
 static struct madt_ioapic *get_ioapic_by_gsi(uint32_t gsi) {
-	for (size_t i = 0; i < madt_io_apics.length; i++) {
-		struct madt_ioapic *ioapic = madt_io_apics.storage[i];
+	for (int i = 0; i < madt_io_apics.length; i++) {
+		struct madt_ioapic *ioapic = madt_io_apics.data[i];
 		if (ioapic->gsib <= gsi &&
 			ioapic->gsib + get_gsi_count(ioapic->addr) > gsi) {
 			return ioapic;
@@ -140,10 +140,10 @@ void ioapic_redirect_gsi(uint32_t gsi, uint8_t vec, uint16_t flags) {
 }
 
 void ioapic_redirect_irq(uint32_t irq, uint8_t vect) {
-	for (size_t i = 0; i < madt_isos.length; i++) {
-		if (madt_isos.storage[i]->irq_source == irq) {
-			ioapic_redirect_gsi(madt_isos.storage[i]->gsi, vect,
-								madt_isos.storage[i]->flags);
+	for (int i = 0; i < madt_isos.length; i++) {
+		if (madt_isos.data[i]->irq_source == irq) {
+			ioapic_redirect_gsi(madt_isos.data[i]->gsi, vect,
+								madt_isos.data[i]->flags);
 			return;
 		}
 	}
@@ -206,7 +206,7 @@ void timer_interrupt(registers_t *reg) {
 
 void apic_init(void) {
 	lapic_addr = acpi_get_lapic();
-	lapic_init(madt_local_apics.storage[0]->processor_id);
+	lapic_init(madt_local_apics.data[0]->processor_id);
 	// Register SCI interrupt
 	acpi_fadt_t *facp = acpi_find_sdt("FACP", 0);
 	ioapic_redirect_irq(facp->sci_irq, 73);

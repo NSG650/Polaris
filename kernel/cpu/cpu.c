@@ -22,8 +22,8 @@
 #include "../klibc/lock.h"
 #include "../klibc/mem.h"
 #include "../klibc/printf.h"
-#include "../mm/vmm.h"
 #include "../mm/pmm.h"
+#include "../mm/vmm.h"
 #include "../sys/gdt.h"
 #include "../sys/hpet.h"
 #include "apic.h"
@@ -201,6 +201,7 @@ static void cpu_init(struct stivale2_smp_info *smp_info) {
 	UNLOCK(cpu_lock);
 	cpu_count++;
 	if (this_cpu->lapic_id != bsp_lapic_id) {
+		lapic_init(this_cpu->lapic_id);
 		sched_init(0);
 	}
 }

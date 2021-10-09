@@ -74,8 +74,8 @@ void initramfs_init(struct stivale2_struct_tag_modules *modules_tag) {
 	uintptr_t initramfs_addr = module->begin;
 	uint64_t initramfs_size = module->end - module->begin;
 
-	printf("initramfs: Address: %p\n", initramfs_addr);
-	printf("initramfs: Size: %lld\n", initramfs_size);
+	printf("Initramfs: Address: %p\n", initramfs_addr);
+	printf("Initramfs: Size: %lld\n", initramfs_size);
 
 	struct ustar_header *h = (void *)initramfs_addr;
 	for (;;) {

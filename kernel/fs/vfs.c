@@ -16,19 +16,27 @@
 
 #include "vfs.h"
 #include "../dev/dev.h"
-#include "../klibc/dynarray.h"
 #include "../klibc/lock.h"
 #include "../klibc/printf.h"
 #include "../klibc/string.h"
+#include "../klibc/vec.h"
+#include <liballoc.h>
 #include <stdbool.h>
 #include <stddef.h>
 
 lock_t vfs_lock = {0};
 
-DYNARRAY_STATIC(struct filesystem *, filesystems);
+typedef vec_t(struct filesystem *) filesystem_vec_t;
+filesystem_vec_t filesystems;
+
+bool initialized = false;
 
 bool vfs_install_fs(struct filesystem *fs) {
-	DYNARRAY_PUSHBACK(filesystems, fs);
+	if (initialized == false) {
+		vec_init(&filesystems);
+		initialized = true;
+	}
+	vec_push(&filesystems, fs);
 	return true;
 }
 
@@ -225,9 +233,9 @@ epilogue:
 }
 
 static struct filesystem *fstype2fs(const char *fstype) {
-	for (size_t i = 0; i < filesystems.length; i++) {
-		if (!strcmp(filesystems.storage[i]->name, fstype))
-			return filesystems.storage[i];
+	for (int i = 0; i < filesystems.length; i++) {
+		if (!strcmp(filesystems.data[i]->name, fstype))
+			return filesystems.data[i];
 	}
 
 	return NULL;
@@ -274,7 +282,7 @@ bool vfs_mount(const char *source, const char *target, const char *fstype) {
 
 	tgt_node->mount_gate = mount_gate;
 
-	printf("vfs: Mounted `%s` on `%s`, type: `%s`.\n", source, target, fstype);
+	printf("VFS: Mounted '%s' on '%s', type: '%s'.\n", source, target, fstype);
 
 	return true;
 }

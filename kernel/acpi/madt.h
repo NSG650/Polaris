@@ -19,7 +19,7 @@
  * limitations under the License.
  */
 
-#include "../klibc/dynarray.h"
+#include "../klibc/vec.h"
 #include "acpi.h"
 #include <stdint.h>
 
@@ -65,12 +65,16 @@ struct madt_nmi {
 	uint8_t lint;
 } __attribute__((packed));
 
-extern struct madt *madt;
+typedef vec_t(struct madt_lapic *) lapic_vec_t;
+typedef vec_t(struct madt_ioapic *) ioapic_vec_t;
+typedef vec_t(struct madt_iso *) iso_vec_t;
+typedef vec_t(struct madt_nmi *) nmi_vec_t;
 
-DYNARRAY_EXTERN(struct madt_lapic *, madt_local_apics);
-DYNARRAY_EXTERN(struct madt_ioapic *, madt_io_apics);
-DYNARRAY_EXTERN(struct madt_iso *, madt_isos);
-DYNARRAY_EXTERN(struct madt_nmi *, madt_nmis);
+extern struct madt *madt;
+extern lapic_vec_t madt_local_apics;
+extern ioapic_vec_t madt_io_apics;
+extern iso_vec_t madt_isos;
+extern nmi_vec_t madt_nmis;
 
 uintptr_t acpi_get_lapic(void);
 void init_madt(void);

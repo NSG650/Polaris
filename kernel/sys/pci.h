@@ -18,7 +18,7 @@
  */
 
 #include "../acpi/acpi.h"
-#include "../klibc/dynarray.h"
+#include "../klibc/vec.h"
 #include <stdint.h>
 
 struct mcfg_entry {
@@ -35,7 +35,8 @@ struct mcfg {
 	struct mcfg_entry entries[];
 } __attribute__((packed));
 
-DYNARRAY_EXTERN(struct mcfg_entry *, mcfg_entries);
+typedef vec_t(struct mcfg_entry *) mcfg_vec_t;
+extern mcfg_vec_t mcfg_entries;
 
 void pci_init(void);
 void pci_write(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t function,

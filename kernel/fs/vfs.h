@@ -34,7 +34,7 @@ struct filesystem {
 	struct resource *(*mkdir)(struct vfs_node *node, mode_t mode);
 };
 
-#define VFS_ROOT_INODE ((ino_t)0xffffffffffffffff)
+#define VFS_ROOT_INODE ((ino_t)0xFFFFFFFFFFFFFFFF)
 
 struct vfs_node {
 	char name[NAME_MAX];

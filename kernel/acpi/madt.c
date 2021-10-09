@@ -21,10 +21,10 @@
 #include "../klibc/asm.h"
 #include "../klibc/printf.h"
 
-DYNARRAY_GLOBAL(madt_local_apics);
-DYNARRAY_GLOBAL(madt_io_apics);
-DYNARRAY_GLOBAL(madt_isos);
-DYNARRAY_GLOBAL(madt_nmis);
+lapic_vec_t madt_local_apics;
+ioapic_vec_t madt_io_apics;
+iso_vec_t madt_isos;
+nmi_vec_t madt_nmis;
 
 struct madt *madt;
 
@@ -35,6 +35,11 @@ uintptr_t acpi_get_lapic(void) {
 }
 
 void init_madt(void) {
+	// Initialize dynamic arrays
+	vec_init(&madt_local_apics);
+	vec_init(&madt_io_apics);
+	vec_init(&madt_isos);
+	vec_init(&madt_nmis);
 	// Search for MADT table
 	madt = acpi_find_sdt("APIC", 0);
 	if (!madt) {
@@ -51,23 +56,23 @@ void init_madt(void) {
 				// Processor local APIC
 				printf("ACPI/MADT: Found local APIC 0x%X\n",
 					   madt_local_apics.length);
-				DYNARRAY_PUSHBACK(madt_local_apics, (void *)madt_ptr);
+				vec_push(&madt_local_apics, (void *)madt_ptr);
 				break;
 			case 1:
 				// I/O APIC
 				printf("ACPI/MADT: Found I/O APIC 0x%X\n",
 					   madt_io_apics.length);
-				DYNARRAY_PUSHBACK(madt_io_apics, (void *)madt_ptr);
+				vec_push(&madt_io_apics, (void *)madt_ptr);
 				break;
 			case 2:
 				// Interrupt source override
 				printf("ACPI/MADT: Found ISO 0x%X\n", madt_isos.length);
-				DYNARRAY_PUSHBACK(madt_isos, (void *)madt_ptr);
+				vec_push(&madt_isos, (void *)madt_ptr);
 				break;
 			case 4:
 				// NMI
 				printf("ACPI/MADT: Found NMI 0x%X\n", madt_nmis.length);
-				DYNARRAY_PUSHBACK(madt_nmis, (void *)madt_ptr);
+				vec_push(&madt_nmis, (void *)madt_ptr);
 				break;
 			case 5:
 				// Local APIC address override
