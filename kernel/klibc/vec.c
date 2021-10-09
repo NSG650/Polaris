@@ -5,7 +5,6 @@
 // Gotten from https://github.com/rxi/vec
 
 #include "vec.h"
-#include <liballoc.h>
 
 
 int vec_expand_(char **data, int *length, int *capacity, int memsz) {

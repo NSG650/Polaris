@@ -8,6 +8,7 @@
 #define VEC_H
 
 #include "../klibc/mem.h"
+#include <liballoc.h>
 
 #define VEC_VERSION "0.2.1"
 
@@ -25,7 +26,7 @@
 
 
 #define vec_deinit(v)\
-  ( free((v)->data),\
+  ( kfree((v)->data),\
     vec_init(v) ) 
 
 
