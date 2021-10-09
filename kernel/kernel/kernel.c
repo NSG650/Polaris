@@ -104,8 +104,6 @@ void _start(struct stivale2_struct *stivale2_struct) {
 		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MODULES_ID);
 	initramfs_init(modules_tag);
 	struct resource *h = vfs_open("/root/initramfs.txt", O_RDONLY, 0644);
-	if (h == NULL)
-		return;
 	char buf[30] = {0};
 	h->read(h, buf, 0, strlen("Hello initramfs"));
 	printf("Reading initramfs.txt: %s\n", buf);
