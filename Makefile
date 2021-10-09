@@ -1,5 +1,5 @@
 # Name of the final executable
-KERNEL := d.elf
+KERNEL := polaris.elf
 
 # The compiler we are using
 CC := x86_64-elf-gcc
@@ -7,10 +7,10 @@ AS := nasm
 
 # Compiler flags
 CFLAGS :=                             \
-	-Wall -Wextra -g -I stivale/      \
+	-Wall -Wextra -g -Og -I stivale/  \
 	-I kernel/klibc/liballoc/include/ \
 	-I kernel/acpi/lai/include/ -MMD  \
-	-MP -pipe
+	-MP -pipe -DKVERSION=\"git-$(shell git log -1 --pretty=format:%h)\"
 
 # Assembler flags
 ASFLAGS := -g -MD -MP
@@ -53,13 +53,14 @@ $(KERNEL): $(OBJECTS)
 
 clean:
 	$(RM) $(OBJECTS) $(DEPENDS) $(KERNEL)
-	$(RM) -r d.hdd img_mount
+	$(RM) -r *.hdd img_mount
+	$(RM) -r *.gz
 
 image:
 	@./image.sh
 
 run:
-	qemu-system-x86_64 -hda d.hdd -serial stdio -m 512M
+	qemu-system-x86_64 -hda polaris.hdd -serial stdio -m 512M
 
 debug:
-	qemu-system-x86_64 -hda d.hdd -M q35,smm=off -d int -no-reboot -s -m 512M
+	qemu-system-x86_64 -hda polaris.hdd -M q35,smm=off -d int -no-reboot -s -m 512M

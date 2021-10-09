@@ -1,6 +1,3 @@
-#ifndef CTYPE_H
-#define CTYPE_H
-
 /*
  * Copyright 2021 NSG650
  *
@@ -17,19 +14,24 @@
  * limitations under the License.
  */
 
-int isxdigit(int c);
-int isblank(int c);
-int isdigit(int c);
-int islower(int c);
-int isupper(int c);
-int isprint(int c);
-int iscntrl(int c);
-int isspace(int c);
-int isgraph(int c);
-int isalpha(int c);
-int isalnum(int c);
-int ispunct(int c);
-int tolower(int c);
-int toupper(int c);
+#include "dev.h"
+#include "../fs/devtmpfs.h"
+#include "../klibc/lock.h"
+#include <stddef.h>
+#include <stdint.h>
 
-#endif
+static dev_t device_id_counter = 1;
+
+dev_t dev_new_id(void) {
+	static lock_t lock = {0};
+	LOCK(lock);
+	dev_t new_id = device_id_counter++;
+	UNLOCK(lock);
+	return new_id;
+}
+
+bool dev_add_new(struct resource *device, const char *dev_name) {
+	device->st.st_rdev = dev_new_id();
+	devtmpfs_add_device(device, dev_name);
+	return true;
+}

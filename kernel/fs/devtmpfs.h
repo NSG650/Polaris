@@ -1,6 +1,3 @@
-#ifndef ALLOC_H
-#define ALLOC_H
-
 /*
  * Copyright 2021 NSG650
  *
@@ -17,9 +14,15 @@
  * limitations under the License.
  */
 
-#include <stddef.h>
+#ifndef DEVTMPFS_H
+#define DEVTMPFS_H
 
-void *alloc(size_t size);
-void free(void *ptr);
+#include "../klibc/resource.h"
+#include "vfs.h"
+#include <stdbool.h>
+
+extern struct filesystem devtmpfs;
+
+bool devtmpfs_add_device(struct resource *res, const char *name);
 
 #endif

@@ -1,6 +1,3 @@
-#ifndef ALLOC_H
-#define ALLOC_H
-
 /*
  * Copyright 2021 NSG650
  *
@@ -17,9 +14,14 @@
  * limitations under the License.
  */
 
-#include <stddef.h>
+#ifndef DEV_H
+#define DEV_H
 
-void *alloc(size_t size);
-void free(void *ptr);
+#include "../klibc/resource.h"
+#include "../klibc/types.h"
+#include <stdbool.h>
+
+dev_t dev_new_id(void);
+bool dev_add_new(struct resource *device, const char *dev_name);
 
 #endif

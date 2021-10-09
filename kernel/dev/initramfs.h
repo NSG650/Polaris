@@ -1,6 +1,3 @@
-#ifndef ALLOC_H
-#define ALLOC_H
-
 /*
  * Copyright 2021 NSG650
  *
@@ -17,9 +14,11 @@
  * limitations under the License.
  */
 
-#include <stddef.h>
+#ifndef INITRAMFS_H
+#define INITRAMFS_H
 
-void *alloc(size_t size);
-void free(void *ptr);
+#include <stivale2.h>
+
+void initramfs_init(struct stivale2_struct_tag_modules *modules_tag);
 
 #endif

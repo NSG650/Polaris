@@ -33,8 +33,7 @@ void sched_init(uint64_t args) {
 		LOCK(sched_lock);
 		struct process *proc;
 		// Primitive priority system
-		struct process *toproc;
-		toproc->priority = LOW;
+		struct process *toproc = {0};
 		for (proc = ptable; proc < &ptable[MAX_PROCS]; ++proc) {
 			if (proc->state != READY)
 				continue;

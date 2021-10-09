@@ -22,23 +22,19 @@
 
 __attribute__((noreturn)) void panic(const char *message, char *file,
 									 bool assert, size_t line) {
-	char x[1024];
 	const void *rip = __builtin_return_address(0);
 	const void *rbp = __builtin_frame_address(0);
 	if (assert) {
 		clear_screen(0x00B800);
-		sprintf(x,
-				"*** ASSERTION FAILURE: %s\nFile: %s\nLine: %zu\nRIP: "
-				"0x%p\nRBP: 0x%p\n",
-				message, file, line, rip, rbp);
-		kprintbgc(x, 0xFFFFFF, 0x00B800);
+		printf("*** ASSERTION FAILURE: %s\nFile: %s\nLine: %zu\nRIP: "
+			   "0x%p\nRBP: 0x%p\nKernel build: %s\n",
+			   message, file, line, rip, rbp, KVERSION);
 	} else {
 		clear_screen(0xB80000);
-		sprintf(x, "*** PANIC: %s\nFile: %s\nLine: %zu\nRIP: 0x%p\nRBP: 0x%p\n",
-				message, file, line, rip, rbp);
-		kprintbgc(x, 0xFFFFFF, 0xB80000);
+		printf("*** PANIC: %s\nFile: %s\nLine: %zu\nRIP: 0x%p\nRBP: "
+			   "0x%p\nKernel Build: %s\n",
+			   message, file, line, rip, rbp, KVERSION);
 	}
-	write_serial(x);
 	for (;;)
 		asm("cli\nhlt");
 }

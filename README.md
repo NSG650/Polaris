@@ -1,4 +1,4 @@
-# osdev64
+# Polaris
 An attempt at OSDev and make a Unix-like kernel
 # How to build?
 Clone recursively the repository (Git `--recursive` flag)
@@ -23,7 +23,7 @@ make clean
 # How to run?
 The kernel is 64-bit so run it with
 ```sh
-qemu-system-x86_64 -hda d.img -m 512M
+qemu-system-x86_64 -hda polaris.img -m 512M
 ```
 # What is implemented so far?
 - [x] Long mode
@@ -32,5 +32,7 @@ qemu-system-x86_64 -hda d.img -m 512M
 - [x] Timer
 - [x] Paging
 - [x] ACPI
-- [x] HPET  
-- [x] SMP 
+- [x] HPET
+- [x] SMP
+- [x] VFS
+- [x] Initramfs

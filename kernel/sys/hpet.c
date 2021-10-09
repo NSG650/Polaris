@@ -19,7 +19,6 @@
 #include "hpet.h"
 #include "../acpi/acpi.h"
 #include "../kernel/panic.h"
-#include "../klibc/printf.h"
 #include "../mm/vmm.h"
 #include "mmio.h"
 #include <stddef.h>
@@ -57,7 +56,7 @@ static uint32_t clk = 0;
 void hpet_init(void) {
 	hpet_table = acpi_find_sdt("HPET", 0);
 	if (!hpet_table) {
-		PANIC("D requires a HPET to be installed");
+		PANIC("Polaris requires a HPET to be installed");
 		__builtin_unreachable();
 	}
 	hpet = (struct Hpet *)(hpet_table->address.base + MEM_PHYS_OFFSET);

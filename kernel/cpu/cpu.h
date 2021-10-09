@@ -49,6 +49,7 @@ extern struct cpu_local *cpu_locals;
 uint64_t return_bsp_lapic(void);
 uint64_t return_installed_cpus(void);
 void smp_init(struct stivale2_struct_tag_smp *smp_tag);
+void wsmp_cpu_init(void);
 
 #define write_cr(reg, val) \
 	asm volatile("mov cr" reg ", %0" ::"r"(val) : "memory");

@@ -1,6 +1,3 @@
-#ifndef ALLOC_H
-#define ALLOC_H
-
 /*
  * Copyright 2021 NSG650
  *
@@ -17,9 +14,10 @@
  * limitations under the License.
  */
 
-#include <stddef.h>
+#ifndef TMPFS_H
+#define TMPFS_H
 
-void *alloc(size_t size);
-void free(void *ptr);
+#include "vfs.h"
+extern struct filesystem tmpfs;
 
 #endif

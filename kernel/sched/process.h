@@ -43,7 +43,7 @@ struct process_context {
 	uint64_t rip;
 } __attribute__((packed));
 
-enum process_priority { LOW, NORMAL, HIGH };
+enum process_priority { LOW = 0, NORMAL, HIGH };
 
 enum process_block_on { NOTHING, ON_SLEEP, ON_WAIT, ON_LOCK };
 

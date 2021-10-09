@@ -99,15 +99,8 @@ void smp_init(struct stivale2_struct_tag_smp *smp_tag) {
 	hpet_usleep(50000);
 }
 
-static void cpu_init(struct stivale2_smp_info *smp_info) {
-	LOCK(cpu_lock);
-	gdt_init();
-	// Load CPU local address in gsbase
-	wrmsr(0xC0000101, (uintptr_t)smp_info->extra_argument);
-	printf("CPU: Processor %d online!\n", this_cpu->cpu_number);
-
-	this_cpu->lapic_id = smp_info->lapic_id;
-
+// Initial setup needed before SMP
+void wsmp_cpu_init(void) {
 	// Firstly enable SSE/SSE2 as it's the baseline for x86_64
 	uint64_t cr0 = 0;
 	cr0 = read_cr("0");
@@ -158,7 +151,21 @@ static void cpu_init(struct stivale2_smp_info *smp_info) {
 	// write-protect / write-combining
 	pat_msr |= (uint64_t)0x0105 << 32;
 	wrmsr(0x277, pat_msr);
+}
 
+static void cpu_init(struct stivale2_smp_info *smp_info) {
+	LOCK(cpu_lock);
+	gdt_init();
+	// Load CPU local address in gsbase
+	wrmsr(0xC0000101, (uintptr_t)smp_info->extra_argument);
+	printf("CPU: Processor %d online!\n", this_cpu->cpu_number);
+
+	this_cpu->lapic_id = smp_info->lapic_id;
+
+	wsmp_cpu_init();
+
+	uint64_t cr4 = 0;
+	uint32_t a = 0, b = 0, c = 0, d = 0;
 	__get_cpuid(1, &a, &b, &c, &d);
 	if ((c & bit_XSAVE)) {
 		cr4 = read_cr("4");
