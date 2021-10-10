@@ -31,27 +31,31 @@
 static uintptr_t lapic_addr = 0;
 static bool x2apic = false;
 
-static inline uint64_t apic_reg_to_x2apic(uint32_t reg) {
+// Converts xAPIC MMIO offset into x2APIC MSR
+static inline uint32_t reg_to_x2apic(uint32_t reg) {
+	uint32_t x2apic_reg = 0;
 	// MSR 831H is reserved; read/write operations cause general-protection
 	// exceptions. The contents of the APIC register at MMIO offset 310H are
 	// accessible in x2APIC mode through the MSR at address 830H
 	// -- Intel SDM Volume 3A 10.12.1.2 Note 4
 	if (reg == 0x310) {
-		return 0x30;
+		x2apic_reg = 0x30;
+	} else {
+		x2apic_reg = reg >> 4;
 	}
-	return reg >> 4;
+	return x2apic_reg + 0x800;
 }
 
 static uint32_t lapic_read(uint32_t reg) {
 	if (x2apic) {
-		return rdmsr(0x800 + apic_reg_to_x2apic(reg));
+		return rdmsr(reg_to_x2apic(reg));
 	}
 	return mmind((void *)lapic_addr + MEM_PHYS_OFFSET + reg);
 }
 
 static void lapic_write(uint32_t reg, uint32_t value) {
 	if (x2apic) {
-		wrmsr(0x800 + apic_reg_to_x2apic(reg), value);
+		wrmsr(reg_to_x2apic(reg), value);
 	} else {
 		mmoutd((void *)lapic_addr + MEM_PHYS_OFFSET + reg, value);
 	}
@@ -187,9 +191,15 @@ void ioapic_redirect_irq(uint32_t irq, uint8_t vect) {
 	ioapic_redirect_gsi(irq, vect, 0);
 }
 
-void apic_send_ipi(uint8_t lapic_id, uint8_t vector) {
-	lapic_write(0x310, ((uint32_t)lapic_id) << 24);
-	lapic_write(0x300, vector);
+void apic_send_ipi(uint32_t lapic_id, uint32_t flags) {
+	if (x2apic) {
+		// Write MSR directly, because lapic_write receives a 32-bit argument
+		// Whilst in x2APIC, 0x830 is a 64-bit register
+		wrmsr(0x830, ((uint64_t)lapic_id << 32) | flags);
+	} else {
+		lapic_write(0x310, (lapic_id << 24));
+		lapic_write(0x300, flags);
+	}
 }
 
 void apic_eoi(void) {
