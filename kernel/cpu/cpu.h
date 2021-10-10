@@ -46,6 +46,8 @@ extern struct cpu_local *cpu_locals;
 		&cpu_locals[cpu_number];                \
 	})
 
+uint64_t rdmsr(uint32_t msr);
+void wrmsr(uint32_t msr, uint64_t value);
 uint64_t return_bsp_lapic(void);
 uint64_t return_installed_cpus(void);
 void smp_init(struct stivale2_struct_tag_smp *smp_tag);
@@ -66,5 +68,6 @@ void wsmp_cpu_init(void);
 #define CPUID_SMEP (1 << 7)
 #define CPUID_SMAP (1 << 20)
 #define CPUID_UMIP (1 << 2)
+#define CPUID_X2APIC (1 << 21)
 
 #endif

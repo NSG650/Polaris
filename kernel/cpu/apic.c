@@ -16,6 +16,7 @@
 
 #include "apic.h"
 #include "../acpi/madt.h"
+#include "../cpu/cpu.h"
 #include "../mm/vmm.h"
 #include "../sched/process.h"
 #include "../sched/scheduler.h"
@@ -23,17 +24,37 @@
 #include "../sys/mmio.h"
 #include "cpu.h"
 #include "isr.h"
+#include <cpuid.h>
 #include <lai/helpers/pm.h>
 #include <lai/helpers/sci.h>
 
 static uintptr_t lapic_addr = 0;
+static bool x2apic = false;
+
+static inline uint64_t apic_reg_to_x2apic(uint32_t reg) {
+	// MSR 831H is reserved; read/write operations cause general-protection
+	// exceptions. The contents of the APIC register at MMIO offset 310H are
+	// accessible in x2APIC mode through the MSR at address 830H
+	// -- Intel SDM Volume 3A 10.12.1.2 Note 4
+	if (reg == 0x310) {
+		return 0x30;
+	}
+	return reg >> 4;
+}
 
 static uint32_t lapic_read(uint32_t reg) {
+	if (x2apic) {
+		return rdmsr(0x800 + apic_reg_to_x2apic(reg));
+	}
 	return mmind((void *)lapic_addr + MEM_PHYS_OFFSET + reg);
 }
 
 static void lapic_write(uint32_t reg, uint32_t value) {
-	mmoutd((void *)lapic_addr + MEM_PHYS_OFFSET + reg, value);
+	if (x2apic) {
+		wrmsr(0x800 + apic_reg_to_x2apic(reg), value);
+	} else {
+		mmoutd((void *)lapic_addr + MEM_PHYS_OFFSET + reg, value);
+	}
 }
 
 static void lapic_set_nmi(uint8_t vec, uint8_t current_processor_id,
@@ -62,10 +83,25 @@ static void lapic_set_nmi(uint8_t vec, uint8_t current_processor_id,
 }
 
 void lapic_init(uint8_t processor_id) {
+	// Enable APIC and x2APIC if available
+	uint64_t apic_msr = rdmsr(0x1B);
+	apic_msr |= 1 << 11;
+	uint32_t a = 0, b = 0, c = 0, d = 0;
+	if (__get_cpuid(1, &a, &b, &c, &d)) {
+		if (c & CPUID_X2APIC) {
+			x2apic = true;
+			apic_msr |= 1 << 10;
+		}
+	}
+	wrmsr(0x1B, apic_msr);
+	// Initialize local APIC
 	lapic_write(0x80, 0);
 	lapic_write(0xF0, lapic_read(0xF0) | 0x100);
-	lapic_write(0xE0, 0xF0000000);
-	lapic_write(0xD0, lapic_read(0x20));
+	if (!x2apic) {
+		lapic_write(0xE0, 0xF0000000);
+		lapic_write(0xD0, lapic_read(0x20));
+	}
+	// Set NMIs
 	for (int i = 0; i < madt_nmis.length; i++) {
 		struct madt_nmi *nmi = madt_nmis.data[i];
 		lapic_set_nmi(2, processor_id, nmi->processor, nmi->flags, nmi->lint);
