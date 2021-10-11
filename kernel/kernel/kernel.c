@@ -29,6 +29,7 @@
 #include "../klibc/resource.h"
 #include "../mm/pmm.h"
 #include "../mm/vmm.h"
+#include "../sched/process.h"
 #include "../sched/scheduler.h"
 #include "../serial/serial.h"
 #include "../sys/clock.h"
@@ -73,6 +74,45 @@ void *stivale2_get_tag(struct stivale2_struct *stivale2_struct, uint64_t id) {
 	}
 }
 
+void a(void) {
+	printf("a running on CPU%d\n", this_cpu->cpu_number);
+	process_exit();
+}
+
+void kernel_main(struct stivale2_struct *stivale2_struct) {
+	vfs_install_fs(&tmpfs);
+	vfs_install_fs(&devtmpfs);
+	vfs_mount("tmpfs", "/", "tmpfs");
+	vfs_mkdir(NULL, "/dev", 0755, true);
+	vfs_mount("devtmpfs", "/dev", "devtmpfs");
+	struct stivale2_struct_tag_modules *modules_tag =
+		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MODULES_ID);
+	initramfs_init(modules_tag);
+	printf("Hello World!\nKernel main running on CPU%d\n",
+		   this_cpu->cpu_number);
+	printf("A (4 bytes): %p\n", kmalloc(4));
+	void *ptr = kmalloc(8);
+	printf("B (8 bytes): %p\n", ptr);
+	kfree(ptr);
+	printf("Freed B\n");
+	void *ptr2 = kmalloc(16);
+	printf("C (16 bytes): %p\n", ptr2);
+	void *ptr3 = kmalloc(32);
+	printf("D (32 bytes): %p\n", ptr3);
+	printf("C (16 bytes to 32 bytes realloc): %p\n", krealloc(ptr2, 32));
+	printf("D (32 bytes after C realloc): %p\n", ptr3);
+	printf("E (4 int calloc): %p\n", kcalloc(4, sizeof(int)));
+	printf("%llu\n", get_unix_timestamp());
+	struct resource *h = vfs_open("/root/initramfs.txt", O_RDONLY, 0644);
+	char buf[30] = {0};
+	h->read(h, buf, 0, strlen("Hello initramfs"));
+	printf("Reading initramfs.txt: %s\n", buf);
+	printf("Running a\n");
+	process_create((uintptr_t)a, 0, HIGH);
+	for (;;)
+		asm("hlt");
+}
+
 void _start(struct stivale2_struct *stivale2_struct) {
 	gdt_init();
 	struct stivale2_struct_tag_framebuffer *fb_tag =
@@ -95,40 +135,11 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	acpi_init((void *)rsdp_tag->rsdp);
 	pic_init();
 	apic_init();
-	vfs_install_fs(&tmpfs);
-	vfs_install_fs(&devtmpfs);
-	vfs_mount("tmpfs", "/", "tmpfs");
-	vfs_mkdir(NULL, "/dev", 0755, true);
-	vfs_mount("devtmpfs", "/dev", "devtmpfs");
-	struct stivale2_struct_tag_modules *modules_tag =
-		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MODULES_ID);
-	initramfs_init(modules_tag);
-	struct resource *h = vfs_open("/root/initramfs.txt", O_RDONLY, 0644);
-	char buf[30] = {0};
-	h->read(h, buf, 0, strlen("Hello initramfs"));
-	printf("Reading initramfs.txt: %s\n", buf);
-	vfs_dump_nodes(NULL, "");
 	struct stivale2_struct_tag_smp *smp_tag =
 		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_SMP_ID);
 	smp_init(smp_tag);
-	sched_init((uint64_t)&stivale2_struct);
-	printf("Hello World!\n");
-	printf("A (4 bytes): %p\n", kmalloc(4));
-	void *ptr = kmalloc(8);
-	printf("B (8 bytes): %p\n", ptr);
-	kfree(ptr);
-	printf("Freed B\n");
-	void *ptr2 = kmalloc(16);
-	printf("C (16 bytes): %p\n", ptr2);
-	void *ptr3 = kmalloc(32);
-	printf("D (32 bytes): %p\n", ptr3);
-	printf("C (16 bytes to 32 bytes realloc): %p\n", krealloc(ptr2, 32));
-	printf("D (32 bytes after C realloc): %p\n", ptr3);
-	printf("E (4 int calloc): %p\n", kcalloc(4, sizeof(int)));
-	printf("%llu\n", get_unix_timestamp());
-	hpet_usleep(1000 * 1000);
-	printf("%llu\n", get_unix_timestamp());
-	printf("HPET test works!\n");
+	process_init((uintptr_t)kernel_main, (uint64_t)stivale2_struct);
+	sched_init();
 	for (;;)
 		asm("hlt");
 }

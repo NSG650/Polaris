@@ -25,9 +25,7 @@ lock_t sched_lock;
 extern void context_switch(struct process_context **old,
 						   struct process_context *new);
 
-void sched_init(uint64_t args) {
-	if (this_cpu->cpu_number == 0)
-		process_init((uintptr_t)__builtin_return_address(0), args);
+void sched_init(void) {
 	while (1) {
 		asm volatile("sti");
 		LOCK(sched_lock);
