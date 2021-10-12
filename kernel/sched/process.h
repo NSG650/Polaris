@@ -17,11 +17,11 @@
  * limitations under the License.
  */
 
+#include "../klibc/vec.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
-#define MAX_PROCS 32
 #define KSTACK_SIZE 32768
 
 struct process_context {
@@ -51,7 +51,7 @@ enum process_state { UNUSED, INITIAL, READY, RUNNING, BLOCKED, TERMINATED };
 
 struct process {
 	char name[64];
-	uint8_t pid;
+	uint32_t pid;
 	struct process_context *context;
 	enum process_state state;
 	enum process_block_on block_on;
@@ -63,17 +63,18 @@ struct process {
 	size_t target_tick;
 };
 
-extern struct process ptable[];
+typedef vec_t(struct process *) process_vec_t;
+extern process_vec_t ptable;
 
 void process_create(uintptr_t addr, uint64_t args,
 					enum process_priority priority);
 void process_init(uintptr_t addr, uint64_t args);
 void process_block(enum process_block_on reason);
 void process_exit(void);
-int8_t process_fork(uint8_t timeslice);
+uint32_t process_fork(uint8_t timeslice);
 void process_unblock(struct process *proc);
 void process_sleep(size_t sleep_ticks);
-int8_t process_kill(uint8_t pid);
-int8_t process_wait(void);
+int32_t process_kill(uint32_t pid);
+uint32_t process_wait(void);
 
 #endif

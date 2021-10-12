@@ -22,7 +22,6 @@
 #include "../klibc/mem.h"
 #include "../klibc/printf.h"
 #include "../sys/gdt.h"
-#include "../sys/hpet.h"
 #include "apic.h"
 #include <cpuid.h>
 #include <liballoc.h>

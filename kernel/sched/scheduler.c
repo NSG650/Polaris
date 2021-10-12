@@ -29,10 +29,10 @@ void sched_init(void) {
 	while (1) {
 		asm volatile("sti");
 		LOCK(sched_lock);
-		struct process *proc;
 		// Primitive priority system
 		struct process *toproc = {0};
-		for (proc = ptable; proc < &ptable[MAX_PROCS]; ++proc) {
+		for (int i = 0; i < ptable.length; i++) {
+			struct process *proc = ptable.data[i];
 			if (proc->state != READY)
 				continue;
 

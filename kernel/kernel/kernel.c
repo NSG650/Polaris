@@ -40,7 +40,7 @@
 #include <stdint.h>
 #include <stivale2.h>
 
-uint8_t stack[32768];
+static uint8_t stack[32768];
 static struct stivale2_header_tag_smp smp_hdr_tag = {
 	.tag = {.identifier = STIVALE2_HEADER_TAG_SMP_ID, .next = 0}, .flags = 1};
 
@@ -96,10 +96,12 @@ void kernel_main(struct stivale2_struct *stivale2_struct) {
 	struct stivale2_struct_tag_modules *modules_tag =
 		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MODULES_ID);
 	initramfs_init(modules_tag);
-	struct resource *h = vfs_open("/root/initramfs.txt", O_RDONLY, 0644);
-	char buf[30] = {0};
-	h->read(h, buf, 0, strlen("Hello initramfs"));
-	printf("Reading initramfs.txt: %s\n", buf);
+	struct resource *res = vfs_open("/root/initramfs.txt", O_RDONLY, 0644);
+	struct stat *st = {0};
+	vfs_stat("/root/initramfs.txt", st);
+	char *buf = kmalloc(st->st_size);
+	res->read(res, buf, 0, st->st_size);
+	printf("Reading /root/initramfs.txt: %s\n", buf);
 	for (;;)
 		asm("hlt");
 }

@@ -26,31 +26,18 @@
 #include "../mm/vmm.h"
 #include "scheduler.h"
 
-struct process ptable[MAX_PROCS];
+process_vec_t ptable;
 struct process *initproc;
-static uint8_t next_pid = 1;
-static uint8_t is_init = 0;
+static uint32_t next_pid = 1;
+static bool is_init = true;
 lock_t process_lock;
 
 static struct process *alloc_new_process(void) {
-	struct process *proc;
-	bool found = false;
+	struct process *proc = kmalloc(sizeof(struct process));
 
 	LOCK(process_lock);
 
-	for (proc = ptable; proc < &ptable[MAX_PROCS]; ++proc) {
-		if (proc->state == UNUSED) {
-			found = true;
-			break;
-		}
-	}
-
-	if (!found) {
-		PANIC("Process table is full");
-		__builtin_unreachable();
-	}
-
-	proc->kstack = alloc(KSTACK_SIZE);
+	proc->kstack = kmalloc(KSTACK_SIZE);
 	if (!proc->kstack) {
 		PANIC("Failed to allocate kernel stack page");
 		__builtin_unreachable();
@@ -70,10 +57,10 @@ static struct process *alloc_new_process(void) {
 	proc->context = (struct process_context *)sp;
 	memset(proc->context, 0, sizeof(struct process_context));
 
+	vec_push(&ptable, proc);
+
 	return proc;
 }
-
-extern uint8_t stack[KSTACK_SIZE];
 
 void process_create(uintptr_t addr, uint64_t args,
 					enum process_priority priority) {
@@ -90,16 +77,11 @@ void process_create(uintptr_t addr, uint64_t args,
 }
 
 void process_init(uintptr_t addr, uint64_t args) {
-	if (is_init)
+	if (!is_init)
 		return;
-	for (size_t i = 0; i < MAX_PROCS; ++i)
-		ptable[i].state = UNUSED;
-
 	struct process *proc = alloc_new_process();
 	strcpy(proc->name, "init");
-	memcpy(proc->kstack, stack, KSTACK_SIZE);
 	proc->parent = NULL;
-
 	proc->context->rip = addr;
 	proc->context->rdi = args;
 	proc->timeslice = 1;
@@ -109,10 +91,10 @@ void process_init(uintptr_t addr, uint64_t args) {
 	LOCK(process_lock);
 	proc->state = READY;
 	UNLOCK(process_lock);
-	is_init = 1;
+	is_init = false;
 }
 
-int8_t process_fork(uint8_t timeslice) {
+uint32_t process_fork(uint8_t timeslice) {
 	if (timeslice < 1 || timeslice > 16)
 		return -1;
 
@@ -167,7 +149,8 @@ void process_exit(void) {
 	if (proc->parent->state == BLOCKED && proc->parent->block_on == ON_WAIT)
 		process_unblock(proc->parent);
 
-	for (struct process *child = ptable; child < &ptable[MAX_PROCS]; ++child) {
+	for (int i = 0; i < ptable.length; i++) {
+		struct process *child = ptable.data[i];
 		if (child->parent == proc) {
 			child->parent = initproc;
 			if (child->state == TERMINATED)
@@ -191,27 +174,25 @@ void process_sleep(size_t sleep_ticks) {
 	UNLOCK(process_lock);
 }
 
-int8_t process_wait(void) {
+uint32_t process_wait(void) {
 	struct process *proc = running_proc();
-	uint8_t child_pid;
 
 	LOCK(process_lock);
 
 	while (1) {
 		bool have_kids = false;
 
-		for (struct process *child = ptable; child < &ptable[MAX_PROCS];
-			 ++child) {
+		for (int i = 0; i < ptable.length; i++) {
+			struct process *child = ptable.data[i];
 			if (child->parent != proc)
 				continue;
 
 			have_kids = true;
 
 			if (child->state == TERMINATED) {
-				child_pid = child->pid;
+				kfree(child->kstack);
 
-				free((void *)child->kstack);
-
+				uint32_t child_pid = child->pid;
 				child->pid = 0;
 				child->parent = NULL;
 				child->name[0] = '\0';
@@ -231,10 +212,11 @@ int8_t process_wait(void) {
 	}
 }
 
-int8_t process_kill(uint8_t pid) {
+int32_t process_kill(uint32_t pid) {
 	LOCK(process_lock);
 
-	for (struct process *proc = ptable; proc < &ptable[MAX_PROCS]; ++proc) {
+	for (int i = 0; i < ptable.length; i++) {
+		struct process *proc = ptable.data[i];
 		if (proc->pid == pid) {
 			proc->killed = true;
 

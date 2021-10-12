@@ -2,9 +2,9 @@
 
 unmount_and_exit() {
 	if [[ "$OSTYPE" == "darwin"* ]]; then
-		if [ -d /Volumes/D ]; then
+		if [ -d /Volumes/Polaris ]; then
 			sync
-			hdiutil unmount /Volumes/D
+			hdiutil unmount /Volumes/Polaris
 		fi
 	else
 		if [ -d img_mount ]; then
@@ -101,7 +101,7 @@ else
 		error_code = $?
 	} 2> /dev/null | true
 
-	# Alternative path used as default in Limine AUR package
+	# Alternative path used by default in Limine AUR package
 	if [[ error_code != 0 ]]; then
 		sudo cp -v /usr/share/limine/limine.sys img_mount/
 		sudo cp -v /usr/share/limine/BOOTX64.EFI img_mount/EFI/BOOT/
@@ -116,6 +116,6 @@ else
 fi
 echo "-----------"
 echo "==> Done!"
-echo "==> Now, you can launch D using the following command."
+echo "==> Now, you can launch Polaris using the following command."
 echo "> qemu-system-x86_64 -hda polaris.hdd -m 512M"
 echo "==> Good luck!"
