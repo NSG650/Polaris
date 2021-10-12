@@ -32,7 +32,7 @@ __attribute__((noreturn)) void panic(const char *message, char *file,
 	} else {
 		clear_screen(0xB80000);
 		printf("*** PANIC: %s\nFile: %s\nLine: %zu\nRIP: 0x%p\nRBP: "
-			   "0x%p\nKernel Build: %s\n",
+			   "0x%p\nKernel build: %s\n",
 			   message, file, line, rip, rbp, KVERSION);
 	}
 	for (;;)

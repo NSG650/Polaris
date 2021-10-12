@@ -125,8 +125,7 @@ void putchar_at(int c, int position_x, int position_y, uint32_t color,
 
 	ssfn_putc(c);
 
-	if (((cursor_x * ssfn_src->width) + (2 * ssfn_src->width)) >=
-		width_s - (2 * ssfn_src->width)) {
+	if ((cursor_x * ssfn_src->width) + ssfn_src->width >= width_s) {
 		cursor_y++;
 		cursor_x = 0;
 		return;
