@@ -282,7 +282,7 @@ bool vfs_mount(const char *source, const char *target, const char *fstype) {
 
 	tgt_node->mount_gate = mount_gate;
 
-	printf("VFS: Mounted '%s' on '%s', type: '%s'.\n", source, target, fstype);
+	printf("VFS: Mounted '%s' on '%s', type: '%s'\n", source, target, fstype);
 
 	return true;
 }

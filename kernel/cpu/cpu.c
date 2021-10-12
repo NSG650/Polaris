@@ -16,18 +16,16 @@
  */
 
 #include "cpu.h"
-#include "../kernel/panic.h"
 #include "../klibc/alloc.h"
 #include "../klibc/asm.h"
 #include "../klibc/lock.h"
 #include "../klibc/mem.h"
 #include "../klibc/printf.h"
-#include "../mm/pmm.h"
-#include "../mm/vmm.h"
 #include "../sys/gdt.h"
 #include "../sys/hpet.h"
 #include "apic.h"
 #include <cpuid.h>
+#include <liballoc.h>
 
 struct cpu_local *cpu_locals;
 uint64_t cpu_count;
@@ -81,7 +79,6 @@ static void fxrstor(void *region) {
 
 void smp_init(struct stivale2_struct_tag_smp *smp_tag) {
 	printf("CPU: Total processor count: %d\n", smp_tag->cpu_count);
-	memset(cpu_locals, 0, sizeof(struct cpu_local) * smp_tag->cpu_count);
 	bsp_lapic_id = smp_tag->bsp_lapic_id;
 	cpu_locals = alloc(sizeof(struct cpu_local) * smp_tag->cpu_count);
 	for (size_t i = 0; i < smp_tag->cpu_count; ++i) {
@@ -91,12 +88,10 @@ void smp_init(struct stivale2_struct_tag_smp *smp_tag) {
 			continue;
 		}
 		cpu_locals[i].cpu_number = i;
-		uintptr_t stack = (uintptr_t)alloc(32768);
-		smp_tag->smp_info[i].target_stack = stack + sizeof(stack);
+		uint8_t *stack = kmalloc(KSTACK_SIZE);
+		smp_tag->smp_info[i].target_stack = (uintptr_t)stack + KSTACK_SIZE;
 		smp_tag->smp_info[i].goto_address = (uintptr_t)cpu_init;
 	}
-	// Wait 50 milliseconds
-	hpet_usleep(50000);
 }
 
 // Initial setup needed before SMP
