@@ -66,7 +66,7 @@ struct process {
 typedef vec_t(struct process *) process_vec_t;
 extern process_vec_t ptable;
 
-void process_create(uintptr_t addr, uint64_t args,
+void process_create(char *name, uintptr_t addr, uint64_t args,
 					enum process_priority priority);
 void process_init(uintptr_t addr, uint64_t args);
 void process_block(enum process_block_on reason);

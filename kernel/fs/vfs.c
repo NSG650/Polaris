@@ -264,7 +264,7 @@ bool vfs_mount(const char *source, const char *target, const char *fstype) {
 		if (!S_ISCHR(backing_dev_node->res->st.st_mode) &&
 			!S_ISBLK(backing_dev_node->res->st.st_mode))
 			return false;
-		struct resource *src_handle = vfs_open(source, O_RDWR, 0);
+		src_handle = vfs_open(source, O_RDWR, 0);
 		if (src_handle == NULL)
 			return false;
 		backing_dev_id = backing_dev_node->res->st.st_rdev;

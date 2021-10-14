@@ -62,14 +62,15 @@ static struct process *alloc_new_process(void) {
 	return proc;
 }
 
-void process_create(uintptr_t addr, uint64_t args,
+void process_create(char *name, uintptr_t addr, uint64_t args,
 					enum process_priority priority) {
 	struct process *proc = alloc_new_process();
-	sprintf(proc->name, "process%d", rand());
+	strcpy(proc->name, name);
 	proc->parent = NULL;
 	proc->context->rip = addr;
 	proc->context->rdi = args;
 	proc->timeslice = 1;
+	proc->killed = false;
 	proc->priority = priority;
 	LOCK(process_lock);
 	proc->state = READY;
@@ -85,12 +86,12 @@ void process_init(uintptr_t addr, uint64_t args) {
 	proc->context->rip = addr;
 	proc->context->rdi = args;
 	proc->timeslice = 1;
-	initproc = proc;
 	proc->killed = false;
 	proc->priority = HIGH;
 	LOCK(process_lock);
 	proc->state = READY;
 	UNLOCK(process_lock);
+	initproc = proc;
 	is_init = false;
 }
 
