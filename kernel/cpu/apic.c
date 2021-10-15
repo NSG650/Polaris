@@ -207,17 +207,18 @@ void apic_eoi(void) {
 }
 
 void apic_timer_init(void) {
-	lapic_write(0x3E0, 3);
-	lapic_write(0x380, 0xFFFFFFFF);
+	lapic_write(0x3E0, 3); // Divide by 16
+	lapic_write(0x380, 0xFFFFFFFF); // Set value to -1
 
 	hpet_usleep(10000);
 	lapic_write(0x320, 0x10000);
 
-	uint64_t tickIn10ms = 0xFFFFFFFF - lapic_read(0x390);
+	uint32_t tick_in_10ms = 0xFFFFFFFF - lapic_read(0x390);
 
+	// Set to receive interrupt in vector 32 (IRQ 0)
 	lapic_write(0x320, 32 | 0x20000);
 	lapic_write(0x3E0, 3);
-	lapic_write(0x380, tickIn10ms);
+	lapic_write(0x380, tick_in_10ms / 10);
 }
 
 void sci_interrupt(registers_t *reg) {
@@ -256,14 +257,15 @@ void apic_init(void) {
 	lapic_init(madt_local_apics.data[0]->processor_id);
 	// Register SCI interrupt
 	acpi_fadt_t *facp = acpi_find_sdt("FACP", 0);
-	ioapic_redirect_irq(facp->sci_irq, 73);
-	isr_register_handler(73, sci_interrupt);
+	// We remap interrupts to IRQ + 48
+	ioapic_redirect_irq(facp->sci_irq, facp->sci_irq + 48);
+	isr_register_handler(facp->sci_irq + 48, sci_interrupt);
 	// Initialize memory to avoid possible page faults
 	vec_init(&ptable);
 	memset(cpu_locals, 0, sizeof(struct cpu_local));
 	memset(this_cpu->cpu_state, 0, sizeof(struct cpu_state));
 	// Timer
-	ioapic_redirect_irq(0, 72);
-	isr_register_handler(72, timer_interrupt);
+	ioapic_redirect_irq(0, 48);
+	isr_register_handler(48, timer_interrupt);
 	apic_timer_init();
 }
