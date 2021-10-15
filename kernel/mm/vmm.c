@@ -16,9 +16,9 @@
  */
 
 #include "vmm.h"
-#include "../klibc/alloc.h"
 #include "../klibc/math.h"
 #include "pmm.h"
+#include <liballoc.h>
 
 struct pagemap *kernel_pagemap = NULL;
 
@@ -61,7 +61,7 @@ void vmm_switch_pagemap(struct pagemap *pagemap) {
 }
 
 struct pagemap *vmm_new_pagemap(void) {
-	struct pagemap *pagemap = alloc(sizeof(struct pagemap));
+	struct pagemap *pagemap = kmalloc(sizeof(struct pagemap));
 	pagemap->top_level = pmm_allocz(1);
 	return pagemap;
 }

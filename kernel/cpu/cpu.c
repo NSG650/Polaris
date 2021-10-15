@@ -79,7 +79,7 @@ static void fxrstor(void *region) {
 void smp_init(struct stivale2_struct_tag_smp *smp_tag) {
 	printf("CPU: Total processor count: %d\n", smp_tag->cpu_count);
 	bsp_lapic_id = smp_tag->bsp_lapic_id;
-	cpu_locals = alloc(sizeof(struct cpu_local) * smp_tag->cpu_count);
+	cpu_locals = kcalloc(sizeof(struct cpu_local), smp_tag->cpu_count);
 	for (size_t i = 0; i < smp_tag->cpu_count; ++i) {
 		smp_tag->smp_info[i].extra_argument = (uint64_t)&cpu_locals[i];
 		if (smp_tag->smp_info[i].lapic_id == bsp_lapic_id) {

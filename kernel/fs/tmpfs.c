@@ -34,10 +34,10 @@ struct tmpfs_mount_data {
 
 static struct vfs_node *tmpfs_mount(struct resource *device) {
 	(void)device;
-	struct vfs_node *mount_gate = alloc(sizeof(struct vfs_node));
+	struct vfs_node *mount_gate = kmalloc(sizeof(struct vfs_node));
 	mount_gate->fs = &tmpfs;
 	struct tmpfs_mount_data *mount_data =
-		alloc(sizeof(struct tmpfs_mount_data));
+		kmalloc(sizeof(struct tmpfs_mount_data));
 	mount_gate->mount_data = mount_data;
 	mount_data->inode_counter = 1;
 	return mount_gate;

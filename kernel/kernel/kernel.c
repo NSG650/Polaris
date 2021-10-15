@@ -32,9 +32,7 @@
 #include "../sched/process.h"
 #include "../sched/scheduler.h"
 #include "../serial/serial.h"
-#include "../sys/clock.h"
 #include "../sys/gdt.h"
-#include "../sys/hpet.h"
 #include "../video/video.h"
 #include <liballoc.h>
 #include <stdint.h>
@@ -97,7 +95,7 @@ void kernel_main(struct stivale2_struct *stivale2_struct) {
 		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MODULES_ID);
 	initramfs_init(modules_tag);
 	struct resource *res = vfs_open("/root/initramfs.txt", O_RDONLY, 0644);
-	struct stat *st = {0};
+	struct stat *st = kmalloc(sizeof(struct stat));
 	vfs_stat("/root/initramfs.txt", st);
 	char *buf = kmalloc(st->st_size);
 	res->read(res, buf, 0, st->st_size);

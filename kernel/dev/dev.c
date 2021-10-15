@@ -23,7 +23,7 @@
 static dev_t device_id_counter = 1;
 
 dev_t dev_new_id(void) {
-	static lock_t lock = {0};
+	static lock_t lock = 0;
 	LOCK(lock);
 	dev_t new_id = device_id_counter++;
 	UNLOCK(lock);

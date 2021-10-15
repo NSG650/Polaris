@@ -5,8 +5,7 @@
 #include "types.h"
 #include <stddef.h>
 
-// This is the base class for all kernel handles.
-
+// This is the base class for all kernel handles
 struct resource {
 	size_t actual_size;
 

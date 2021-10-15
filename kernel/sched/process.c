@@ -17,13 +17,9 @@
 #include "process.h"
 #include "../cpu/apic.h"
 #include "../kernel/panic.h"
-#include "../klibc/alloc.h"
 #include "../klibc/lock.h"
 #include "../klibc/mem.h"
-#include "../klibc/printf.h"
-#include "../klibc/rand.h"
 #include "../klibc/string.h"
-#include "../mm/vmm.h"
 #include "scheduler.h"
 
 process_vec_t ptable;
@@ -113,7 +109,7 @@ uint32_t process_fork(uint8_t timeslice) {
 	child->context->rax = 0;
 
 	child->parent = parent;
-	strncpy(child->name, parent->name, sizeof(parent->name));
+	strcpy(child->name, parent->name);
 
 	child->killed = false;
 	child->priority = parent->priority;

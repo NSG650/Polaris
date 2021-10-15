@@ -207,7 +207,7 @@ void apic_eoi(void) {
 }
 
 void apic_timer_init(void) {
-	lapic_write(0x3E0, 3); // Divide by 16
+	lapic_write(0x3E0, 3);			// Divide by 16
 	lapic_write(0x380, 0xFFFFFFFF); // Set value to -1
 
 	hpet_usleep(10000);

@@ -24,7 +24,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-lock_t vfs_lock = {0};
+lock_t vfs_lock = 0;
 
 typedef vec_t(struct filesystem *) filesystem_vec_t;
 filesystem_vec_t filesystems;
