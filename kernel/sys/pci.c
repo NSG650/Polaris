@@ -198,7 +198,7 @@ struct pci_device *pci_getDevice(uint8_t bus, uint8_t device) {
 
 	uint16_t headerType = pci_getheadertype(bus, device);
 	uint32_t functionCount = headerType & 0x80 ? 8 : 1;
-	printf("Pci: found device: VendorID: %X DeviceID: %X Class code: %X Sub "
+	printf("PCI: found device: VendorID: %X DeviceID: %X Class code: %X Sub "
 		   "class: %X progIntf: %X\n",
 		   vendorid, deviceid, classCode, subclass, progintf);
 
