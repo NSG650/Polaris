@@ -37,6 +37,35 @@ struct mcfg {
 
 DYNARRAY_EXTERN(struct mcfg_entry *, mcfg_entries);
 
+typedef struct pci_device
+{
+	uint32_t id;
+    uint16_t vendorid;
+    uint16_t deviceid;
+
+    uint8_t classcode;
+    uint8_t subclass;
+    uint8_t progintf;
+
+	//Device location
+	uint8_t bus;
+	uint8_t device;
+	uint32_t functionCount;
+
+} pci_device;
+typedef struct pci_bar
+{
+    union
+    {
+        void *address;
+        uint16_t port;
+    } u;
+    uint64_t size;
+    uint32_t flags;
+} pci_bar;
+
+extern struct pci_device* pci_devices[100];
+void PciGetBar(struct pci_bar *bar, uint32_t id, uint32_t index);
 void pci_init(void);
 void pci_write(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t function,
 			   uint16_t offset, uint32_t value, uint8_t access_size);

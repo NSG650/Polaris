@@ -16,10 +16,14 @@
 
 #include "pci.h"
 #include "../cpu/ports.h"
+#include "../klibc/alloc.h"
 #include "../klibc/printf.h"
 #include "../mm/vmm.h"
 #include "mmio.h"
+#include <stdint.h>
 
+struct pci_device *pci_devices[100];
+int i = 0;
 DYNARRAY_GLOBAL(mcfg_entries);
 
 static uint32_t (*internal_read)(uint16_t, uint8_t, uint8_t, uint8_t, uint16_t,
@@ -155,6 +159,74 @@ static void mcfg_pci_write(uint16_t seg, uint8_t bus, uint8_t slot,
 		   seg, bus, slot, function);
 }
 
+uint32_t pci_read(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t function,
+				  uint16_t offset, uint8_t access_size) {
+	return internal_read(seg, bus, slot, function, offset, access_size);
+}
+
+void pci_write(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t function,
+			   uint16_t offset, uint32_t value, uint8_t access_size) {
+	internal_write(seg, bus, slot, function, offset, value, access_size);
+}
+
+uint32_t pci_getvendor(uint8_t bus, uint8_t slot) {
+	return pci_read(0, bus, slot, 0, 0, 2);
+}
+uint32_t pci_getdevice(uint8_t bus, uint8_t slot) {
+	return pci_read(0, bus, slot, 0, 2, 2);
+}
+uint32_t pci_getheadertype(uint8_t bus, uint8_t slot) {
+	return pci_read(0, bus, slot, 0, 0x0E, 2);
+}
+
+bool pci_checkIfDeviceExists(uint8_t bus, uint8_t device) {
+	uint16_t vendorID = pci_getvendor(bus, device);
+	if (vendorID == 0xFFFF)
+		return false; // Device doesn't exist
+	else
+		return true;
+}
+
+struct pci_device *pci_getDevice(uint8_t bus, uint8_t device) {
+	uint16_t vendorid = pci_getvendor(bus, device);
+	if (vendorid == 0xFFFF)
+		return NULL; // Device doesn't exist
+	uint16_t deviceid = pci_getdevice(bus, device);
+	uint8_t classCode = pci_read(0, bus, device, 0, 0x0b, 1);
+	uint8_t subclass = pci_read(0, bus, device, 0, 0x0a, 1);
+	uint8_t progintf = pci_read(0, bus, device, 0, 0x09, 1);
+
+	uint16_t headerType = pci_getheadertype(bus, device);
+	uint32_t functionCount = headerType & 0x80 ? 8 : 1;
+	printf("Pci: found device: VendorID: %X DeviceID: %X Class code: %X Sub "
+		   "class: %X progIntf: %X\n",
+		   vendorid, deviceid, classCode, subclass, progintf);
+
+	struct pci_device *pcidevice = alloc(sizeof(struct pci_device));
+	pcidevice->vendorid = vendorid;
+	pcidevice->deviceid = deviceid;
+	pcidevice->classcode = classCode;
+	pcidevice->subclass = subclass;
+	pcidevice->progintf = progintf;
+	pcidevice->bus = bus;
+	pcidevice->device = device;
+	pcidevice->functionCount = functionCount;
+	return pcidevice;
+}
+
+void checkBus(uint8_t bus) {
+	uint8_t device;
+
+	for (device = 0; device < 32; device++) {
+		struct pci_device *dev = pci_getDevice(bus, device);
+		if (dev != NULL) {
+			dev->id = i;
+			pci_devices[i] = dev;
+			i++;
+		}
+	}
+}
+
 void pci_init(void) {
 	struct mcfg *mcfg = (struct mcfg *)acpi_find_sdt("MCFG", 0);
 	if (mcfg == NULL) {
@@ -176,14 +248,67 @@ void pci_init(void) {
 		internal_read = mcfg_pci_read;
 		internal_write = mcfg_pci_write;
 	}
+
+	// Scan PCI Devices
+	uint8_t function;
+	uint8_t bus;
+
+	uint16_t headerType = pci_getheadertype(0, 0);
+	if ((headerType & 0x80) == 0) {
+		/* Single PCI host controller */
+		checkBus(0);
+	} else {
+		/* Multiple PCI host controllers */
+		for (function = 0; function < 8; function++) {
+			uint32_t vendorID = pci_read(0, 0, 0, function, 0, 2);
+			if (vendorID != 0xFFFF)
+				break;
+			bus = function;
+			checkBus(bus);
+		}
+	}
+}
+void pci_read_bar(uint32_t id, uint32_t index, uint32_t *address,
+				  uint32_t *mask) {
+	struct pci_device *dev = pci_devices[id];
+	uint32_t reg = 0x10 + index * sizeof(uint32_t);
+
+	// Get address
+	*address = pci_read(0, dev->bus, dev->device, 0, reg, 4);
+
+	// Find the size of the bar
+	pci_write(0, dev->bus, dev->device, 0, reg, 0xffffffff, 4);
+	*mask = pci_read(0, dev->bus, dev->device, 0, reg, 4);
+
+	// Restore adddress
+	pci_write(0, dev->bus, dev->device, 0, reg, (uint32_t)address, 4);
 }
 
-uint32_t pci_read(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t function,
-				  uint16_t offset, uint8_t access_size) {
-	return internal_read(seg, bus, slot, function, offset, access_size);
-}
+void PciGetBar(struct pci_bar *bar, uint32_t id, uint32_t index) {
+	// Read pci bar register
+	uint32_t addressLow;
+	uint32_t maskLow;
+	pci_read_bar(id, index, &addressLow, &maskLow);
 
-void pci_write(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t function,
-			   uint16_t offset, uint32_t value, uint8_t access_size) {
-	internal_write(seg, bus, slot, function, offset, value, access_size);
+	if (addressLow & 0x04) {
+		// 64-bit mmio
+		uint32_t addressHigh;
+		uint32_t maskHigh;
+		pci_read_bar(id, index + 1, &addressHigh, &maskHigh);
+
+		bar->u.address =
+			(void *)(((uintptr_t)addressHigh << 32) | (addressLow & ~0xf));
+		bar->size = ~(((uint64_t)maskHigh << 32) | (maskLow & ~0xf)) + 1;
+		bar->flags = addressLow & 0xf;
+	} else if (addressLow & 0x01) {
+		// IO register
+		bar->u.port = (uint16_t)(addressLow & ~0x3);
+		bar->size = (uint16_t)(~(maskLow & ~0x3) + 1);
+		bar->flags = addressLow & 0x3;
+	} else {
+		// 32-bit mmio
+		bar->u.address = (void *)(uintptr_t)(addressLow & ~0xf);
+		bar->size = ~(maskLow & ~0xf) + 1;
+		bar->flags = addressLow & 0xf;
+	}
 }
