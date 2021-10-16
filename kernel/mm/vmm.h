@@ -36,6 +36,7 @@ void vmm_init(struct stivale2_mmap_entry *memmap, size_t memmap_entries,
 void vmm_switch_pagemap(struct pagemap *pagemap);
 struct pagemap *vmm_new_pagemap(void);
 bool vmm_map_page(struct pagemap *pagemap, uint64_t virt_addr,
-				  uint64_t phys_addr, uint64_t flags, bool hugepages);
+				  uint64_t phys_addr, uint64_t flags, bool hugepages,
+				  bool gbpages);
 
 #endif

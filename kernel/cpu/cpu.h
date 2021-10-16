@@ -69,5 +69,6 @@ void wsmp_cpu_init(void);
 #define CPUID_SMAP (1 << 20)
 #define CPUID_UMIP (1 << 2)
 #define CPUID_X2APIC (1 << 21)
+#define CPUID_GBPAGE (1 << 26)
 
 #endif
