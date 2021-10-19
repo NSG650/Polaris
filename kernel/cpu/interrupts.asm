@@ -38,10 +38,10 @@ isr%1:
 
 %endmacro
 
-%macro errorIsr 1
+%macro error_isr 1
 
-global errorIsr%1
-errorIsr%1:
+global isr%1
+isr%1:
 	push %1
 	push fs
 	jmp isr_common_format
@@ -57,13 +57,13 @@ isr 4
 isr 5
 isr 6
 isr 7
-errorIsr 8
+error_isr 8
 isr 9
-errorIsr 10
-errorIsr 11
-errorIsr 12
-errorIsr 13
-errorIsr 14
+error_isr 10
+error_isr 11
+error_isr 12
+error_isr 13
+error_isr 14
 isr 15
 isr 16
 isr 17

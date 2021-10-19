@@ -18,24 +18,10 @@
  * limitations under the License.
  */
 
+#include <stddef.h>
 #include <stdint.h>
 
-typedef struct {
-	uint16_t offset_lo;
-	uint16_t selector;
-	uint8_t ist;
-	uint8_t flags;
-	uint16_t offset_mid;
-	uint32_t offset_hi;
-	uint32_t zero;
-} __attribute__((packed)) idt_gate_t;
-
-typedef struct {
-	uint16_t size;
-	uint64_t address;
-} __attribute__((packed)) idt_register_t;
-
-void set_idt_gate(int n, void *handler);
+void set_idt_gate(size_t vec, void *handler, uint8_t ist);
 void set_idt(void);
 
 #endif

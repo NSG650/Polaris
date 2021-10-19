@@ -17,22 +17,37 @@
 
 #include "idt.h"
 
-idt_gate_t idt[256] = {0};
+struct idt_entry {
+	uint16_t offset_lo;
+	uint16_t selector;
+	uint8_t ist;
+	uint8_t flags;
+	uint16_t offset_mid;
+	uint32_t offset_hi;
+	uint32_t zero;
+} __attribute__((packed));
 
-void set_idt_gate(int n, void *handler) {
+struct idt_register {
+	uint16_t size;
+	uint64_t address;
+} __attribute__((packed));
+
+struct idt_entry idt[256] = {0};
+
+void set_idt_gate(size_t vec, void *handler, uint8_t ist) {
 	uint64_t p = (uint64_t)handler;
 
-	idt[n].offset_lo = (uint16_t)p;
-	idt[n].selector = 8;
-	idt[n].ist = 0;
-	idt[n].flags = 0x8E;
-	idt[n].offset_mid = (uint16_t)(p >> 16);
-	idt[n].offset_hi = (uint32_t)(p >> 32);
-	idt[n].zero = 0;
+	idt[vec].offset_lo = (uint16_t)p;
+	idt[vec].selector = 8;
+	idt[vec].ist = ist;
+	idt[vec].flags = 0x8E;
+	idt[vec].offset_mid = (uint16_t)(p >> 16);
+	idt[vec].offset_hi = (uint32_t)(p >> 32);
+	idt[vec].zero = 0;
 }
 
 void set_idt(void) {
-	idt_register_t idt_ptr = {sizeof(idt) - 1, (uint64_t)idt};
+	struct idt_register idt_ptr = {sizeof(idt) - 1, (uint64_t)idt};
 
 	asm volatile("lidtq %0" : : "m"(idt_ptr));
 }

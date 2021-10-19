@@ -16,7 +16,6 @@
  */
 
 #include "gdt.h"
-#include <stdint.h>
 
 struct gdt_desc {
 	uint16_t limit;
@@ -70,7 +69,7 @@ void gdt_init(void) {
 	gdt.entries[4].granularity = 0b00100000;
 
 	// TSS
-	gdt.tss.length = 104;
+	gdt.tss.length = sizeof(struct tss);
 	gdt.tss.flags1 = 0b10001001;
 
 	// Set the pointer
@@ -84,6 +83,7 @@ void gdt_init(void) {
 void gdt_load_tss(size_t addr) {
 	gdt.tss.base_low = (uint16_t)addr;
 	gdt.tss.base_mid = (uint8_t)(addr >> 16);
+	gdt.tss.flags1 = 0b10001001;
 	gdt.tss.base_hi = (uint8_t)(addr >> 24);
 	gdt.tss.base_upper32 = (uint32_t)(addr >> 32);
 
