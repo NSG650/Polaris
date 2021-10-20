@@ -30,7 +30,7 @@ void sched_init(void) {
 		asm volatile("sti");
 		LOCK(sched_lock);
 		// Primitive priority system
-		struct process *toproc = {0};
+		struct process *toproc = kmalloc(sizeof(struct process));
 		for (int i = 0; i < ptable.length; i++) {
 			struct process *proc = ptable.data[i];
 			if (proc->state != READY)
@@ -50,7 +50,7 @@ void sched_init(void) {
 
 			this_cpu->cpu_state->running_proc = NULL;
 		}
-
+		kfree(toproc);
 		UNLOCK(sched_lock);
 	}
 }
@@ -59,7 +59,6 @@ inline struct process *running_proc(void) {
 	asm volatile("cli");
 	struct process *proc = this_cpu->cpu_state->running_proc;
 	asm volatile("sti");
-
 	return proc;
 }
 

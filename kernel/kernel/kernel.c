@@ -34,6 +34,7 @@
 #include "../serial/serial.h"
 #include "../sys/gdt.h"
 #include "../video/video.h"
+#include "panic.h"
 #include <liballoc.h>
 #include <stdint.h>
 #include <stivale2.h>
@@ -72,6 +73,11 @@ void *stivale2_get_tag(struct stivale2_struct *stivale2_struct, uint64_t id) {
 	}
 }
 
+void a(void) {
+	printf("a running on CPU%d\n", this_cpu->cpu_number);
+	process_exit();
+}
+
 void kernel_main(struct stivale2_struct *stivale2_struct) {
 	printf("Hello World!\n");
 	printf("A (4 bytes): %p\n", kmalloc(4));
@@ -100,6 +106,7 @@ void kernel_main(struct stivale2_struct *stivale2_struct) {
 	char *buf = kmalloc(st->st_size);
 	res->read(res, buf, 0, st->st_size);
 	printf("Reading /root/initramfs.txt: %s\n", buf);
+	process_create("a", (uintptr_t)a, 0, HIGH);
 	for (;;)
 		asm("hlt");
 }
@@ -129,6 +136,8 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	struct stivale2_struct_tag_smp *smp_tag =
 		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_SMP_ID);
 	smp_init(smp_tag);
+	while (return_installed_cpus() != smp_tag->cpu_count)
+		;
 	process_init((uintptr_t)kernel_main, (uint64_t)stivale2_struct);
 	sched_init();
 	for (;;)

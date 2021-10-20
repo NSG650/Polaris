@@ -16,12 +16,14 @@
  */
 
 #include "cpu.h"
+#include "../kernel/panic.h"
 #include "../klibc/alloc.h"
 #include "../klibc/asm.h"
 #include "../klibc/lock.h"
 #include "../klibc/mem.h"
 #include "../klibc/printf.h"
 #include "../sys/gdt.h"
+#include "../sys/hpet.h"
 #include "apic.h"
 #include <cpuid.h>
 #include <liballoc.h>
@@ -90,6 +92,7 @@ void smp_init(struct stivale2_struct_tag_smp *smp_tag) {
 		uint8_t *stack = kmalloc(KSTACK_SIZE);
 		smp_tag->smp_info[i].target_stack = (uintptr_t)stack + KSTACK_SIZE;
 		smp_tag->smp_info[i].goto_address = (uintptr_t)cpu_init;
+		hpet_usleep(5000);
 	}
 }
 
@@ -192,8 +195,8 @@ static void cpu_init(struct stivale2_smp_info *smp_info) {
 		this_cpu->fpu_restore = fxrstor;
 	}
 	memset(this_cpu->cpu_state, 0, sizeof(struct cpu_state));
-	UNLOCK(cpu_lock);
 	cpu_count++;
+	UNLOCK(cpu_lock);
 	if (this_cpu->lapic_id != bsp_lapic_id) {
 		lapic_init(this_cpu->lapic_id);
 		sched_init();
