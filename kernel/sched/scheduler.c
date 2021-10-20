@@ -50,6 +50,7 @@ void sched_init(void) {
 
 			this_cpu->cpu_state->running_proc = NULL;
 		}
+		// Free memory used for top-most process
 		kfree(toproc);
 		UNLOCK(sched_lock);
 	}
@@ -59,6 +60,7 @@ inline struct process *running_proc(void) {
 	asm volatile("cli");
 	struct process *proc = this_cpu->cpu_state->running_proc;
 	asm volatile("sti");
+
 	return proc;
 }
 
