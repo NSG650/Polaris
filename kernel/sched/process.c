@@ -18,7 +18,6 @@
 #include "../cpu/apic.h"
 #include "../kernel/panic.h"
 #include "../klibc/lock.h"
-#include "../klibc/mem.h"
 #include "../klibc/printf.h"
 #include "../klibc/string.h"
 #include "scheduler.h"
