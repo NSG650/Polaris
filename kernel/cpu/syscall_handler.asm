@@ -18,7 +18,6 @@ extern syscall_handler
 
 global syscall_handle
 syscall_handle:
-    push rcx
     pushall
 
     mov rdi, rsp
