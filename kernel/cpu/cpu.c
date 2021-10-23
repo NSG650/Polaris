@@ -25,6 +25,7 @@
 #include "../sys/gdt.h"
 #include "../sys/hpet.h"
 #include "apic.h"
+#include "syscall.h"
 #include <cpuid.h>
 #include <liballoc.h>
 
@@ -194,6 +195,7 @@ static void cpu_init(struct stivale2_smp_info *smp_info) {
 		this_cpu->fpu_save = fxsave;
 		this_cpu->fpu_restore = fxrstor;
 	}
+	syscall_init();
 	memset(this_cpu->cpu_state, 0, sizeof(struct cpu_state));
 	cpu_count++;
 	UNLOCK(cpu_lock);

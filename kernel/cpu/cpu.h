@@ -26,6 +26,7 @@
 
 struct cpu_local {
 	uint64_t cpu_number;
+	uint64_t kernel_stack;
 	uint32_t lapic_id;
 	uint64_t tsc_frequency;
 	size_t fpu_storage_size;
