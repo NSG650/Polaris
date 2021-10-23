@@ -18,10 +18,10 @@ extern syscall_handler
 
 global syscall_handle
 syscall_handle:
-    pushall
+	pushall
 
-    mov rdi, rsp
-    call syscall_handler
+	mov rdi, rsp
+	call syscall_handler
 
-    popall
-    o64 sysret
+	popall
+	o64 sysret

@@ -24,8 +24,8 @@
 extern void syscall_handle(void);
 
 void syscall_handler(registers_t *reg) {
-	printf("syscall invoked!\nRAX: %llx\nRBX: %llx\nRDX: %llx\nRSI: %llx\n",
-		   reg->rax, reg->rbx, reg->rdx, reg->rsi);
+	printf("syscall invoked!\nRAX: %llx\nRDI: %llx\nRSI: %llx\nRDX: %llx\n",
+		   reg->rax, reg->rdi, reg->rsi, reg->rdx);
 }
 
 void syscall_init(void) {
@@ -56,6 +56,6 @@ void syscall_init(void) {
 	wrmsr(0xC0000082, (uint64_t)syscall_handle);
 	wrmsr(0xC0000084, (1 << 9));
 
-	uint64_t *cpu_stack = kmalloc(32768);
-	this_cpu->kernel_stack = cpu_stack + 32768;
+	uint8_t *cpu_stack = kmalloc(KSTACK_SIZE);
+	this_cpu->kernel_stack = (uintptr_t)cpu_stack + KSTACK_SIZE;
 }
