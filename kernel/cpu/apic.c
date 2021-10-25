@@ -63,22 +63,27 @@ static void lapic_write(uint32_t reg, uint32_t value) {
 
 static void lapic_set_nmi(uint8_t vec, uint8_t current_processor_id,
 						  uint8_t processor_id, uint16_t flags, uint8_t lint) {
+	// A value of 0xFF means all the processors
 	if (processor_id != 0xFF) {
 		if (current_processor_id != processor_id) {
 			return;
 		}
 	}
 
+	// Set to raise in vector number "vec" and set NMI flag
 	uint32_t nmi = 0x400 | vec;
 
+	// Set to active low if needed
 	if (flags & 2) {
 		nmi |= 1 << 13;
 	}
 
+	// Set to level triggered if needed
 	if (flags & 8) {
 		nmi |= 1 << 15;
 	}
 
+	// Use the proper LINT register
 	if (lint == 0) {
 		lapic_write(0x350, nmi);
 	} else if (lint == 1) {
@@ -89,11 +94,13 @@ static void lapic_set_nmi(uint8_t vec, uint8_t current_processor_id,
 void lapic_init(uint8_t processor_id) {
 	// Enable APIC and x2APIC if available
 	uint64_t apic_msr = rdmsr(0x1B);
+	// Set enable flag
 	apic_msr |= 1 << 11;
 	uint32_t a = 0, b = 0, c = 0, d = 0;
 	if (__get_cpuid(1, &a, &b, &c, &d)) {
 		if (c & CPUID_X2APIC) {
 			x2apic = true;
+			// Set x2APIC flag
 			apic_msr |= 1 << 10;
 		}
 	}
@@ -127,6 +134,7 @@ static uint32_t get_gsi_count(uintptr_t ioapic_address) {
 }
 
 static struct madt_ioapic *get_ioapic_by_gsi(uint32_t gsi) {
+	// Search through every I/O APIC to find its GSI
 	for (int i = 0; i < madt_io_apics.length; i++) {
 		struct madt_ioapic *ioapic = madt_io_apics.data[i];
 		if (ioapic->gsib <= gsi &&
@@ -135,10 +143,12 @@ static struct madt_ioapic *get_ioapic_by_gsi(uint32_t gsi) {
 		}
 	}
 
+	// Return NULL if none was found
 	return NULL;
 }
 
 void ioapic_redirect_gsi(uint32_t gsi, uint8_t vec, uint16_t flags) {
+	// Get I/O APIC address of the GSI
 	size_t io_apic = get_ioapic_by_gsi(gsi)->addr;
 
 	uint32_t low_index = 0x10 + (gsi - get_ioapic_by_gsi(gsi)->gsib) * 2;
@@ -180,6 +190,7 @@ void ioapic_redirect_gsi(uint32_t gsi, uint8_t vec, uint16_t flags) {
 }
 
 void ioapic_redirect_irq(uint32_t irq, uint8_t vect) {
+	// Use ISO table to find flags and interrupt overrides
 	for (int i = 0; i < madt_isos.length; i++) {
 		if (madt_isos.data[i]->irq_source == irq) {
 			ioapic_redirect_gsi(madt_isos.data[i]->gsi, vect,
@@ -203,6 +214,7 @@ void apic_send_ipi(uint32_t lapic_id, uint32_t flags) {
 }
 
 void apic_eoi(void) {
+	// Writing any other value different than 0 may cause a #GP exception
 	lapic_write(0xB0, 0);
 }
 
