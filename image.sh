@@ -7,7 +7,7 @@ unmount_and_exit() {
 			hdiutil unmount /Volumes/Polaris
 		fi
 	else
-		if [ -d img_mount ]; then
+		if [ -z "$(ls -A img_mount)" ]; then
 			sync
 			sudo umount img_mount
 		fi
