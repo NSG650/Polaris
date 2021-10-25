@@ -101,12 +101,6 @@ void kernel_main(struct stivale2_struct *stivale2_struct) {
 	char *buf = kmalloc(st->st_size);
 	res->read(res, buf, 0, st->st_size);
 	printf("Reading /root/initramfs.txt: %s\n", buf);
-	printf("Testing the syscall handler\n");
-	asm("mov rax, 0x650\n"
-		"mov rdi, 0x42\n"
-		"mov rsi, 0x64\n"
-		"mov rdx, 0x123\n"
-		"syscall");
 	for (;;)
 		asm("hlt");
 }
