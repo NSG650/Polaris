@@ -61,7 +61,7 @@ static struct process *alloc_new_process(void) {
 void process_create(char *name, uintptr_t addr, uint64_t args,
 					enum process_priority priority) {
 	struct process *proc = alloc_new_process();
-	strcpy(proc->name, name);
+	strncpy(proc->name, name, 128);
 	proc->parent = NULL;
 	proc->context->rip = addr;
 	proc->context->rdi = args;

@@ -50,7 +50,7 @@ enum process_block_on { NOTHING, ON_SLEEP, ON_WAIT, ON_LOCK };
 enum process_state { UNUSED, INITIAL, READY, RUNNING, BLOCKED, TERMINATED };
 
 struct process {
-	char name[64];
+	char name[128];
 	uint32_t pid;
 	struct process_context *context;
 	enum process_state state;
