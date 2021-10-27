@@ -58,15 +58,22 @@ static void twist(void) {
 
 // Generate number that can be used as seed
 uint64_t get_rdseed(void) {
-	uint64_t rdseed;
+	uint64_t rdseed = 0;
 	uint32_t a = 0, b = 0, c = 0, d = 0;
 
 	// Use rdseed when possible
 	__get_cpuid(7, &a, &b, &c, &d);
-	if ((b & bit_RDSEED)) {
+	if (b & bit_RDSEED) {
 		asm("rdseed %0" : "=r"(rdseed));
 	} else {
-		rdseed = get_unix_timestamp();
+		__get_cpuid(1, &a, &b, &c, &d);
+		// Use rdrand otherwise
+		if (c & bit_RDRND) {
+			asm("rdrand %0" : "=r"(rdseed));
+		} else {
+			// Use UNIX time as last resort
+			rdseed = get_unix_timestamp();
+		}
 	}
 
 	return rdseed;
