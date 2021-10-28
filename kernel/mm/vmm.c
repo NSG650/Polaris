@@ -18,6 +18,8 @@
 #include "vmm.h"
 #include "../cpu/cpu.h"
 #include "../klibc/math.h"
+#include "../klibc/printf.h"
+#include "../kernel/panic.h"
 #include "pmm.h"
 #include <cpuid.h>
 #include <liballoc.h>
@@ -180,4 +182,17 @@ bool vmm_map_page(struct pagemap *pagemap, uint64_t virt_addr,
 	// Use 4KB pages otherwise
 	pml1[pml1_entry] = phys_addr | flags;
 	return true;
+}
+
+void vmm_page_fault_handler(registers_t *reg) {
+	uint64_t faulting_address = 0;
+	asm("mov %0, cr2" : "=r" (faulting_address));
+	char x[256];
+	int present = !(reg->errorCode & 0x1);
+	int read_write = reg->errorCode & 0x2;
+	int user_supervisor = reg->errorCode & 0x4;
+	int reserved = reg->errorCode & 0x8;
+	sprintf(x, "Page fault at 0x%llX present: %s, read/write: %s, user/supervisor: %s, reserved: %s",
+			faulting_address, present ? "P" : "NP", read_write ? "R" : "RW", user_supervisor ? "U" : "S", reserved ? "R" : "NR");
+	PANIC(x);
 }

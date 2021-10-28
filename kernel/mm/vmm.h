@@ -22,6 +22,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stivale2.h>
+#include "../cpu/isr.h"
 
 #define PAGE_SIZE ((size_t)4096)
 #define MEM_PHYS_OFFSET ((uint64_t)0xFFFF800000000000)
@@ -38,5 +39,6 @@ struct pagemap *vmm_new_pagemap(void);
 bool vmm_map_page(struct pagemap *pagemap, uint64_t virt_addr,
 				  uint64_t phys_addr, uint64_t flags, bool hugepages,
 				  bool gbpages);
+void vmm_page_fault_handler(registers_t *reg);
 
 #endif

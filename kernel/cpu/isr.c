@@ -19,6 +19,7 @@
 #include "isr.h"
 #include "../kernel/panic.h"
 #include "../klibc/printf.h"
+#include "../mm/vmm.h"
 #include "../sys/gdt.h"
 #include "apic.h"
 #include "idt.h"
@@ -329,6 +330,8 @@ static eventHandlers_t eventHandlers[256] = {NULL};
 
 void isr_handler(registers_t *r) {
 	if (r->isrNumber < 32) {
+		if (r->isrNumber == 14)
+			vmm_page_fault_handler(r);
 		char x[72];
 		sprintf(x, "System Service Exception Not Handled: %s",
 				exceptionMessages[r->isrNumber]);
