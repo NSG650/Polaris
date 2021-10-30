@@ -73,6 +73,18 @@ void *stivale2_get_tag(struct stivale2_struct *stivale2_struct, uint64_t id) {
 	}
 }
 
+void a_process(void) {
+	printf("I am a_process\n");
+	printf("My main thread's tid is: %d\n", running_thrd()->tid);
+	thread_exit();
+}
+
+void a_thread(void) {
+	printf("I am a_thread\n");
+	printf("My thread id is: %d\n", running_thrd()->tid);
+	thread_exit();
+}
+
 void kernel_main(struct stivale2_struct *stivale2_struct) {
 	printf("Hello World!\n");
 	printf("A (4 bytes): %p\n", kmalloc(4));
@@ -101,6 +113,8 @@ void kernel_main(struct stivale2_struct *stivale2_struct) {
 	char *buf = kmalloc(st->st_size);
 	res->read(res, buf, 0, st->st_size);
 	printf("Reading /root/initramfs.txt: %s\n", buf);
+	thread_create((uintptr_t)a_thread, 0);
+	process_create("a_process", (uintptr_t)a_process, 0, HIGH);
 	for (;;)
 		asm("hlt");
 }

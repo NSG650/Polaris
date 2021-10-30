@@ -1,6 +1,6 @@
 /*
  * Copyright 2021 Sebastian
- *
+ * Copyright 2021 NSG650
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -35,13 +35,15 @@ void sched_init(void) {
 		struct thread *topthrd = kmalloc(sizeof(struct thread));
 		for (int i = 0; i < ptable.length; i++) {
 			struct process *proc = ptable.data[i];
-			if (proc->state != READY || proc->ttable.data[0]->state_t != READY)
+			if (proc->state != READY)
 				continue;
-
-			if (proc->priority >= toproc->priority) {
-				toproc = proc;
-				topthrd = proc->ttable.data[0];
+			for (int j = 0; j < proc->ttable.length; j++) {
+				if (proc->ttable.data[j]->state_t != READY)
+					continue;
+				topthrd = proc->ttable.data[j];
 			}
+			if (proc->priority >= toproc->priority)
+				toproc = proc;
 		}
 
 		size_t next_sched_tick = timer_tick + toproc->timeslice;
