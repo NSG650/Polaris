@@ -1,8 +1,5 @@
-#ifndef PROCESS_H
-#define PROCESS_H
-
 /*
- * Copyright 2021 Sebastian
+ * Copyright 2021 NSG650
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,26 +14,23 @@
  * limitations under the License.
  */
 
+#ifndef THREAD_H
+#define THREAD_H
+
 #include "../klibc/vec.h"
+#include "process.h"
 #include "sched_types.h"
-#include "thread.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
-#define KSTACK_SIZE 32768
+#define TSTACK_SIZE 32768
 
-extern process_vec_t ptable;
-
-void process_create(char *name, uintptr_t addr, uint64_t args,
-					enum priority priority);
-void process_init(uintptr_t addr, uint64_t args);
-void process_block(enum block_on reason);
-void process_exit(void);
-uint32_t process_fork(uint8_t timeslice);
-void process_unblock(struct process *proc);
-void process_sleep(size_t sleep_ticks);
-int32_t process_kill(uint32_t pid);
-uint32_t process_wait(void);
+void thread_init(uintptr_t addr, uint64_t args, struct process *proc);
+void thread_create(uintptr_t addr, uint64_t args);
+void thread_block(enum block_on reason);
+void thread_exit(void);
+void thread_unblock(struct thread *thread);
+void thread_sleep(size_t sleep_ticks);
 
 #endif

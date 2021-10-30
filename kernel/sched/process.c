@@ -24,20 +24,13 @@
 
 process_vec_t ptable;
 struct process *initproc;
-static uint32_t next_pid = 1;
+static uint32_t next_pid = 0;
 static bool is_init = true;
 lock_t process_lock;
 
 static struct process *alloc_new_process(void) {
 	struct process *proc = kmalloc(sizeof(struct process));
-
 	LOCK(process_lock);
-
-	proc->kstack = kmalloc(KSTACK_SIZE);
-	if (!proc->kstack) {
-		PANIC("Failed to allocate kernel stack page");
-		__builtin_unreachable();
-	}
 
 	proc->state = INITIAL;
 	proc->block_on = NOTHING;
@@ -46,29 +39,22 @@ static struct process *alloc_new_process(void) {
 	proc->target_tick = 0;
 
 	UNLOCK(process_lock);
-
-	uint64_t sp = (uintptr_t)proc->kstack + KSTACK_SIZE;
-
-	sp -= sizeof(struct process_context);
-	proc->context = (struct process_context *)sp;
-	memset(proc->context, 0, sizeof(struct process_context));
-
 	vec_push(&ptable, proc);
 
 	return proc;
 }
 
 void process_create(char *name, uintptr_t addr, uint64_t args,
-					enum process_priority priority) {
+					enum priority priority) {
 	struct process *proc = alloc_new_process();
 	strncpy(proc->name, name, 128);
 	proc->parent = NULL;
-	proc->context->rip = addr;
-	proc->context->rdi = args;
 	proc->timeslice = 1;
 	proc->killed = false;
 	proc->priority = priority;
+	vec_init(&proc->ttable);
 	LOCK(process_lock);
+	thread_init(addr, args, proc);
 	proc->state = READY;
 	UNLOCK(process_lock);
 }
@@ -77,13 +63,13 @@ void process_init(uintptr_t addr, uint64_t args) {
 	if (!is_init)
 		return;
 	struct process *proc = alloc_new_process();
-	strcpy(proc->name, "init");
+	strcpy(proc->name, "kernel_tasks");
 	proc->parent = NULL;
-	proc->context->rip = addr;
-	proc->context->rdi = args;
 	proc->timeslice = 1;
 	proc->killed = false;
 	proc->priority = HIGH;
+	vec_init(&proc->ttable);
+	thread_init(addr, args, proc);
 	LOCK(process_lock);
 	proc->state = READY;
 	UNLOCK(process_lock);
@@ -105,8 +91,9 @@ uint32_t process_fork(uint8_t timeslice) {
 
 	child->timeslice = timeslice;
 
-	child->context->rip = (uintptr_t)__builtin_return_address(0);
-	child->context->rax = 0;
+	child->ttable.data[0]->context->rip =
+		(uintptr_t)__builtin_return_address(0);
+	child->ttable.data[0]->context->rax = 0;
 
 	child->parent = parent;
 	strcpy(child->name, parent->name);
@@ -121,7 +108,7 @@ uint32_t process_fork(uint8_t timeslice) {
 	return child->pid;
 }
 
-inline void process_block(enum process_block_on reason) {
+inline void process_block(enum block_on reason) {
 	asm volatile("cli");
 	struct process *proc = running_proc();
 
@@ -142,10 +129,8 @@ void process_exit(void) {
 	if (proc == initproc) {
 		PANIC("ATTEMPTED TO KILL INIT!");
 	}
-
 	if (proc->parent->state == BLOCKED && proc->parent->block_on == ON_WAIT)
 		process_unblock(proc->parent);
-
 	for (int i = 0; i < ptable.length; i++) {
 		struct process *child = ptable.data[i];
 		if (child->parent == proc) {
@@ -187,14 +172,14 @@ uint32_t process_wait(void) {
 			have_kids = true;
 
 			if (child->state == TERMINATED) {
-				kfree(child->kstack);
+				for (int i = 0; i < child->ttable.length; i++)
+					kfree(child->ttable.data[i]->tstack);
 
 				uint32_t child_pid = child->pid;
 				child->pid = 0;
 				child->parent = NULL;
 				child->name[0] = '\0';
 				child->state = UNUSED;
-
 				UNLOCK(process_lock);
 				return child_pid;
 			}

@@ -22,36 +22,42 @@
 
 lock_t sched_lock;
 
-extern void context_switch(struct process_context **old,
-						   struct process_context *new);
+extern void context_switch(struct cpu_context **old, struct cpu_context *new);
 
 void sched_init(void) {
+	// TODO: Loop over every thread entry in the process and then execute
+	// instead of only executing the main thread
 	while (1) {
 		asm volatile("sti");
 		LOCK(sched_lock);
 		// Primitive priority system
 		struct process *toproc = kmalloc(sizeof(struct process));
+		struct thread *topthrd = kmalloc(sizeof(struct thread));
 		for (int i = 0; i < ptable.length; i++) {
 			struct process *proc = ptable.data[i];
-			if (proc->state != READY)
+			if (proc->state != READY || proc->ttable.data[0]->state_t != READY)
 				continue;
 
 			if (proc->priority >= toproc->priority) {
 				toproc = proc;
+				topthrd = proc->ttable.data[0];
 			}
 		}
 
 		size_t next_sched_tick = timer_tick + toproc->timeslice;
 		while (timer_tick < next_sched_tick && toproc->state == READY) {
 			this_cpu->cpu_state->running_proc = toproc;
+			this_cpu->cpu_state->running_thrd = topthrd;
 			toproc->state = RUNNING;
-
-			context_switch(&this_cpu->cpu_state->scheduler, toproc->context);
+			topthrd->state_t = RUNNING;
+			context_switch(&this_cpu->cpu_state->scheduler, topthrd->context);
 
 			this_cpu->cpu_state->running_proc = NULL;
+			this_cpu->cpu_state->running_thrd = NULL;
 		}
 		// Free memory used for top-most process
 		kfree(toproc);
+		kfree(topthrd);
 		UNLOCK(sched_lock);
 	}
 }
@@ -60,14 +66,20 @@ inline struct process *running_proc(void) {
 	asm volatile("cli");
 	struct process *proc = this_cpu->cpu_state->running_proc;
 	asm volatile("sti");
-
 	return proc;
+}
+
+inline struct thread *running_thrd(void) {
+	asm volatile("cli");
+	struct thread *thrd = this_cpu->cpu_state->running_thrd;
+	asm volatile("sti");
+	return thrd;
 }
 
 void yield_to_scheduler(void) {
 	asm volatile("cli");
-	struct process *proc = running_proc();
-	if (proc->state != RUNNING) {
-		context_switch(&proc->context, this_cpu->cpu_state->scheduler);
+	struct thread *thrd = running_thrd();
+	if (thrd->state_t != RUNNING) {
+		context_switch(&thrd->context, this_cpu->cpu_state->scheduler);
 	}
 }

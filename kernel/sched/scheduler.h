@@ -18,13 +18,17 @@
  */
 
 #include "process.h"
+#include "sched_types.h"
+#include "thread.h"
 
 struct cpu_state {
-	struct process_context *scheduler;
+	struct cpu_context *scheduler;
 	struct process *running_proc;
+	struct thread *running_thrd;
 };
 
 struct process *running_proc(void);
+struct thread *running_thrd(void);
 void yield_to_scheduler(void);
 void sched_init(void);
 

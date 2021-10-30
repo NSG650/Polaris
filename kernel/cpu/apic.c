@@ -247,7 +247,6 @@ size_t timer_tick = 0;
 void timer_interrupt(registers_t *reg) {
 	(void)reg;
 	timer_tick++;
-
 	for (int i = 0; i < ptable.length; i++) {
 		struct process *proc = ptable.data[i];
 		if (proc->state == BLOCKED && proc->block_on == ON_SLEEP &&
@@ -258,8 +257,11 @@ void timer_interrupt(registers_t *reg) {
 	}
 
 	struct process *proc = running_proc();
-	if (proc != NULL && proc->state == RUNNING) {
+	struct thread *thrd = running_thrd();
+	if (proc != NULL && proc->state == RUNNING && thrd != NULL &&
+		thrd->state_t == RUNNING) {
 		proc->state = READY;
+		thrd->state_t = READY;
 		yield_to_scheduler();
 	}
 }
