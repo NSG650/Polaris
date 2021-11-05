@@ -49,7 +49,7 @@ void process_create(char *name, uintptr_t addr, uint64_t args,
 	struct process *proc = alloc_new_process();
 	strncpy(proc->name, name, 128);
 	proc->parent = NULL;
-	proc->timeslice = 1;
+	proc->timeslice = 2;
 	proc->killed = false;
 	proc->priority = priority;
 	vec_init(&proc->ttable);
@@ -65,7 +65,7 @@ void process_init(uintptr_t addr, uint64_t args) {
 	struct process *proc = alloc_new_process();
 	strcpy(proc->name, "kernel_tasks");
 	proc->parent = NULL;
-	proc->timeslice = 1;
+	proc->timeslice = 5;
 	proc->killed = false;
 	proc->priority = HIGH;
 	vec_init(&proc->ttable);

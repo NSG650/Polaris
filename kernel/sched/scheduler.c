@@ -25,8 +25,6 @@ lock_t sched_lock;
 extern void context_switch(struct cpu_context **old, struct cpu_context *new);
 
 void sched_init(void) {
-	// TODO: Loop over every thread entry in the process and then execute
-	// instead of only executing the main thread
 	while (1) {
 		asm volatile("sti");
 		LOCK(sched_lock);
@@ -40,10 +38,11 @@ void sched_init(void) {
 			for (int j = 0; j < proc->ttable.length; j++) {
 				if (proc->ttable.data[j]->state_t != READY)
 					continue;
-				topthrd = proc->ttable.data[j];
+				if (proc->priority >= toproc->priority) {
+					topthrd = proc->ttable.data[j];
+					toproc = proc;
+				}
 			}
-			if (proc->priority >= toproc->priority)
-				toproc = proc;
 		}
 
 		size_t next_sched_tick = timer_tick + toproc->timeslice;
