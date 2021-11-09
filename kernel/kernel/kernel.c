@@ -101,6 +101,7 @@ void kernel_main(struct stivale2_struct *stivale2_struct) {
 	char *buf = kmalloc(st->st_size);
 	res->read(res, buf, 0, st->st_size);
 	printf("Reading /root/initramfs.txt: %s\n", buf);
+	load_elf("/root/test");
 	for (;;)
 		asm("hlt");
 }

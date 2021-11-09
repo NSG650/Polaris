@@ -29,8 +29,8 @@
 #include <cpuid.h>
 #include <liballoc.h>
 
-struct cpu_local *cpu_locals;
-uint64_t cpu_count;
+struct cpu_local *cpu_locals = {0};
+uint64_t cpu_count = 0;
 
 static void cpu_init(struct stivale2_smp_info *smp_info);
 
