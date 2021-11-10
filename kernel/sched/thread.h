@@ -29,7 +29,7 @@
 void thread_init(uintptr_t addr, uint64_t args, struct process *proc);
 void thread_create(uintptr_t addr, uint64_t args);
 void thread_block(enum block_on reason);
-void thread_exit(void);
+void thread_exit(uint64_t return_val);
 void thread_unblock(struct thread *thread);
 void thread_sleep(size_t sleep_ticks);
 

@@ -175,6 +175,8 @@ int load_elf(char *file_name) {
 							*location = (uint64_t)(&printf);
 						} else if (strcmp("process_exit", symbol_name) == 0) {
 							*location = (uint64_t)(&process_exit);
+						} else if (strcmp("thread_exit", symbol_name) == 0) {
+							*location = (uint64_t)(&thread_exit);
 						} else {
 							printf("Unknown symbol: %s\n", symbol_name);
 							return 1;

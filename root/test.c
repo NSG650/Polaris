@@ -1,5 +1,6 @@
 int printf(const char *format, ...);
 void process_exit(void);
+void thread_exit(unsigned long int return_val);
 
 char some_array[16] = {0};
 char other_array[16] = {0};
@@ -21,10 +22,10 @@ static void other_func() {
 
 void run() {
 	some_array[0] = 1;
-	printf("You just ran a ELF object!\n");
+	printf("I am an ELF binary!\n");
 	other_func();
 	printf("other_array[0]: %d\n", other_array[0]);
 	printf("some_var: %X\n", some_var);
 	printf("fib(10): %lld\n", fib(10));
-	process_exit();
+	thread_exit(0);
 }

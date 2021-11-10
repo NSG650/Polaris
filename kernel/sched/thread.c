@@ -77,12 +77,14 @@ inline void thread_unblock(struct thread *thrd) {
 	thrd->state_t = READY;
 }
 
-void thread_exit(void) {
+void thread_exit(uint64_t return_val) {
 	struct thread *thrd = running_thrd();
 	if (thrd->state_t == BLOCKED && thrd->block_t == ON_WAIT)
 		thread_unblock(thrd);
 	thrd->state_t = TERMINATED;
+	thrd->return_val = return_val;
 	if (thrd == running_proc()->ttable.data[0]) {
+		running_proc()->return_code = (uint8_t)thrd->return_val;
 		process_exit();
 	}
 	yield_to_scheduler();

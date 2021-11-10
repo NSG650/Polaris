@@ -53,6 +53,7 @@ struct thread {
 	enum block_on block_t;
 	struct cpu_context *context;
 	size_t target_tick;
+	uint64_t return_val;
 	bool killed;
 };
 
@@ -66,6 +67,7 @@ struct process {
 	enum priority priority;
 	struct process *parent;
 	thread_vec_t ttable;
+	uint8_t return_code;
 	bool killed;
 	uint8_t timeslice;
 	size_t target_tick;
