@@ -7,6 +7,10 @@
 #include <liballoc.h>
 #include <stddef.h>
 
+static const char *ELF_SECTION_TYPE[] = {
+	"NULL",	   "PROGBITS", "SYMTAB", "STRTAB", "RELA", "HASH",
+	"DYNAMIC", "NOTE",	   "NOBITS", "REL",	   "",	   "DYNSYM"};
+
 void dump_section_table(struct elf64_section_header *elf_section_headers,
 						size_t section_count, char *section_strtab) {
 	printf("IND |                 MAME |     TYPE | FLAG | OFFSET |   SIZE | "

@@ -9,8 +9,8 @@ AS := nasm
 CFLAGS :=                             \
 	-Wall -Wextra -g -Og -I stivale/  \
 	-I kernel/klibc/liballoc/include/ \
-	-I kernel/acpi/lai/include/ -MMD  \
-	-MP -pipe -DKVERSION=\"git-$(shell git log -1 --pretty=format:%h)\"
+	-I kernel/acpi/lai/include/       \
+	-pipe -DKVERSION=\"git-$(shell git log -1 --pretty=format:%h)\"
 
 # Assembler flags
 ASFLAGS := -g -MD -MP
@@ -19,17 +19,17 @@ ASFLAGS := -g -MD -MP
 INTERNALLDFLAGS :=           \
 	-T kernel/linker.ld      \
 	-nostdlib                \
-	-Wl,-static,-pie         \
-	-Wl,--no-dynamic-linker  \
+	-Wl,-static	             \
 	-z max-page-size=4096    \
-	-z text -lgcc
+	-lgcc
 
 INTERNALCFLAGS :=        \
 	-std=gnu11           \
 	-ffreestanding       \
 	-fno-stack-protector \
-	-fpie -mno-red-zone	 \
-	-masm=intel
+	-fno-pic -MMD -MP    \
+	-mcmodel=kernel      \
+	-mno-red-zone -masm=intel
 
 CFILES := $(wildcard kernel/*/*.c kernel/acpi/lai/*/*.c kernel/klibc/*/*.c)
 ASMFILES := $(wildcard kernel/*/*.asm)

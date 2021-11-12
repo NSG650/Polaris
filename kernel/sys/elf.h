@@ -53,13 +53,9 @@ struct elf64_header {
 #define ELF_SECTION_REL 9
 #define ELF_SECTION_DYNSYM 11
 
-const char *ELF_SECTION_TYPE[] = {"NULL",	"PROGBITS", "SYMTAB",  "STRTAB",
-								  "RELA",	"HASH",		"DYNAMIC", "NOTE",
-								  "NOBITS", "REL",		"",		   "DYNSYM"};
-
-#define ELF_FLAG_WRITE 0x01
-#define ELF_FLAG_ALLOC 0x02
-#define ELF_FLAG_EXEC 0x04
+#define ELF_FLAG_WRITE 1
+#define ELF_FLAG_ALLOC 2
+#define ELF_FLAG_EXEC 4
 
 struct elf64_section_header {
 	uint32_t name_index;
@@ -91,5 +87,7 @@ struct elf64_symbol {
 	uint64_t value;
 	uint64_t size;
 };
+
+int load_elf(char *file_name);
 
 #endif

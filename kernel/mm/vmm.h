@@ -26,14 +26,14 @@
 
 #define PAGE_SIZE ((size_t)4096)
 #define MEM_PHYS_OFFSET ((uint64_t)0xFFFF800000000000)
-#define KERNEL_BASE ((uint64_t)0xFFFFFFFF80000000)
 
 struct pagemap {
 	void *top_level;
 };
 
 void vmm_init(struct stivale2_mmap_entry *memmap, size_t memmap_entries,
-			  struct stivale2_pmr *pmrs, size_t pmr_entries);
+			  struct stivale2_pmr *pmrs, size_t pmr_entries,
+			  uint64_t virtual_base_address, uint64_t physical_base_address);
 void vmm_switch_pagemap(struct pagemap *pagemap);
 struct pagemap *vmm_new_pagemap(void);
 bool vmm_map_page(struct pagemap *pagemap, uint64_t virt_addr,

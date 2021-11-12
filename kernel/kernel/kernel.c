@@ -32,6 +32,7 @@
 #include "../sched/process.h"
 #include "../sched/scheduler.h"
 #include "../serial/serial.h"
+#include "../sys/elf.h"
 #include "../sys/gdt.h"
 #include "../video/video.h"
 #include "panic.h"
@@ -55,7 +56,7 @@ __attribute__((section(".stivale2hdr"),
 			   used)) static struct stivale2_header stivale_hdr = {
 	.entry_point = 0,
 	.stack = (uintptr_t)stack + sizeof(stack),
-	.flags = (1 << 1) | (1 << 2) | (1 << 4),
+	.flags = (1 << 1) | (1 << 2) | (1 << 3) | (1 << 4),
 	.tags = (uintptr_t)&framebuffer_hdr_tag};
 
 void *stivale2_get_tag(struct stivale2_struct *stivale2_struct, uint64_t id) {
@@ -116,8 +117,13 @@ void _start(struct stivale2_struct *stivale2_struct) {
 	pmm_init((void *)memmap_tag->memmap, memmap_tag->entries);
 	struct stivale2_struct_tag_pmrs *pmrs_tag =
 		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_PMRS_ID);
+	struct stivale2_struct_tag_kernel_base_address *kernel_base_tag =
+		stivale2_get_tag(stivale2_struct,
+						 STIVALE2_STRUCT_TAG_KERNEL_BASE_ADDRESS_ID);
 	vmm_init((void *)memmap_tag->memmap, memmap_tag->entries,
-			 (void *)pmrs_tag->pmrs, pmrs_tag->entries);
+			 (void *)pmrs_tag->pmrs, pmrs_tag->entries,
+			 kernel_base_tag->virtual_base_address,
+			 kernel_base_tag->physical_base_address);
 	serial_install();
 	printf("Kernel build: %s\n", KVERSION);
 	isr_install();

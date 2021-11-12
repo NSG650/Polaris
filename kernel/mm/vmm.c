@@ -27,7 +27,8 @@
 struct pagemap *kernel_pagemap = NULL;
 
 void vmm_init(struct stivale2_mmap_entry *memmap, size_t memmap_entries,
-			  struct stivale2_pmr *pmrs, size_t pmr_entries) {
+			  struct stivale2_pmr *pmrs, size_t pmr_entries,
+			  uint64_t virtual_base_address, uint64_t physical_base_address) {
 	kernel_pagemap = vmm_new_pagemap();
 	// Use the biggest page size available
 	uint32_t a = 0, b = 0, c = 0, d = 0;
@@ -52,7 +53,7 @@ void vmm_init(struct stivale2_mmap_entry *memmap, size_t memmap_entries,
 	for (size_t i = 0; i < pmr_entries; i++) {
 		uint64_t virt = pmrs[i].base;
 		// Convert virtual PMR address to physical
-		uint64_t phys = virt - KERNEL_BASE;
+		uint64_t phys = physical_base_address + (virt - virtual_base_address);
 		// Convert Stivale2's PMR permissions format to page permissions format
 		uint64_t pf =
 			(pmrs[i].permissions & STIVALE2_PMR_EXECUTABLE ? 0 : 1UL << 63) |
