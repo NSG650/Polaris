@@ -19,16 +19,16 @@ ASFLAGS := -g -MD -MP
 INTERNALLDFLAGS :=           \
 	-T kernel/linker.ld      \
 	-nostdlib                \
-	-Wl,-static	             \
+	-Wl,-static,-pie	     \
+	-Wl,--no-dynamic-linker	 \
 	-z max-page-size=4096    \
-	-lgcc
+	-z text -lgcc
 
 INTERNALCFLAGS :=        \
 	-std=gnu11           \
 	-ffreestanding       \
 	-fno-stack-protector \
-	-fno-pic -MMD -MP    \
-	-mcmodel=kernel      \
+	-fpie -MMD -MP       \
 	-mno-red-zone -masm=intel
 
 CFILES := $(wildcard kernel/*/*.c kernel/acpi/lai/*/*.c kernel/klibc/*/*.c)
