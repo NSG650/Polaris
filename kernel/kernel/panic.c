@@ -19,11 +19,12 @@
 #include "../klibc/printf.h"
 #include "../serial/serial.h"
 #include "../video/video.h"
+#include "symbols.h"
 
 __attribute__((noreturn)) void panic(const char *message, char *file,
 									 bool assert, size_t line) {
-	const void *rip = __builtin_return_address(0);
-	const void *rbp = __builtin_frame_address(0);
+	size_t *rip = __builtin_return_address(0);
+	size_t *rbp = __builtin_frame_address(0);
 	if (assert) {
 		clear_screen(0x00B800);
 		printf("*** ASSERTION FAILURE: %s\nFile: %s\nLine: %zu\nRIP: "
@@ -34,6 +35,17 @@ __attribute__((noreturn)) void panic(const char *message, char *file,
 		printf("*** PANIC: %s\nFile: %s\nLine: %zu\nRIP: 0x%p\nRBP: "
 			   "0x%p\nKernel build: %s\n",
 			   message, file, line, rip, rbp, KVERSION);
+	}
+	printf("Stack trace:\n");
+	for(;;) {
+		size_t old_rbp = rbp[0];
+		size_t ret_address = rbp[1];
+		if(!ret_address)
+			break;
+		printf("0x%llX\t%s\n", ret_address, symbols_return_function_name(ret_address));
+		if(!old_rbp)
+			break;
+		rbp = (void*)old_rbp;
 	}
 	for (;;)
 		asm("cli\nhlt");

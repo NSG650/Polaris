@@ -42,6 +42,7 @@ all: $(KERNEL)
 
 $(KERNEL): $(OBJECTS)
 	$(CC) $(INTERNALLDFLAGS) $^ -o $@
+	python3 gensym.py $(KERNEL)
 
 -include $(DEPENDS)
 
