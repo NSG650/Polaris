@@ -13,7 +13,7 @@ static const char *ELF_SECTION_TYPE[] = {
 
 void dump_section_table(struct elf64_section_header *elf_section_headers,
 						size_t section_count, char *section_strtab) {
-	printf("IND |                 MAME |     TYPE | FLAG | OFFSET |   SIZE | "
+	printf("IND |                 NAME |     TYPE | FLAG | OFFSET |   SIZE | "
 		   "ADDRESS          |\n");
 	printf("----+----------------------+----------+------+--------+--------+---"
 		   "---------------+\n");
