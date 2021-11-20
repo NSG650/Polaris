@@ -37,15 +37,16 @@ __attribute__((noreturn)) void panic(const char *message, char *file,
 			   message, file, line, rip, rbp, KVERSION);
 	}
 	printf("Stack trace:\n");
-	for(;;) {
+	for (;;) {
 		size_t old_rbp = rbp[0];
 		size_t ret_address = rbp[1];
-		if(!ret_address)
+		if (!ret_address)
 			break;
-		printf("0x%llX\t%s\n", ret_address, symbols_return_function_name(ret_address));
-		if(!old_rbp)
+		printf("0x%llX\t%s\n", ret_address,
+			   symbols_return_function_name(ret_address));
+		if (!old_rbp)
 			break;
-		rbp = (void*)old_rbp;
+		rbp = (void *)old_rbp;
 	}
 	for (;;)
 		asm("cli\nhlt");

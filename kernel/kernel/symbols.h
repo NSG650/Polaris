@@ -1,8 +1,8 @@
 #ifndef SYMBOLS_H
 #define SYMBOLS_H
 
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
 typedef struct {
 	uint64_t address;
