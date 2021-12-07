@@ -22,9 +22,9 @@
 
 #define PASTER(x, y) x##y
 #define EVALUATOR(x, y) PASTER(x, y)
-// This first macro makes functions like "int isr0(void)"
+// This first macro makes functions like "void isr0(void)"
 // But the number is summed up on each call
-#define ONE EVALUATOR(int isr, __COUNTER__)(void)
+#define ONE EVALUATOR(void isr, __COUNTER__)(void)
 // Different granularities
 #define TWO \
 	ONE;    \
