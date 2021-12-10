@@ -7,9 +7,9 @@ char other_array[16] = {0};
 
 int some_var = 123;
 
-void fast_fib(unsigned long long int n, unsigned long long int m[]) {
+static void fast_fib(unsigned long long int n, unsigned long long int m[]) {
     unsigned long long int a, b, c, d;
-    if(n == 0) {
+    if (n == 0) {
         m[0] = 0;
         m[1] = 1;
         return;
@@ -20,12 +20,11 @@ void fast_fib(unsigned long long int n, unsigned long long int m[]) {
     b = s[1]; // F(N + 1)
     c = a * (b * 2 - a);
     d = a * a + b * b;
-    if(!(n & 1)) {
+    if (!(n & 1)) {
         m[0] = c;
         m[1] = d;
         return;
-    }
-    else {
+    } else {
         m[0] = d;
         m[1] = c + d;
         return;
