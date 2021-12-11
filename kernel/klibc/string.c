@@ -18,6 +18,11 @@
 
 #include "string.h"
 #include "mem.h"
+#include <limits.h>
+
+#define ONES ((size_t)-1 / UCHAR_MAX)
+#define HIGHS (ONES * (UCHAR_MAX / 2 + 1))
+#define HASZERO(x) (((x)-ONES) & ~(x)&HIGHS)
 
 // Mostly grabbed from Musl
 int strcmp(const char *l, const char *r) {

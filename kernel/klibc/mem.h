@@ -18,17 +18,11 @@
  * limitations under the License.
  */
 
-#include <limits.h>
 #include <stddef.h>
-
-#define ONES ((size_t)-1 / UCHAR_MAX)
-#define HIGHS (ONES * (UCHAR_MAX / 2 + 1))
-#define HASZERO(x) (((x)-ONES) & ~(x)&HIGHS)
 
 void *memcpy(void *restrict dest, const void *restrict src, size_t n);
 void *memmove(void *dest, const void *src, size_t n);
 int memcmp(const void *vl, const void *vr, size_t n);
-void *memchr(const void *src, int c, size_t n);
 void *memset(void *dest, int c, size_t n);
 
 #endif
