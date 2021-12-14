@@ -23,6 +23,7 @@
 
 __attribute__((noreturn)) void panic(const char *message, char *file,
 									 bool assert, size_t line) {
+	asm("cli");
 	size_t *rip = __builtin_return_address(0);
 	size_t *rbp = __builtin_frame_address(0);
 	if (assert) {
