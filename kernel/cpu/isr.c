@@ -329,6 +329,7 @@ static const char *exceptionMessages[] = {"Divide by zero",
 static eventHandlers_t eventHandlers[256] = {NULL};
 
 void isr_handler(registers_t *r) {
+	vmm_switch_pagemap(kernel_pagemap);
 	if (r->isrNumber < 32) {
 		if (r->isrNumber == 14)
 			vmm_page_fault_handler(r);

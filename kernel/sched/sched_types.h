@@ -20,6 +20,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include "../mm/vmm.h"
 
 struct cpu_context {
 	uint64_t r15;
@@ -69,6 +70,7 @@ struct process {
 	thread_vec_t ttable;
 	uint8_t return_code;
 	bool killed;
+	struct pagemap *process_pagemap;
 	uint8_t timeslice;
 	size_t target_tick;
 };

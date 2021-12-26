@@ -57,10 +57,10 @@ clean:
 	$(RM) -r *.hdd img_mount
 	$(RM) -r *.gz
 
-image:
+image: $(KERNEL)
 	@./image.sh
 
-run:
+run: image
 	qemu-system-x86_64 -hda polaris.hdd -serial stdio -m 512M
 
 debug:

@@ -31,6 +31,8 @@ struct pagemap {
 	void *top_level;
 };
 
+extern struct pagemap *kernel_pagemap;
+
 void vmm_init(struct stivale2_mmap_entry *memmap, size_t memmap_entries,
 			  struct stivale2_pmr *pmrs, size_t pmr_entries,
 			  uint64_t virtual_base_address, uint64_t physical_base_address);

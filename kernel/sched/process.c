@@ -37,6 +37,7 @@ static struct process *alloc_new_process(void) {
 	proc->priority = NORMAL;
 	proc->pid = next_pid++;
 	proc->target_tick = 0;
+	proc->process_pagemap = NULL;
 
 	UNLOCK(process_lock);
 	vec_push(&ptable, proc);
@@ -52,6 +53,7 @@ void process_create(char *name, uintptr_t addr, uint64_t args,
 	proc->timeslice = 2;
 	proc->killed = false;
 	proc->priority = priority;
+	proc->process_pagemap  = vmm_new_pagemap();
 	vec_init(&proc->ttable);
 	LOCK(process_lock);
 	thread_init(addr, args, proc);
@@ -68,6 +70,7 @@ void process_init(uintptr_t addr, uint64_t args) {
 	proc->timeslice = 5;
 	proc->killed = false;
 	proc->priority = HIGH;
+	proc->process_pagemap = kernel_pagemap;
 	vec_init(&proc->ttable);
 	thread_init(addr, args, proc);
 	LOCK(process_lock);
