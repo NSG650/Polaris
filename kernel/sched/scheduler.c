@@ -52,6 +52,7 @@ void sched_init(void) {
 			this_cpu->cpu_state->running_thrd = topthrd;
 			toproc->state = RUNNING;
 			topthrd->state_t = RUNNING;
+			printf("Switching to %s\n", toproc->name);
 			if(toproc->process_pagemap == NULL)
 				PANIC("running process does not have process pagemap");
 			vmm_switch_pagemap(toproc->process_pagemap);

@@ -23,6 +23,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stivale2.h>
+#include "../sys/gdt.h"
 
 struct cpu_local {
 	uint64_t cpu_number;
@@ -30,6 +31,7 @@ struct cpu_local {
 	uint32_t lapic_id;
 	uint64_t tsc_frequency;
 	size_t fpu_storage_size;
+	struct tss cpu_tss;
 	void (*fpu_save)(void *);
 	void (*fpu_restore)(void *);
 	struct cpu_state *cpu_state;

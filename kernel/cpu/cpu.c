@@ -91,9 +91,12 @@ void smp_init(struct stivale2_struct_tag_smp *smp_tag) {
 		}
 		cpu_locals[i].cpu_number = i;
 		uint8_t *stack = kmalloc(KSTACK_SIZE);
+		cpu_locals[i].cpu_tss.rsp0 = (uint64_t)stack;
+		uint8_t *sched_stack = kmalloc(KSTACK_SIZE);
+		cpu_locals[i].cpu_tss.ist1 = (uint64_t)sched_stack;
 		smp_tag->smp_info[i].target_stack = (uintptr_t)stack + KSTACK_SIZE;
 		smp_tag->smp_info[i].goto_address = (uintptr_t)cpu_init;
-		hpet_usleep(5000);
+		hpet_usleep(10000);
 	}
 }
 
