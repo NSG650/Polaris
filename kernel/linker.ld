@@ -15,7 +15,7 @@ SECTIONS {
 	. = 0xFFFFFFFF80000000;
 
 	.text : {
-		*(.text*)
+		*(.text .text.*)
 	} :text
 
 	. += CONSTANT(MAXPAGESIZE);
@@ -25,13 +25,13 @@ SECTIONS {
 	} :rodata
 
 	.rodata : {
-		*(.rodata*)
+		*(.rodata .rodata.*)
 	} :rodata
 
 	. += CONSTANT(MAXPAGESIZE);
 
 	.data : {
-		*(.data*)
+		*(.data .data.*)
 	} :data
 
 	.dynamic : {
@@ -40,6 +40,6 @@ SECTIONS {
 
 	.bss : {
 		*(COMMON)
-		*(.bss*)
+		*(.bss .bss.*)
 	} :data
 }

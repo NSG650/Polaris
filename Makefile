@@ -1,5 +1,10 @@
+# This is a Makefile meant for GNU Make. Assert that
+ifneq (,)
+This makefile requires GNU Make.
+endif
+
 # Name of the final executable
-KERNEL := polaris.elf
+override KERNEL := polaris.elf
 
 # The compiler we are using
 CC := x86_64-elf-gcc
@@ -16,7 +21,7 @@ CFLAGS :=                             \
 ASFLAGS := -g -MD -MP
 
 # Internal flags that shouldn't be changed
-INTERNALLDFLAGS :=           \
+override INTERNALLDFLAGS :=  \
 	-T kernel/linker.ld      \
 	-nostdlib                \
 	-Wl,-static,-pie	     \
@@ -24,17 +29,17 @@ INTERNALLDFLAGS :=           \
 	-z max-page-size=4096    \
 	-z text -lgcc
 
-INTERNALCFLAGS :=        \
-	-std=gnu11           \
-	-ffreestanding       \
-	-fno-stack-protector \
-	-fpie -MMD -MP       \
+override INTERNALCFLAGS := \
+	-std=gnu11             \
+	-ffreestanding         \
+	-fno-stack-protector   \
+	-fpie -MMD -MP         \
 	-mno-red-zone -masm=intel
 
-CFILES := $(wildcard kernel/*/*.c kernel/acpi/lai/*/*.c kernel/klibc/*/*.c)
-ASMFILES := $(wildcard kernel/*/*.asm)
-OBJECTS := $(CFILES:.c=.o) $(ASMFILES:.asm=.o)
-DEPENDS := $(CFILES:.c=.d) $(ASMFILES:.asm=.o.d)
+override CFILES := $(wildcard kernel/*/*.c kernel/acpi/lai/*/*.c kernel/klibc/*/*.c)
+override ASMFILES := $(wildcard kernel/*/*.asm)
+override OBJECTS := $(CFILES:.c=.o) $(ASMFILES:.asm=.o)
+override DEPENDS := $(CFILES:.c=.d) $(ASMFILES:.asm=.o.d)
 
 .PHONY: all clean
 
