@@ -48,24 +48,15 @@ isr%1:
 
 %endmacro
 
+%define has_errcode(i) (i == 8 || (i >= 10 && i <= 14) || i == 17 || i == 21)
+
 ; Define ISRs
-isr 0
-isr 1
-isr 2
-isr 3
-isr 4
-isr 5
-isr 6
-isr 7
-error_isr 8
-isr 9
-error_isr 10
-error_isr 11
-error_isr 12
-error_isr 13
-error_isr 14
-%assign i 15
-%rep 241
+%assign i 0
+%rep 256
+%if !has_errcode(i)
 	isr i
+%else
+	error_isr i
+%endif
 %assign i i + 1
 %endrep
