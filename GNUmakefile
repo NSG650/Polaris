@@ -51,10 +51,10 @@ $(KERNEL): $(OBJECTS)
 
 -include $(DEPENDS)
 
-%.o: %.c Makefile
+%.o: %.c GNUmakefile
 	$(CC) $(CFLAGS) $(INTERNALCFLAGS) -c $< -o $@
 
-%.o: %.asm Makefile
+%.o: %.asm GNUmakefile
 	$(AS) $(ASFLAGS) -f elf64 $< -o $@
 
 clean:
