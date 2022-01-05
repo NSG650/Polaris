@@ -17,10 +17,10 @@
 #ifndef SCHED_TYPES
 #define SCHED_TYPES
 
+#include "../mm/vmm.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include "../mm/vmm.h"
 
 struct cpu_context {
 	uint64_t r15;

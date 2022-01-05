@@ -19,11 +19,11 @@
  */
 
 #include "../sched/scheduler.h"
+#include "../sys/gdt.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stivale2.h>
-#include "../sys/gdt.h"
 
 struct cpu_local {
 	uint64_t cpu_number;

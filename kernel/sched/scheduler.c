@@ -17,9 +17,9 @@
 #include "scheduler.h"
 #include "../cpu/apic.h"
 #include "../cpu/cpu.h"
+#include "../kernel/panic.h"
 #include "../klibc/lock.h"
 #include "../klibc/printf.h"
-#include "../kernel/panic.h"
 
 lock_t sched_lock;
 
@@ -53,7 +53,7 @@ void sched_init(void) {
 			toproc->state = RUNNING;
 			topthrd->state_t = RUNNING;
 			printf("Switching to %s\n", toproc->name);
-			if(toproc->process_pagemap == NULL)
+			if (toproc->process_pagemap == NULL)
 				PANIC("running process does not have process pagemap");
 			vmm_switch_pagemap(toproc->process_pagemap);
 			context_switch(&this_cpu->cpu_state->scheduler, topthrd->context);

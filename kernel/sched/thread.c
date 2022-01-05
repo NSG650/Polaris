@@ -16,13 +16,13 @@
 
 #include "thread.h"
 #include "../cpu/apic.h"
+#include "../cpu/cpu.h"
 #include "../kernel/panic.h"
 #include "../klibc/lock.h"
 #include "../klibc/printf.h"
-#include "scheduler.h"
 #include "../mm/pmm.h"
+#include "scheduler.h"
 #include <cpuid.h>
-#include "../cpu/cpu.h"
 
 static uint32_t nextid = 1;
 lock_t thread_lock;
@@ -30,18 +30,19 @@ lock_t thread_lock;
 struct thread *alloc_new_thread(void) {
 	struct thread *thrd = kmalloc(sizeof(struct thread));
 	LOCK(thread_lock);
-	if(running_proc()->pid < 1)
+	if (running_proc()->pid < 1)
 		thrd->tstack = kmalloc(TSTACK_SIZE);
 	else {
 		thrd->tstack = pmm_allocz(TSTACK_SIZE / PAGE_SIZE);
 		uint32_t a = 0, b = 0, c = 0, d = 0;
 		if (__get_cpuid(0x80000001, &a, &b, &c, &d)) {
-			for(uintptr_t p = 0; p < TSTACK_SIZE; p += PAGE_SIZE) {
+			for (uintptr_t p = 0; p < TSTACK_SIZE; p += PAGE_SIZE) {
 				if (d & CPUID_GBPAGE) {
-					vmm_map_page(running_proc()->process_pagemap, p, (uint64_t)thrd->tstack + p, 0b11, false, true);
-				}
-				else {
-					vmm_map_page(running_proc()->process_pagemap, p, (uint64_t)thrd->tstack + p, 0b11, true, false);
+					vmm_map_page(running_proc()->process_pagemap, p,
+								 (uint64_t)thrd->tstack + p, 0b11, false, true);
+				} else {
+					vmm_map_page(running_proc()->process_pagemap, p,
+								 (uint64_t)thrd->tstack + p, 0b11, true, false);
 				}
 			}
 		}

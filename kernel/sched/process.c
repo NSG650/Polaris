@@ -53,7 +53,7 @@ void process_create(char *name, uintptr_t addr, uint64_t args,
 	proc->timeslice = 2;
 	proc->killed = false;
 	proc->priority = priority;
-	proc->process_pagemap  = vmm_new_pagemap();
+	proc->process_pagemap = vmm_new_pagemap();
 	vec_init(&proc->ttable);
 	LOCK(process_lock);
 	thread_init(addr, args, proc);
