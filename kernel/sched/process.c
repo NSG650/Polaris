@@ -134,6 +134,12 @@ void process_exit(void) {
 	}
 	if (proc->parent->state == BLOCKED && proc->parent->block_on == ON_WAIT)
 		process_unblock(proc->parent);
+	for(int i = 0; i < proc->ttable.length; i++) {
+		if (proc->ttable.data[i]->state_t != TERMINATED) {
+			kfree(proc->ttable.data[i]->tstack);
+			proc->ttable.data[i]->state_t = TERMINATED;
+		}
+	}
 	for (int i = 0; i < ptable.length; i++) {
 		struct process *child = ptable.data[i];
 		if (child->parent == proc) {
@@ -142,8 +148,10 @@ void process_exit(void) {
 				process_unblock(initproc);
 		}
 	}
-
 	proc->state = TERMINATED;
+	vec_clear(&proc->ttable);
+	vec_deinit(&proc->ttable);
+	kfree(proc);
 	yield_to_scheduler();
 }
 

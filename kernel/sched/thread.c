@@ -98,6 +98,7 @@ inline void thread_unblock(struct thread *thrd) {
 
 void thread_exit(uint64_t return_val) {
 	struct thread *thrd = running_thrd();
+	kfree(thrd->tstack);
 	if (thrd->state_t == BLOCKED && thrd->block_t == ON_WAIT)
 		thread_unblock(thrd);
 	thrd->state_t = TERMINATED;
@@ -106,6 +107,7 @@ void thread_exit(uint64_t return_val) {
 		running_proc()->return_code = (uint8_t)thrd->return_val;
 		process_exit();
 	}
+	vec_remove(&running_proc()->ttable, thrd);
 	yield_to_scheduler();
 }
 
