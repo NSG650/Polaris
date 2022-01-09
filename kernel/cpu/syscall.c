@@ -24,8 +24,9 @@
 extern void syscall_handle(void);
 
 void syscall_handler(registers_t *reg) {
-	printf("syscall invoked!\nRAX: %llx\nRDI: %llx\nRSI: %llx\nRDX: %llx\n",
-		   reg->rax, reg->rdi, reg->rsi, reg->rdx);
+	printf("syscall invoked!\nRAX: %llx\nRDI: %llx\nRSI: %llx\nRDX: %llx\n"
+		   "SS: %llx\nCS: %llx\n",
+		   reg->rax, reg->rdi, reg->rsi, reg->rdx, reg->ss, reg->cs);
 }
 
 void syscall_init(void) {
