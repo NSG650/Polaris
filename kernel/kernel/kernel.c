@@ -77,14 +77,13 @@ void *stivale2_get_tag(struct stivale2_struct *stivale2_struct, uint64_t id) {
 extern void user_switch(uintptr_t user_addr);
 
 void user_halt(void) {
-	// asm("syscall");
+	asm("syscall");
 	for(;;)
 		;
 }
 
 void user_test_shit(uintptr_t user_addr) {
 	printf("\n[*] Got user addr at %p\n", user_addr);
-	asm("cli");
 	user_switch(user_addr);
 	thread_exit(0);
 }
@@ -117,8 +116,8 @@ void kernel_main(struct stivale2_struct *stivale2_struct) {
 	char *buf = kmalloc(st->st_size);
 	res->read(res, buf, 0, st->st_size);
 	printf("Reading /root/initramfs.txt: %s\n", buf);
-	// load_elf("/root/test");
-	thread_create((uintptr_t)user_test_shit, (uintptr_t)user_halt);
+	load_elf("/root/test");
+	thread_create((uintptr_t)user_halt, 0x650650);
 	for (;;)
 		asm("hlt");
 }
