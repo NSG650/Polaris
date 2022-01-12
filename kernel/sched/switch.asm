@@ -21,4 +21,6 @@ context_switch:
 	mov [rdi], rsp
 	mov rsp, rsi
 	popall
+	pop rbp
+	leaveq
 	ret
