@@ -56,7 +56,7 @@ struct thread *alloc_new_thread(void) {
 	sp -= sizeof(struct cpu_context);
 	thrd->context = (struct cpu_context *)sp;
 	memset(thrd->context, 0, sizeof(struct cpu_context));
-	thrd->context->rsp = (uint64_t)(thrd->tstack - TSTACK_SIZE);
+	thrd->context->rsp = (uint64_t)(thrd->tstack + TSTACK_SIZE);
 	return thrd;
 }
 
