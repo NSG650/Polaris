@@ -31,6 +31,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdnoreturn.h>
 
 static bool use_xsdt;
 static struct rsdt *rsdt;
@@ -135,7 +136,7 @@ void laihost_log(int level, const char *msg) {
 	}
 }
 
-__attribute__((noreturn)) void laihost_panic(const char *msg) {
+noreturn void laihost_panic(const char *msg) {
 	PANIC(msg);
 	__builtin_unreachable();
 }

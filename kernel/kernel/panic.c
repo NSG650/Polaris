@@ -21,8 +21,7 @@
 #include "../video/video.h"
 #include "symbols.h"
 
-__attribute__((noreturn)) void panic(const char *message, char *file,
-									 bool assert, size_t line) {
+noreturn void panic(const char *message, char *file, bool assert, size_t line) {
 	asm("cli");
 	size_t *rip = __builtin_return_address(0);
 	size_t *rbp = __builtin_frame_address(0);
@@ -50,5 +49,5 @@ __attribute__((noreturn)) void panic(const char *message, char *file,
 		rbp = (void *)old_rbp;
 	}
 	for (;;)
-		asm("cli\nhlt");
+		asm("hlt");
 }

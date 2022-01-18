@@ -134,7 +134,7 @@ void process_exit(void) {
 	}
 	if (proc->parent->state == BLOCKED && proc->parent->block_on == ON_WAIT)
 		process_unblock(proc->parent);
-	for(int i = 0; i < proc->ttable.length; i++) {
+	for (int i = 0; i < proc->ttable.length; i++) {
 		if (proc->ttable.data[i]->state_t != TERMINATED) {
 			kfree(proc->ttable.data[i]->tstack);
 			proc->ttable.data[i]->state_t = TERMINATED;

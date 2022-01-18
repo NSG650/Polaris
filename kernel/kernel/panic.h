@@ -20,9 +20,9 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdnoreturn.h>
 
-__attribute__((noreturn)) void panic(const char *message, char *file,
-									 bool assert, size_t line);
+noreturn void panic(const char *message, char *file, bool assert, size_t line);
 
 #define PANIC(b) (panic(b, __FILE__, false, __LINE__))
 #define ASSERT(b) ((b) ? (void)0 : panic(#b, __FILE__, true, __LINE__))
