@@ -33,7 +33,6 @@ struct thread *alloc_new_thread(void) {
 	if (running_proc()->pid < 1)
 		thrd->tstack = kmalloc(TSTACK_SIZE);
 	else {
-		thrd->tstack = pmm_allocz(TSTACK_SIZE / PAGE_SIZE);
 		uint32_t a = 0, b = 0, c = 0, d = 0;
 		if (__get_cpuid(0x80000001, &a, &b, &c, &d)) {
 			for (uintptr_t p = 0; p < TSTACK_SIZE; p += PAGE_SIZE) {
@@ -57,6 +56,7 @@ struct thread *alloc_new_thread(void) {
 	sp -= sizeof(struct cpu_context);
 	thrd->context = (struct cpu_context *)sp;
 	memset(thrd->context, 0, sizeof(struct cpu_context));
+	thrd->context->rsp = (uint64_t)(thrd->tstack + TSTACK_SIZE);
 	return thrd;
 }
 
@@ -98,6 +98,7 @@ inline void thread_unblock(struct thread *thrd) {
 
 void thread_exit(uint64_t return_val) {
 	struct thread *thrd = running_thrd();
+	kfree(thrd->tstack);
 	if (thrd->state_t == BLOCKED && thrd->block_t == ON_WAIT)
 		thread_unblock(thrd);
 	thrd->state_t = TERMINATED;
@@ -106,6 +107,7 @@ void thread_exit(uint64_t return_val) {
 		running_proc()->return_code = (uint8_t)thrd->return_val;
 		process_exit();
 	}
+	vec_remove(&running_proc()->ttable, thrd);
 	yield_to_scheduler();
 }
 
