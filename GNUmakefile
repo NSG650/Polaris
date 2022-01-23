@@ -1,8 +1,3 @@
-# This is a Makefile meant for GNU Make. Assert that
-ifneq (,)
-This makefile requires GNU Make.
-endif
-
 # Name of the final executable
 override KERNEL := polaris.elf
 
