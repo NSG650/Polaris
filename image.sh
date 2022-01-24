@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 unmount_and_exit() {
 	if [[ "$OSTYPE" == "darwin"* ]]; then
