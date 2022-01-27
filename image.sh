@@ -27,7 +27,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 	# Image creation
 	echo ""
 	echo "==> Creating a .dmg file (limitation from hdiutil), FAT32, 64MB..."
-	hdiutil create -layout GPTSPUD -size 64m -fs FAT32 -volname d polaris.dmg
+	hdiutil create -layout GPTSPUD -size 64m -fs FAT32 -volname Polaris polaris.dmg
 	echo ""
 	echo "==> Renaming .dmg to .hdd..."
 	mv polaris.dmg polaris.hdd
