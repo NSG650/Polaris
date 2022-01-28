@@ -1,3 +1,7 @@
+#include <asm/asm.h>
+#include <debug/debug.h>
+#include <fb/fb.h>
+#include <serial/serial.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stivale2.h>
@@ -37,6 +41,26 @@ void *stivale2_get_tag(struct stivale2_struct *stivale2_struct, uint64_t id) {
 }
 
 void arch_entry(struct stivale2_struct *stivale2_struct) {
-	for (;;)
-		asm("cli\nhlt");
+	serial_puts("Hello World\n");
+	serial_puts("This is another line\n");
+	struct framebuffer fb;
+	struct stivale2_struct_tag_framebuffer *fb_tag =
+		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_FRAMEBUFFER_ID);
+	fb.address = (uint8_t *)fb_tag->framebuffer_addr;
+	fb.pitch = fb_tag->framebuffer_pitch;
+	fb.bpp = fb_tag->framebuffer_bpp;
+	fb.width = fb_tag->framebuffer_width;
+	fb.height = fb_tag->framebuffer_height;
+	fb.tex_color = 0xffffff;
+	fb.tex_x = 0;
+	fb.tex_y = 0;
+	framebuffer_init(&fb);
+	framebuffer_puts("Hello World\n");
+	framebuffer_puts("This is another line\n");
+	kprintf("printf test: %s\n", "funny");
+	kprintf("location of kputs: %x\n", kputs);
+	for (;;) {
+		cli();
+		halt();
+	}
 }

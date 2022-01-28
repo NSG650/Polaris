@@ -7,12 +7,12 @@ endif
 
 KERNEL := Polaris
 
-CARCHFILES  	:= $(wildcard arch/$(CONFIG_ARCH)/*/*.c)
+CARCHFILES  := $(wildcard arch/$(CONFIG_ARCH)/*/*.c)
 CFILES		:= $(wildcard */*.c)
 ASMFILES	:= $(wildcard arch/$(CONFIG_ARCH)/*/*.asm)
 SFILES		:= $(wildcard arch/$(CONFIG_ARCH)/*/*.S)
-OBJ         	:= $(CARCHFILES:.c=.o) $(CFILES:.c=.o) $(ASMFILES:.asm=.o) $(SFILES:.S=.o)
-HEADER_DEPS 	:= $(CARCHFILES:.c=.d) $(CFILES:.c=.d) $(ASMFILES:.asm=.d) $(SFILES:.S=.d)
+OBJ         := $(CARCHFILES:.c=.o) $(CFILES:.c=.o) $(ASMFILES:.asm=.o) $(SFILES:.S=.o)
+HEADER_DEPS := $(CARCHFILES:.c=.d) $(CFILES:.c=.d) $(ASMFILES:.asm=.d) $(SFILES:.S=.d)
 
 ifeq ($(CONFIG_ARCH),x86_64)
 	CC := x86_64-elf-gcc
