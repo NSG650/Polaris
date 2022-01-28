@@ -114,3 +114,5 @@ GitHub.sublime-settings
 
 limine/
 .idea/
+
+*.iso
