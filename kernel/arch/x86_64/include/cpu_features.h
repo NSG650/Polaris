@@ -1,5 +1,5 @@
-#ifndef MEM_H
-#define MEM_H
+#ifndef CPU_FEATURES_H
+#define CPU_FEATURES_H
 
 /*
  * Copyright 2021, 2022 NSG650
@@ -19,15 +19,12 @@
  */
 
 
-#include <stddef.h>
-
-#define memcpy __builtin_memcpy
-#define memcmp __builtin_memcmp
-#define memset __builtin_memset
-#define memzero(a, b) memset(a, 0, b)
-
-void *memmove(void *dest, const void *src, size_t n);
-void strcpy(char *dest, char *src);
-size_t strlen(char *string);
+#define CPUID_INVARIANT_TSC (1 << 8)
+#define CPUID_TSC_DEADLINE (1 << 24)
+#define CPUID_SMEP (1 << 7)
+#define CPUID_SMAP (1 << 20)
+#define CPUID_UMIP (1 << 2)
+#define CPUID_X2APIC (1 << 21)
+#define CPUID_GBPAGE (1 << 26)
 
 #endif

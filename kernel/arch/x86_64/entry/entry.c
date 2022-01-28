@@ -1,3 +1,21 @@
+/*
+ * Copyright 2021, 2022 NSG650
+ * Copyright 2021, 2022 Sebastian
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
 #include <asm/asm.h>
 #include <debug/debug.h>
 #include <fb/fb.h>
@@ -5,6 +23,9 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stivale2.h>
+#include <klibc/mem.h>
+#include <mm/pmm.h>
+#include <mm/vmm.h>
 
 static uint8_t stack[32768];
 static struct stivale2_header_tag_smp smp_hdr_tag = {
@@ -43,6 +64,18 @@ void *stivale2_get_tag(struct stivale2_struct *stivale2_struct, uint64_t id) {
 void arch_entry(struct stivale2_struct *stivale2_struct) {
 	serial_puts("Hello World\n");
 	serial_puts("This is another line\n");
+	struct stivale2_struct_tag_memmap *memmap_tag =
+		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MEMMAP_ID);
+	pmm_init((void *)memmap_tag->memmap, memmap_tag->entries);
+	struct stivale2_struct_tag_pmrs *pmrs_tag =
+		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_PMRS_ID);
+	struct stivale2_struct_tag_kernel_base_address *kernel_base_tag =
+		stivale2_get_tag(stivale2_struct,
+						 STIVALE2_STRUCT_TAG_KERNEL_BASE_ADDRESS_ID);
+	vmm_init((void *)memmap_tag->memmap, memmap_tag->entries,
+			 (void *)pmrs_tag->pmrs, pmrs_tag->entries,
+			 kernel_base_tag->virtual_base_address,
+			 kernel_base_tag->physical_base_address);
 	struct framebuffer fb;
 	struct stivale2_struct_tag_framebuffer *fb_tag =
 		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_FRAMEBUFFER_ID);
@@ -59,6 +92,12 @@ void arch_entry(struct stivale2_struct *stivale2_struct) {
 	framebuffer_puts("This is another line\n");
 	kprintf("printf test: %s\n", "funny");
 	kprintf("location of kputs: %x\n", kputs);
+	char *x = pmm_allocz(10);
+	kprintf("memory located for x at %p\n", x);
+	strcpy(x, "ABCDEFGHI");
+	kprintf("x: %s\n", x);
+	kprintf("freeing x\n", x);
+	pmm_free(x, 10);
 	for (;;) {
 		cli();
 		halt();
