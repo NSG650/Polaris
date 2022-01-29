@@ -61,7 +61,7 @@ static void kprintf_(char *fmt, va_list args) {
 				kputs(string);
 			}
 			if (*fmt == 'd') {
-				char string[21];
+				char string[21] = {0};
 				uint64_t number = va_arg(args, size_t);
 				for (int i = 20; i > 0;) {
 					string[--i] = number % 10 + '0';

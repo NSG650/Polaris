@@ -27,6 +27,7 @@
 #include <mm/pmm.h>
 #include <mm/vmm.h>
 #include <mem/liballoc.h>
+#include <klibc/dynarray.h>
 
 static uint8_t stack[32768];
 static struct stivale2_header_tag_smp smp_hdr_tag = {
@@ -63,8 +64,6 @@ void *stivale2_get_tag(struct stivale2_struct *stivale2_struct, uint64_t id) {
 }
 
 void arch_entry(struct stivale2_struct *stivale2_struct) {
-	serial_puts("Hello World\n");
-	serial_puts("This is another line\n");
 	struct stivale2_struct_tag_memmap *memmap_tag =
 		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MEMMAP_ID);
 	pmm_init((void *)memmap_tag->memmap, memmap_tag->entries);
@@ -89,16 +88,30 @@ void arch_entry(struct stivale2_struct *stivale2_struct) {
 	fb.tex_x = 0;
 	fb.tex_y = 0;
 	framebuffer_init(&fb);
-	framebuffer_puts("Hello World\n");
-	framebuffer_puts("This is another line\n");
-	kprintf("printf test: %s\n", "funny");
-	kprintf("location of kputs: %x\n", kputs);
 	char *x = kmalloc(10);
 	kprintf("memory located for x at %p\n", x);
 	strcpy(x, "ABCDEFGHI");
 	kprintf("x: %s\n", x);
 	kprintf("freeing x\n", x);
 	kfree(x);
+	kprintf("Dynamic array test\n");
+	dynarray_struct(int) funny = {0};
+	dynarray_init(funny, 10);
+	kprintf("Adding data to dynarray\n");
+	for(int i = 0; i < 11; i++)
+		dynarray_push(funny, i);
+	for(int i = 0; i < funny.length; i++)
+		kprintf("funny.storage[%d]: %d\n", i, funny.storage[i]);
+	kprintf("Adding more data\n");
+	dynarray_push(funny, 650);
+	for(int i = 0; i < funny.length; i++)
+		kprintf("funny.storage[%d]: %d\n", i, funny.storage[i]);
+	dynarray_remove_by_value(funny, 5);
+	kprintf("Deleting the number 5 value\n");
+	for(int i = 0; i < funny.length; i++)
+		kprintf("funny.storage[%d]: %d\n", i, funny.storage[i]);
+	kprintf("Deleting dynarray\n");
+	dynarray_delete(funny);
 	for (;;) {
 		cli();
 		halt();
