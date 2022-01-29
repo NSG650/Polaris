@@ -88,30 +88,7 @@ void arch_entry(struct stivale2_struct *stivale2_struct) {
 	fb.tex_x = 0;
 	fb.tex_y = 0;
 	framebuffer_init(&fb);
-	char *x = kmalloc(10);
-	kprintf("memory located for x at %p\n", x);
-	strcpy(x, "ABCDEFGHI");
-	kprintf("x: %s\n", x);
-	kprintf("freeing x\n", x);
-	kfree(x);
-	kprintf("Dynamic array test\n");
-	dynarray_struct(int) funny = {0};
-	dynarray_init(funny, 10);
-	kprintf("Adding data to dynarray\n");
-	for(int i = 0; i < 11; i++)
-		dynarray_push(funny, i);
-	for(int i = 0; i < funny.length; i++)
-		kprintf("funny.storage[%d]: %d\n", i, funny.storage[i]);
-	kprintf("Adding more data\n");
-	dynarray_push(funny, 650);
-	for(int i = 0; i < funny.length; i++)
-		kprintf("funny.storage[%d]: %d\n", i, funny.storage[i]);
-	dynarray_remove_by_value(funny, 5);
-	kprintf("Deleting the number 5 value\n");
-	for(int i = 0; i < funny.length; i++)
-		kprintf("funny.storage[%d]: %d\n", i, funny.storage[i]);
-	kprintf("Deleting dynarray\n");
-	dynarray_delete(funny);
+	kprintf("Hello x86_64!\n");
 	for (;;) {
 		cli();
 		halt();
