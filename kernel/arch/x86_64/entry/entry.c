@@ -26,6 +26,7 @@
 #include <klibc/mem.h>
 #include <mm/pmm.h>
 #include <mm/vmm.h>
+#include <mem/liballoc.h>
 
 static uint8_t stack[32768];
 static struct stivale2_header_tag_smp smp_hdr_tag = {
@@ -92,12 +93,12 @@ void arch_entry(struct stivale2_struct *stivale2_struct) {
 	framebuffer_puts("This is another line\n");
 	kprintf("printf test: %s\n", "funny");
 	kprintf("location of kputs: %x\n", kputs);
-	char *x = pmm_allocz(10);
+	char *x = kmalloc(10);
 	kprintf("memory located for x at %p\n", x);
 	strcpy(x, "ABCDEFGHI");
 	kprintf("x: %s\n", x);
 	kprintf("freeing x\n", x);
-	pmm_free(x, 10);
+	kfree(x);
 	for (;;) {
 		cli();
 		halt();
