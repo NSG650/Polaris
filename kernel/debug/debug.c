@@ -1,7 +1,3 @@
-#include <stdarg.h>
-#include <stddef.h>
-#include <stdint.h>
-
 /*
  * Copyright 2021, 2022 NSG650
  * Copyright 2021, 2022 Sebastian
@@ -20,6 +16,11 @@
  */
 
 
+#include <stdarg.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <asm/asm.h>
+#include <sys/halt.h>
 #include <debug/debug.h>
 #include <fb/fb.h>
 
@@ -85,4 +86,17 @@ void kprintf(char *fmt, ...) {
 	va_start(args, fmt);
 	kprintf_(fmt, args);
 	va_end(args);
+}
+
+
+void panic(char *fmt, ...) {
+	kprintf("*** PANIC: ");
+	va_list args;
+	va_start(args, fmt);
+	kprintf_(fmt, args);
+	va_end(args);
+	halt_other_cpus();
+	halt_cpu0();
+	halt_current_cpu();
+	__builtin_unreachable();
 }

@@ -28,6 +28,8 @@
 #include <mm/vmm.h>
 #include <mem/liballoc.h>
 #include <klibc/dynarray.h>
+#include <sys/isr.h>
+#include <sys/gdt.h>
 
 static uint8_t stack[32768];
 static struct stivale2_header_tag_smp smp_hdr_tag = {
@@ -64,6 +66,7 @@ void *stivale2_get_tag(struct stivale2_struct *stivale2_struct, uint64_t id) {
 }
 
 void arch_entry(struct stivale2_struct *stivale2_struct) {
+	gdt_init();
 	struct stivale2_struct_tag_memmap *memmap_tag =
 		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MEMMAP_ID);
 	pmm_init((void *)memmap_tag->memmap, memmap_tag->entries);
@@ -89,6 +92,7 @@ void arch_entry(struct stivale2_struct *stivale2_struct) {
 	fb.tex_y = 0;
 	framebuffer_init(&fb);
 	kprintf("Hello x86_64!\n");
+	isr_install();
 	for (;;) {
 		cli();
 		halt();

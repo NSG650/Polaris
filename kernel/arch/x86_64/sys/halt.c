@@ -1,3 +1,6 @@
+#include <sys/halt.h>
+#include <asm/asm.h>
+
 /*
  * Copyright 2021, 2022 NSG650
  * Copyright 2021, 2022 Sebastian
@@ -16,18 +19,25 @@
  */
 
 
-#ifndef DEBUG_H
-#define DEBUG_H
+void halt_current_cpu(void) {
+	for(;;) {
+		cli();
+		halt();
+	}
+}
 
-#if defined(__x86_64__)
-#include "../../arch/x86_64/include/serial/serial.h"
-#define kputs_ serial_puts
-#define kputchar_ serial_putchar
-#endif
+void halt_other_cpus(void) {
+	// Unimplemented till SMP
+	for(;;) {
+		cli();
+		halt();
+	}
+}
 
-void kputchar(char c);
-void kputs(char *string);
-void kprintf(char *fmt, ...);
-void panic(char *fmt, ...);
-
-#endif
+void halt_cpu0(void) {
+	// Unimplemented till SMP
+	for(;;) {
+		cli();
+		halt();
+	}
+}
