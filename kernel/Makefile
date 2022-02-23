@@ -18,9 +18,10 @@ ifeq ($(CONFIG_ARCH),x86_64)
 	CC := x86_64-elf-gcc
 	AS := nasm
 	LD := x86_64-elf-gcc
-	CFLAGS  := -Wall -Wextra -O0 -g -pipe -I include/ -I arch/$(CONFIG_ARCH)/include/
+	CFLAGS  := -Wall -Wextra -O0 -g -pipe -I include/ -I arch/$(CONFIG_ARCH)/include/ -I arch/$(CONFIG_ARCH)/fw/lai/include
 	LDFLAGS :=
 	ASFLAGS := -g -MD -MP
+	CARCHFILES += $(wildcard arch/$(CONFIG_ARCH)/fw/lai/*/*.c)
 	INTERNALLDFLAGS :=         			\
 		-T arch/$(CONFIG_ARCH)/linker.ld	\
 		-nostdlib              			\
