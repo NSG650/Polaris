@@ -18,6 +18,7 @@
 
 #include <debug/debug.h>
 #include <fw/acpi.h>
+#include <fw/madt.h>
 #include <io/pci.h>
 #include <klibc/mem.h>
 #include <lai/core.h>
@@ -25,7 +26,6 @@
 #include <mm/vmm.h>
 #include <stdbool.h>
 #include <sys/hpet.h>
-#include <fw/madt.h>
 
 bool use_xsdt;
 struct rsdt *rsdt;

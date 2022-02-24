@@ -1,6 +1,6 @@
-#include <fw/madt.h>
-#include <debug/debug.h>
 #include <asm/asm.h>
+#include <debug/debug.h>
+#include <fw/madt.h>
 
 struct madt *madt;
 
@@ -22,24 +22,23 @@ void madt_init(void) {
 	madt_nmis = vector_create();
 
 	madt = acpi_find_sdt("APIC", 0);
-	if(!madt)
+	if (!madt)
 		panic("Unable to find MADT table\n");
 	lapic_addr = madt->local_controller_addr;
 	kprintf("MADT: MADT at %p\n", madt);
-	for(uint8_t *madt_ptr = (uint8_t *)madt->madt_entries_begin;
+	for (uint8_t *madt_ptr = (uint8_t *)madt->madt_entries_begin;
 		 (uintptr_t)madt_ptr < (uintptr_t)madt + madt->sdt.length;
 		 madt_ptr += *(madt_ptr + 1)) {
 		switch (*(madt_ptr)) {
 			case 0:
 				// Processor local APIC
 				kprintf("MADT: Got local APIC 0x%p\n",
-					   vector_size(madt_local_apics));
+						vector_size(madt_local_apics));
 				vector_add(&madt_local_apics, (void *)madt_ptr);
 				break;
 			case 1:
 				// I/O APIC
-				kprintf("MADT: Got IO APIC 0x%p\n",
-					   vector_size(madt_io_apics));
+				kprintf("MADT: Got IO APIC 0x%p\n", vector_size(madt_io_apics));
 				vector_add(&madt_io_apics, (void *)madt_ptr);
 				break;
 			case 2:
