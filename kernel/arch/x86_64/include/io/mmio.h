@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+#include <stdint.h>
+
 void outmmb(void *addr, uint8_t value);
 void outmmw(void *addr, uint16_t value);
 void outmmdw(void *addr, uint32_t value);
