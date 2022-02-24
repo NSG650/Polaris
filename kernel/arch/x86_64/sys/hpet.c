@@ -12,7 +12,7 @@ static bool timer_installed_b = false;
 void hpet_init(void) {
 	hpet_table = acpi_find_sdt("HPET", 0);
 	if (!hpet_table) {
-		panic("HPET: Polaris requires a HPET to be installed");
+		panic("HPET: Polaris requires a HPET to be installed\n");
 		__builtin_unreachable();
 	}
 	hpet = (struct hpet *)(hpet_table->address.base + MEM_PHYS_OFFSET);

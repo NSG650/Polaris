@@ -26,6 +26,7 @@
 #include <sys/timer.h>
 
 lock_t write_lock;
+bool in_panic = false;
 
 void kputchar(char c) {
 	spinlock_acquire(write_lock);
@@ -44,22 +45,26 @@ void kputs(char *string) {
 }
 
 static void kprintf_(char *fmt, va_list args) {
-	uint64_t timer_tick = 0;
-	if (timer_installed()) {
-		timer_tick = timer_count();
+	if (in_panic) {
+		kputs("*** PANIC:\t");
+	} else {
+		uint64_t timer_tick = 0;
+		if (timer_installed()) {
+			timer_tick = timer_count();
+		}
+		char string[21] = {0};
+		for (int i = 20; i > 0;) {
+			string[--i] = timer_tick % 10 + '0';
+			timer_tick /= 10;
+		}
+		size_t counter = 0;
+		while (string[counter] == '0' && counter < 19) {
+			counter++;
+		}
+		kputs("[");
+		kputs(&string[counter]);
+		kputs("] ");
 	}
-	char string[21] = {0};
-	for (int i = 20; i > 0;) {
-		string[--i] = timer_tick % 10 + '0';
-		timer_tick /= 10;
-	}
-	size_t counter = 0;
-	while (string[counter] == '0' && counter < 19) {
-		counter++;
-	}
-	kputs("[");
-	kputs(&string[counter]);
-	kputs("] ");
 	while (*fmt) {
 		if (*fmt == '%') {
 			fmt++;
@@ -112,11 +117,24 @@ void kprintf(char *fmt, ...) {
 }
 
 void panic(char *fmt, ...) {
-	kputs("*** PANIC: ");
+	in_panic = true;
 	va_list args;
 	va_start(args, fmt);
 	kprintf_(fmt, args);
 	va_end(args);
+	size_t *rip = __builtin_return_address(0);
+	size_t *rbp = __builtin_frame_address(0);
+	kprintf("Stack trace:\n");
+	for (;;) {
+		size_t old_rbp = rbp[0];
+		size_t ret_address = rbp[1];
+		if (!ret_address)
+			break;
+		kprintf("0x%p\n", ret_address);
+		if (!old_rbp)
+			break;
+		rbp = (void *)old_rbp;
+	}
 	halt_other_cpus();
 	halt_cpu0();
 	halt_current_cpu();
