@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 #include <io/ports.h>
 #include <serial/serial.h>
 #include <stdbool.h>

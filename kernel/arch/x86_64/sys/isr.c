@@ -298,11 +298,10 @@ static const char *isr_exception_messages[] = {"Divide by zero",
 											   "Triple Fault",
 											   "FPU error"};
 
-
 static event_handlers_t event_handlers[256] = {NULL};
 
-void isr_handle(registers_t* r) {
-	if(r->isrNumber < 32) {
+void isr_handle(registers_t *r) {
+	if (r->isrNumber < 32) {
 		panic("Unhandled Exception: %s", isr_exception_messages[r->isrNumber]);
 	}
 	if (event_handlers[r->isrNumber] != NULL)

@@ -20,7 +20,6 @@
  * limitations under the License.
  */
 
-
 uint8_t framebuffer_font[4096] = {
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -395,10 +394,11 @@ void framebuffer_putpx(int x, int y, uint32_t color, bool fob) {
 	spinlock_acquire(framebuff_lock);
 	if (!framebuffer_initialised)
 		return;
-	if(fob)
+	if (fob)
 		framebuff.address[y * (framebuff.pitch / sizeof(uint32_t)) + x] = color;
 	else
-		framebuff.back_address[y * (framebuff.pitch / sizeof(uint32_t)) + x] = color;
+		framebuff.back_address[y * (framebuff.pitch / sizeof(uint32_t)) + x] =
+			color;
 	spinlock_drop(framebuff_lock);
 }
 
@@ -412,7 +412,8 @@ void framebuffer_swap(struct framebuffer *fb) {
 
 void framebuffer_clear(uint32_t color) {
 	framebuff.bg_color = color;
-	for (size_t i = 0; i < framebuff.width * framebuff.pitch / sizeof(uint32_t); i++)
+	for (size_t i = 0; i < framebuff.width * framebuff.pitch / sizeof(uint32_t);
+		 i++)
 		framebuff.back_address[i] = color;
 	framebuff.tex_x = 0;
 	framebuff.tex_y = 0;
@@ -420,10 +421,12 @@ void framebuffer_clear(uint32_t color) {
 }
 
 void framebuffer_scroll(void) {
-	if(framebuff.tex_y * ISO_CHAR_HEIGHT >= framebuff.height) {
+	if (framebuff.tex_y * ISO_CHAR_HEIGHT >= framebuff.height) {
 		framebuff.tex_y--;
 		size_t row_size = framebuff.pitch * ISO_CHAR_HEIGHT / sizeof(uint32_t);
-		size_t screen_size = framebuff.pitch * ISO_CHAR_HEIGHT * (framebuff.height / ISO_CHAR_HEIGHT) / sizeof(uint32_t);
+		size_t screen_size = framebuff.pitch * ISO_CHAR_HEIGHT *
+							 (framebuff.height / ISO_CHAR_HEIGHT) /
+							 sizeof(uint32_t);
 		for (size_t i = 0; i < screen_size - row_size; i++) {
 			framebuff.address[i] = framebuff.address[i + row_size];
 			framebuff.address[i + row_size] = framebuff.bg_color;
@@ -441,8 +444,8 @@ static void framebuffer_putc(char c, int x, int y) {
 			if (line & (1 << (8 - y_bit - 1))) {
 				if (framebuff.width * framebuff.height >
 					(y + x_bit) * framebuff.width + x + y_bit)
-					framebuffer_putpx(x + y_bit, y + x_bit,
-									  framebuff.tex_color, 1);
+					framebuffer_putpx(x + y_bit, y + x_bit, framebuff.tex_color,
+									  1);
 			}
 		}
 	}

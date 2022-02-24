@@ -17,7 +17,6 @@
  * limitations under the License.
  */
 
-
 void strcpy(char *dest, char *src) {
 	for (; (*dest = *src); src++, dest++)
 		;

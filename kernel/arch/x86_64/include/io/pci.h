@@ -19,8 +19,8 @@
 #define PCI_H
 
 #include <fw/acpi.h>
-#include <stdint.h>
 #include <klibc/vec.h>
+#include <stdint.h>
 
 struct mcfg_entry {
 	uint64_t base;

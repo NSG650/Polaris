@@ -1,8 +1,8 @@
-#include <io/pci.h>
+#include <debug/debug.h>
 #include <io/mmio.h>
+#include <io/pci.h>
 #include <io/ports.h>
 #include <mm/vmm.h>
-#include <debug/debug.h>
 
 struct mcfg_entry *mcfg_entries;
 
@@ -10,7 +10,6 @@ static uint32_t (*internal_read)(uint16_t, uint8_t, uint8_t, uint8_t, uint16_t,
 								 uint8_t);
 static void (*internal_write)(uint16_t, uint8_t, uint8_t, uint8_t, uint16_t,
 							  uint32_t, uint8_t);
-
 
 static uint32_t make_pci_address(uint32_t bus, uint32_t slot, uint32_t function,
 								 uint16_t offset) {
@@ -57,7 +56,6 @@ static void legacy_pci_write(uint16_t seg, uint8_t bus, uint8_t slot,
 	}
 }
 
-
 static uint32_t mcfg_pci_read(uint16_t seg, uint8_t bus, uint8_t slot,
 							  uint8_t function, uint16_t offset,
 							  uint8_t access_size) {
@@ -93,8 +91,8 @@ static uint32_t mcfg_pci_read(uint16_t seg, uint8_t bus, uint8_t slot,
 		}
 	}
 
-	kprintf("PCI: Tried to read from nonexistent device, %x:%x:%x:%x\n",
-		   seg, bus, slot, function);
+	kprintf("PCI: Tried to read from nonexistent device, %x:%x:%x:%x\n", seg,
+			bus, slot, function);
 	return 0;
 }
 
@@ -137,8 +135,8 @@ static void mcfg_pci_write(uint16_t seg, uint8_t bus, uint8_t slot,
 		}
 	}
 
-	kprintf("PCI: Tried to write to nonexistent device, %x:%x:%x:%x\n",
-		   seg, bus, slot, function);
+	kprintf("PCI: Tried to write to nonexistent device, %x:%x:%x:%x\n", seg,
+			bus, slot, function);
 }
 
 void pci_init(void) {

@@ -17,7 +17,6 @@
  * limitations under the License.
  */
 
-
 void halt(void) {
 	asm("hlt");
 }

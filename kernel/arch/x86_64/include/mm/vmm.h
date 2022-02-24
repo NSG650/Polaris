@@ -42,4 +42,3 @@ bool vmm_map_page(struct pagemap *pagemap, uint64_t virt_addr,
 				  bool gbpages);
 
 #endif
-

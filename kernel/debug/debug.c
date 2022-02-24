@@ -15,16 +15,15 @@
  * limitations under the License.
  */
 
-
+#include <asm/asm.h>
+#include <debug/debug.h>
+#include <fb/fb.h>
+#include <locks/spinlock.h>
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <asm/asm.h>
 #include <sys/halt.h>
-#include <debug/debug.h>
-#include <fb/fb.h>
 #include <sys/timer.h>
-#include <locks/spinlock.h>
 
 lock_t write_lock;
 
@@ -46,13 +45,13 @@ void kputs(char *string) {
 
 static void kprintf_(char *fmt, va_list args) {
 	uint64_t timer_tick = 0;
-	if(timer_installed()) {
+	if (timer_installed()) {
 		timer_tick = timer_count();
 	}
 	char string[21] = {0};
 	for (int i = 20; i > 0;) {
-			string[--i] = timer_tick % 10 + '0';
-			timer_tick /= 10;
+		string[--i] = timer_tick % 10 + '0';
+		timer_tick /= 10;
 	}
 	size_t counter = 0;
 	while (string[counter] == '0' && counter < 19) {
@@ -111,7 +110,6 @@ void kprintf(char *fmt, ...) {
 	kprintf_(fmt, args);
 	va_end(args);
 }
-
 
 void panic(char *fmt, ...) {
 	kputs("*** PANIC: ");

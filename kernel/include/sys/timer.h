@@ -18,8 +18,8 @@
  * limitations under the License.
  */
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 bool timer_installed(void);
 void timer_sleep(uint64_t ms);

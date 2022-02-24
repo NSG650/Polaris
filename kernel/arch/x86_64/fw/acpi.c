@@ -16,15 +16,15 @@
  * limitations under the License.
  */
 
-#include <fw/acpi.h>
-#include <stdbool.h>
-#include <klibc/mem.h>
-#include <mm/vmm.h>
 #include <debug/debug.h>
-#include <sys/hpet.h>
+#include <fw/acpi.h>
 #include <io/pci.h>
+#include <klibc/mem.h>
 #include <lai/core.h>
 #include <lai/helpers/sci.h>
+#include <mm/vmm.h>
+#include <stdbool.h>
+#include <sys/hpet.h>
 
 bool use_xsdt;
 struct rsdt *rsdt;
@@ -33,7 +33,7 @@ uint8_t revision;
 void acpi_init(acpi_xsdp_t *rsdp) {
 	kprintf("ACPI: Revision: %x\n", rsdp->revision);
 	revision = rsdp->revision;
-	if(rsdp->revision >= 2 && rsdp->xsdt) {
+	if (rsdp->revision >= 2 && rsdp->xsdt) {
 		use_xsdt = true;
 		rsdt = (struct rsdt *)((uintptr_t)rsdp->xsdt + MEM_PHYS_OFFSET);
 		kprintf("ACPI: Using XSDT at %p\n", (uintptr_t)rsdt);
@@ -58,7 +58,6 @@ static uint8_t acpi_checksum(void *ptr, size_t size) {
 		sum += _ptr[i];
 	return sum;
 }
-
 
 void *acpi_find_sdt(const char *signature, int index) {
 	int cnt = 0;

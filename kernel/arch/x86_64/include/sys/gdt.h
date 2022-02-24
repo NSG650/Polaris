@@ -18,8 +18,8 @@
  * limitations under the License.
  */
 
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #define GDT_KERNEL_BASE 0x0
 #define GDT_KERNEL_CODE64 0x8

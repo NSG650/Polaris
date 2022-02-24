@@ -1,14 +1,14 @@
-#include <fw/acpi.h>
 #include <debug/debug.h>
-#include <mem/liballoc.h>
-#include <mm/vmm.h>
+#include <fw/acpi.h>
+#include <io/pci.h>
 #include <io/ports.h>
 #include <lai/core.h>
 #include <lai/drivers/ec.h>
 #include <lai/helpers/sci.h>
 #include <lai/host.h>
+#include <mem/liballoc.h>
+#include <mm/vmm.h>
 #include <sys/hpet.h>
-#include <io/pci.h>
 
 extern uint8_t revision;
 

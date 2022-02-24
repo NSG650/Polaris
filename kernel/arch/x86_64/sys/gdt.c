@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-#include <sys/gdt.h>
 #include <klibc/mem.h>
 #include <locks/spinlock.h>
+#include <sys/gdt.h>
 
 struct gdt_desc {
 	uint16_t limit;
@@ -96,4 +96,3 @@ void gdt_load_tss(size_t addr) {
 	tss_reload();
 	spinlock_drop(gdt_lock);
 }
-

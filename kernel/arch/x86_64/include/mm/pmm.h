@@ -18,10 +18,10 @@
  * limitations under the License.
  */
 
-#include <stddef.h>
 #include <asm/asm.h>
-#include <stivale2.h>
 #include <stdbool.h>
+#include <stddef.h>
+#include <stivale2.h>
 
 static inline bool bitmap_test(void *bitmap, size_t bit) {
 	bool ret;
@@ -50,7 +50,6 @@ static inline bool bitmap_unset(void *bitmap, size_t bit) {
 	return ret;
 }
 
-
 #define DIV_ROUNDUP(A, B)        \
 	({                           \
 		typeof(A) _a_ = A;       \
@@ -71,7 +70,6 @@ static inline bool bitmap_unset(void *bitmap, size_t bit) {
 		typeof(B) _b_ = B; \
 		(_a_ / _b_) * _b_; \
 	})
-
 
 void *pmm_alloc(size_t count);
 void *pmm_allocz(size_t count);

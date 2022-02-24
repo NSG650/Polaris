@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#include <mm/pmm.h>
 #include <klibc/mem.h>
+#include <mm/pmm.h>
 #include <mm/vmm.h>
 #include <stivale2.h>
 

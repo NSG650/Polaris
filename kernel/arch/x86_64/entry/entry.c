@@ -15,21 +15,20 @@
  * limitations under the License.
  */
 
-
 #include <asm/asm.h>
 #include <debug/debug.h>
 #include <fb/fb.h>
+#include <fw/acpi.h>
+#include <klibc/mem.h>
+#include <mm/pmm.h>
+#include <mm/vmm.h>
 #include <serial/serial.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stivale2.h>
-#include <klibc/mem.h>
-#include <mm/pmm.h>
-#include <mm/vmm.h>
-#include <sys/isr.h>
 #include <sys/gdt.h>
-#include <fw/acpi.h>
 #include <sys/hpet.h>
+#include <sys/isr.h>
 
 static uint8_t stack[32768];
 static struct stivale2_header_tag_smp smp_hdr_tag = {

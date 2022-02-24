@@ -18,7 +18,6 @@
  * limitations under the License.
  */
 
-
 #include <stddef.h>
 
 #define memcpy __builtin_memcpy

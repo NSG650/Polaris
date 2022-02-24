@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 #include <asm/asm.h>
 #include <io/mmio.h>
 

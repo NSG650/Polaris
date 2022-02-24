@@ -1,9 +1,8 @@
-#include <sys/hpet.h>
 #include <debug/debug.h>
-#include <mm/vmm.h>
 #include <io/mmio.h>
+#include <mm/vmm.h>
+#include <sys/hpet.h>
 #include <sys/timer.h>
-#include <debug/debug.h>
 
 static struct hpet_table *hpet_table;
 static struct hpet *hpet;
@@ -12,13 +11,13 @@ static bool timer_installed_b = false;
 
 void hpet_init(void) {
 	hpet_table = acpi_find_sdt("HPET", 0);
-	if(!hpet_table) {
+	if (!hpet_table) {
 		panic("HPET: Polaris requires a HPET to be installed");
 		__builtin_unreachable();
 	}
 	hpet = (struct hpet *)(hpet_table->address.base + MEM_PHYS_OFFSET);
 
-	kprintf("HPET: HPET at %p\n", (void*)hpet);
+	kprintf("HPET: HPET at %p\n", (void *)hpet);
 
 	clk = hpet->general_capabilities >> 32;
 

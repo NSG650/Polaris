@@ -18,7 +18,6 @@
  * limitations under the License.
  */
 
-
 #define CPUID_INVARIANT_TSC (1 << 8)
 #define CPUID_TSC_DEADLINE (1 << 24)
 #define CPUID_SMEP (1 << 7)

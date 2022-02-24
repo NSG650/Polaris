@@ -18,7 +18,6 @@
  * limitations under the License.
  */
 
-
 #include <stdint.h>
 
 #define FLAT_PTR(PTR) (*((uintptr_t(*)[])(PTR)))

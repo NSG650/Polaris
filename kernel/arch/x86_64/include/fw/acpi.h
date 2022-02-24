@@ -1,7 +1,6 @@
 #ifndef ACPI_H
 #define ACPI_H
 
-
 /*
  * Copyright 2021, 2022 Misha
  * Copyright 2021, 2022 NSG650
@@ -20,10 +19,9 @@
  * limitations under the License.
  */
 
-
 #include <acpispec/tables.h>
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
 struct rsdt {
 	acpi_header_t header;
@@ -32,6 +30,5 @@ struct rsdt {
 
 void acpi_init(acpi_xsdp_t *rsdp);
 void *acpi_find_sdt(const char *signature, int index);
-
 
 #endif

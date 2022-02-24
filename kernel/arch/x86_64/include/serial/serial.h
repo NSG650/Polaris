@@ -18,7 +18,6 @@
  * limitations under the License.
  */
 
-
 #define COM1 0x3F8
 
 void serial_init(void);

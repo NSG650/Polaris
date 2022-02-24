@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-
-#include <mm/vmm.h>
 #include <cpu_features.h>
-#include <mm/pmm.h>
 #include <cpuid.h>
+#include <mm/pmm.h>
+#include <mm/vmm.h>
 
 struct pagemap *kernel_pagemap = NULL;
 

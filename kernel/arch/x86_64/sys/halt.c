@@ -1,5 +1,5 @@
-#include <sys/halt.h>
 #include <asm/asm.h>
+#include <sys/halt.h>
 
 /*
  * Copyright 2021, 2022 NSG650
@@ -18,9 +18,8 @@
  * limitations under the License.
  */
 
-
 void halt_current_cpu(void) {
-	for(;;) {
+	for (;;) {
 		cli();
 		halt();
 	}
@@ -28,7 +27,7 @@ void halt_current_cpu(void) {
 
 void halt_other_cpus(void) {
 	// Unimplemented till SMP
-	for(;;) {
+	for (;;) {
 		cli();
 		halt();
 	}
@@ -36,7 +35,7 @@ void halt_other_cpus(void) {
 
 void halt_cpu0(void) {
 	// Unimplemented till SMP
-	for(;;) {
+	for (;;) {
 		cli();
 		halt();
 	}
