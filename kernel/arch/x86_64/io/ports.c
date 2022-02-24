@@ -27,3 +27,23 @@ uint8_t inportb(uint16_t port) {
 	asm volatile("in %0, %1\n\t" : "=a"(ret) : "d"(port) : "memory");
 	return ret;
 }
+
+void outportw(uint16_t port, uint16_t val) {
+	asm volatile("out %0, %1\n\t" : : "d"(port), "a"(val) : "memory");
+}
+
+uint16_t inportw(uint16_t port) {
+	uint16_t ret;
+	asm volatile("in %0, %1\n\t" : "=a"(ret) : "d"(port) : "memory");
+	return ret;
+}
+
+void outportdw(uint16_t port, uint32_t val) {
+	asm volatile("out %0, %1\n\t" : : "d"(port), "a"(val) : "memory");
+}
+
+uint32_t inportdw(uint16_t port) {
+	uint32_t ret;
+	asm volatile("in %0, %1\n\t" : "=a"(ret) : "d"(port) : "memory");
+	return ret;
+}

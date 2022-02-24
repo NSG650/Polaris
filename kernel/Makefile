@@ -22,6 +22,8 @@ ifeq ($(CONFIG_ARCH),x86_64)
 	LDFLAGS :=
 	ASFLAGS := -g -MD -MP
 	CARCHFILES += $(wildcard arch/$(CONFIG_ARCH)/fw/lai/*/*.c)
+	OBJ         := $(CARCHFILES:.c=.o) $(CFILES:.c=.o) $(ASMFILES:.asm=.o) $(SFILES:.S=.o)
+	HEADER_DEPS := $(CARCHFILES:.c=.d) $(CFILES:.c=.d) $(ASMFILES:.asm=.d) $(SFILES:.S=.d)
 	INTERNALLDFLAGS :=         			\
 		-T arch/$(CONFIG_ARCH)/linker.ld	\
 		-nostdlib              			\

@@ -1,7 +1,9 @@
-#ifndef PORTS_H
-#define PORTS_H
+#ifndef ACPI_H
+#define ACPI_H
+
 
 /*
+ * Copyright 2021, 2022 Misha
  * Copyright 2021, 2022 NSG650
  * Copyright 2021, 2022 Sebastian
  *
@@ -19,14 +21,17 @@
  */
 
 
-#include <stddef.h>
+#include <acpispec/tables.h>
 #include <stdint.h>
+#include <stddef.h>
 
-void outportb(uint16_t port, uint8_t val);
-uint8_t inportb(uint16_t port);
-void outportw(uint16_t port, uint16_t val);
-uint16_t inportw(uint16_t port);
-void outportdw(uint16_t port, uint32_t val);
-uint32_t inportdw(uint16_t port);
+struct rsdt {
+	acpi_header_t header;
+	char ptrs_start[];
+} __attribute__((packed));
+
+void acpi_init(acpi_xsdp_t *rsdp);
+void *acpi_find_sdt(const char *signature, int index);
+
 
 #endif

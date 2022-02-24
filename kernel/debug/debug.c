@@ -23,20 +23,44 @@
 #include <sys/halt.h>
 #include <debug/debug.h>
 #include <fb/fb.h>
+#include <sys/timer.h>
+#include <locks/spinlock.h>
+
+lock_t write_lock;
 
 void kputchar(char c) {
+	spinlock_acquire(write_lock);
 	if (c == '\n')
 		kputchar('\r');
 	kputchar_(c);
 	framebuffer_putchar(c);
+	spinlock_drop(write_lock);
 }
 
 void kputs(char *string) {
+	spinlock_acquire(write_lock);
 	kputs_(string);
 	framebuffer_puts(string);
+	spinlock_drop(write_lock);
 }
 
 static void kprintf_(char *fmt, va_list args) {
+	uint64_t timer_tick = 0;
+	if(timer_installed()) {
+		timer_tick = timer_count();
+	}
+	char string[21] = {0};
+	for (int i = 20; i > 0;) {
+			string[--i] = timer_tick % 10 + '0';
+			timer_tick /= 10;
+	}
+	size_t counter = 0;
+	while (string[counter] == '0' && counter < 19) {
+		counter++;
+	}
+	kputs("[");
+	kputs(&string[counter]);
+	kputs("] ");
 	while (*fmt) {
 		if (*fmt == '%') {
 			fmt++;
@@ -54,7 +78,7 @@ static void kprintf_(char *fmt, va_list args) {
 				}
 			}
 			if (*fmt == 'x' || *fmt == 'p') {
-				char string[20];
+				char string[20] = {0};
 				uint64_t number = va_arg(args, size_t);
 				for (int i = 16; i > 0; number >>= 4) {
 					string[--i] = "0123456789ABCDEF"[number & 0x0f];
@@ -90,7 +114,7 @@ void kprintf(char *fmt, ...) {
 
 
 void panic(char *fmt, ...) {
-	kprintf("*** PANIC: ");
+	kputs("*** PANIC: ");
 	va_list args;
 	va_start(args, fmt);
 	kprintf_(fmt, args);

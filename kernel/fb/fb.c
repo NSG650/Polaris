@@ -1,4 +1,7 @@
 #include <fb/fb.h>
+#include <klibc/mem.h>
+#include <locks/spinlock.h>
+#include <mem/liballoc.h>
 
 /*
  * Copyright 2021, 2022 NSG650
@@ -364,6 +367,8 @@ uint8_t framebuffer_font[4096] = {
 };
 
 uint8_t framebuffer_initialised = 0;
+lock_t framebuff_lock;
+lock_t swap_lock;
 
 #define ISO_CHAR_MIN 0x00
 #define ISO_CHAR_MAX 0xFF
@@ -381,23 +386,49 @@ void framebuffer_init(struct framebuffer *fb) {
 	framebuff.tex_x = fb->tex_x;
 	framebuff.tex_y = fb->tex_y;
 	framebuff.tex_color = fb->tex_color;
+	framebuff.back_address = kmalloc(framebuff.pitch * framebuff.width);
+	framebuff.bg_color = fb->bg_color;
 	framebuffer_initialised = 1;
 }
 
-void framebuffer_putpx(int x, int y, uint32_t color) {
+void framebuffer_putpx(int x, int y, uint32_t color, bool fob) {
+	spinlock_acquire(framebuff_lock);
 	if (!framebuffer_initialised)
 		return;
-	size_t py = y * framebuff.pitch;
-	size_t px = x * (framebuff.bpp / 8);
-	*(uint32_t *)(&framebuff.address[px + py]) = color;
+	if(fob)
+		framebuff.address[y * (framebuff.pitch / sizeof(uint32_t)) + x] = color;
+	else
+		framebuff.back_address[y * (framebuff.pitch / sizeof(uint32_t)) + x] = color;
+	spinlock_drop(framebuff_lock);
+}
+
+void framebuffer_swap(struct framebuffer *fb) {
+	spinlock_acquire(swap_lock);
+	uint32_t *front = fb->address;
+	uint32_t *back = fb->back_address;
+	memcpy(front, back, fb->pitch * fb->height);
+	spinlock_drop(swap_lock);
 }
 
 void framebuffer_clear(uint32_t color) {
-	for (int i = 0; i < framebuff.width; i++)
-		for (int j = 0; j < framebuff.height; j++)
-			framebuffer_putpx(i, j, color);
+	framebuff.bg_color = color;
+	for (size_t i = 0; i < framebuff.width * framebuff.pitch / sizeof(uint32_t); i++)
+		framebuff.back_address[i] = color;
 	framebuff.tex_x = 0;
 	framebuff.tex_y = 0;
+	framebuffer_swap(&framebuff);
+}
+
+void framebuffer_scroll(void) {
+	if(framebuff.tex_y * ISO_CHAR_HEIGHT >= framebuff.height) {
+		framebuff.tex_y--;
+		size_t row_size = framebuff.pitch * ISO_CHAR_HEIGHT / sizeof(uint32_t);
+		size_t screen_size = framebuff.pitch * ISO_CHAR_HEIGHT * (framebuff.height / ISO_CHAR_HEIGHT) / sizeof(uint32_t);
+		for (size_t i = 0; i < screen_size - row_size; i++) {
+			framebuff.address[i] = framebuff.address[i + row_size];
+			framebuff.address[i + row_size] = framebuff.bg_color;
+		}
+	}
 }
 
 static void framebuffer_putc(char c, int x, int y) {
@@ -411,7 +442,7 @@ static void framebuffer_putc(char c, int x, int y) {
 				if (framebuff.width * framebuff.height >
 					(y + x_bit) * framebuff.width + x + y_bit)
 					framebuffer_putpx(x + y_bit, y + x_bit,
-									  framebuff.tex_color);
+									  framebuff.tex_color, 1);
 			}
 		}
 	}
@@ -420,17 +451,19 @@ static void framebuffer_putc(char c, int x, int y) {
 void framebuffer_putchar(char c) {
 	switch (c) {
 		case '\n':
-			framebuff.tex_y++;
 			framebuff.tex_x = 0;
-			break;
+			framebuff.tex_y++;
+			framebuffer_scroll();
+			return;
 		case '\r':
 			framebuff.tex_x = 0;
-			break;
-		default:
-			framebuffer_putc(c, framebuff.tex_x, framebuff.tex_y);
-			framebuff.tex_x++;
-			break;
+			return;
+		case '\b':
+			framebuff.tex_x--;
+			return;
 	}
+	framebuffer_putc(c, framebuff.tex_x, framebuff.tex_y);
+	framebuff.tex_x++;
 }
 
 void framebuffer_puts(char *string) {

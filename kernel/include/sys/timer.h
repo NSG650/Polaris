@@ -1,5 +1,5 @@
-#ifndef PORTS_H
-#define PORTS_H
+#ifndef TIMER_H
+#define TIMER_H
 
 /*
  * Copyright 2021, 2022 NSG650
@@ -18,15 +18,11 @@
  * limitations under the License.
  */
 
-
-#include <stddef.h>
 #include <stdint.h>
+#include <stdbool.h>
 
-void outportb(uint16_t port, uint8_t val);
-uint8_t inportb(uint16_t port);
-void outportw(uint16_t port, uint16_t val);
-uint16_t inportw(uint16_t port);
-void outportdw(uint16_t port, uint32_t val);
-uint32_t inportdw(uint16_t port);
+bool timer_installed(void);
+void timer_sleep(uint64_t ms);
+uint64_t timer_count(void);
 
 #endif

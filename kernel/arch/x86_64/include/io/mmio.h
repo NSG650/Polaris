@@ -1,5 +1,5 @@
-#ifndef PORTS_H
-#define PORTS_H
+#ifndef MMIO_H
+#define MMIO_H
 
 /*
  * Copyright 2021, 2022 NSG650
@@ -18,15 +18,14 @@
  * limitations under the License.
  */
 
+void outmmb(void *addr, uint8_t value);
+void outmmw(void *addr, uint16_t value);
+void outmmdw(void *addr, uint32_t value);
+void outmmqw(void *addr, uint64_t value);
 
-#include <stddef.h>
-#include <stdint.h>
-
-void outportb(uint16_t port, uint8_t val);
-uint8_t inportb(uint16_t port);
-void outportw(uint16_t port, uint16_t val);
-uint16_t inportw(uint16_t port);
-void outportdw(uint16_t port, uint32_t val);
-uint32_t inportdw(uint16_t port);
+uint8_t inmmb(void *addr);
+uint16_t inmmw(void *addr);
+uint32_t inmmdw(void *addr);
+uint64_t inmmqw(void *addr);
 
 #endif

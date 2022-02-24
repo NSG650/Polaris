@@ -23,11 +23,13 @@
 #include <stdint.h>
 
 struct framebuffer {
-	uint8_t *address;
+	uint32_t *address;
+	uint32_t *back_address;
 	size_t pitch, bpp;
 	uint16_t width, height;
 	size_t tex_x, tex_y;
 	uint32_t tex_color;
+	uint32_t bg_color;
 };
 
 void framebuffer_init(struct framebuffer *fb);

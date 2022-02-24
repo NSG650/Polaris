@@ -26,10 +26,10 @@
 #include <klibc/mem.h>
 #include <mm/pmm.h>
 #include <mm/vmm.h>
-#include <mem/liballoc.h>
-#include <klibc/dynarray.h>
 #include <sys/isr.h>
 #include <sys/gdt.h>
+#include <fw/acpi.h>
+#include <sys/hpet.h>
 
 static uint8_t stack[32768];
 static struct stivale2_header_tag_smp smp_hdr_tag = {
@@ -82,7 +82,7 @@ void arch_entry(struct stivale2_struct *stivale2_struct) {
 	struct framebuffer fb;
 	struct stivale2_struct_tag_framebuffer *fb_tag =
 		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_FRAMEBUFFER_ID);
-	fb.address = (uint8_t *)fb_tag->framebuffer_addr;
+	fb.address = (uint32_t *)fb_tag->framebuffer_addr;
 	fb.pitch = fb_tag->framebuffer_pitch;
 	fb.bpp = fb_tag->framebuffer_bpp;
 	fb.width = fb_tag->framebuffer_width;
@@ -93,6 +93,9 @@ void arch_entry(struct stivale2_struct *stivale2_struct) {
 	framebuffer_init(&fb);
 	kprintf("Hello x86_64!\n");
 	isr_install();
+	struct stivale2_struct_tag_rsdp *rsdp_tag =
+		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_RSDP_ID);
+	acpi_init((void *)rsdp_tag->rsdp);
 	for (;;) {
 		cli();
 		halt();

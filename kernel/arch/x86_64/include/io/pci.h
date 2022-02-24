@@ -1,6 +1,3 @@
-#ifndef PORTS_H
-#define PORTS_H
-
 /*
  * Copyright 2021, 2022 NSG650
  * Copyright 2021, 2022 Sebastian
@@ -18,15 +15,33 @@
  * limitations under the License.
  */
 
+#ifndef PCI_H
+#define PCI_H
 
-#include <stddef.h>
+#include <fw/acpi.h>
 #include <stdint.h>
+#include <klibc/vec.h>
 
-void outportb(uint16_t port, uint8_t val);
-uint8_t inportb(uint16_t port);
-void outportw(uint16_t port, uint16_t val);
-uint16_t inportw(uint16_t port);
-void outportdw(uint16_t port, uint32_t val);
-uint32_t inportdw(uint16_t port);
+struct mcfg_entry {
+	uint64_t base;
+	uint16_t seg;
+	uint8_t start_bus_number;
+	uint8_t end_bus_number;
+	uint32_t reserved;
+} __attribute__((packed));
+
+struct mcfg {
+	acpi_header_t header;
+	uint64_t reserved;
+	struct mcfg_entry entries[];
+} __attribute__((packed));
+
+extern struct mcfg_entry *mcfg_entries;
+
+void pci_init(void);
+void pci_write(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t function,
+			   uint16_t offset, uint32_t value, uint8_t access_size);
+uint32_t pci_read(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t function,
+				  uint16_t offset, uint8_t access_size);
 
 #endif
