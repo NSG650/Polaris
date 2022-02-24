@@ -25,6 +25,7 @@
 #include <mm/vmm.h>
 #include <stdbool.h>
 #include <sys/hpet.h>
+#include <fw/madt.h>
 
 bool use_xsdt;
 struct rsdt *rsdt;
@@ -47,6 +48,7 @@ void acpi_init(acpi_xsdp_t *rsdp) {
 	lai_set_acpi_revision(revision);
 	lai_create_namespace();
 	lai_enable_acpi(1);
+	madt_init();
 }
 
 // Following function based on
