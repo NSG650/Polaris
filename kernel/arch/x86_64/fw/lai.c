@@ -15,13 +15,13 @@ extern uint8_t revision;
 void laihost_log(int level, const char *msg) {
 	switch (level) {
 		case LAI_DEBUG_LOG:
-			kprintf("ACPI: Debug: %s\n", msg);
+			kprintf("LAI: Debug: %s\n", msg);
 			break;
 		case LAI_WARN_LOG:
-			kprintf("ACPI: Warning: %s\n", msg);
+			kprintf("LAI: Warning: %s\n", msg);
 			break;
 		default:
-			kprintf("ACPI: %s\n", msg);
+			kprintf("LAI: %s\n", msg);
 			break;
 	}
 }
