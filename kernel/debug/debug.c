@@ -26,6 +26,8 @@
 #include <sys/halt.h>
 #include <sys/timer.h>
 
+bool is_smp = false;
+
 lock_t write_lock;
 bool in_panic = false;
 
@@ -115,7 +117,7 @@ void panic(char *fmt, ...) {
 	va_end(args);
 	size_t *ip = __builtin_return_address(0);
 	size_t *bp = __builtin_frame_address(0);
-	kprintf("Crashed at 0x%p", ip);
+	kprintf("Crashed at 0x%p\n", ip);
 	kprintf("Stack trace:\n");
 	#if defined(__x86_64__)
 	for (;;) {
@@ -130,7 +132,6 @@ void panic(char *fmt, ...) {
 	}
 	#endif
 	halt_other_cpus();
-	halt_cpu0();
 	halt_current_cpu();
 	__builtin_unreachable();
 }

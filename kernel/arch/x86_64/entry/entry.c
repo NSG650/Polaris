@@ -19,6 +19,7 @@
 #include <debug/debug.h>
 #include <fb/fb.h>
 #include <fw/acpi.h>
+#include <fw/madt.h>
 #include <klibc/mem.h>
 #include <mm/pmm.h>
 #include <mm/vmm.h>
@@ -26,7 +27,9 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stivale2.h>
+#include <sys/apic.h>
 #include <sys/gdt.h>
+#include <sys/halt.h>
 #include <sys/hpet.h>
 #include <sys/isr.h>
 
@@ -92,9 +95,13 @@ void arch_entry(struct stivale2_struct *stivale2_struct) {
 	framebuffer_init(&fb);
 	kprintf("Hello x86_64!\n");
 	isr_install();
+	isr_register_handler(0xff, halt_current_cpu);
+	sti();
 	struct stivale2_struct_tag_rsdp *rsdp_tag =
 		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_RSDP_ID);
 	acpi_init((void *)rsdp_tag->rsdp);
+	pic_init();
+	apic_init();
 	for (;;) {
 		cli();
 		halt();

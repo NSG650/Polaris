@@ -1,5 +1,11 @@
 #include <asm/asm.h>
+#include <fw/madt.h>
+#include <klibc/vec.h>
+#include <stdbool.h>
+#include <sys/apic.h>
 #include <sys/halt.h>
+
+extern bool is_smp;
 
 /*
  * Copyright 2021, 2022 NSG650
@@ -26,17 +32,12 @@ void halt_current_cpu(void) {
 }
 
 void halt_other_cpus(void) {
-	// Unimplemented till SMP
-	for (;;) {
-		cli();
-		halt();
-	}
-}
-
-void halt_cpu0(void) {
-	// Unimplemented till SMP
-	for (;;) {
-		cli();
-		halt();
+	if (!is_smp)
+		return;
+	for (size_t i = 0; i < vector_size(madt_local_apics); i++) {
+		struct madt_lapic *lapic = madt_local_apics[i];
+		if (lapic_get_id() == lapic->apic_id)
+			continue;
+		apic_send_ipi(lapic->apic_id, 0xff);
 	}
 }

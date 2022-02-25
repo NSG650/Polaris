@@ -20,6 +20,5 @@
 
 void halt_current_cpu(void);
 void halt_other_cpus(void);
-void halt_cpu0(void);
 
 #endif
