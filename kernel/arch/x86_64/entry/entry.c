@@ -32,6 +32,7 @@
 #include <sys/halt.h>
 #include <sys/hpet.h>
 #include <sys/isr.h>
+#include <cpu/smp.h>
 
 static uint8_t stack[32768];
 static struct stivale2_header_tag_smp smp_hdr_tag = {
@@ -68,7 +69,6 @@ void *stivale2_get_tag(struct stivale2_struct *stivale2_struct, uint64_t id) {
 }
 
 void arch_entry(struct stivale2_struct *stivale2_struct) {
-	gdt_init();
 	struct stivale2_struct_tag_memmap *memmap_tag =
 		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MEMMAP_ID);
 	pmm_init((void *)memmap_tag->memmap, memmap_tag->entries);
@@ -94,7 +94,6 @@ void arch_entry(struct stivale2_struct *stivale2_struct) {
 	fb.tex_y = 0;
 	framebuffer_init(&fb);
 	kprintf("Hello x86_64!\n");
-	isr_install();
 	isr_register_handler(0xff, halt_current_cpu);
 	sti();
 	struct stivale2_struct_tag_rsdp *rsdp_tag =
@@ -102,6 +101,9 @@ void arch_entry(struct stivale2_struct *stivale2_struct) {
 	acpi_init((void *)rsdp_tag->rsdp);
 	pic_init();
 	apic_init();
+	struct stivale2_struct_tag_smp *smp_tag =
+		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_SMP_ID);
+	smp_init(smp_tag);
 	for (;;) {
 		cli();
 		halt();

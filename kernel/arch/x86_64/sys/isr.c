@@ -307,6 +307,9 @@ void isr_handle(registers_t *r) {
 		panic("Unhandled Exception: %s\n",
 			  isr_exception_messages[r->isrNumber]);
 	}
+	if(r->isrNumber == 0xf0) {
+		kprintf("Weird. NMI from APIC?\n");
+	}
 }
 
 void isr_register_handler(int n, void *handler) {

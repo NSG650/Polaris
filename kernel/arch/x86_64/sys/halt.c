@@ -3,7 +3,7 @@
 #include <klibc/vec.h>
 #include <stdbool.h>
 #include <sys/apic.h>
-#include <sys/halt.h>
+#include <debug/debug.h>
 
 extern bool is_smp;
 

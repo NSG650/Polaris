@@ -26,8 +26,6 @@
 #include <sys/halt.h>
 #include <sys/timer.h>
 
-bool is_smp = false;
-
 lock_t write_lock;
 bool in_panic = false;
 

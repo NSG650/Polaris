@@ -119,5 +119,4 @@ void apic_send_ipi(uint8_t lapic_id, uint8_t vector) {
 
 void apic_init(void) {
 	lapic_addr = acpi_get_lapic();
-	lapic_init(madt_local_apics[0]->processor_id);
 }
