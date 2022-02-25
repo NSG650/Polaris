@@ -382,10 +382,10 @@ void framebuffer_init(struct framebuffer *fb) {
 	framebuff.bpp = fb->bpp;
 	framebuff.width = fb->width;
 	framebuff.height = fb->height;
-	framebuff.tex_x = fb->tex_x;
+	framebuff.tex_x = fb->tex_x + 1;
 	framebuff.tex_y = fb->tex_y;
 	framebuff.tex_color = fb->tex_color;
-	framebuff.back_address = kmalloc(framebuff.pitch * framebuff.width);
+	framebuff.back_address = kmalloc(framebuff.pitch * framebuff.height);
 	framebuff.bg_color = fb->bg_color;
 	framebuffer_initialised = 1;
 }
@@ -406,14 +406,17 @@ void framebuffer_swap(struct framebuffer *fb) {
 	spinlock_acquire(swap_lock);
 	uint32_t *front = fb->address;
 	uint32_t *back = fb->back_address;
-	memcpy(front, back, fb->pitch * fb->height);
+	for (size_t i = 0;
+		 i < framebuff.pitch * framebuff.height / sizeof(uint32_t); i++) {
+		front[i] = back[i];
+	}
 	spinlock_drop(swap_lock);
 }
 
 void framebuffer_clear(uint32_t color) {
 	framebuff.bg_color = color;
-	for (size_t i = 0; i < framebuff.width * framebuff.pitch / sizeof(uint32_t);
-		 i++)
+	for (size_t i = 0;
+		 i < framebuff.height * framebuff.pitch / sizeof(uint32_t); i++)
 		framebuff.back_address[i] = color;
 	framebuff.tex_x = 0;
 	framebuff.tex_y = 0;
@@ -421,16 +424,14 @@ void framebuffer_clear(uint32_t color) {
 }
 
 void framebuffer_scroll(void) {
-	if (framebuff.tex_y * ISO_CHAR_HEIGHT >= framebuff.height) {
-		framebuff.tex_y--;
-		size_t row_size = framebuff.pitch * ISO_CHAR_HEIGHT / sizeof(uint32_t);
-		size_t screen_size = framebuff.pitch * ISO_CHAR_HEIGHT *
-							 (framebuff.height / ISO_CHAR_HEIGHT) /
-							 sizeof(uint32_t);
-		for (size_t i = 0; i < screen_size - row_size; i++) {
-			framebuff.address[i] = framebuff.address[i + row_size];
-			framebuff.address[i + row_size] = framebuff.bg_color;
-		}
+	framebuff.tex_y--;
+	size_t row_size = framebuff.pitch * ISO_CHAR_HEIGHT / sizeof(uint32_t);
+	size_t screen_size = framebuff.pitch * ISO_CHAR_HEIGHT *
+						 (framebuff.height / ISO_CHAR_HEIGHT) /
+						 sizeof(uint32_t);
+	for (size_t i = 0; i < screen_size - row_size; i++) {
+		framebuff.address[i] = framebuff.address[i + row_size];
+		framebuff.address[i + row_size] = framebuff.bg_color;
 	}
 }
 
@@ -445,7 +446,7 @@ static void framebuffer_putc(char c, int x, int y) {
 				if (framebuff.width * framebuff.height >
 					(y + x_bit) * framebuff.width + x + y_bit)
 					framebuffer_putpx(x + y_bit, y + x_bit, framebuff.tex_color,
-									  1);
+									  true);
 			}
 		}
 	}
@@ -456,7 +457,9 @@ void framebuffer_putchar(char c) {
 		case '\n':
 			framebuff.tex_x = 0;
 			framebuff.tex_y++;
-			framebuffer_scroll();
+			if (framebuff.tex_y > framebuff.height / ISO_CHAR_HEIGHT - 1) {
+				framebuffer_scroll();
+			}
 			return;
 		case '\r':
 			framebuff.tex_x = 0;
@@ -464,6 +467,13 @@ void framebuffer_putchar(char c) {
 		case '\b':
 			framebuff.tex_x--;
 			return;
+		case '\t':
+			framebuff.tex_x += 5;
+			return;
+	}
+	if (framebuff.tex_x * ISO_CHAR_WIDTH >= framebuff.width) {
+		framebuff.tex_x = 0;
+		framebuff.tex_y++;
 	}
 	framebuffer_putc(c, framebuff.tex_x, framebuff.tex_y);
 	framebuff.tex_x++;

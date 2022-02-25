@@ -28,5 +28,7 @@
 void *memmove(void *dest, const void *src, size_t n);
 void strcpy(char *dest, char *src);
 size_t strlen(char *string);
+char *ltoa(size_t value, char *str, int base);
+char *itoa(int value, char *str, int base);
 
 #endif

@@ -18,6 +18,7 @@
 #include <asm/asm.h>
 #include <debug/debug.h>
 #include <fb/fb.h>
+#include <klibc/mem.h>
 #include <locks/spinlock.h>
 #include <stdarg.h>
 #include <stddef.h>
@@ -53,16 +54,9 @@ static void kprintf_(char *fmt, va_list args) {
 			timer_tick = timer_count();
 		}
 		char string[21] = {0};
-		for (int i = 20; i > 0;) {
-			string[--i] = timer_tick % 10 + '0';
-			timer_tick /= 10;
-		}
-		size_t counter = 0;
-		while (string[counter] == '0' && counter < 19) {
-			counter++;
-		}
+		ltoa(timer_tick, string, 10);
 		kputs("[");
-		kputs(&string[counter]);
+		kputs(string);
 		kputs("] ");
 	}
 	while (*fmt) {
@@ -84,23 +78,14 @@ static void kprintf_(char *fmt, va_list args) {
 			if (*fmt == 'x' || *fmt == 'p') {
 				char string[20] = {0};
 				uint64_t number = va_arg(args, size_t);
-				for (int i = 16; i > 0; number >>= 4) {
-					string[--i] = "0123456789ABCDEF"[number & 0x0f];
-				}
+				ltoa(number, string, 16);
 				kputs(string);
 			}
 			if (*fmt == 'd') {
 				char string[21] = {0};
 				uint64_t number = va_arg(args, size_t);
-				for (int i = 20; i > 0;) {
-					string[--i] = number % 10 + '0';
-					number /= 10;
-				}
-				size_t counter = 0;
-				while (string[counter] == '0' && counter < 19) {
-					counter++;
-				}
-				kputs(&string[counter]);
+				ltoa(number, string, 10);
+				kputs(string);
 			}
 		} else {
 			kputchar(*fmt);

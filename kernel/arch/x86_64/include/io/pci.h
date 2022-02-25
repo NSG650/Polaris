@@ -36,7 +36,21 @@ struct mcfg {
 	struct mcfg_entry entries[];
 } __attribute__((packed));
 
+struct pci_device {
+	uint32_t id;
+	uint16_t vendor_id;
+	uint16_t device_id;
+
+	uint8_t classcode;
+	uint8_t subclass;
+	uint8_t progintf;
+
+	uint8_t bus;
+	uint8_t device;
+};
+
 extern struct mcfg_entry *mcfg_entries;
+extern struct pci_device *pci_devices[];
 
 void pci_init(void);
 void pci_write(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t function,

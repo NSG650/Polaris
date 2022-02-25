@@ -32,23 +32,23 @@ void madt_init(void) {
 		switch (*(madt_ptr)) {
 			case 0:
 				// Processor local APIC
-				kprintf("MADT: Got local APIC 0x%p\n",
+				kprintf("MADT: Got local APIC 0x%x\n",
 						vector_size(madt_local_apics));
 				vector_add(&madt_local_apics, (void *)madt_ptr);
 				break;
 			case 1:
 				// I/O APIC
-				kprintf("MADT: Got IO APIC 0x%p\n", vector_size(madt_io_apics));
+				kprintf("MADT: Got IO APIC 0x%x\n", vector_size(madt_io_apics));
 				vector_add(&madt_io_apics, (void *)madt_ptr);
 				break;
 			case 2:
 				// Interrupt source override
-				kprintf("MADT: Got ISO 0x%p\n", vector_size(madt_isos));
+				kprintf("MADT: Got ISO 0x%x\n", vector_size(madt_isos));
 				vector_add(&madt_isos, (void *)madt_ptr);
 				break;
 			case 4:
 				// NMI
-				kprintf("MADT: Got NMI 0x%p\n", vector_size(madt_nmis));
+				kprintf("MADT: Got NMI 0x%x\n", vector_size(madt_nmis));
 				vector_add(&madt_nmis, (void *)madt_ptr);
 				break;
 			case 5:

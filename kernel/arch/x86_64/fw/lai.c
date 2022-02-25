@@ -27,7 +27,7 @@ void laihost_log(int level, const char *msg) {
 }
 
 void laihost_panic(const char *msg) {
-	panic("LAI: %s", msg);
+	panic("LAI: %s\n", msg);
 	__builtin_unreachable();
 }
 
