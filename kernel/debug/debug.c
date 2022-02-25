@@ -78,13 +78,19 @@ static void kprintf_(char *fmt, va_list args) {
 			if (*fmt == 'x' || *fmt == 'p') {
 				char string[20] = {0};
 				uint64_t number = va_arg(args, size_t);
-				ltoa(number, string, 16);
+				ultoa(number, string, 16);
 				kputs(string);
 			}
 			if (*fmt == 'd') {
 				char string[21] = {0};
 				uint64_t number = va_arg(args, size_t);
 				ltoa(number, string, 10);
+				kputs(string);
+			}
+			if (*fmt == 'u') {
+				char string[21] = {0};
+				uint64_t number = va_arg(args, size_t);
+				ultoa(number, string, 10);
 				kputs(string);
 			}
 		} else {

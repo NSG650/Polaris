@@ -1,3 +1,20 @@
+/*
+ * Copyright 2021, 2022 NSG650
+ * Copyright 2021, 2022 Sebastian
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include <debug/debug.h>
 #include <io/mmio.h>
 #include <io/pci.h>
@@ -205,8 +222,8 @@ struct pci_device *pci_get_device_info(uint8_t bus, uint8_t device) {
 	device_struct->subclass = pci_read(0, bus, device, 0, 0x0a, 1);
 	device_struct->progintf = pci_read(0, bus, device, 0, 0x09, 1);
 	device_struct->device_id = pci_get_device(bus, device);
-	kprintf("PCI: Got Device at %x:%x vendor id: %x classcode: %s subclass: %x "
-			"progintf: %x device_id: %x\n",
+	kprintf("PCI: Got Device at %x:%x\tvendor id: %x\tclasscode: \"%s\"\tsubclass: %x\t"
+			"progintf: %x\tdevice_id: %x\n",
 			bus, device, device_struct->vendor_id,
 			pci_get_classcode_name(device_struct->classcode),
 			device_struct->subclass, device_struct->progintf,

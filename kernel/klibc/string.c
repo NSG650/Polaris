@@ -40,7 +40,7 @@ size_t strlen(char *string) {
 	return len;
 }
 
-char *ltoa(size_t value, char *str, int base) {
+char *ltoa(int64_t value, char *str, int base) {
 	char *rc;
 	char *ptr;
 	char *low;
@@ -97,6 +97,64 @@ char *itoa(int value, char *str, int base) {
 		// unnecessary.
 		*ptr++ = "zyxwvutsrqponmlkjihgfedcba9876543210123456789abcdefghijklmnop"
 				 "qrstuvwxyz"[35 + value % base];
+		value /= base;
+	} while (value);
+	// Terminating the string.
+	*ptr-- = '\0';
+	// Invert the numbers.
+	while (low < ptr) {
+		char tmp = *low;
+		*low++ = *ptr;
+		*ptr-- = tmp;
+	}
+	return rc;
+}
+
+char *ultoa(uint64_t value, char *str, int base) {
+	char *rc;
+	char *ptr;
+	char *low;
+	// Check for supported base.
+	if (base < 2 || base > 36) {
+		*str = '\0';
+		return str;
+	}
+	rc = ptr = str;
+	// Remember where the numbers start.
+	low = ptr;
+	// The actual conversion.
+	do {
+		*ptr++ = "0123456789abcdefghijklmnop"
+				 "qrstuvwxyz"[value % base];
+		value /= base;
+	} while (value);
+	// Terminating the string.
+	*ptr-- = '\0';
+	// Invert the numbers.
+	while (low < ptr) {
+		char tmp = *low;
+		*low++ = *ptr;
+		*ptr-- = tmp;
+	}
+	return rc;
+}
+
+char *uitoa(uint32_t value, char *str, int base) {
+	char *rc;
+	char *ptr;
+	char *low;
+	// Check for supported base.
+	if (base < 2 || base > 36) {
+		*str = '\0';
+		return str;
+	}
+	rc = ptr = str;
+	// Remember where the numbers start.
+	low = ptr;
+	// The actual conversion.
+	do {
+		*ptr++ = "0123456789abcdefghijklmnop"
+				 "qrstuvwxyz"[value % base];
 		value /= base;
 	} while (value);
 	// Terminating the string.

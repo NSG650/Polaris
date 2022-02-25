@@ -32,7 +32,7 @@ struct rsdt *rsdt;
 uint8_t revision;
 
 void acpi_init(acpi_xsdp_t *rsdp) {
-	kprintf("ACPI: Revision: %x\n", rsdp->revision);
+	kprintf("ACPI: Revision: %u\n", rsdp->revision);
 	revision = rsdp->revision;
 	if (rsdp->revision >= 2 && rsdp->xsdt) {
 		use_xsdt = true;

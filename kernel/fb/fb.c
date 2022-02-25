@@ -430,9 +430,10 @@ void framebuffer_scroll(void) {
 						 (framebuff.height / ISO_CHAR_HEIGHT) /
 						 sizeof(uint32_t);
 	for (size_t i = 0; i < screen_size - row_size; i++) {
-		framebuff.address[i] = framebuff.address[i + row_size];
-		framebuff.address[i + row_size] = framebuff.bg_color;
+		framebuff.back_address[i] = framebuff.address[i + row_size];
+		framebuff.back_address[i + row_size] = framebuff.bg_color;
 	}
+	framebuffer_swap(&framebuff);
 }
 
 static void framebuffer_putc(char c, int x, int y) {
@@ -457,7 +458,7 @@ void framebuffer_putchar(char c) {
 		case '\n':
 			framebuff.tex_x = 0;
 			framebuff.tex_y++;
-			if (framebuff.tex_y > framebuff.height / ISO_CHAR_HEIGHT - 1) {
+			if ((uint16_t)framebuff.tex_y > framebuff.height / ISO_CHAR_HEIGHT - 1) {
 				framebuffer_scroll();
 			}
 			return;
@@ -468,7 +469,7 @@ void framebuffer_putchar(char c) {
 			framebuff.tex_x--;
 			return;
 		case '\t':
-			framebuff.tex_x += 5;
+			framebuff.tex_x += 4;
 			return;
 	}
 	if (framebuff.tex_x * ISO_CHAR_WIDTH >= framebuff.width) {
