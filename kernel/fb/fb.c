@@ -382,7 +382,7 @@ void framebuffer_init(struct framebuffer *fb) {
 	framebuff.bpp = fb->bpp;
 	framebuff.width = fb->width;
 	framebuff.height = fb->height;
-	framebuff.tex_x = fb->tex_x + 1;
+	framebuff.tex_x = fb->tex_x;
 	framebuff.tex_y = fb->tex_y;
 	framebuff.tex_color = fb->tex_color;
 	framebuff.back_address = kmalloc(framebuff.pitch * framebuff.height);
