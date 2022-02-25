@@ -113,19 +113,22 @@ void panic(char *fmt, ...) {
 	va_start(args, fmt);
 	kprintf_(fmt, args);
 	va_end(args);
-	size_t *rip = __builtin_return_address(0);
-	size_t *rbp = __builtin_frame_address(0);
+	size_t *ip = __builtin_return_address(0);
+	size_t *bp = __builtin_frame_address(0);
+	kprintf("Crashed at 0x%p", ip);
 	kprintf("Stack trace:\n");
+	#if defined(__x86_64__)
 	for (;;) {
-		size_t old_rbp = rbp[0];
-		size_t ret_address = rbp[1];
+		size_t old_rbp = bp[0];
+		size_t ret_address = bp[1];
 		if (!ret_address)
 			break;
 		kprintf("0x%p\n", ret_address);
 		if (!old_rbp)
 			break;
-		rbp = (void *)old_rbp;
+		bp = (void *)old_rbp;
 	}
+	#endif
 	halt_other_cpus();
 	halt_cpu0();
 	halt_current_cpu();
