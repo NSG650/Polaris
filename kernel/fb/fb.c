@@ -429,8 +429,12 @@ void framebuffer_scroll(void) {
 	size_t screen_size = framebuff.pitch * ISO_CHAR_HEIGHT *
 						 (framebuff.height / ISO_CHAR_HEIGHT) /
 						 sizeof(uint32_t);
+	for (size_t i = 0;
+		 i < framebuff.pitch * framebuff.height / sizeof(uint32_t); i++) {
+		framebuff.back_address[i] = framebuff.address[i];
+	}
 	for (size_t i = 0; i < screen_size - row_size; i++) {
-		framebuff.back_address[i] = framebuff.address[i + row_size];
+		framebuff.back_address[i] = framebuff.back_address[i + row_size];
 		framebuff.back_address[i + row_size] = framebuff.bg_color;
 	}
 	framebuffer_swap(&framebuff);
