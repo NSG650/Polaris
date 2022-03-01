@@ -106,6 +106,32 @@ uint8_t lapic_get_id(void) {
 	return (uint8_t)(lapic_read(0x20) >> 24);
 }
 
+void apic_eoi(void) {
+	lapic_write(0xB0, 0);
+}
+
+static void apic_timer_tick(registers_t *reg) {
+	(void)reg;
+}
+
+void apic_timer_init(void) {
+	ioapic_redirect_irq(0, 48);
+	isr_register_handler(48, apic_timer_tick);
+
+	lapic_write(0x3E0, 3);			// Divide by 16
+	lapic_write(0x380, 0xFFFFFFFF); // Set value to -1
+
+	timer_sleep(10000);
+	lapic_write(0x320, 0x10000);
+
+	uint32_t tick_in_10ms = 0xFFFFFFFF - lapic_read(0x390);
+
+	// Set to receive interrupt in vector 32 (IRQ 0)
+	lapic_write(0x320, 32 | 0x20000);
+	lapic_write(0x3E0, 3);
+	lapic_write(0x380, tick_in_10ms / 10);
+}
+
 void apic_send_ipi(uint8_t lapic_id, uint8_t vector) {
 	if (x2apic) {
 		// Write MSR directly, because lapic_write receives a 32-bit argument

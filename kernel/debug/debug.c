@@ -101,14 +101,18 @@ static void kprintf_(char *fmt, va_list args) {
 }
 
 void kprintf(char *fmt, ...) {
+	spinlock_acquire(write_lock);
 	va_list args;
 	va_start(args, fmt);
 	kprintf_(fmt, args);
 	va_end(args);
+	spinlock_drop(write_lock);
 }
 
 void panic(char *fmt, ...) {
+	cli();
 	in_panic = true;
+	halt_other_cpus();
 	va_list args;
 	va_start(args, fmt);
 	kprintf_(fmt, args);
@@ -129,7 +133,6 @@ void panic(char *fmt, ...) {
 		bp = (void *)old_rbp;
 	}
 	#endif
-	halt_other_cpus();
 	halt_current_cpu();
 	__builtin_unreachable();
 }

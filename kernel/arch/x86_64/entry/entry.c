@@ -94,8 +94,8 @@ void arch_entry(struct stivale2_struct *stivale2_struct) {
 	fb.tex_y = 0;
 	framebuffer_init(&fb);
 	kprintf("Hello x86_64!\n");
+	cli();
 	isr_register_handler(0xff, halt_current_cpu);
-	sti();
 	struct stivale2_struct_tag_rsdp *rsdp_tag =
 		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_RSDP_ID);
 	acpi_init((void *)rsdp_tag->rsdp);
@@ -104,6 +104,8 @@ void arch_entry(struct stivale2_struct *stivale2_struct) {
 	struct stivale2_struct_tag_smp *smp_tag =
 		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_SMP_ID);
 	smp_init(smp_tag);
+	apic_timer_init();
+	panic("End of kernel\n");
 	for (;;) {
 		cli();
 		halt();

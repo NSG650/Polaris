@@ -15,11 +15,14 @@
 #include <sys/timer.h>
 #include <sys/isr.h>
 #include <sys/halt.h>
+#include <locks/spinlock.h>
 
 struct prcb **prcbs;
 uint8_t bsp_lapic_core;
 uint64_t cpu_count = 0;
+uint64_t initialised_cores = 0;
 bool is_smp = false;
+lock_t smp_lock;
 
 char prcb_names[21][3] = {
 	"Aa",
@@ -53,6 +56,8 @@ static uint64_t smp_read_gs(void) {
 }
 
 static void smp_init_core(struct stivale2_smp_info *smp_info) {
+	spinlock_acquire(smp_lock);
+	cli();
 	gdt_init();
 	isr_install();
 	// SSE/SSE2
@@ -106,6 +111,8 @@ static void smp_init_core(struct stivale2_smp_info *smp_info) {
 	vector_add(&prcbs, ap);
 	smp_set_gs((uint64_t)prcbs[vector_size(prcbs) - 1]);
 	kprintf("CPU%d: %s online!\n", prcb_return_current_cpu()->cpu_number, prcb_return_current_cpu()->name);
+	initialised_cores++;
+	spinlock_drop(smp_lock);
 	if(prcb_return_current_cpu()->cpu_number != bsp_lapic_core) {
 		halt_current_cpu();
 	}
@@ -115,6 +122,7 @@ static void smp_init_core(struct stivale2_smp_info *smp_info) {
 void smp_init(struct stivale2_struct_tag_smp *smp_info) {
 	prcbs = vector_create();
 	bsp_lapic_core = smp_info->bsp_lapic_id;
+	cpu_count = smp_info->cpu_count;
 	kprintf("SMP: Bringing up the AP cores\n");
 	for (size_t i = 0; i < smp_info->cpu_count; i++) {
 		if(smp_info->smp_info[i].lapic_id == bsp_lapic_core) {
@@ -122,12 +130,17 @@ void smp_init(struct stivale2_struct_tag_smp *smp_info) {
 			smp_init_core((void *)&smp_info->smp_info[i]);
 			continue;
 		}
+		spinlock_acquire(smp_lock);
 		smp_info->smp_info[i].target_stack = (uint64_t)pmm_allocz(2097152 / PAGE_SIZE);
 		smp_info->smp_info[i].target_stack += MEM_PHYS_OFFSET + 2097152;
 		smp_info->smp_info[i].goto_address = (uint64_t)smp_init_core;
-		timer_sleep(100);
+		spinlock_drop(smp_lock);
+		timer_sleep(10);
 	}
+	while(initialised_cores != cpu_count)
+		;
 	is_smp = true;
+	kprintf("SMP: %d CPUs installed in the system\n", prcb_return_installed_cpus());
 }
 
 struct prcb *prcb_return_current_cpu(void) {
@@ -135,5 +148,5 @@ struct prcb *prcb_return_current_cpu(void) {
 }
 
 uint64_t prcb_return_installed_cpus(void) {
-	return cpu_count;
+	return initialised_cores;
 }

@@ -1,6 +1,7 @@
 #include <debug/debug.h>
 #include <sys/idt.h>
 #include <sys/isr.h>
+#include <sys/apic.h>
 
 void isr_install(void) {
 	idt_set_gate(0, isr0, 0);
@@ -301,15 +302,18 @@ static const char *isr_exception_messages[] = {"Divide by zero",
 static event_handlers_t event_handlers[256] = {NULL};
 
 void isr_handle(registers_t *r) {
-	if (event_handlers[r->isrNumber] != NULL)
-		return event_handlers[r->isrNumber](r);
 	if (r->isrNumber < 32) {
 		panic("Unhandled Exception: %s\n",
 			  isr_exception_messages[r->isrNumber]);
 	}
-	if(r->isrNumber == 0xf0) {
+
+	if(r->isrNumber == 0xf0)
 		kprintf("Weird. NMI from APIC?\n");
-	}
+
+	if (event_handlers[r->isrNumber] != NULL)
+		event_handlers[r->isrNumber](r);
+
+	apic_eoi();
 }
 
 void isr_register_handler(int n, void *handler) {
