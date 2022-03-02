@@ -22,7 +22,8 @@
 
 typedef volatile bool lock_t;
 
-void spinlock_acquire(lock_t spin);
+bool spinlock_acquire(lock_t spin);
+void spinlock_acquire_or_wait(lock_t spin);
 void spinlock_drop(lock_t spin);
 
 #endif

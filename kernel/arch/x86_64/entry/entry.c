@@ -16,6 +16,7 @@
  */
 
 #include <asm/asm.h>
+#include <cpu/smp.h>
 #include <debug/debug.h>
 #include <fb/fb.h>
 #include <fw/acpi.h>
@@ -23,6 +24,7 @@
 #include <klibc/mem.h>
 #include <mm/pmm.h>
 #include <mm/vmm.h>
+#include <sched/sched.h>
 #include <serial/serial.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -32,7 +34,7 @@
 #include <sys/halt.h>
 #include <sys/hpet.h>
 #include <sys/isr.h>
-#include <cpu/smp.h>
+#include <sys/timer.h>
 
 static uint8_t stack[32768];
 static struct stivale2_header_tag_smp smp_hdr_tag = {
@@ -96,6 +98,7 @@ void arch_entry(struct stivale2_struct *stivale2_struct) {
 	kprintf("Hello x86_64!\n");
 	cli();
 	isr_register_handler(0xff, halt_current_cpu);
+	isr_register_handler(48, resched);
 	struct stivale2_struct_tag_rsdp *rsdp_tag =
 		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_RSDP_ID);
 	acpi_init((void *)rsdp_tag->rsdp);
@@ -104,10 +107,11 @@ void arch_entry(struct stivale2_struct *stivale2_struct) {
 	struct stivale2_struct_tag_smp *smp_tag =
 		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_SMP_ID);
 	smp_init(smp_tag);
-	apic_timer_init();
-	panic("End of kernel\n");
+	ioapic_redirect_irq(0, 48);
+	sched_init();
+	timer_sched_oneshot(32, 20000);
+	sti();
 	for (;;) {
-		cli();
 		halt();
 	}
 }

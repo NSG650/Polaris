@@ -24,5 +24,10 @@
 bool timer_installed(void);
 void timer_sleep(uint64_t ms);
 uint64_t timer_count(void);
+void timer_stop_sched(void);
+
+#if defined(__x86_64__)
+void timer_sched_oneshot(uint8_t isr, uint32_t us);
+#endif
 
 #endif

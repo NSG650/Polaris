@@ -12,6 +12,7 @@
 
 static uintptr_t lapic_addr = 0;
 static bool x2apic = false;
+uint32_t tick_in_10ms;
 
 // Converts xAPIC MMIO offset into x2APIC MSR
 static uint32_t reg_to_x2apic(uint32_t reg) {
@@ -100,6 +101,13 @@ void lapic_init(uint8_t cpu_id) {
 		struct madt_nmi *nmi = madt_nmis[i];
 		lapic_set_nmi(2, cpu_id, nmi->processor, nmi->flags, nmi->lint);
 	}
+	if (!tick_in_10ms) {
+		lapic_write(0x3E0, 3);			// Divide by 16
+		lapic_write(0x380, 0xFFFFFFFF); // Set value to -1
+		timer_sleep(10);
+		lapic_write(0x320, 0x10000);
+		tick_in_10ms = 0xFFFFFFFF - lapic_read(0x390);
+	}
 }
 
 uint8_t lapic_get_id(void) {
@@ -110,26 +118,16 @@ void apic_eoi(void) {
 	lapic_write(0xB0, 0);
 }
 
-static void apic_timer_tick(registers_t *reg) {
-	(void)reg;
+void timer_stop_sched(void) {
+	lapic_write(0x380, 0);
+	lapic_write(0x320, (1 << 16));
 }
 
-void apic_timer_init(void) {
-	ioapic_redirect_irq(0, 48);
-	isr_register_handler(48, apic_timer_tick);
-
-	lapic_write(0x3E0, 3);			// Divide by 16
-	lapic_write(0x380, 0xFFFFFFFF); // Set value to -1
-
-	timer_sleep(10000);
-	lapic_write(0x320, 0x10000);
-
-	uint32_t tick_in_10ms = 0xFFFFFFFF - lapic_read(0x390);
-
-	// Set to receive interrupt in vector 32 (IRQ 0)
-	lapic_write(0x320, 32 | 0x20000);
+void timer_sched_oneshot(uint8_t isr, uint32_t us) {
+	timer_stop_sched();
+	lapic_write(0x320, isr | 0x20000);
 	lapic_write(0x3E0, 3);
-	lapic_write(0x380, tick_in_10ms / 10);
+	lapic_write(0x380, ((tick_in_10ms * (us / 1000))) / 10);
 }
 
 void apic_send_ipi(uint8_t lapic_id, uint8_t vector) {

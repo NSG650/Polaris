@@ -56,7 +56,7 @@ static uint64_t smp_read_gs(void) {
 }
 
 static void smp_init_core(struct stivale2_smp_info *smp_info) {
-	spinlock_acquire(smp_lock);
+	spinlock_acquire_or_wait(smp_lock);
 	cli();
 	gdt_init();
 	isr_install();
@@ -108,13 +108,18 @@ static void smp_init_core(struct stivale2_smp_info *smp_info) {
 	}
 	strcpy(ap->name, prcb_names[smp_info->lapic_id]);
 	ap->cpu_number = smp_info->lapic_id;
+	ap->running_thread = NULL;
+	ap->thread_index = 0;
 	vector_add(&prcbs, ap);
 	smp_set_gs((uint64_t)prcbs[vector_size(prcbs) - 1]);
 	kprintf("CPU%d: %s online!\n", prcb_return_current_cpu()->cpu_number, prcb_return_current_cpu()->name);
 	initialised_cores++;
 	spinlock_drop(smp_lock);
 	if(prcb_return_current_cpu()->cpu_number != bsp_lapic_core) {
-		halt_current_cpu();
+		timer_sched_oneshot(32, 20000);
+		sti();
+		for (;;)
+			halt();
 	}
 }
 
@@ -130,12 +135,13 @@ void smp_init(struct stivale2_struct_tag_smp *smp_info) {
 			smp_init_core((void *)&smp_info->smp_info[i]);
 			continue;
 		}
-		spinlock_acquire(smp_lock);
-		smp_info->smp_info[i].target_stack = (uint64_t)pmm_allocz(2097152 / PAGE_SIZE);
-		smp_info->smp_info[i].target_stack += MEM_PHYS_OFFSET + 2097152;
+		spinlock_acquire_or_wait(smp_lock);
+		smp_info->smp_info[i].target_stack =
+			(uint64_t)pmm_allocz(32768 / PAGE_SIZE);
+		smp_info->smp_info[i].target_stack += MEM_PHYS_OFFSET + 32768;
 		smp_info->smp_info[i].goto_address = (uint64_t)smp_init_core;
 		spinlock_drop(smp_lock);
-		timer_sleep(10);
+		timer_sleep(100);
 	}
 	while(initialised_cores != cpu_count)
 		;

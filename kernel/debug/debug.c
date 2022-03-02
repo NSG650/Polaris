@@ -24,13 +24,14 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <sys/halt.h>
+#include <sys/prcb.h>
 #include <sys/timer.h>
 
 lock_t write_lock;
 bool in_panic = false;
 
 void kputchar(char c) {
-	spinlock_acquire(write_lock);
+	spinlock_acquire_or_wait(write_lock);
 	if (c == '\n')
 		kputchar('\r');
 	kputchar_(c);
@@ -101,7 +102,7 @@ static void kprintf_(char *fmt, va_list args) {
 }
 
 void kprintf(char *fmt, ...) {
-	spinlock_acquire(write_lock);
+	spinlock_acquire_or_wait(write_lock);
 	va_list args;
 	va_start(args, fmt);
 	kprintf_(fmt, args);
@@ -111,7 +112,11 @@ void kprintf(char *fmt, ...) {
 
 void panic(char *fmt, ...) {
 	cli();
+	extern bool is_smp;
 	in_panic = true;
+	if (is_smp)
+		kprintf("Panic called on CPU%d\n",
+				prcb_return_current_cpu()->cpu_number);
 	halt_other_cpus();
 	va_list args;
 	va_start(args, fmt);

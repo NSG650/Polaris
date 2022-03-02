@@ -6,11 +6,14 @@
 #if defined(__x86_64__)
 #include "../../arch/x86_64/include/sys/gdt.h"
 #endif
+#include <sched/thread.h>
 
 struct prcb {
 	uint8_t cpu_number;
 	char name[3];
-	#if defined(__x86_64__)
+	struct thread *running_thread;
+	uint64_t thread_index;
+#if defined(__x86_64__)
 	#endif
 };
 

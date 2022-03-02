@@ -425,9 +425,9 @@ void framebuffer_clear(uint32_t color) {
 
 void framebuffer_scroll(void) {
 	framebuff.tex_y--;
-	size_t row_size = framebuff.pitch * ISO_CHAR_HEIGHT / sizeof(uint32_t);
-	size_t screen_size = framebuff.pitch * ISO_CHAR_HEIGHT *
-						 (framebuff.height / ISO_CHAR_HEIGHT) /
+	size_t row_size = (framebuff.pitch * ISO_CHAR_HEIGHT) / sizeof(uint32_t);
+	size_t screen_size = ((framebuff.pitch * ISO_CHAR_HEIGHT) *
+						  (framebuff.height / ISO_CHAR_HEIGHT)) /
 						 sizeof(uint32_t);
 	for (size_t i = 0;
 		 i < framebuff.pitch * framebuff.height / sizeof(uint32_t); i++) {

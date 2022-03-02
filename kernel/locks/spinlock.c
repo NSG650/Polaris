@@ -18,7 +18,11 @@
 #include <asm/asm.h>
 #include <locks/spinlock.h>
 
-void spinlock_acquire(lock_t spin) {
+bool spinlock_acquire(lock_t spin) {
+	return __sync_bool_compare_and_swap(&spin, 0, 1);
+}
+
+void spinlock_acquire_or_wait(lock_t spin) {
 	while (!__sync_bool_compare_and_swap(&spin, 0, 1)) {
 		while (spin)
 			pause();
