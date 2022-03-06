@@ -64,11 +64,16 @@ struct madt_nmi {
 	uint8_t lint;
 } __attribute__((packed));
 
+typedef vec_t(struct madt_lapic *) lapic_vec_t;
+typedef vec_t(struct madt_ioapic *) ioapic_vec_t;
+typedef vec_t(struct madt_iso *) iso_vec_t;
+typedef vec_t(struct madt_nmi *) nmi_vec_t;
+
 extern struct madt *madt;
-extern struct madt_lapic **madt_local_apics;
-extern struct madt_ioapic **madt_io_apics;
-extern struct madt_iso **madt_isos;
-extern struct madt_nmi **madt_nmis;
+extern lapic_vec_t madt_local_apics;
+extern ioapic_vec_t madt_io_apics;
+extern iso_vec_t madt_isos;
+extern nmi_vec_t madt_nmis;
 
 uintptr_t acpi_get_lapic(void);
 void madt_init(void);

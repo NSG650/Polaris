@@ -49,7 +49,9 @@ struct pci_device {
 	uint8_t device;
 };
 
-extern struct mcfg_entry *mcfg_entries;
+typedef vec_t(struct mcfg_entry) mcfg_vec_t;
+
+extern mcfg_vec_t mcfg_entries;
 extern struct pci_device *pci_devices[];
 
 void pci_init(void);

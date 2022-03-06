@@ -1,80 +1,180 @@
-//
-//  vec.h
-//
-//  Created by Mashpoe on 2/26/19.
-//
+/*
+ * Copyright (c) 2014 rxi
+ */
 
-#ifndef vec_h
-#define vec_h
+// Gotten from https://github.com/rxi/vec
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
+#ifndef VEC_H
+#define VEC_H
 
-typedef void *vector; // you can't use this to store vectors, it's just used
-					  // internally as a generic type
-typedef size_t vec_size_t;		  // stores the number of elements
-typedef unsigned char vec_type_t; // stores the number of bytes for a type
+#include <klibc/mem.h>
+#include <mem/liballoc.h>
 
-typedef int *vec_int;
-typedef char *vec_char;
+#define VEC_VERSION "0.2.1"
 
-#ifndef _MSC_VER
 
-// shortcut defines
+#define vec_unpack_(v)\
+  (char**)&(v)->data, &(v)->length, &(v)->capacity, sizeof(*(v)->data)
 
-// vec_addr is a vector* (aka type**)
-#define vector_add_asg(vec_addr) \
-	((typeof(*vec_addr))(_vector_add((vector *)vec_addr, sizeof(**vec_addr))))
-#define vector_insert_asg(vec_addr, pos)                    \
-	((typeof(*vec_addr))(_vector_insert((vector *)vec_addr, \
-										sizeof(**vec_addr), pos)))
 
-#define vector_add(vec_addr, value) (*vector_add_asg(vec_addr) = value)
-#define vector_insert(vec_addr, pos, value) \
-	(*vector_insert_asg(vec_addr, pos) = value)
+#define vec_t(T)\
+  struct { T *data; int length, capacity; }
 
-#else
 
-#define vector_add_asg(vec_addr, type) \
-	((type *)_vector_add((vector *)vec_addr, sizeof(type)))
-#define vector_insert_asg(vec_addr, type, pos) \
-	((type *)_vector_insert((vector *)vec_addr, sizeof(type), pos))
+#define vec_init(v)\
+  memset((v), 0, sizeof(*(v)))
 
-#define vector_add(vec_addr, type, value) \
-	(*vector_add_asg(vec_addr, type) = value)
-#define vector_insert(vec_addr, type, pos, value) \
-	(*vector_insert_asg(vec_addr, type, pos) = value)
+
+#define vec_deinit(v)\
+  ( kfree((v)->data),\
+    vec_init(v) ) 
+
+
+#define vec_push(v, val)\
+  ( vec_expand_(vec_unpack_(v)) ? -1 :\
+    ((v)->data[(v)->length++] = (val), 0))
+
+
+#define vec_pop(v)\
+  (v)->data[--(v)->length]
+
+
+#define vec_splice(v, start, count)\
+  ( vec_splice_(vec_unpack_(v), start, count),\
+    (v)->length -= (count) )
+
+
+#define vec_swapsplice(v, start, count)\
+  ( vec_swapsplice_(vec_unpack_(v), start, count),\
+    (v)->length -= (count) )
+
+
+#define vec_insert(v, idx, val)\
+  ( vec_insert_(vec_unpack_(v), idx) ? -1 :\
+    ((v)->data[idx] = (val), 0), (v)->length++, 0 )
+    
+
+#define vec_sort(v, fn)\
+  qsort((v)->data, (v)->length, sizeof(*(v)->data), fn)
+
+
+#define vec_swap(v, idx1, idx2)\
+  vec_swap_(vec_unpack_(v), idx1, idx2)
+
+
+#define vec_truncate(v, len)\
+  ((v)->length = (len) < (v)->length ? (len) : (v)->length)
+
+
+#define vec_clear(v)\
+  ((v)->length = 0)
+
+
+#define vec_first(v)\
+  (v)->data[0]
+
+
+#define vec_last(v)\
+  (v)->data[(v)->length - 1]
+
+
+#define vec_reserve(v, n)\
+  vec_reserve_(vec_unpack_(v), n)
+
+ 
+#define vec_compact(v)\
+  vec_compact_(vec_unpack_(v))
+
+
+#define vec_pusharr(v, arr, count)\
+  do {\
+    int i__, n__ = (count);\
+    if (vec_reserve_po2_(vec_unpack_(v), (v)->length + n__) != 0) break;\
+    for (i__ = 0; i__ < n__; i__++) {\
+      (v)->data[(v)->length++] = (arr)[i__];\
+    }\
+  } while (0)
+
+
+#define vec_extend(v, v2)\
+  vec_pusharr((v), (v2)->data, (v2)->length)
+
+
+#define vec_find(v, val, idx)\
+  do {\
+    for ((idx) = 0; (idx) < (v)->length; (idx)++) {\
+      if ((v)->data[(idx)] == (val)) break;\
+    }\
+    if ((idx) == (v)->length) (idx) = -1;\
+  } while (0)
+
+
+#define vec_remove(v, val)\
+  do {\
+    int idx__;\
+    vec_find(v, val, idx__);\
+    if (idx__ != -1) vec_splice(v, idx__, 1);\
+  } while (0)
+
+
+#define vec_reverse(v)\
+  do {\
+    int i__ = (v)->length / 2;\
+    while (i__--) {\
+      vec_swap((v), i__, (v)->length - (i__ + 1));\
+    }\
+  } while (0)
+
+
+#define vec_foreach(v, var, iter)\
+  if  ( (v)->length > 0 )\
+  for ( (iter) = 0;\
+        (iter) < (v)->length && (((var) = (v)->data[(iter)]), 1);\
+        ++(iter))
+
+
+#define vec_foreach_rev(v, var, iter)\
+  if  ( (v)->length > 0 )\
+  for ( (iter) = (v)->length - 1;\
+        (iter) >= 0 && (((var) = (v)->data[(iter)]), 1);\
+        --(iter))
+
+
+#define vec_foreach_ptr(v, var, iter)\
+  if  ( (v)->length > 0 )\
+  for ( (iter) = 0;\
+        (iter) < (v)->length && (((var) = &(v)->data[(iter)]), 1);\
+        ++(iter))
+
+
+#define vec_foreach_ptr_rev(v, var, iter)\
+  if  ( (v)->length > 0 )\
+  for ( (iter) = (v)->length - 1;\
+        (iter) >= 0 && (((var) = &(v)->data[(iter)]), 1);\
+        --(iter))
+
+
+
+int vec_expand_(char **data, int *length, int *capacity, int memsz);
+int vec_reserve_(char **data, int *length, int *capacity, int memsz, int n);
+int vec_reserve_po2_(char **data, int *length, int *capacity, int memsz,
+                     int n);
+int vec_compact_(char **data, int *length, int *capacity, int memsz);
+int vec_insert_(char **data, int *length, int *capacity, int memsz,
+                int idx);
+void vec_splice_(char **data, int *length, int *capacity, int memsz,
+                 int start, int count);
+void vec_swapsplice_(char **data, int *length, int *capacity, int memsz,
+                     int start, int count);
+void vec_swap_(char **data, int *length, int *capacity, int memsz,
+               int idx1, int idx2);
+
+
+typedef vec_t(void*) vec_void_t;
+typedef vec_t(char*) vec_str_t;
+typedef vec_t(int) vec_int_t;
+typedef vec_t(char) vec_char_t;
+typedef vec_t(float) vec_float_t;
+typedef vec_t(double) vec_double_t;
 
 #endif
-
-// vec is a vector (aka type*)
-#define vector_erase(vec, pos, len) \
-	(_vector_erase((vector *)vec, sizeof(*vec), pos, len))
-#define vector_remove(vec, pos) \
-	(_vector_remove((vector *)vec, sizeof(*vec), pos))
-
-#define vector_copy(vec) (_vector_copy((vector *)vec, sizeof(*vec)))
-
-vector vector_create(void);
-
-void vector_free(vector vec);
-
-vector _vector_add(vector *vec_addr, vec_type_t type_size);
-
-vector _vector_insert(vector *vec_addr, vec_type_t type_size, vec_size_t pos);
-
-void _vector_erase(vector *vec_addr, vec_type_t type_size, vec_size_t pos,
-				   vec_size_t len);
-
-void _vector_remove(vector *vec_addr, vec_type_t type_size, vec_size_t pos);
-
-void vector_pop(vector vec);
-
-vector _vector_copy(vector vec, vec_type_t type_size);
-
-vec_size_t vector_size(vector vec);
-
-vec_size_t vector_get_alloc(vector vec);
-
-#endif /* vec_h */

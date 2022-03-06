@@ -17,7 +17,7 @@
 #include <sys/halt.h>
 #include <locks/spinlock.h>
 
-struct prcb **prcbs;
+prcb_vec_t prcbs;
 uint8_t bsp_lapic_core;
 uint64_t cpu_count = 0;
 uint64_t initialised_cores = 0;
@@ -101,7 +101,6 @@ static void smp_init_core(struct stivale2_smp_info *smp_info) {
 	}
 
 	vmm_switch_pagemap(kernel_pagemap);
-	lapic_init(smp_info->lapic_id);
 	struct prcb *ap = kmalloc(sizeof(struct prcb));
 	if(cpu_count > 21) {
 		ltoa(smp_info->lapic_id, ap->name, 16);
@@ -110,13 +109,14 @@ static void smp_init_core(struct stivale2_smp_info *smp_info) {
 	ap->cpu_number = smp_info->lapic_id;
 	ap->running_thread = NULL;
 	ap->thread_index = 0;
-	vector_add(&prcbs, ap);
-	smp_set_gs((uint64_t)prcbs[vector_size(prcbs) - 1]);
+	vec_push(&prcbs, ap);
+	smp_set_gs((uint64_t)prcbs.data[ap->cpu_number]);
 	kprintf("CPU%d: %s online!\n", prcb_return_current_cpu()->cpu_number, prcb_return_current_cpu()->name);
 	initialised_cores++;
 	spinlock_drop(smp_lock);
 	if(prcb_return_current_cpu()->cpu_number != bsp_lapic_core) {
-		timer_sched_oneshot(32, 20000);
+		lapic_init(smp_info->lapic_id);
+		// timer_sched_oneshot(32, 20000);
 		sti();
 		for (;;)
 			halt();
@@ -125,7 +125,7 @@ static void smp_init_core(struct stivale2_smp_info *smp_info) {
 
 
 void smp_init(struct stivale2_struct_tag_smp *smp_info) {
-	prcbs = vector_create();
+	vec_init(&prcbs);
 	bsp_lapic_core = smp_info->bsp_lapic_id;
 	cpu_count = smp_info->cpu_count;
 	kprintf("SMP: Bringing up the AP cores\n");

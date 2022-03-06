@@ -40,6 +40,17 @@ size_t strlen(char *string) {
 	return len;
 }
 
+char *strncpy(char *dest, const char *src, size_t n) {
+	char *ptr = dest;
+
+	while (*src != '\0' && n--) {
+		*ptr++ = *src++;
+	}
+
+	*ptr = '\0';
+	return dest;
+}
+
 char *ltoa(int64_t value, char *str, int base) {
 	char *rc;
 	char *ptr;

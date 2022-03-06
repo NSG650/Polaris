@@ -18,8 +18,8 @@ static uint32_t get_gsi_count(uintptr_t ioapic_address) {
 }
 
 static struct madt_ioapic *get_ioapic_by_gsi(uint32_t gsi) {
-	for (size_t i = 0; i < vector_size(madt_io_apics); i++) {
-		struct madt_ioapic *ioapic = madt_io_apics[i];
+	for (int i = 0; i < madt_io_apics.length; i++) {
+		struct madt_ioapic *ioapic = madt_io_apics.data[i];
 		if (ioapic->gsib <= gsi &&
 			ioapic->gsib + get_gsi_count(ioapic->addr) > gsi) {
 			return ioapic;
@@ -72,9 +72,9 @@ void ioapic_redirect_gsi(uint32_t gsi, uint8_t vec, uint16_t flags) {
 
 void ioapic_redirect_irq(uint32_t irq, uint8_t vect) {
 	// Use ISO table to find flags and interrupt overrides
-	for (size_t i = 0; i < vector_size(madt_isos); i++) {
-		if (madt_isos[i]->irq_source == irq) {
-			ioapic_redirect_gsi(madt_isos[i]->gsi, vect, madt_isos[i]->flags);
+	for (int i = 0; i < madt_isos.length; i++) {
+		if (madt_isos.data[i]->irq_source == irq) {
+			ioapic_redirect_gsi(madt_isos.data[i]->gsi, vect, madt_isos.data[i]->flags);
 			return;
 		}
 	}

@@ -97,8 +97,8 @@ void lapic_init(uint8_t cpu_id) {
 		lapic_write(0xE0, 0xF0000000);
 		lapic_write(0xD0, lapic_read(0x20));
 	}
-	for (size_t i = 0; i < vector_size(madt_nmis); i++) {
-		struct madt_nmi *nmi = madt_nmis[i];
+	for (int i = 0; i < madt_nmis.length; i++) {
+		struct madt_nmi *nmi = madt_nmis.data[i];
 		lapic_set_nmi(2, cpu_id, nmi->processor, nmi->flags, nmi->lint);
 	}
 	if (!tick_in_10ms) {
@@ -143,4 +143,5 @@ void apic_send_ipi(uint8_t lapic_id, uint8_t vector) {
 
 void apic_init(void) {
 	lapic_addr = acpi_get_lapic();
+	lapic_init(madt_local_apics.data[0]->processor_id);
 }

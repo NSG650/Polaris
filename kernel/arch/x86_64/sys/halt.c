@@ -34,8 +34,8 @@ void halt_current_cpu(void) {
 void halt_other_cpus(void) {
 	if (!is_smp)
 		return;
-	for (size_t i = 0; i < vector_size(madt_local_apics); i++) {
-		struct madt_lapic *lapic = madt_local_apics[i];
+	for (int i = 0; i < madt_local_apics.length; i++) {
+		struct madt_lapic *lapic = madt_local_apics.data[i];
 		if (lapic_get_id() == lapic->apic_id)
 			continue;
 		apic_send_ipi(lapic->apic_id, 0xff);
