@@ -41,17 +41,19 @@ void sched_init(void) {
 	kprintf("SCHED: Creating kernel thread\n");
 	vec_init(&threads);
 	vec_init(&processes);
-	process_create("kernel_tasks", 0, 5000, (uintptr_t)kernel_main, 0xbabe650, 0);
+	process_create("kernel_tasks", 0, 5000, (uintptr_t)kernel_main, 0xbabe650,
+				   0);
 }
 
-void process_create(char *name, uint8_t state, uint64_t runtime, uintptr_t pc_address, uint64_t arguments, bool user) {
+void process_create(char *name, uint8_t state, uint64_t runtime,
+					uintptr_t pc_address, uint64_t arguments, bool user) {
 	spinlock_acquire_or_wait(process_lock);
 	struct process *proc = kmalloc(sizeof(struct process));
 	strncpy(proc->name, name, 256);
 	proc->runtime = runtime;
 	proc->state = state;
 	proc->pid++;
-	if(user)
+	if (user)
 		panic("Cant create user processes as of now\n");
 #if defined(__x86_64__)
 	proc->process_pagemap = kernel_pagemap;
@@ -62,13 +64,14 @@ void process_create(char *name, uint8_t state, uint64_t runtime, uintptr_t pc_ad
 	spinlock_drop(process_lock);
 }
 
-void thread_create(uintptr_t pc_address, uint64_t arguments, bool user, struct process *proc) {
+void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
+				   struct process *proc) {
 	spinlock_acquire(thread_lock);
 	struct thread *thrd = kmalloc(sizeof(struct thread));
 	thrd->tid = tid++;
 	thrd->state = proc->state;
 	thrd->runtime = proc->runtime;
-	if(user)
+	if (user)
 		panic("Cant create user threads as of now\n");
 #if defined(__x86_64__)
 	thrd->reg.rip = pc_address;

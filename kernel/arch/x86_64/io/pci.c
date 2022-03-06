@@ -222,7 +222,8 @@ struct pci_device *pci_get_device_info(uint8_t bus, uint8_t device) {
 	device_struct->subclass = pci_read(0, bus, device, 0, 0x0a, 1);
 	device_struct->progintf = pci_read(0, bus, device, 0, 0x09, 1);
 	device_struct->device_id = pci_get_device(bus, device);
-	kprintf("PCI: Got Device at %x:%x\tvendor id: %x\tclasscode: \"%s\"\tsubclass: %x\t"
+	kprintf("PCI: Got Device at %x:%x\tvendor id: %x\tclasscode: "
+			"\"%s\"\tsubclass: %x\t"
 			"progintf: %x\tdevice_id: %x\n",
 			bus, device, device_struct->vendor_id,
 			pci_get_classcode_name(device_struct->classcode),

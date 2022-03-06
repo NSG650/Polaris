@@ -126,7 +126,7 @@ void panic(char *fmt, ...) {
 	size_t *bp = __builtin_frame_address(0);
 	kprintf("Crashed at 0x%p\n", ip);
 	kprintf("Stack trace:\n");
-	#if defined(__x86_64__)
+#if defined(__x86_64__)
 	for (;;) {
 		size_t old_rbp = bp[0];
 		size_t ret_address = bp[1];
@@ -137,7 +137,7 @@ void panic(char *fmt, ...) {
 			break;
 		bp = (void *)old_rbp;
 	}
-	#endif
+#endif
 	halt_current_cpu();
 	__builtin_unreachable();
 }

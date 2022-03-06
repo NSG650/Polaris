@@ -50,8 +50,7 @@ void madt_init(void) {
 		switch (*(madt_ptr)) {
 			case 0:
 				// Processor local APIC
-				kprintf("MADT: Got local APIC 0x%x\n",
-						madt_local_apics.length);
+				kprintf("MADT: Got local APIC 0x%x\n", madt_local_apics.length);
 				vec_push(&madt_local_apics, (void *)madt_ptr);
 				break;
 			case 1:

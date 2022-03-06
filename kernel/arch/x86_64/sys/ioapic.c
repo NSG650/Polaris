@@ -74,7 +74,8 @@ void ioapic_redirect_irq(uint32_t irq, uint8_t vect) {
 	// Use ISO table to find flags and interrupt overrides
 	for (int i = 0; i < madt_isos.length; i++) {
 		if (madt_isos.data[i]->irq_source == irq) {
-			ioapic_redirect_gsi(madt_isos.data[i]->gsi, vect, madt_isos.data[i]->flags);
+			ioapic_redirect_gsi(madt_isos.data[i]->gsi, vect,
+								madt_isos.data[i]->flags);
 			return;
 		}
 	}

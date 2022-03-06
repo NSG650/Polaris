@@ -462,7 +462,8 @@ void framebuffer_putchar(char c) {
 		case '\n':
 			framebuff.tex_x = 0;
 			framebuff.tex_y++;
-			if ((uint16_t)framebuff.tex_y > framebuff.height / ISO_CHAR_HEIGHT - 1) {
+			if ((uint16_t)framebuff.tex_y >
+				framebuff.height / ISO_CHAR_HEIGHT - 1) {
 				framebuffer_scroll();
 			}
 			return;

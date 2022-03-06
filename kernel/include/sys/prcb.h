@@ -1,13 +1,13 @@
 #ifndef PRCB_H
 #define PRCB_H
 
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 #if defined(__x86_64__)
 #include "../../arch/x86_64/include/sys/gdt.h"
 #endif
-#include <sched/sched.h>
 #include <klibc/vec.h>
+#include <sched/sched.h>
 
 struct prcb {
 	uint8_t cpu_number;
@@ -15,7 +15,7 @@ struct prcb {
 	struct thread *running_thread;
 	uint64_t thread_index;
 #if defined(__x86_64__)
-	#endif
+#endif
 };
 
 typedef vec_t(struct prcb *) prcb_vec_t;

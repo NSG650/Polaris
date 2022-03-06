@@ -1,9 +1,9 @@
 #include <asm/asm.h>
+#include <debug/debug.h>
 #include <fw/madt.h>
 #include <klibc/vec.h>
 #include <stdbool.h>
 #include <sys/apic.h>
-#include <debug/debug.h>
 
 extern bool is_smp;
 

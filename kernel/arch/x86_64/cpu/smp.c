@@ -1,21 +1,21 @@
+#include <cpu/cr.h>
+#include <cpu/msr.h>
 #include <cpu/smp.h>
 #include <cpu_features.h>
 #include <cpuid.h>
-#include <cpu/msr.h>
-#include <cpu/cr.h>
-#include <sys/prcb.h>
-#include <klibc/vec.h>
 #include <debug/debug.h>
-#include <sys/gdt.h>
+#include <klibc/mem.h>
+#include <klibc/vec.h>
+#include <locks/spinlock.h>
 #include <mem/liballoc.h>
 #include <mm/pmm.h>
 #include <mm/vmm.h>
 #include <sys/apic.h>
-#include <klibc/mem.h>
-#include <sys/timer.h>
-#include <sys/isr.h>
+#include <sys/gdt.h>
 #include <sys/halt.h>
-#include <locks/spinlock.h>
+#include <sys/isr.h>
+#include <sys/prcb.h>
+#include <sys/timer.h>
 
 prcb_vec_t prcbs;
 uint8_t bsp_lapic_core;
@@ -24,35 +24,15 @@ uint64_t initialised_cores = 0;
 bool is_smp = false;
 lock_t smp_lock;
 
-char prcb_names[21][3] = {
-	"Aa",
-	"Ab",
-	"E",
-	"H",
-	"Ua",
-	"Ub",
-	"Z",
-	"F",
-	"Ga",
-	"Gb",
-	"Gc",
-	"Gd",
-	"Ja",
-	"Jb",
-	"Na",
-	"Nb",
-	"Ra",
-	"Rb",
-	"T",
-	"V",
-	"Y"
-};
+char prcb_names[21][3] = {"Aa", "Ab", "E",	"H",  "Ua", "Ub", "Z",
+						  "F",	"Ga", "Gb", "Gc", "Gd", "Ja", "Jb",
+						  "Na", "Nb", "Ra", "Rb", "T",	"V",  "Y"};
 
 static void smp_set_gs(uint64_t address) {
 	wrmsr(0xc0000101, address);
 }
 static uint64_t smp_read_gs(void) {
-    return rdmsr(0xc0000101);
+	return rdmsr(0xc0000101);
 }
 
 static void smp_init_core(struct stivale2_smp_info *smp_info) {
@@ -102,7 +82,7 @@ static void smp_init_core(struct stivale2_smp_info *smp_info) {
 
 	vmm_switch_pagemap(kernel_pagemap);
 	struct prcb *ap = kmalloc(sizeof(struct prcb));
-	if(cpu_count > 21) {
+	if (cpu_count > 21) {
 		ltoa(smp_info->lapic_id, ap->name, 16);
 	}
 	strcpy(ap->name, prcb_names[smp_info->lapic_id]);
@@ -111,10 +91,11 @@ static void smp_init_core(struct stivale2_smp_info *smp_info) {
 	ap->thread_index = 0;
 	vec_push(&prcbs, ap);
 	smp_set_gs((uint64_t)prcbs.data[ap->cpu_number]);
-	kprintf("CPU%d: %s online!\n", prcb_return_current_cpu()->cpu_number, prcb_return_current_cpu()->name);
+	kprintf("CPU%d: %s online!\n", prcb_return_current_cpu()->cpu_number,
+			prcb_return_current_cpu()->name);
 	initialised_cores++;
 	spinlock_drop(smp_lock);
-	if(prcb_return_current_cpu()->cpu_number != bsp_lapic_core) {
+	if (prcb_return_current_cpu()->cpu_number != bsp_lapic_core) {
 		lapic_init(smp_info->lapic_id);
 		// timer_sched_oneshot(32, 20000);
 		sti();
@@ -123,14 +104,13 @@ static void smp_init_core(struct stivale2_smp_info *smp_info) {
 	}
 }
 
-
 void smp_init(struct stivale2_struct_tag_smp *smp_info) {
 	vec_init(&prcbs);
 	bsp_lapic_core = smp_info->bsp_lapic_id;
 	cpu_count = smp_info->cpu_count;
 	kprintf("SMP: Bringing up the AP cores\n");
 	for (size_t i = 0; i < smp_info->cpu_count; i++) {
-		if(smp_info->smp_info[i].lapic_id == bsp_lapic_core) {
+		if (smp_info->smp_info[i].lapic_id == bsp_lapic_core) {
 			kprintf("SMP: BSP Core %u\n", bsp_lapic_core);
 			smp_init_core((void *)&smp_info->smp_info[i]);
 			continue;
@@ -143,14 +123,15 @@ void smp_init(struct stivale2_struct_tag_smp *smp_info) {
 		spinlock_drop(smp_lock);
 		timer_sleep(100);
 	}
-	while(initialised_cores != cpu_count)
+	while (initialised_cores != cpu_count)
 		;
 	is_smp = true;
-	kprintf("SMP: %d CPUs installed in the system\n", prcb_return_installed_cpus());
+	kprintf("SMP: %d CPUs installed in the system\n",
+			prcb_return_installed_cpus());
 }
 
 struct prcb *prcb_return_current_cpu(void) {
-	return (struct prcb*)smp_read_gs();
+	return (struct prcb *)smp_read_gs();
 }
 
 uint64_t prcb_return_installed_cpus(void) {

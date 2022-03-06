@@ -1,14 +1,14 @@
 #ifndef SCHED_TYPES_H
 #define SCHED_TYPES_H
 
+#include <klibc/vec.h>
+#include <locks/spinlock.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <locks/spinlock.h>
-#include <klibc/vec.h>
 
 #if defined(__x86_64__)
-#include "../../arch/x86_64/include/reg.h"
 #include "../../arch/x86_64/include/mm/vmm.h"
+#include "../../arch/x86_64/include/reg.h"
 #endif
 
 struct process;

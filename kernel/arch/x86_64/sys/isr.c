@@ -1,7 +1,7 @@
 #include <debug/debug.h>
+#include <sys/apic.h>
 #include <sys/idt.h>
 #include <sys/isr.h>
-#include <sys/apic.h>
 
 void isr_install(void) {
 	idt_set_gate(0, isr0, 0);
@@ -307,7 +307,7 @@ void isr_handle(registers_t *r) {
 			  isr_exception_messages[r->isrNumber]);
 	}
 
-	if(r->isrNumber == 0xf0)
+	if (r->isrNumber == 0xf0)
 		kprintf("Weird. NMI from APIC?\n");
 
 	if (event_handlers[r->isrNumber] != NULL)

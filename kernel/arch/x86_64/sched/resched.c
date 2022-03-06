@@ -1,11 +1,11 @@
 #include <asm/asm.h>
 #include <debug/debug.h>
 #include <klibc/mem.h>
+#include <mm/vmm.h>
 #include <sched/sched.h>
 #include <sys/apic.h>
 #include <sys/prcb.h>
 #include <sys/timer.h>
-#include <mm/vmm.h>
 
 lock_t resched_lock;
 extern void resched_context_switch(registers_t *reg);
