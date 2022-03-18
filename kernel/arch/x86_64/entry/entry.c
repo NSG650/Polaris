@@ -33,6 +33,7 @@
 #include <sys/gdt.h>
 #include <sys/halt.h>
 #include <sys/hpet.h>
+#include <sys/idt.h>
 #include <sys/isr.h>
 #include <sys/timer.h>
 
@@ -98,6 +99,7 @@ void arch_entry(struct stivale2_struct *stivale2_struct) {
 	kprintf("Hello x86_64!\n");
 	cli();
 	isr_register_handler(0xff, halt_current_cpu);
+	isr_register_handler(0xe, vmm_page_fault_handler);
 	isr_register_handler(48, resched);
 	struct stivale2_struct_tag_rsdp *rsdp_tag =
 		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_RSDP_ID);

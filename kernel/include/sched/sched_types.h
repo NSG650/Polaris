@@ -20,6 +20,10 @@ struct thread {
 	uint8_t state;
 	uint64_t runtime;
 	struct process *mother_proc;
+	uint64_t kernel_stack;
+#if defined(__x86_64__)
+	uint64_t page_fault_stack;
+#endif
 };
 
 typedef vec_t(struct thread *) thread_vec_t;

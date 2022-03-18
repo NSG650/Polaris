@@ -18,7 +18,7 @@ void isr_install(void) {
 	idt_set_gate(11, isr11, 0);
 	idt_set_gate(12, isr12, 0);
 	idt_set_gate(13, isr13, 0);
-	idt_set_gate(14, isr14, 0);
+	idt_set_gate(14, isr14, 2);
 	idt_set_gate(15, isr15, 0);
 	idt_set_gate(16, isr16, 0);
 	idt_set_gate(17, isr17, 0);
@@ -52,7 +52,7 @@ void isr_install(void) {
 	idt_set_gate(45, isr45, 0);
 	idt_set_gate(46, isr46, 0);
 	idt_set_gate(47, isr47, 0);
-	idt_set_gate(48, isr48, 0);
+	idt_set_gate(48, isr48, 1);
 	idt_set_gate(49, isr49, 0);
 	idt_set_gate(50, isr50, 0);
 	idt_set_gate(51, isr51, 0);
@@ -302,6 +302,9 @@ static const char *isr_exception_messages[] = {"Divide by zero",
 static event_handlers_t event_handlers[256] = {NULL};
 
 void isr_handle(registers_t *r) {
+	if (event_handlers[r->isrNumber] != NULL)
+		event_handlers[r->isrNumber](r);
+
 	if (r->isrNumber < 32) {
 		panic("Unhandled Exception: %s\n",
 			  isr_exception_messages[r->isrNumber]);
@@ -309,9 +312,6 @@ void isr_handle(registers_t *r) {
 
 	if (r->isrNumber == 0xf0)
 		kprintf("Weird. NMI from APIC?\n");
-
-	if (event_handlers[r->isrNumber] != NULL)
-		event_handlers[r->isrNumber](r);
 
 	apic_eoi();
 }
