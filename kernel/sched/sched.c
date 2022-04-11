@@ -3,7 +3,6 @@
 #include <kernel.h>
 #include <klibc/vec.h>
 #include <sched/sched.h>
-#include <sys/prcb.h>
 #include <sys/timer.h>
 
 lock_t sched_lock;
@@ -12,7 +11,7 @@ bool sched_runit = false;
 thread_vec_t threads;
 process_vec_t processes;
 
-uint64_t pid = 0;
+uint64_t pid = -1;
 lock_t process_lock;
 
 lock_t thread_lock;
@@ -53,7 +52,9 @@ void process_create(char *name, uint8_t state, uint64_t runtime,
 	strncpy(proc->name, name, 256);
 	proc->runtime = runtime;
 	proc->state = state;
-	proc->pid = pid++;
+	proc->pid++;
+	if (user)
+		panic("Cant create user processes as of now\n");
 #if defined(__x86_64__)
 	proc->process_pagemap = kernel_pagemap;
 #endif
@@ -70,24 +71,18 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 	thrd->tid = tid++;
 	thrd->state = proc->state;
 	thrd->runtime = proc->runtime;
+	if (user)
+		panic("Cant create user threads as of now\n");
 #if defined(__x86_64__)
 	thrd->reg.rip = pc_address;
 	thrd->reg.rdi = arguments;
 	thrd->reg.rsp = (uint64_t)kmalloc(STACK_SIZE);
-	thrd->page_fault_stack = (uint64_t)kmalloc(STACK_SIZE);
 	thrd->reg.rsp += STACK_SIZE;
-	thrd->page_fault_stack += STACK_SIZE;
-	if (user) {
-		thrd->reg.cs = 0x23;
-		thrd->reg.ss = 0x1b;
-	} else {
-		thrd->reg.cs = 0x08;
-		thrd->reg.ss = 0x10;
-	}
+	thrd->reg.cs = 0x08;
+	thrd->reg.ss = 0x10;
 	thrd->reg.rflags = 0x202;
 #endif
 	thrd->mother_proc = proc;
-	thrd->kernel_stack = thrd->reg.rsp;
 	vec_push(&threads, thrd);
 	vec_push(&proc->process_threads, thrd);
 	spinlock_drop(thread_lock);

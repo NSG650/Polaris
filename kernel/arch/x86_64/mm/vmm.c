@@ -17,7 +17,6 @@
 
 #include <cpu_features.h>
 #include <cpuid.h>
-#include <debug/debug.h>
 #include <mm/pmm.h>
 #include <mm/vmm.h>
 
@@ -33,16 +32,16 @@ void vmm_init(struct stivale2_mmap_entry *memmap, size_t memmap_entries,
 		if (d & CPUID_GBPAGE) {
 			// Use 1GB pages if available (biggest size on x86-64)
 			for (uint64_t p = 0; p < 4096UL * 1024 * 1024; p += 0x40000000) {
-				vmm_map_page(kernel_pagemap, p, p, 0b111, false, true);
-				vmm_map_page(kernel_pagemap, p + MEM_PHYS_OFFSET, p, 0b111,
+				vmm_map_page(kernel_pagemap, p, p, 0b11, false, true);
+				vmm_map_page(kernel_pagemap, p + MEM_PHYS_OFFSET, p, 0b11,
 							 false, true);
 			}
 		} else {
 			// Use 2MB pages otherwise (biggest size always available on x86-64)
 			for (uint64_t p = 0; p < 4096UL * 1024 * 1024; p += 0x200000) {
-				vmm_map_page(kernel_pagemap, p, p, 0b111, true, false);
-				vmm_map_page(kernel_pagemap, p + MEM_PHYS_OFFSET, p, 0b111,
-							 true, false);
+				vmm_map_page(kernel_pagemap, p, p, 0b11, true, false);
+				vmm_map_page(kernel_pagemap, p + MEM_PHYS_OFFSET, p, 0b11, true,
+							 false);
 			}
 		}
 	}
@@ -74,10 +73,9 @@ void vmm_init(struct stivale2_mmap_entry *memmap, size_t memmap_entries,
 				// Map the entire memory map based on the aligned length
 				for (uint64_t p = 0; p < aligned_length; p += 0x40000000) {
 					uint64_t page = aligned_base + p;
-					vmm_map_page(kernel_pagemap, page, page, 0b111, false,
-								 true);
+					vmm_map_page(kernel_pagemap, page, page, 0b11, false, true);
 					vmm_map_page(kernel_pagemap, MEM_PHYS_OFFSET + page, page,
-								 0b111, false, true);
+								 0b11, false, true);
 				}
 			}
 		} else {
@@ -91,10 +89,9 @@ void vmm_init(struct stivale2_mmap_entry *memmap, size_t memmap_entries,
 
 				for (uint64_t p = 0; p < aligned_length; p += 0x200000) {
 					uint64_t page = aligned_base + p;
-					vmm_map_page(kernel_pagemap, page, page, 0b111, true,
-								 false);
+					vmm_map_page(kernel_pagemap, page, page, 0b11, true, false);
 					vmm_map_page(kernel_pagemap, MEM_PHYS_OFFSET + page, page,
-								 0b111, true, false);
+								 0b11, true, false);
 				}
 			}
 		}
@@ -178,17 +175,4 @@ bool vmm_map_page(struct pagemap *pagemap, uint64_t virt_addr,
 	// Use 4KB pages otherwise
 	pml1[pml1_entry] = phys_addr | flags;
 	return true;
-}
-
-void vmm_page_fault_handler(registers_t *reg) {
-	uint64_t faulting_address = 0;
-	asm volatile("mov %0, cr2" : "=r"(faulting_address));
-	int present = !(reg->errorCode & 0x1);
-	int read_write = reg->errorCode & 0x2;
-	int user_supervisor = reg->errorCode & 0x4;
-	int reserved = reg->errorCode & 0x8;
-	panic("Page fault at 0x%p present: %s, read/write: %s, "
-		  "user/supervisor: %s, reserved: %s\n",
-		  faulting_address, present ? "P" : "NP", read_write ? "R" : "RW",
-		  user_supervisor ? "U" : "S", reserved ? "R" : "NR");
 }

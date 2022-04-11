@@ -2,7 +2,6 @@ global resched_context_switch
 
 resched_context_switch:
 	mov rsp, rdi
-
 	pop r15
 	pop r14
 	pop r13
@@ -18,6 +17,5 @@ resched_context_switch:
 	pop rcx
 	pop rbx
 	pop rax
-
 	add rsp, 24
 	iretq

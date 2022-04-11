@@ -59,9 +59,7 @@ extern void tss_reload(void);
 void gdt_init(void) {
 	spinlock_acquire(gdt_lock);
 	// Kernel code
-	gdt.entries[1].access =
-		0b10011110; // we are setting the DC bit to 1 this should not be done
-					// but for a simple user test its fine
+	gdt.entries[1].access = 0b10011010;
 	gdt.entries[1].granularity = 0b00100000;
 
 	// Kernel data
