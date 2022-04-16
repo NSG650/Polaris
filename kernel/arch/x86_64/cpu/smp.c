@@ -80,7 +80,7 @@ static void smp_init_core(struct stivale2_smp_info *smp_info) {
 		}
 	}
 
-	vmm_switch_pagemap(kernel_pagemap);
+	vmm_switch_pagemap(&kernel_pagemap);
 	struct prcb *ap = kmalloc(sizeof(struct prcb));
 	if (cpu_count > 21) {
 		ltoa(smp_info->lapic_id, ap->name, 16);

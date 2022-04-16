@@ -17,33 +17,40 @@
 
 #include <cpu_features.h>
 #include <cpuid.h>
+#include <mem/liballoc.h>
 #include <mm/pmm.h>
 #include <mm/vmm.h>
 
-struct pagemap *kernel_pagemap = NULL;
+struct pagemap kernel_pagemap;
 
 void vmm_init(struct stivale2_mmap_entry *memmap, size_t memmap_entries,
 			  struct stivale2_pmr *pmrs, size_t pmr_entries,
 			  uint64_t virtual_base_address, uint64_t physical_base_address) {
-	kernel_pagemap = vmm_new_pagemap();
+	// kernel_pagemap = vmm_new_pagemap();
+	kernel_pagemap.top_level = pmm_allocz(1);
 	// Use the biggest page size available
-	uint32_t a = 0, b = 0, c = 0, d = 0;
-	if (__get_cpuid(0x80000001, &a, &b, &c, &d)) {
+	// uint32_t a = 0, b = 0, c = 0, d = 0;
+	/* if (__get_cpuid(0x80000001, &a, &b, &c, &d)) {
 		if (d & CPUID_GBPAGE) {
 			// Use 1GB pages if available (biggest size on x86-64)
 			for (uint64_t p = 0; p < 4096UL * 1024 * 1024; p += 0x40000000) {
-				vmm_map_page(kernel_pagemap, p, p, 0b11, false, true);
-				vmm_map_page(kernel_pagemap, p + MEM_PHYS_OFFSET, p, 0b11,
+				vmm_map_page(&kernel_pagemap, p, p, 0b11, false, true);
+				vmm_map_page(&kernel_pagemap, p + MEM_PHYS_OFFSET, p, 0b11,
 							 false, true);
 			}
 		} else {
 			// Use 2MB pages otherwise (biggest size always available on x86-64)
 			for (uint64_t p = 0; p < 4096UL * 1024 * 1024; p += 0x200000) {
-				vmm_map_page(kernel_pagemap, p, p, 0b11, true, false);
-				vmm_map_page(kernel_pagemap, p + MEM_PHYS_OFFSET, p, 0b11, true,
-							 false);
+				vmm_map_page(&kernel_pagemap, p, p, 0b11, true, false);
+				vmm_map_page(&kernel_pagemap, p + MEM_PHYS_OFFSET, p, 0b11,
+	true, false);
 			}
 		}
+	}*/
+	for (uint64_t p = 0; p < 4096UL * 1024 * 1024; p += PAGE_SIZE) {
+		vmm_map_page(&kernel_pagemap, p, p, 0b11, false, false);
+		vmm_map_page(&kernel_pagemap, p + MEM_PHYS_OFFSET, p, 0b11, false,
+					 false);
 	}
 	// Map PMRs with 4KB granularity
 	for (size_t i = 0; i < pmr_entries; i++) {
@@ -55,12 +62,12 @@ void vmm_init(struct stivale2_mmap_entry *memmap, size_t memmap_entries,
 			(pmrs[i].permissions & STIVALE2_PMR_EXECUTABLE ? 0 : 1UL << 63) |
 			(pmrs[i].permissions & STIVALE2_PMR_WRITABLE ? 1 << 1 : 0) | 1;
 		for (uint64_t p = 0; p < pmrs[i].length; p += PAGE_SIZE) {
-			vmm_map_page(kernel_pagemap, virt + p, phys + p, pf, false, false);
+			vmm_map_page(&kernel_pagemap, virt + p, phys + p, pf, false, false);
 		}
 	}
 	// Use the biggest page size available for the memory map, align to that
 	// size
-	if (__get_cpuid(0x80000001, &a, &b, &c, &d)) {
+	/* if (__get_cpuid(0x80000001, &a, &b, &c, &d)) {
 		if (d & CPUID_GBPAGE) {
 			for (size_t i = 0; i < memmap_entries; i++) {
 				// Align to 1GB
@@ -73,9 +80,9 @@ void vmm_init(struct stivale2_mmap_entry *memmap, size_t memmap_entries,
 				// Map the entire memory map based on the aligned length
 				for (uint64_t p = 0; p < aligned_length; p += 0x40000000) {
 					uint64_t page = aligned_base + p;
-					vmm_map_page(kernel_pagemap, page, page, 0b11, false, true);
-					vmm_map_page(kernel_pagemap, MEM_PHYS_OFFSET + page, page,
-								 0b11, false, true);
+					vmm_map_page(&kernel_pagemap, page, page, 0b11, false,
+	true); vmm_map_page(&kernel_pagemap, MEM_PHYS_OFFSET + page, page, 0b11,
+	false, true);
 				}
 			}
 		} else {
@@ -89,15 +96,27 @@ void vmm_init(struct stivale2_mmap_entry *memmap, size_t memmap_entries,
 
 				for (uint64_t p = 0; p < aligned_length; p += 0x200000) {
 					uint64_t page = aligned_base + p;
-					vmm_map_page(kernel_pagemap, page, page, 0b11, true, false);
-					vmm_map_page(kernel_pagemap, MEM_PHYS_OFFSET + page, page,
-								 0b11, true, false);
+					vmm_map_page(&kernel_pagemap, page, page, 0b11, true,
+	false); vmm_map_page(&kernel_pagemap, MEM_PHYS_OFFSET + page, page, 0b11,
+	true, false);
 				}
 			}
 		}
+	}*/
+	for (size_t i = 0; i < memmap_entries; i++) {
+		uint64_t aligned_base = ALIGN_DOWN(memmap[i].base, PAGE_SIZE);
+		uint64_t aligned_top =
+			ALIGN_UP(memmap[i].base + memmap[i].length, PAGE_SIZE);
+		uint64_t aligned_length = aligned_top - aligned_base;
+		for (uint64_t p = 0; p < aligned_length; p += PAGE_SIZE) {
+			uint64_t page = aligned_base + p;
+			vmm_map_page(&kernel_pagemap, page, page, 0b11, false, false);
+			vmm_map_page(&kernel_pagemap, MEM_PHYS_OFFSET + page, page, 0b11,
+						 false, false);
+		}
 	}
 	// Switch to the new page map, dropping Stivale2's default one
-	vmm_switch_pagemap(kernel_pagemap);
+	vmm_switch_pagemap(&kernel_pagemap);
 }
 
 void vmm_switch_pagemap(struct pagemap *pagemap) {
@@ -106,8 +125,10 @@ void vmm_switch_pagemap(struct pagemap *pagemap) {
 
 // Creates a new dynamically allocated page map
 struct pagemap *vmm_new_pagemap(void) {
-	struct pagemap *pagemap = pmm_allocz(sizeof(struct pagemap));
+	struct pagemap *pagemap = kmalloc(sizeof(struct pagemap));
 	pagemap->top_level = pmm_allocz(1);
+	for (size_t i = 256; i < 512; i++)
+		pagemap->top_level[i] = kernel_pagemap.top_level[i];
 	return pagemap;
 }
 

@@ -56,7 +56,7 @@ void process_create(char *name, uint8_t state, uint64_t runtime,
 	if (user)
 		panic("Cant create user processes as of now\n");
 #if defined(__x86_64__)
-	proc->process_pagemap = kernel_pagemap;
+	proc->process_pagemap = &kernel_pagemap;
 #endif
 	vec_init(&proc->process_threads);
 	vec_push(&processes, proc);
