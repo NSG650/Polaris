@@ -302,6 +302,9 @@ static const char *isr_exception_messages[] = {"Divide by zero",
 static event_handlers_t event_handlers[256] = {NULL};
 
 void isr_handle(registers_t *r) {
+	if (event_handlers[r->isrNumber] != NULL)
+		event_handlers[r->isrNumber](r);
+
 	if (r->isrNumber < 32) {
 		panic("Unhandled Exception: %s\n",
 			  isr_exception_messages[r->isrNumber]);
@@ -309,9 +312,6 @@ void isr_handle(registers_t *r) {
 
 	if (r->isrNumber == 0xf0)
 		kprintf("Weird. NMI from APIC?\n");
-
-	if (event_handlers[r->isrNumber] != NULL)
-		event_handlers[r->isrNumber](r);
 
 	apic_eoi();
 }

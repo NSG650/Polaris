@@ -20,6 +20,8 @@
 #include <mem/liballoc.h>
 #include <mm/pmm.h>
 #include <mm/vmm.h>
+#include <cpu/cr.h>
+#include <debug/debug.h>
 
 struct pagemap kernel_pagemap;
 
@@ -196,4 +198,17 @@ bool vmm_map_page(struct pagemap *pagemap, uint64_t virt_addr,
 	// Use 4KB pages otherwise
 	pml1[pml1_entry] = phys_addr | flags;
 	return true;
+}
+
+void vmm_page_fault_handler(registers_t *reg) {
+	uint64_t faulting_address = read_cr("2");
+	int present = reg->errorCode & 0x1;
+	int read_write = reg->errorCode & 0x2;
+	int user_supervisor = reg->errorCode & 0x4;
+	int reserved = reg->errorCode & 0x8;
+	int execute = reg->errorCode & 0x10;
+	panic("Page fault at 0x%p present: %s, read/write: %s, "
+		  "user/supervisor: %s, reserved: %s, execute: %s\n",
+		  faulting_address, present ? "P" : "NP", read_write ? "R" : "RW",
+		  user_supervisor ? "U" : "S", reserved ? "R" : "NR", execute ? "X" : "NX");
 }
