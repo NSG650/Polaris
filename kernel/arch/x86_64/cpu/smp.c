@@ -89,8 +89,12 @@ static void smp_init_core(struct stivale2_smp_info *smp_info) {
 	ap->cpu_number = smp_info->lapic_id;
 	ap->running_thread = NULL;
 	ap->thread_index = 0;
+	ap->cpu_tss.rsp0 = smp_info->target_stack;
+	ap->cpu_tss.ist1 = (uint64_t)pmm_allocz(32768 / PAGE_SIZE);
+	ap->cpu_tss.ist1 += MEM_PHYS_OFFSET + 32768;
 	vec_push(&prcbs, ap);
 	smp_set_gs((uint64_t)prcbs.data[ap->cpu_number]);
+	gdt_load_tss((size_t)&prcb_return_current_cpu()->cpu_tss);
 	kprintf("CPU%d: %s online!\n", prcb_return_current_cpu()->cpu_number,
 			prcb_return_current_cpu()->name);
 	initialised_cores++;

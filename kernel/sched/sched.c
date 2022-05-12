@@ -33,7 +33,6 @@ int sched_get_next_thread(int index) {
 			return index;
 		index++;
 	}
-
 	return -1;
 }
 
@@ -71,15 +70,23 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 	thrd->tid = tid++;
 	thrd->state = proc->state;
 	thrd->runtime = proc->runtime;
-	if (user)
-		panic("Cant create user threads as of now\n");
+	thrd->lock = 0;
 #if defined(__x86_64__)
 	thrd->reg.rip = pc_address;
 	thrd->reg.rdi = arguments;
 	thrd->reg.rsp = (uint64_t)kmalloc(STACK_SIZE);
 	thrd->reg.rsp += STACK_SIZE;
-	thrd->reg.cs = 0x08;
-	thrd->reg.ss = 0x10;
+	if (user) {
+		thrd->reg.cs = 0x23;
+		thrd->reg.ss = 0x1b;
+		thrd->kernel_stack = (uint64_t)kmalloc(STACK_SIZE);
+		thrd->kernel_stack += STACK_SIZE;
+	}
+	else {
+		thrd->reg.cs = 0x08;
+		thrd->reg.ss = 0x10;
+		thrd->kernel_stack = thrd->reg.rsp;
+	}
 	thrd->reg.rflags = 0x202;
 #endif
 	thrd->mother_proc = proc;

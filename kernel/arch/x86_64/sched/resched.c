@@ -33,6 +33,7 @@ void resched(registers_t *reg) {
 	running_thrd = threads.data[nex_index];
 	prcb_return_current_cpu()->running_thread = running_thrd;
 	prcb_return_current_cpu()->thread_index = nex_index;
+	prcb_return_current_cpu()->cpu_tss.rsp0 = running_thrd->kernel_stack;
 	apic_eoi();
 	timer_sched_oneshot(32, running_thrd->runtime);
 	vmm_switch_pagemap(running_thrd->mother_proc->process_pagemap);

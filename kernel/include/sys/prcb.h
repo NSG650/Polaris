@@ -15,6 +15,7 @@ struct prcb {
 	struct thread *running_thread;
 	uint64_t thread_index;
 #if defined(__x86_64__)
+	struct tss cpu_tss;
 #endif
 };
 

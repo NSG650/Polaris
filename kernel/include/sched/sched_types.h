@@ -19,6 +19,7 @@ struct thread {
 	lock_t lock;
 	uint8_t state;
 	uint64_t runtime;
+	uint64_t kernel_stack;
 	struct process *mother_proc;
 };
 
