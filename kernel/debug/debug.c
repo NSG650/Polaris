@@ -113,6 +113,10 @@ void kprintf(char *fmt, ...) {
 void panic(char *fmt, ...) {
 	cli();
 	extern bool is_smp;
+	if (in_panic) {
+		halt_other_cpus();
+		halt_current_cpu();
+	}
 	in_panic = true;
 	if (is_smp)
 		kprintf("Panic called on CPU%d\n",
