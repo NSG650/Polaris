@@ -6,6 +6,7 @@ global user_thread
 	jmp .die
 
 user_thread:
+	push rax
 	xor rax, rax
 	mov rdi, 0x48
 	int 0x80
@@ -41,4 +42,5 @@ user_thread:
 	int 0x80
 	mov rdi, 0xa
 	int 0x80
+	pop rax
 	jmp .die

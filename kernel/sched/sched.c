@@ -84,13 +84,12 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 #if defined(__x86_64__)
 	thrd->reg.rip = pc_address;
 	thrd->reg.rdi = arguments;
-	thrd->reg.rsp = (uint64_t)kmalloc(STACK_SIZE);
-	thrd->reg.rsp += STACK_SIZE;
+	thrd->reg.rsp = (uint64_t)pmm_alloc(STACK_SIZE / STACK_SIZE);
 	if (user) {
 		thrd->reg.cs = 0x23;
 		thrd->reg.ss = 0x1b;
 		for (size_t p = 0; p < STACK_SIZE; p += PAGE_SIZE) {
-			vmm_map_page(proc->process_pagemap, VIRTUAL_STACK_ADDR + p, thrd->reg.rsp + p, 0b111, 0, 0);
+			vmm_map_page(proc->process_pagemap, VIRTUAL_STACK_ADDR + p, (thrd->reg.rsp) + p, 0b111, 0, 0);
 		}
 		thrd->reg.rsp = VIRTUAL_STACK_ADDR + STACK_SIZE;
 		thrd->kernel_stack = (uint64_t)kmalloc(STACK_SIZE);
@@ -99,8 +98,8 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 	else {
 		thrd->reg.cs = 0x08;
 		thrd->reg.ss = 0x10;
+		thrd->reg.rsp += STACK_SIZE;
 		thrd->kernel_stack = thrd->reg.rsp;
-#define VIRTUAL_STACK_ADDR 0x70000000000
 	}
 	thrd->reg.rflags = 0x202;
 #endif
