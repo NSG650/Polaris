@@ -35,6 +35,7 @@
 #include <sys/hpet.h>
 #include <sys/isr.h>
 #include <sys/timer.h>
+#include <sched/syscall.h>
 
 static uint8_t stack[32768];
 static struct stivale2_header_tag_smp smp_hdr_tag = {
@@ -109,6 +110,7 @@ void arch_entry(struct stivale2_struct *stivale2_struct) {
 		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_SMP_ID);
 	smp_init(smp_tag);
 	ioapic_redirect_irq(0, 48);
+	syscall_install_handler();
 	sched_init();
 	timer_sched_oneshot(32, 20000);
 	sti();

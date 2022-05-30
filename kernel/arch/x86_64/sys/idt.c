@@ -40,7 +40,7 @@ void idt_set_gate(size_t vec, void *handler, uint8_t ist) {
 	idt[vec].offset_lo = (uint16_t)p;
 	idt[vec].selector = 8;
 	idt[vec].ist = ist;
-	idt[vec].flags = 0x8E;
+	idt[vec].flags = 0xEE;
 	idt[vec].offset_mid = (uint16_t)(p >> 16);
 	idt[vec].offset_hi = (uint32_t)(p >> 32);
 	idt[vec].zero = 0;

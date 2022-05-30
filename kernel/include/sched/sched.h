@@ -8,6 +8,7 @@
 
 #if defined(__x86_64__)
 #include "../../arch/x86_64/include/mm/vmm.h"
+#include "../../arch/x86_64/include/mm/pmm.h"
 #include "../../arch/x86_64/include/reg.h"
 void resched(registers_t *reg);
 #endif

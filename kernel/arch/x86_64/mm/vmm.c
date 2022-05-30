@@ -25,6 +25,21 @@
 
 struct pagemap kernel_pagemap;
 
+static uint64_t *get_next_level(uint64_t *current_level, size_t entry) {
+	uint64_t *ret;
+	if (current_level[entry] & 1) {
+		// Present flag set
+		ret = (uint64_t *)(size_t)(current_level[entry] & ~((uint64_t)0xFFF));
+	} else {
+		// Allocate a table for the next level
+		ret = pmm_allocz(1);
+		// Present + writable + user (0b111)
+		current_level[entry] = (size_t)ret | 0b111;
+	}
+
+	return ret;
+}
+
 void vmm_init(struct stivale2_mmap_entry *memmap, size_t memmap_entries,
 			  struct stivale2_pmr *pmrs, size_t pmr_entries,
 			  uint64_t virtual_base_address, uint64_t physical_base_address) {
@@ -49,6 +64,9 @@ void vmm_init(struct stivale2_mmap_entry *memmap, size_t memmap_entries,
 			}
 		}
 	}*/
+
+	for (uint64_t p = 256; p < 512; p++)
+		get_next_level(kernel_pagemap.top_level, p);
 
 	for (uint64_t p = 0; p < 4096UL * 1024 * 1024; p += PAGE_SIZE) {
 		vmm_map_page(&kernel_pagemap, p, p, 0b111, false, false);
@@ -133,21 +151,6 @@ struct pagemap *vmm_new_pagemap(void) {
 	for (size_t i = 256; i < 512; i++)
 		pagemap->top_level[i] = kernel_pagemap.top_level[i];
 	return pagemap;
-}
-
-static uint64_t *get_next_level(uint64_t *current_level, size_t entry) {
-	uint64_t *ret;
-	if (current_level[entry] & 1) {
-		// Present flag set
-		ret = (uint64_t *)(size_t)(current_level[entry] & ~((uint64_t)0xFFF));
-	} else {
-		// Allocate a table for the next level
-		ret = pmm_allocz(1);
-		// Present + writable + user (0b111)
-		current_level[entry] = (size_t)ret | 0b111;
-	}
-
-	return ret;
 }
 
 // Maps a page, without the present bit in "flags" (bit 0), unmaps a page;
