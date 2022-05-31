@@ -6,7 +6,8 @@
 extern void user_thread(void);
 
 void kernel_main(void *args) {
-	// thread_create((uintptr_t)user_thread, 0, 1, prcb_return_current_cpu()->running_thread->mother_proc);
+	// thread_create((uintptr_t)user_thread, 0, 1,
+	// prcb_return_current_cpu()->running_thread->mother_proc);
 	process_create("init", 0, 2000, (uintptr_t)user_thread, 0, 1);
 	kprintf("Got args 0x%x\n", args);
 	kprintf("Hello I am %s\n",

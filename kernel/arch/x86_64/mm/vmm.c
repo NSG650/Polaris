@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
+#include <cpu/cr.h>
 #include <cpu_features.h>
 #include <cpuid.h>
+#include <debug/debug.h>
 #include <mem/liballoc.h>
 #include <mm/pmm.h>
 #include <mm/vmm.h>
-#include <cpu/cr.h>
-#include <debug/debug.h>
 
 struct pagemap kernel_pagemap;
 
@@ -83,7 +83,8 @@ void vmm_init(struct stivale2_mmap_entry *memmap, size_t memmap_entries,
 			(pmrs[i].permissions & STIVALE2_PMR_EXECUTABLE ? 0 : 1UL << 63) |
 			(pmrs[i].permissions & STIVALE2_PMR_WRITABLE ? 1 << 1 : 0) | 1;
 		for (uint64_t p = 0; p < pmrs[i].length; p += PAGE_SIZE) {
-			vmm_map_page(&kernel_pagemap, virt + p, phys + p, 0b111, false, false);
+			vmm_map_page(&kernel_pagemap, virt + p, phys + p, 0b111, false,
+						 false);
 		}
 	}
 	// Use the biggest page size available for the memory map, align to that
@@ -214,5 +215,6 @@ void vmm_page_fault_handler(registers_t *reg) {
 	panic("Page fault at 0x%p present: %s, read/write: %s, "
 		  "user/supervisor: %s, reserved: %s, execute: %s\n",
 		  faulting_address, present ? "P" : "NP", read_write ? "R" : "RW",
-		  user_supervisor ? "U" : "S", reserved ? "R" : "NR", execute ? "X" : "NX");
+		  user_supervisor ? "U" : "S", reserved ? "R" : "NR",
+		  execute ? "X" : "NX");
 }

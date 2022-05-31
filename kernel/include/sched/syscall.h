@@ -1,8 +1,8 @@
 #ifndef SYSCALL_H
 #define SYSCALL_H
 
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
 struct syscall_arguments {
 	uint64_t syscall_nr;
@@ -15,7 +15,7 @@ struct syscall_arguments {
 typedef void (*syscall_handler_t)(struct syscall_arguments *);
 
 void syscall_install_handler(void);
-void syscall_register_handler(int n, void* handler);
+void syscall_register_handler(int n, void *handler);
 void syscall_handle(struct syscall_arguments *args);
 
 #endif

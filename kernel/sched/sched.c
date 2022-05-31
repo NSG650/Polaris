@@ -3,8 +3,8 @@
 #include <kernel.h>
 #include <klibc/vec.h>
 #include <sched/sched.h>
-#include <sys/timer.h>
 #include <sched/syscall.h>
+#include <sys/timer.h>
 
 #define VIRTUAL_STACK_ADDR 0x70000000000
 
@@ -85,13 +85,13 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 		thrd->reg.cs = 0x23;
 		thrd->reg.ss = 0x1b;
 		for (size_t p = 0; p < STACK_SIZE; p += PAGE_SIZE) {
-			vmm_map_page(proc->process_pagemap, VIRTUAL_STACK_ADDR + p, (thrd->reg.rsp) + p, 0b111, 0, 0);
+			vmm_map_page(proc->process_pagemap, VIRTUAL_STACK_ADDR + p,
+						 (thrd->reg.rsp) + p, 0b111, 0, 0);
 		}
 		thrd->reg.rsp = VIRTUAL_STACK_ADDR + STACK_SIZE;
 		thrd->kernel_stack = (uint64_t)kmalloc(STACK_SIZE);
 		thrd->kernel_stack += STACK_SIZE;
-	}
-	else {
+	} else {
 		thrd->reg.cs = 0x08;
 		thrd->reg.ss = 0x10;
 		thrd->reg.rsp += STACK_SIZE;

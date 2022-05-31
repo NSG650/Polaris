@@ -25,6 +25,7 @@
 #include <mm/pmm.h>
 #include <mm/vmm.h>
 #include <sched/sched.h>
+#include <sched/syscall.h>
 #include <serial/serial.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -35,7 +36,6 @@
 #include <sys/hpet.h>
 #include <sys/isr.h>
 #include <sys/timer.h>
-#include <sched/syscall.h>
 
 static uint8_t stack[32768];
 static struct stivale2_header_tag_smp smp_hdr_tag = {
