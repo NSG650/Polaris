@@ -43,12 +43,12 @@ int sched_get_next_thread(int index) {
 	return -1;
 }
 
-void sched_init(void) {
+void sched_init(uint64_t args) {
 	kprintf("SCHED: Creating kernel thread\n");
 	vec_init(&threads);
 	vec_init(&processes);
 	syscall_register_handler(0, syscall_puts);
-	process_create("kernel_tasks", 0, 5000, (uintptr_t)kernel_main, 0xbabe650,
+	process_create("kernel_tasks", 0, 5000, (uintptr_t)kernel_main, args,
 				   0);
 }
 

@@ -111,7 +111,15 @@ void arch_entry(struct stivale2_struct *stivale2_struct) {
 	smp_init(smp_tag);
 	ioapic_redirect_irq(0, 48);
 	syscall_install_handler();
-	sched_init();
+	struct stivale2_struct_tag_modules *modules_tag =
+		stivale2_get_tag(stivale2_struct, STIVALE2_STRUCT_TAG_MODULES_ID);
+	if (modules_tag->module_count < 1)
+		panic("No init found\n");
+	size_t module_info[2] = {0};
+	struct stivale2_module *module = &modules_tag->modules[0];
+	module_info[0] = module->begin;
+	module_info[1] = module->end;
+	sched_init((uint64_t)module_info);
 	timer_sched_oneshot(32, 20000);
 	sti();
 	for (;;) {

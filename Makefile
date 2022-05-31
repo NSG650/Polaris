@@ -8,6 +8,7 @@ endif
 NAME := Polaris
 ISO_IMAGE := $(NAME).iso
 KERNEL_ELF = $(NAME)-$(CONFIG_ARCH).elf
+PROGRAM_ELF = program64.elf
 
 
 .PHONY: all
@@ -22,12 +23,15 @@ limine:
 kernel: clean
 	$(MAKE) -C kernel
 
+.PHONY: user
+user: clean
+	$(MAKE) -C user
 
-$(ISO_IMAGE): kernel limine
+$(ISO_IMAGE): kernel user limine
 ifeq ($(CONFIG_ARCH),x86_64)
 	rm -rf build
 	mkdir -p build
-	cp kernel/$(KERNEL_ELF) \
+	cp kernel/$(KERNEL_ELF) user/$(PROGRAM_ELF) \
 		limine.cfg limine/limine.sys limine/limine-cd.bin limine/limine-eltorito-efi.bin build/
 	xorriso -as mkisofs -b limine-cd.bin \
 		-no-emul-boot -boot-load-size 4 -boot-info-table \
