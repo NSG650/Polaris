@@ -39,15 +39,11 @@ int sched_get_next_thread(int index) {
 	return -1;
 }
 
-void syscall_putchar(struct syscall_arguments *args) {
-	kputchar(args->args0);
-}
-
 void sched_init(void) {
 	kprintf("SCHED: Creating kernel thread\n");
 	vec_init(&threads);
 	vec_init(&processes);
-	syscall_register_handler(0, syscall_putchar);
+	syscall_register_handler(0, syscall_puts);
 	process_create("kernel_tasks", 0, 5000, (uintptr_t)kernel_main, 0xbabe650,
 				   0);
 }
@@ -84,7 +80,7 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 #if defined(__x86_64__)
 	thrd->reg.rip = pc_address;
 	thrd->reg.rdi = arguments;
-	thrd->reg.rsp = (uint64_t)pmm_alloc(STACK_SIZE / STACK_SIZE);
+	thrd->reg.rsp = (uint64_t)pmm_alloc(STACK_SIZE / PAGE_SIZE);
 	if (user) {
 		thrd->reg.cs = 0x23;
 		thrd->reg.ss = 0x1b;
