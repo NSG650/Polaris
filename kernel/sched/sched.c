@@ -80,7 +80,7 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 #if defined(__x86_64__)
 	thrd->reg.rip = pc_address;
 	thrd->reg.rdi = arguments;
-	thrd->reg.rsp = (uint64_t)pmm_alloc(STACK_SIZE / PAGE_SIZE);
+	thrd->reg.rsp = (uint64_t)pmm_allocz(STACK_SIZE / PAGE_SIZE);
 	if (user) {
 		thrd->reg.cs = 0x23;
 		thrd->reg.ss = 0x1b;

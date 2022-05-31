@@ -24,9 +24,12 @@
 #define kputchar_ serial_putchar
 #endif
 
+#include <sched/syscall.h>
+
 void kputchar(char c);
 void kputs(char *string);
 void kprintf(char *fmt, ...);
 void panic(char *fmt, ...);
+void syscall_puts(struct syscall_arguments *args);
 
 #endif

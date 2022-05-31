@@ -26,6 +26,9 @@
 #include <sys/halt.h>
 #include <sys/prcb.h>
 #include <sys/timer.h>
+#if defined(__x86_64__)
+#include "../arch/x86_64/include/mm/vmm.h"
+#endif
 
 lock_t write_lock;
 bool in_panic = false;
@@ -44,6 +47,11 @@ void kputs(char *string) {
 	kputs_(string);
 	framebuffer_puts(string);
 	spinlock_drop(write_lock);
+}
+
+void syscall_puts(struct syscall_arguments *args) {
+	if (args->args0)
+		kputs((char *)args->args0);
 }
 
 static void kprintf_(char *fmt, va_list args) {
