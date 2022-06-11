@@ -212,9 +212,10 @@ void vmm_page_fault_handler(registers_t *reg) {
 	int user_supervisor = reg->errorCode & 0x4;
 	int reserved = reg->errorCode & 0x8;
 	int execute = reg->errorCode & 0x10;
-	panic("Page fault at 0x%p present: %s, read/write: %s, "
-		  "user/supervisor: %s, reserved: %s, execute: %s\n",
-		  faulting_address, present ? "P" : "NP", read_write ? "R" : "RW",
-		  user_supervisor ? "U" : "S", reserved ? "R" : "NR",
-		  execute ? "X" : "NX");
+	panic_((void *)reg->rip, (void *)reg->rbp,
+		   "Page fault at 0x%p present: %s, read/write: %s, "
+		   "user/supervisor: %s, reserved: %s, execute: %s\n",
+		   faulting_address, present ? "P" : "NP", read_write ? "R" : "RW",
+		   user_supervisor ? "U" : "S", reserved ? "R" : "NR",
+		   execute ? "X" : "NX");
 }

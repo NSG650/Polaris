@@ -20,11 +20,11 @@ limine:
 	make -C limine
 
 .PHONY: kernel
-kernel: clean
+kernel:
 	$(MAKE) -C kernel
 
 .PHONY: user
-user: clean
+user:
 	$(MAKE) -C user
 
 $(ISO_IMAGE): kernel user limine

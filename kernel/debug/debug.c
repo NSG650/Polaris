@@ -118,7 +118,7 @@ void kprintf(char *fmt, ...) {
 	spinlock_drop(write_lock);
 }
 
-void panic(char *fmt, ...) {
+void panic_(size_t *ip, size_t *bp, char *fmt, ...) {
 	cli();
 	extern bool is_smp;
 	if (in_panic) {
@@ -134,8 +134,6 @@ void panic(char *fmt, ...) {
 	va_start(args, fmt);
 	kprintf_(fmt, args);
 	va_end(args);
-	size_t *ip = __builtin_return_address(0);
-	size_t *bp = __builtin_frame_address(0);
 	kprintf("Crashed at 0x%p\n", ip);
 	kprintf("Stack trace:\n");
 #if defined(__x86_64__)

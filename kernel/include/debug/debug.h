@@ -29,7 +29,10 @@
 void kputchar(char c);
 void kputs(char *string);
 void kprintf(char *fmt, ...);
-void panic(char *fmt, ...);
+void panic_(size_t *ip, size_t *bp, char *fmt, ...);
 void syscall_puts(struct syscall_arguments *args);
+
+#define panic(...) \
+	panic_(__builtin_return_address(0), __builtin_frame_address(0), __VA_ARGS__)
 
 #endif

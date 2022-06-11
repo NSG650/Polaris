@@ -306,8 +306,8 @@ void isr_handle(registers_t *r) {
 		event_handlers[r->isrNumber](r);
 
 	if (r->isrNumber < 32) {
-		panic("Unhandled Exception: %s\n",
-			  isr_exception_messages[r->isrNumber]);
+		panic_((void *)r->rip, (void *)r->rbp, "Unhandled Exception: %s\n",
+			   isr_exception_messages[r->isrNumber]);
 	}
 
 	if (r->isrNumber == 0xf0)
