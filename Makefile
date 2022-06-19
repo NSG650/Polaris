@@ -15,6 +15,7 @@ PROGRAM_ELF = program64.elf
 
 all: $(ISO_IMAGE)
 
+.PHONY: limine
 limine:
 	make -C limine
 
@@ -49,7 +50,6 @@ clean:
 
 .PHONY: distclean
 distclean: clean
-	rm -rf limine
 	$(MAKE) -C kernel distclean
 
 .PHONY: format
