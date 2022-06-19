@@ -6,8 +6,10 @@ static void syscall_handler(registers_t *reg) {
 									 .args0 = reg->rdi,
 									 .args1 = reg->rsi,
 									 .args2 = reg->rdx,
-									 .args3 = reg->r10};
+									 .args3 = reg->r10,
+									 .ret = reg->rax};
 	syscall_handle(&args);
+	reg->rax = args.ret;
 }
 
 void syscall_install_handler(void) {

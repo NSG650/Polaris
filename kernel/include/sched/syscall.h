@@ -10,6 +10,7 @@ struct syscall_arguments {
 	uint64_t args1;
 	uint64_t args2;
 	uint64_t args3;
+	uint64_t ret;
 };
 
 typedef void (*syscall_handler_t)(struct syscall_arguments *);
