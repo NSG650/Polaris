@@ -302,6 +302,9 @@ static const char *isr_exception_messages[] = {"Divide by zero",
 static event_handlers_t event_handlers[256] = {NULL};
 
 void isr_handle(registers_t *r) {
+	if (r->cs & 0x3)
+		asm volatile("swapgs");
+
 	if (event_handlers[r->isrNumber] != NULL)
 		event_handlers[r->isrNumber](r);
 
@@ -312,6 +315,9 @@ void isr_handle(registers_t *r) {
 
 	if (r->isrNumber == 0xf0)
 		kprintf("Weird. NMI from APIC?\n");
+
+	if (r->cs & 0x3)
+		asm volatile("swapgs");
 
 	apic_eoi();
 }
