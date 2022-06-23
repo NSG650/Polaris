@@ -391,11 +391,14 @@ void framebuffer_init(struct framebuffer *fb) {
 }
 
 void framebuffer_putpx(int x, int y, uint32_t color, bool fob) {
-	spinlock_acquire(framebuff_lock);
+	spinlock_acquire_or_wait(framebuff_lock);
 	if (!framebuffer_initialised)
 		return;
-	if (fob)
+	if (fob) {
 		framebuff.address[y * (framebuff.pitch / sizeof(uint32_t)) + x] = color;
+		framebuff.back_address[y * (framebuff.pitch / sizeof(uint32_t)) + x] =
+			color;
+	}
 	else
 		framebuff.back_address[y * (framebuff.pitch / sizeof(uint32_t)) + x] =
 			color;
@@ -403,7 +406,7 @@ void framebuffer_putpx(int x, int y, uint32_t color, bool fob) {
 }
 
 void framebuffer_swap(struct framebuffer *fb) {
-	spinlock_acquire(swap_lock);
+	spinlock_acquire_or_wait(swap_lock);
 	uint32_t *front = fb->address;
 	uint32_t *back = fb->back_address;
 	for (size_t i = 0;
@@ -424,20 +427,19 @@ void framebuffer_clear(uint32_t color) {
 }
 
 void framebuffer_scroll(void) {
+	spinlock_acquire_or_wait(framebuff_lock);
 	framebuff.tex_y--;
-	size_t row_size = (framebuff.pitch * ISO_CHAR_HEIGHT) / sizeof(uint32_t);
-	size_t screen_size = ((framebuff.pitch * ISO_CHAR_HEIGHT) *
-						  (framebuff.height / ISO_CHAR_HEIGHT)) /
-						 sizeof(uint32_t);
-	for (size_t i = 0;
-		 i < framebuff.pitch * framebuff.height / sizeof(uint32_t); i++) {
-		framebuff.back_address[i] = framebuff.address[i];
-	}
-	for (size_t i = 0; i < screen_size - row_size; i++) {
-		framebuff.back_address[i] = framebuff.back_address[i + row_size];
-		framebuff.back_address[i + row_size] = framebuff.bg_color;
-	}
+	
+	uint8_t *read_ptr = (uint8_t*) framebuff.back_address + ((17) * framebuff.pitch);
+    uint8_t *write_ptr = (uint8_t*) framebuff.back_address;
+    uint32_t num_bytes = (framebuff.pitch * framebuff.height) - (framebuff.pitch * (17));
+    memcpy(write_ptr, read_ptr, num_bytes);
+
+	write_ptr = (uint8_t*) framebuff.back_address + (framebuff.pitch * framebuff.height) - (framebuff.pitch * (17));
+    memset(write_ptr, 0, framebuff.pitch * (17));
+
 	framebuffer_swap(&framebuff);
+	spinlock_drop(framebuff_lock);
 }
 
 static void framebuffer_putc(char c, int x, int y) {
