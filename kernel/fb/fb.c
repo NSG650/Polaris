@@ -387,6 +387,7 @@ void framebuffer_init(struct framebuffer *fb) {
 	framebuff.tex_color = fb->tex_color;
 	framebuff.back_address = kmalloc(framebuff.pitch * framebuff.height);
 	framebuff.bg_color = fb->bg_color;
+	framebuffer_clear(framebuff.bg_color);
 	framebuffer_initialised = 1;
 }
 
@@ -407,20 +408,16 @@ void framebuffer_putpx(int x, int y, uint32_t color, bool fob) {
 
 void framebuffer_swap(struct framebuffer *fb) {
 	spinlock_acquire_or_wait(swap_lock);
-	uint32_t *front = fb->address;
-	uint32_t *back = fb->back_address;
-	for (size_t i = 0;
-		 i < framebuff.pitch * framebuff.height / sizeof(uint32_t); i++) {
-		front[i] = back[i];
-	}
+	uint8_t *front = fb->address;
+	uint8_t *back = fb->back_address;
+	memcpy(front, back, fb->pitch * fb->height);
 	spinlock_drop(swap_lock);
 }
 
 void framebuffer_clear(uint32_t color) {
 	framebuff.bg_color = color;
-	for (size_t i = 0;
-		 i < framebuff.height * framebuff.pitch / sizeof(uint32_t); i++)
-		framebuff.back_address[i] = color;
+	memset32((void *)framebuff.back_address, framebuff.bg_color,
+			 (framebuff.pitch * framebuff.height) / sizeof(uint32_t));
 	framebuff.tex_x = 0;
 	framebuff.tex_y = 0;
 	framebuffer_swap(&framebuff);
@@ -436,7 +433,8 @@ void framebuffer_scroll(void) {
     memcpy(write_ptr, read_ptr, num_bytes);
 
 	write_ptr = (uint8_t*) framebuff.back_address + (framebuff.pitch * framebuff.height) - (framebuff.pitch * (17));
-    memset(write_ptr, 0, framebuff.pitch * (17));
+	memset32(write_ptr, framebuff.bg_color,
+			 (framebuff.pitch * (17)) / sizeof(uint32_t));
 
 	framebuffer_swap(&framebuff);
 	spinlock_drop(framebuff_lock);

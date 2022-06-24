@@ -26,6 +26,12 @@
 #define memset __builtin_memset
 #define memzero(a, b) memset(a, 0, b)
 
+void *memcpy16(void *dest, const void *src, size_t n);
+void *memcpy32(void *dest, const void *src, size_t n);
+void *memcpy64(void *dest, const void *src, size_t n);
+void memset16(void *dest, uint16_t a, size_t n);
+void memset32(void *dest, uint32_t a, size_t n);
+void memset64(void *dest, uint64_t a, size_t n);
 void *memmove(void *dest, const void *src, size_t n);
 void strcpy(char *dest, char *src);
 size_t strlen(char *string);
