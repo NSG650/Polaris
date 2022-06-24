@@ -95,6 +95,7 @@ void arch_entry(struct stivale2_struct *stivale2_struct) {
 	fb.tex_color = 0xffffff;
 	fb.tex_x = 0;
 	fb.tex_y = 0;
+    fb.bg_color = 0x012456;
 	framebuffer_init(&fb);
 	kprintf("Hello x86_64!\n");
 	cli();
