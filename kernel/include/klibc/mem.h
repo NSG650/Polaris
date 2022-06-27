@@ -40,5 +40,7 @@ char *ltoa(int64_t value, char *str, int base);
 char *itoa(int value, char *str, int base);
 char *ultoa(uint64_t value, char *str, int base);
 char *uitoa(uint32_t value, char *str, int base);
+int strcmp(const char s1[], const char s2[]);
+
 
 #endif

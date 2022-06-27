@@ -408,8 +408,8 @@ void framebuffer_putpx(int x, int y, uint32_t color, bool fob) {
 
 void framebuffer_swap(struct framebuffer *fb) {
 	spinlock_acquire_or_wait(swap_lock);
-	uint8_t *front = fb->address;
-	uint8_t *back = fb->back_address;
+	uint8_t *front = (uint8_t *)fb->address;
+	uint8_t *back = (uint8_t *)fb->back_address;
 	memcpy(front, back, fb->pitch * fb->height);
 	spinlock_drop(swap_lock);
 }
