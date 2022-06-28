@@ -1,5 +1,3 @@
-include ../.config
-
 # Target processor architecture.
 CONFIG_ARCH ?= x86_64
 
@@ -51,7 +49,6 @@ HEADER_DEPS := $(CARCHFILES:.c=.d) $(CFILES:.c=.d) $(ASMFILES:.asm=.d)
 ifeq ($(CONFIG_ARCH),x86_64)
 	CC := x86_64-elf-gcc
 	AS := nasm
-	LD := x86_64-elf-gcc
 	CARCHFILES += $(wildcard arch/$(CONFIG_ARCH)/fw/lai/*/*.c)
 	OBJ := $(CARCHFILES:.c=.o) $(CFILES:.c=.o) $(ASMFILES:.asm=.o)
 	HEADER_DEPS := $(CARCHFILES:.c=.d) $(CFILES:.c=.d) $(ASMFILES:.asm=.d)

@@ -1,5 +1,3 @@
-include ./.config
-
 CONFIG_ARCH ?= x86_64
 
 NAME := polaris
