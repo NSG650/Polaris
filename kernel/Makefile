@@ -59,8 +59,7 @@ ifeq ($(CONFIG_ARCH),x86_64)
 		-mno-red-zone      \
 		-mcmodel=kernel
 	override INTERALLDFLAGS +=	\
-		-Wl,-m,elf_x86_64	\
-		-Wl,--oformat=elf64-x86-64
+		-Wl,-m,elf_x86_64
 endif
 
 .PHONY: all

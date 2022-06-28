@@ -1,3 +1,7 @@
+/* Tell the linker that we want an x86_64 ELF64 output file */
+OUTPUT_FORMAT(elf64-x86-64)
+OUTPUT_ARCH(i386:x86-64)
+
 /* We want the symbol arch_entry to be our entry point */
 ENTRY(arch_entry)
 
@@ -38,4 +42,10 @@ SECTIONS {
         *(COMMON)
         *(.bss .bss.*)
     } :data
+
+    /* Discard unused sections from object files that may cause issues. */
+    /DISCARD/ : {
+        *.o(*)
+        *.a:*(*)
+    }
 }
