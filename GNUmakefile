@@ -1,21 +1,15 @@
 include ./.config
 
-ifndef CONFIG_ARCH
-$(info warning: CONFIG_ARCH is not set (defaulting to x86_64))
-CONFIG_ARCH := x86_64
-endif
+CONFIG_ARCH ?= x86_64
 
-NAME := Polaris
+NAME := polaris
 ISO_IMAGE := $(NAME).iso
-KERNEL_ELF = $(NAME)-$(CONFIG_ARCH).elf
+KERNEL_ELF = $(NAME).elf
 PROGRAM_ELF = program64.elf
 
-
 .PHONY: all
-
 all: $(ISO_IMAGE)
 
-.PHONY: limine
 limine:
 	make -C limine
 
@@ -28,7 +22,6 @@ user:
 	$(MAKE) -C user
 
 $(ISO_IMAGE): kernel user limine
-ifeq ($(CONFIG_ARCH),x86_64)
 	rm -rf build
 	mkdir -p build
 	cp kernel/$(KERNEL_ELF) user/$(PROGRAM_ELF) \
@@ -38,14 +31,12 @@ ifeq ($(CONFIG_ARCH),x86_64)
 		--efi-boot limine-cd-efi.bin \
 		-efi-boot-part --efi-boot-image --protective-msdos-label \
 		build -o $(ISO_IMAGE)
-	chmod +x limine/limine-deploy
 	limine/limine-deploy $(ISO_IMAGE)
 	rm -rf build
-endif
 
 .PHONY: clean
 clean:
-	rm -f *.iso *.img
+	rm -rf build *.iso *.img
 	$(MAKE) -C kernel clean
 
 .PHONY: distclean

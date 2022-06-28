@@ -4,7 +4,7 @@ include ../.config
 CONFIG_ARCH ?= x86_64
 
 # This is the name that our final kernel executable will have.
-override KERNEL := Polaris
+override KERNEL := polaris.elf
 
 # User controllable CFLAGS.
 CFLAGS ?= -Wall -Wextra -O0 -g -pipe
@@ -73,21 +73,29 @@ ifeq ($(CONFIG_ARCH),x86_64)
 endif
 
 .PHONY: all
+all: $(KERNEL)
 
-all: $(OBJ)
-	$(LD) $(INTERNALLDFLAGS) $^ -o $(KERNEL)-$(CONFIG_ARCH).elf
+limine.h:
+	curl https://raw.githubusercontent.com/limine-bootloader/limine/trunk/limine.h -o arch/$(CONFIG_ARCH)/include/$@
 
+# Link rules for the final kernel executable.
+$(KERNEL): $(OBJ)
+	$(CC) $(OBJ) $(LDFLAGS) $(INTERNALLDFLAGS) -o $@
+
+# Compilation rules for *.c files.
 -include $(HEADER_DEPS)
+%.o: %.c limine.h
+	$(CC) $(CFLAGS) $(INTERNALCFLAGS) -c $< -o $@
 
+# Compilation rules for *.asm files.
 %.o: %.asm
 	$(AS) $(ASFLAGS) $(INTERNALASFLAGS) $< -o $@
 
-%.o: %.c
-	$(CC) $(CFLAGS) $(INTERNALCFLAGS) -c $< -o $@
-
-%.o: %.S
-	$(AS) $(ASFLAGS) -c $< -o $@
-
+# Remove object files and the final executable.
 .PHONY: clean
 clean:
 	rm -rf *.elf $(OBJ) $(HEADER_DEPS)
+
+.PHONY: distclean
+distclean: clean
+	rm -f arch/$(CONFIG_ARCH)/include/limine.h
