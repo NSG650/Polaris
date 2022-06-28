@@ -32,14 +32,14 @@ ifeq ($(CONFIG_ARCH),x86_64)
 	rm -rf build
 	mkdir -p build
 	cp kernel/$(KERNEL_ELF) user/$(PROGRAM_ELF) \
-		limine.cfg limine/limine.sys limine/limine-cd.bin limine/limine-eltorito-efi.bin build/
+		limine.cfg limine/limine.sys limine/limine-cd.bin limine/limine-cd-efi.bin build/
 	xorriso -as mkisofs -b limine-cd.bin \
 		-no-emul-boot -boot-load-size 4 -boot-info-table \
-		--efi-boot limine-eltorito-efi.bin \
+		--efi-boot limine-cd-efi.bin \
 		-efi-boot-part --efi-boot-image --protective-msdos-label \
 		build -o $(ISO_IMAGE)
-	chmod +x limine/limine-install
-	limine/limine-install $(ISO_IMAGE)
+	chmod +x limine/limine-deploy
+	limine/limine-deploy $(ISO_IMAGE)
 	rm -rf build
 endif
 

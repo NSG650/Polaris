@@ -48,8 +48,7 @@ void sched_init(uint64_t args) {
 	vec_init(&threads);
 	vec_init(&processes);
 	syscall_register_handler(0, syscall_puts);
-	process_create("kernel_tasks", 0, 5000, (uintptr_t)kernel_main, args,
-				   0);
+	process_create("kernel_tasks", 0, 5000, (uintptr_t)kernel_main, args, 0);
 }
 
 void process_create(char *name, uint8_t state, uint64_t runtime,

@@ -35,7 +35,7 @@ static uint64_t smp_read_gs(void) {
 	return rdmsr(0xc0000101);
 }
 
-static void smp_init_core(struct stivale2_smp_info *smp_info) {
+static void smp_init_core(struct limine_smp_info *smp_info) {
 	spinlock_acquire_or_wait(smp_lock);
 	cli();
 	gdt_init();
@@ -89,7 +89,7 @@ static void smp_init_core(struct stivale2_smp_info *smp_info) {
 	ap->cpu_number = smp_info->lapic_id;
 	ap->running_thread = NULL;
 	ap->thread_index = 0;
-	ap->cpu_tss.rsp0 = smp_info->target_stack;
+	// ap->cpu_tss.rsp0 = smp_info->target_stack;
 	ap->cpu_tss.ist1 = (uint64_t)pmm_allocz(32768 / PAGE_SIZE);
 	ap->cpu_tss.ist1 += MEM_PHYS_OFFSET + 32768;
 	vec_push(&prcbs, ap);
@@ -108,22 +108,22 @@ static void smp_init_core(struct stivale2_smp_info *smp_info) {
 	}
 }
 
-void smp_init(struct stivale2_struct_tag_smp *smp_info) {
+void smp_init(struct limine_smp_response *smp_info) {
 	vec_init(&prcbs);
 	bsp_lapic_core = smp_info->bsp_lapic_id;
 	cpu_count = smp_info->cpu_count;
 	kprintf("SMP: Bringing up the AP cores\n");
 	for (size_t i = 0; i < smp_info->cpu_count; i++) {
-		if (smp_info->smp_info[i].lapic_id == bsp_lapic_core) {
+		if (smp_info->cpus[i]->lapic_id == bsp_lapic_core) {
 			kprintf("SMP: BSP Core %u\n", bsp_lapic_core);
-			smp_init_core((void *)&smp_info->smp_info[i]);
+			smp_init_core((void *)smp_info->cpus[i]);
 			continue;
 		}
 		spinlock_acquire_or_wait(smp_lock);
-		smp_info->smp_info[i].target_stack =
+		/*smp_info->smp_info[i].target_stack =
 			(uint64_t)pmm_allocz(32768 / PAGE_SIZE);
-		smp_info->smp_info[i].target_stack += MEM_PHYS_OFFSET + 32768;
-		smp_info->smp_info[i].goto_address = (uint64_t)smp_init_core;
+		smp_info->smp_info[i].target_stack += MEM_PHYS_OFFSET + 32768;*/
+		smp_info->cpus[i]->goto_address = (limine_goto_address)smp_init_core;
 		spinlock_drop(smp_lock);
 		timer_sleep(100);
 	}

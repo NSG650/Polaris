@@ -1,45 +1,41 @@
-OUTPUT_FORMAT(elf64-x86-64)
-OUTPUT_ARCH(i386:x86-64)
-
+/* We want the symbol arch_entry to be our entry point */
 ENTRY(arch_entry)
 
+/* Define the program headers we want so the bootloader gives us the right */
+/* MMU permissions */
 PHDRS {
-    null    PT_NULL    FLAGS(0) ;                   /* Null segment */
     text    PT_LOAD    FLAGS((1 << 0) | (1 << 2)) ; /* Execute + Read */
     rodata  PT_LOAD    FLAGS((1 << 2)) ;            /* Read only */
     data    PT_LOAD    FLAGS((1 << 1) | (1 << 2)) ; /* Write + Read */
-    dynamic PT_DYNAMIC FLAGS((1 << 1) | (1 << 2)) ; /* Dynamic segment needed for PIE */
 }
 
 SECTIONS {
-    . = 0xffffffff80200000;
+    /* We wanna be placed in the topmost 2GiB of the address space, for optimisations */
+    /* and because that is what the Limine spec mandates. */
+    /* Any address in this region will do, but often 0xffffffff80000000 is chosen as */
+    /* that is the beginning of the region. */
+    . = 0xffffffff80000000;
 
     .text : {
-        *(.text*)
+        *(.text .text.*)
     } :text
 
-    . += 0x1000;
-
-    .stivale2hdr : {
-        KEEP(*(.stivale2hdr))
-    } :rodata
+    /* Move to the next memory page for .rodata */
+    . += CONSTANT(MAXPAGESIZE);
 
     .rodata : {
-        *(.rodata*)
+        *(.rodata .rodata.*)
     } :rodata
 
-    . += 0x1000;
+    /* Move to the next memory page for .data */
+    . += CONSTANT(MAXPAGESIZE);
 
     .data : {
-        *(.data*)
+        *(.data .data.*)
     } :data
-
-    .dynamic : {
-        *(.dynamic)
-    } :data :dynamic
 
     .bss : {
         *(COMMON)
-        *(.bss*)
+        *(.bss .bss.*)
     } :data
 }

@@ -18,21 +18,20 @@
 #include <klibc/mem.h>
 #include <mm/pmm.h>
 #include <mm/vmm.h>
-#include <stivale2.h>
 
 static void *bitmap;
 static size_t last_used_index = 0;
 static uintptr_t highest_page = 0;
 
-void pmm_init(struct stivale2_mmap_entry *memmap, size_t memmap_entries) {
+void pmm_init(struct limine_memmap_entry **memmap, size_t memmap_entries) {
 	// First, calculate how big the bitmap needs to be
 	for (size_t i = 0; i < memmap_entries; i++) {
-		if (memmap[i].type != STIVALE2_MMAP_USABLE &&
-			memmap[i].type != STIVALE2_MMAP_ACPI_RECLAIMABLE &&
-			memmap[i].type != STIVALE2_MMAP_BOOTLOADER_RECLAIMABLE)
+		if (memmap[i]->type != LIMINE_MEMMAP_USABLE &&
+			memmap[i]->type != LIMINE_MEMMAP_ACPI_RECLAIMABLE &&
+			memmap[i]->type != LIMINE_MEMMAP_BOOTLOADER_RECLAIMABLE)
 			continue;
 
-		uintptr_t top = memmap[i].base + memmap[i].length;
+		uintptr_t top = memmap[i]->base + memmap[i]->length;
 
 		if (top > highest_page)
 			highest_page = top;
@@ -42,17 +41,17 @@ void pmm_init(struct stivale2_mmap_entry *memmap, size_t memmap_entries) {
 
 	// Second, find a location with enough free pages to host the bitmap
 	for (size_t i = 0; i < memmap_entries; i++) {
-		if (memmap[i].type != STIVALE2_MMAP_USABLE)
+		if (memmap[i]->type != LIMINE_MEMMAP_USABLE)
 			continue;
 
-		if (memmap[i].length >= bitmap_size) {
-			bitmap = (void *)memmap[i].base + MEM_PHYS_OFFSET;
+		if (memmap[i]->length >= bitmap_size) {
+			bitmap = (void *)(memmap[i]->base + MEM_PHYS_OFFSET);
 
 			// Initialise entire bitmap to 1 (non-free)
 			memset(bitmap, 0xFF, bitmap_size);
 
-			memmap[i].length -= bitmap_size;
-			memmap[i].base += bitmap_size;
+			memmap[i]->length -= bitmap_size;
+			memmap[i]->base += bitmap_size;
 
 			break;
 		}
@@ -60,11 +59,11 @@ void pmm_init(struct stivale2_mmap_entry *memmap, size_t memmap_entries) {
 
 	// Third, populate free bitmap entries according to memory map
 	for (size_t i = 0; i < memmap_entries; i++) {
-		if (memmap[i].type != STIVALE2_MMAP_USABLE)
+		if (memmap[i]->type != LIMINE_MEMMAP_USABLE)
 			continue;
 
-		for (uintptr_t j = 0; j < memmap[i].length; j += PAGE_SIZE)
-			bitmap_unset(bitmap, (memmap[i].base + j) / PAGE_SIZE);
+		for (uintptr_t j = 0; j < memmap[i]->length; j += PAGE_SIZE)
+			bitmap_unset(bitmap, (memmap[i]->base + j) / PAGE_SIZE);
 	}
 }
 

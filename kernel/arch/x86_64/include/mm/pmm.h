@@ -19,9 +19,9 @@
  */
 
 #include <asm/asm.h>
+#include <limine.h>
 #include <stdbool.h>
 #include <stddef.h>
-#include <stivale2.h>
 
 static inline bool bitmap_test(void *bitmap, size_t bit) {
 	bool ret;
@@ -74,6 +74,6 @@ static inline bool bitmap_unset(void *bitmap, size_t bit) {
 void *pmm_alloc(size_t count);
 void *pmm_allocz(size_t count);
 void pmm_free(void *ptr, size_t count);
-void pmm_init(struct stivale2_mmap_entry *memmap, size_t memmap_entries);
+void pmm_init(struct limine_memmap_entry **memmap, size_t memmap_entries);
 
 #endif

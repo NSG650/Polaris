@@ -40,9 +40,16 @@ static uint64_t *get_next_level(uint64_t *current_level, size_t entry) {
 	return ret;
 }
 
-void vmm_init(struct stivale2_mmap_entry *memmap, size_t memmap_entries,
-			  struct stivale2_pmr *pmrs, size_t pmr_entries,
-			  uint64_t virtual_base_address, uint64_t physical_base_address) {
+static volatile struct limine_hhdm_request hhdm_request = {
+	.id = LIMINE_HHDM_REQUEST, .revision = 0};
+
+static volatile struct limine_kernel_address_request kernel_address_request = {
+	.id = LIMINE_KERNEL_ADDRESS_REQUEST, .revision = 0};
+
+static volatile struct limine_kernel_file_request kernel_file_request = {
+	.id = LIMINE_KERNEL_FILE_REQUEST, .revision = 0};
+
+void vmm_init(struct limine_memmap_entry **memmap, size_t memmap_entries) {
 	// kernel_pagemap = vmm_new_pagemap();
 	kernel_pagemap.top_level = pmm_allocz(1);
 	// Use the biggest page size available
@@ -69,12 +76,14 @@ void vmm_init(struct stivale2_mmap_entry *memmap, size_t memmap_entries,
 		get_next_level(kernel_pagemap.top_level, p);
 
 	for (uint64_t p = 0; p < 4096UL * 1024 * 1024; p += PAGE_SIZE) {
-		vmm_map_page(&kernel_pagemap, p, p, 0b111, false, false);
-		vmm_map_page(&kernel_pagemap, p + MEM_PHYS_OFFSET, p, 0b111, false,
-					 false);
+		if (p != 0) {
+			vmm_map_page(&kernel_pagemap, p, p, 0b111, false, false);
+		}
+		vmm_map_page(&kernel_pagemap, p + hhdm_request.response->offset, p,
+					 0b111, false, false);
 	}
 	// Map PMRs with 4KB granularity
-	for (size_t i = 0; i < pmr_entries; i++) {
+	/* for (size_t i = 0; i < pmr_entries; i++) {
 		uint64_t virt = pmrs[i].base;
 		// Convert virtual PMR address to physical
 		uint64_t phys = physical_base_address + (virt - virtual_base_address);
@@ -86,7 +95,7 @@ void vmm_init(struct stivale2_mmap_entry *memmap, size_t memmap_entries,
 			vmm_map_page(&kernel_pagemap, virt + p, phys + p, 0b111, false,
 						 false);
 		}
-	}
+	}*/
 	// Use the biggest page size available for the memory map, align to that
 	// size
 	/* if (__get_cpuid(0x80000001, &a, &b, &c, &d)) {
@@ -126,18 +135,25 @@ void vmm_init(struct stivale2_mmap_entry *memmap, size_t memmap_entries,
 		}
 	}*/
 	for (size_t i = 0; i < memmap_entries; i++) {
-		uint64_t aligned_base = ALIGN_DOWN(memmap[i].base, PAGE_SIZE);
+		uint64_t aligned_base = ALIGN_DOWN(memmap[i]->base, PAGE_SIZE);
 		uint64_t aligned_top =
-			ALIGN_UP(memmap[i].base + memmap[i].length, PAGE_SIZE);
+			ALIGN_UP(memmap[i]->base + memmap[i]->length, PAGE_SIZE);
 		uint64_t aligned_length = aligned_top - aligned_base;
 		for (uint64_t p = 0; p < aligned_length; p += PAGE_SIZE) {
 			uint64_t page = aligned_base + p;
 			vmm_map_page(&kernel_pagemap, page, page, 0b111, false, false);
-			vmm_map_page(&kernel_pagemap, MEM_PHYS_OFFSET + page, page, 0b111,
-						 false, false);
+			vmm_map_page(&kernel_pagemap, page + hhdm_request.response->offset,
+						 page, 0b111, false, false);
 		}
 	}
-	// Switch to the new page map, dropping Stivale2's default one
+
+	for (uint64_t p = 0; p < kernel_file_request.response->kernel_file->size;
+		 p += PAGE_SIZE) {
+		uint64_t paddr = kernel_address_request.response->physical_base + p;
+		uint64_t vaddr = kernel_address_request.response->virtual_base + p;
+		vmm_map_page(&kernel_pagemap, vaddr, paddr, 0b111, false, false);
+	}
+	// Switch to the new page map, dropping Limine's default one
 	vmm_switch_pagemap(&kernel_pagemap);
 }
 

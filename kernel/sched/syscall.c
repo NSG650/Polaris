@@ -1,5 +1,5 @@
-#include <sched/syscall.h>
 #include <errno.h>
+#include <sched/syscall.h>
 
 syscall_handler_t syscalls[256] = {NULL};
 

@@ -1,16 +1,40 @@
 include ../.config
 
-ifndef CONFIG_ARCH
-$(info warning: CONFIG_ARCH is not set (defaulting to x86_64))
-CONFIG_ARCH := x86_64
-endif
+# Target processor architecture.
+CONFIG_ARCH ?= x86_64
 
 KERNEL := Polaris
 
+# User controllable CFLAGS.
+CFLAGS ?= -Wall -Wextra -O0 -g -pipe -I include/ -I arch/$(CONFIG_ARCH)/include/ -I arch/$(CONFIG_ARCH)/fw/lai/include
+
+# User controllable linker flags. We set none by default.
+LDFLAGS ?=
+
+# User controllable assembler flags.
+ASFLAGS ?= -g -MD -MP
+
+# Internal C flags that should not be changed by the user.
+override INTERNALCFLAGS := \
+    -I.                    \
+    -std=gnu11             \
+    -ffreestanding         \
+    -fno-stack-protector   \
+    -fno-stack-check       \
+    -fno-pie               \
+    -fno-pic               \
+    -MMD
+
+override INTERNALLDFLAGS :=     \
+    -nostdlib                   \
+    -static                     \
+    -Wl,-z,max-page-size=0x1000 \
+    -Wl,-T,arch/$(CONFIG_ARCH)/linker.ld
+
 CARCHFILES  := $(wildcard arch/$(CONFIG_ARCH)/*/*.c)
-CFILES		:= $(wildcard */*.c)
-ASMFILES	:= $(wildcard arch/$(CONFIG_ARCH)/*/*.asm)
-SFILES		:= $(wildcard arch/$(CONFIG_ARCH)/*/*.S)
+CFILES	    := $(wildcard */*.c)
+ASMFILES    := $(wildcard arch/$(CONFIG_ARCH)/*/*.asm)
+SFILES	    := $(wildcard arch/$(CONFIG_ARCH)/*/*.S)
 OBJ         := $(CARCHFILES:.c=.o) $(CFILES:.c=.o) $(ASMFILES:.asm=.o) $(SFILES:.S=.o)
 HEADER_DEPS := $(CARCHFILES:.c=.d) $(CFILES:.c=.d) $(ASMFILES:.asm=.d) $(SFILES:.S=.d)
 
@@ -18,35 +42,25 @@ ifeq ($(CONFIG_ARCH),x86_64)
 	CC := x86_64-elf-gcc
 	AS := nasm
 	LD := x86_64-elf-gcc
-	CFLAGS  := -Wall -Wextra -O0 -g -pipe -I include/ -I arch/$(CONFIG_ARCH)/include/ -I arch/$(CONFIG_ARCH)/fw/lai/include
-	LDFLAGS :=
-	ASFLAGS := -g -MD -MP
 	CARCHFILES += $(wildcard arch/$(CONFIG_ARCH)/fw/lai/*/*.c)
-	OBJ         := $(CARCHFILES:.c=.o) $(CFILES:.c=.o) $(ASMFILES:.asm=.o) $(SFILES:.S=.o)
+	OBJ := $(CARCHFILES:.c=.o) $(CFILES:.c=.o) $(ASMFILES:.asm=.o) $(SFILES:.S=.o)
 	HEADER_DEPS := $(CARCHFILES:.c=.d) $(CFILES:.c=.d) $(ASMFILES:.asm=.d) $(SFILES:.S=.d)
-	INTERNALLDFLAGS :=         			\
-		-T arch/$(CONFIG_ARCH)/linker.ld	\
-		-nostdlib              			\
-		-mcmodel=kernel		   		\
-		-zmax-page-size=0x1000 			\
-		-static                			\
-		-pie                   			\
-		-ztext
 
-	INTERNALCFLAGS :=            \
-		-I.                  \
-		-std=gnu11           \
-		-ffreestanding       \
-		-fno-stack-protector \
-		-fpie                \
-		-masm=intel	     \
-		-mno-80387           \
-		-mno-mmx             \
-		-mno-3dnow           \
-		-mno-sse             \
-		-mno-sse2            \
-		-mno-red-zone        \
-		-MMD
+	override INTERNALCFLAGS += \
+		-m64               \
+		-march=x86-64      \
+		-mabi=sysv         \
+		-masm=intel        \
+		-mno-80387         \
+		-mno-mmx           \
+		-mno-3dnow         \
+		-mno-sse           \
+		-mno-sse2          \
+		-mno-red-zone      \
+		-mcmodel=kernel
+	override INTERALLDFLAGS +=	\
+		-Wl,-m,elf_x86_64	\
+		-Wl,--oformat=elf64-x86-64
 endif
 
 .PHONY: all
