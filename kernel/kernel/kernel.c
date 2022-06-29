@@ -9,7 +9,14 @@ void syscall_is_computer_on(struct syscall_arguments *args) {
 	args->ret = 0xFF;
 }
 
+void kernel_thread(void) {
+	kprintf("I am a kernel thread\n");
+	thread_kill(prcb_return_current_cpu()->running_thread, true);
+}
+
 void kernel_main(void *args) {
+	thread_create((uintptr_t)kernel_thread, 0, 0,
+				  prcb_return_current_cpu()->running_thread->mother_proc);
 	vfs_install_fs(&testfs);
 	struct fs_node *root_node = vfs_node_create(NULL, "root");
 	vfs_node_mount(root_node, "/", "testfs");

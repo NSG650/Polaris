@@ -14,11 +14,12 @@
 struct process;
 
 struct thread {
-	uint64_t tid;
+	int64_t tid;
 	registers_t reg;
 	lock_t lock;
 	uint8_t state;
 	uint64_t runtime;
+	uint64_t stack;
 	uint64_t kernel_stack;
 	struct process *mother_proc;
 };
@@ -27,7 +28,7 @@ typedef vec_t(struct thread *) thread_vec_t;
 
 struct process {
 	char name[256];
-	uint64_t pid;
+	int64_t pid;
 	struct pagemap *process_pagemap;
 	uint8_t state;
 	uint64_t runtime;

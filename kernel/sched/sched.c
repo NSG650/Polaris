@@ -1,10 +1,12 @@
 #include <asm/asm.h>
 #include <debug/debug.h>
+#include <errno.h>
 #include <kernel.h>
 #include <klibc/elf.h>
 #include <klibc/vec.h>
 #include <sched/sched.h>
 #include <sched/syscall.h>
+#include <sys/prcb.h>
 #include <sys/timer.h>
 
 #define VIRTUAL_STACK_ADDR 0x70000000000
@@ -18,14 +20,23 @@ bool sched_runit = false;
 thread_vec_t threads;
 process_vec_t processes;
 
-uint64_t pid = -1;
+int64_t pid = -1;
 lock_t process_lock;
 
 lock_t thread_lock;
-uint64_t tid = 0;
+int64_t tid = 0;
+
+struct process *sched_pid_to_process(int64_t process_pid) {
+	for (int i = 0; i < processes.length; i++) {
+		if (processes.data[i]->pid == process_pid) {
+			return processes.data[i];
+		}
+	}
+	return NULL;
+}
 
 int sched_get_next_thread(int index) {
-	if (index == -1) {
+	if (index == -1 || index > threads.length) {
 		index = 0;
 	} else {
 		index++;
@@ -58,7 +69,7 @@ void process_create(char *name, uint8_t state, uint64_t runtime,
 	strncpy(proc->name, name, 256);
 	proc->runtime = runtime;
 	proc->state = state;
-	proc->pid++;
+	proc->pid = pid++;
 #if defined(__x86_64__)
 	if (user)
 		proc->process_pagemap = vmm_new_pagemap();
@@ -85,7 +96,7 @@ void process_create_elf(char *name, uint8_t state, uint64_t runtime,
 	strncpy(proc->name, name, 256);
 	proc->runtime = runtime;
 	proc->state = state;
-	proc->pid++;
+	proc->pid = pid++;
 #if defined(__x86_64__)
 	proc->process_pagemap = vmm_new_pagemap();
 	// taken from MandelbrotOS
@@ -118,7 +129,7 @@ void process_create_elf(char *name, uint8_t state, uint64_t runtime,
 
 void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 				   struct process *proc) {
-	spinlock_acquire(thread_lock);
+	spinlock_acquire_or_wait(thread_lock);
 	struct thread *thrd = kmalloc(sizeof(struct thread));
 	thrd->tid = tid++;
 	thrd->state = proc->state;
@@ -129,6 +140,7 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 	thrd->reg.rip = pc_address;
 	thrd->reg.rdi = arguments;
 	thrd->reg.rsp = (uint64_t)pmm_allocz(STACK_SIZE / PAGE_SIZE);
+	thrd->stack = thrd->reg.rsp;
 	if (user) {
 		thrd->reg.cs = 0x23;
 		thrd->reg.ss = 0x1b;
@@ -150,4 +162,31 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 	vec_push(&threads, thrd);
 	vec_push(&proc->process_threads, thrd);
 	spinlock_drop(thread_lock);
+}
+
+void process_kill(struct process *proc) {
+	spinlock_acquire_or_wait(process_lock);
+	for (int i = 0; i < proc->process_threads.length; i++)
+		thread_kill(proc->process_threads.data[i], false);
+	vec_remove(&processes, proc);
+	spinlock_drop(process_lock);
+	sched_resched_now();
+}
+
+void thread_kill(struct thread *thrd, bool r) {
+	spinlock_acquire_or_wait(thread_lock);
+	if (thrd->mother_proc->pid < 1) {
+		if (thrd->mother_proc->process_threads.data[0] == thrd)
+			panic("Attempted to kill init!\n");
+	}
+#if defined(__x86_64__)
+	pmm_free((void *)thrd->stack, STACK_SIZE / PAGE_SIZE);
+	kfree((void *)thrd->kernel_stack);
+#endif
+	vec_remove(&thrd->mother_proc->process_threads, thrd);
+	vec_remove(&threads, thrd);
+	kfree(thrd);
+	spinlock_drop(thread_lock);
+	if (r)
+		sched_resched_now();
 }

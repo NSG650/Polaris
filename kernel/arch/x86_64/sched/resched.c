@@ -10,6 +10,18 @@
 lock_t resched_lock;
 extern void resched_context_switch(registers_t *reg);
 
+void sched_resched_now(void) {
+	int nex_index =
+		sched_get_next_thread(prcb_return_current_cpu()->thread_index);
+	apic_eoi();
+	timer_sched_oneshot(32, 20000);
+	prcb_return_current_cpu()->running_thread = NULL;
+	prcb_return_current_cpu()->thread_index = nex_index;
+	sti();
+	for (;;)
+		halt();
+}
+
 void resched(registers_t *reg) {
 	spinlock_acquire_or_wait(resched_lock);
 	struct thread *running_thrd = prcb_return_current_cpu()->running_thread;
