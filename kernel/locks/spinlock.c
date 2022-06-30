@@ -18,18 +18,26 @@
 #include <asm/asm.h>
 #include <locks/spinlock.h>
 
-bool expected = 0;
-
 bool spinlock_acquire(lock_t spin) {
-	return __atomic_compare_exchange_n(&spin, &expected, 1, false,
-									   __ATOMIC_SEQ_CST, __ATOMIC_RELAXED);
+	if (__atomic_test_and_set(&spin, __ATOMIC_ACQUIRE)) {
+		return false;
+	} else {
+		return true;
+	}
 }
 
 void spinlock_acquire_or_wait(lock_t spin) {
-	while (!__atomic_compare_exchange_n(&spin, &expected, 1, false,
-										__ATOMIC_SEQ_CST, __ATOMIC_RELAXED)) {
-		while (spin)
-			pause();
+retry_lock:
+	if (spinlock_acquire(spin)) {
+		return;
+	}
+
+	// Do a rough wait until the lock is free for cache-locality.
+	for (int i = 0; i < 50000000; i++) {
+		if (__atomic_load_n(&spin, __ATOMIC_RELAXED) == 0) {
+			goto retry_lock;
+		}
+		pause();
 	}
 }
 
@@ -38,7 +46,6 @@ void spinlock_drop(lock_t spin) {
 }
 
 // liballoc
-
 lock_t lib_lock;
 
 int liballoc_lock() {

@@ -44,4 +44,4 @@ distclean: clean
 
 .PHONY: format
 format:
-	clang-format -i $(shell find . -name *.h -o -name *.c)
+	clang-format -i $(shell find . \( -iname *.h -o -iname *.c \) -not -ipath "*./limine*" -not -iname "limine.h" -not -ipath "*./kernel/arch/x86_64/fw/lai/*")
