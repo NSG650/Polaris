@@ -18,19 +18,23 @@
 #include <asm/asm.h>
 #include <locks/spinlock.h>
 
+bool expected = 0;
+
 bool spinlock_acquire(lock_t spin) {
-	return __sync_bool_compare_and_swap(&spin, 0, 1);
+	return __atomic_compare_exchange_n(&spin, &expected, 1, false,
+									   __ATOMIC_SEQ_CST, __ATOMIC_RELAXED);
 }
 
 void spinlock_acquire_or_wait(lock_t spin) {
-	while (!__sync_bool_compare_and_swap(&spin, 0, 1)) {
+	while (!__atomic_compare_exchange_n(&spin, &expected, 1, false,
+										__ATOMIC_SEQ_CST, __ATOMIC_RELAXED)) {
 		while (spin)
 			pause();
 	}
 }
 
 void spinlock_drop(lock_t spin) {
-	__sync_lock_release(&spin);
+	__atomic_clear(&spin, __ATOMIC_RELEASE);
 }
 
 // liballoc
