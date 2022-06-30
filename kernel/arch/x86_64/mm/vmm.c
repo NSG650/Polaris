@@ -75,27 +75,14 @@ void vmm_init(struct limine_memmap_entry **memmap, size_t memmap_entries) {
 	for (uint64_t p = 256; p < 512; p++)
 		get_next_level(kernel_pagemap.top_level, p);
 
-	for (uint64_t p = 0; p < 4096UL * 1024 * 1024; p += PAGE_SIZE) {
-		if (p != 0) {
-			vmm_map_page(&kernel_pagemap, p, p, 0b111, false, false);
-		}
-		vmm_map_page(&kernel_pagemap, p + hhdm_request.response->offset, p,
-					 0b111, false, false);
+	for (uint64_t p = PAGE_SIZE; p < 4096UL * 1024 * 1024; p += PAGE_SIZE) {
+		vmm_map_page(&kernel_pagemap, p, p, 0b111, false, false);
 	}
-	// Map PMRs with 4KB granularity
-	/* for (size_t i = 0; i < pmr_entries; i++) {
-		uint64_t virt = pmrs[i].base;
-		// Convert virtual PMR address to physical
-		uint64_t phys = physical_base_address + (virt - virtual_base_address);
-		// Convert Stivale2's PMR permissions format to page permissions format
-		uint64_t pf =
-			(pmrs[i].permissions & STIVALE2_PMR_EXECUTABLE ? 0 : 1UL << 63) |
-			(pmrs[i].permissions & STIVALE2_PMR_WRITABLE ? 1 << 1 : 0) | 1;
-		for (uint64_t p = 0; p < pmrs[i].length; p += PAGE_SIZE) {
-			vmm_map_page(&kernel_pagemap, virt + p, phys + p, 0b111, false,
-						 false);
-		}
-	}*/
+
+	for (uint64_t p = 0; p < 4096UL * 1024 * 1024; p += 0x200000) {
+		vmm_map_page(&kernel_pagemap, p + hhdm_request.response->offset, p,
+					 0b111, true, false);
+	}
 	// Use the biggest page size available for the memory map, align to that
 	// size
 	/* if (__get_cpuid(0x80000001, &a, &b, &c, &d)) {
