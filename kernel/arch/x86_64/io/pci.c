@@ -23,7 +23,7 @@
 #include <mm/vmm.h>
 
 mcfg_vec_t mcfg_entries;
-struct pci_device *pci_devices[100] = {0};
+struct pci_device *pci_devices[256] = {0};
 
 int dev_count = 0;
 
@@ -190,7 +190,7 @@ static uint32_t pci_get_device(uint8_t bus, uint8_t slot) {
 }
 
 static uint32_t pci_get_header_type(uint8_t bus, uint8_t slot) {
-	return pci_read(0, bus, slot, 0, 0x0E, 2);
+	return pci_read(0, bus, slot, 0, 0xe, 2);
 }
 
 static bool pci_does_device_exist(uint8_t bus, uint8_t device) {
@@ -218,13 +218,13 @@ struct pci_device *pci_get_device_info(uint8_t bus, uint8_t device) {
 	device_struct->bus = bus;
 	device_struct->device = device;
 	device_struct->vendor_id = pci_get_vendor(bus, device);
-	device_struct->classcode = pci_read(0, bus, device, 0, 0x0b, 1);
-	device_struct->subclass = pci_read(0, bus, device, 0, 0x0a, 1);
-	device_struct->progintf = pci_read(0, bus, device, 0, 0x09, 1);
+	device_struct->classcode = pci_read(0, bus, device, 0, 0xb, 1);
+	device_struct->subclass = pci_read(0, bus, device, 0, 0xa, 1);
+	device_struct->progintf = pci_read(0, bus, device, 0, 0x9, 1);
 	device_struct->device_id = pci_get_device(bus, device);
-	kprintf("PCI: Got Device at %x:%x\tvendor id: %x\tclasscode: "
-			"\"%s\"\tsubclass: %x\t"
-			"progintf: %x\tdevice_id: %x\n",
+	kprintf("PCI: Got Device at %x:%x vendor id: %x classcode: "
+			"\"%s\" subclass: %x "
+			"progintf: %x device_id: %x\n",
 			bus, device, device_struct->vendor_id,
 			pci_get_classcode_name(device_struct->classcode),
 			device_struct->subclass, device_struct->progintf,
