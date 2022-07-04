@@ -1,4 +1,5 @@
 #include <klibc/mem.h>
+#include <limits.h>
 
 /*
  * Copyright 2021, 2022 NSG650
@@ -17,38 +18,84 @@
  * limitations under the License.
  */
 
-void strcpy(char *dest, char *src) {
-	for (; (*dest = *src); src++, dest++)
+// Mostly taken from musl for optimizations
+#define ALIGN (sizeof(size_t))
+#define ONES ((size_t)-1 / UCHAR_MAX)
+#define HIGHS (ONES * (UCHAR_MAX / 2 + 1))
+#define HASZERO(x) (((x)-ONES) & ~(x)&HIGHS)
+
+char *strcpy(char *restrict d, const char *restrict s) {
+#ifdef __GNUC__
+	typedef size_t __attribute__((__may_alias__)) word;
+	word *wd;
+	const word *ws;
+	if ((uintptr_t)s % ALIGN == (uintptr_t)d % ALIGN) {
+		for (; (uintptr_t)s % ALIGN; s++, d++)
+			if (!(*d = *s))
+				return d;
+		wd = (void *)d;
+		ws = (const void *)s;
+		for (; !HASZERO(*ws); *wd++ = *ws++)
+			;
+		d = (void *)wd;
+		s = (const void *)ws;
+	}
+#endif
+	for (; (*d = *s); s++, d++)
 		;
+
+	return d;
 }
 
-int strcmp(const char s1[], const char s2[]) {
-	int i;
+int strcmp(const char *l, const char *r) {
+	for (; *l == *r && *l; l++, r++)
+		;
+	return *(unsigned char *)l - *(unsigned char *)r;
+}
 
-	for (i = 0; s1[i] == s2[i]; i++) {
-		if (s1[i] == '\0')
-			return 0;
+size_t strlen(const char *s) {
+	const char *a = s;
+#ifdef __GNUC__
+	typedef size_t __attribute__((__may_alias__)) word;
+	const word *w;
+	for (; (uintptr_t)s % ALIGN; s++)
+		if (!*s)
+			return s - a;
+	for (w = (const void *)s; !HASZERO(*w); w++)
+		;
+	s = (const void *)w;
+#endif
+	for (; *s; s++)
+		;
+	return s - a;
+}
+
+char *strncpy(char *restrict d, const char *restrict s, size_t n) {
+#undef ALIGN
+#define ALIGN (sizeof(size_t) - 1)
+#ifdef __GNUC__
+	typedef size_t __attribute__((__may_alias__)) word;
+	word *wd;
+	const word *ws;
+	if (((uintptr_t)s & ALIGN) == ((uintptr_t)d & ALIGN)) {
+		for (; ((uintptr_t)s & ALIGN) && n && (*d = *s); n--, s++, d++)
+			;
+		if (!n || !*s)
+			goto tail;
+		wd = (void *)d;
+		ws = (const void *)s;
+		for (; n >= sizeof(size_t) && !HASZERO(*ws);
+			 n -= sizeof(size_t), ws++, wd++)
+			*wd = *ws;
+		d = (void *)wd;
+		s = (const void *)ws;
 	}
-
-	return s1[i] - s2[i];
-}
-
-size_t strlen(char *string) {
-	size_t len = 0;
-	while (string[len] != '\0')
-		++len;
-	return len;
-}
-
-char *strncpy(char *dest, const char *src, size_t n) {
-	char *ptr = dest;
-
-	while (*src != '\0' && n--) {
-		*ptr++ = *src++;
-	}
-
-	*ptr = '\0';
-	return dest;
+#endif
+	for (; n && (*d = *s); n--, s++, d++)
+		;
+tail:
+	memset(d, 0, n);
+	return d;
 }
 
 char *ltoa(int64_t value, char *str, int base) {
@@ -86,71 +133,7 @@ char *ltoa(int64_t value, char *str, int base) {
 	return rc;
 }
 
-char *itoa(int value, char *str, int base) {
-	char *rc;
-	char *ptr;
-	char *low;
-	// Check for supported base.
-	if (base < 2 || base > 36) {
-		*str = '\0';
-		return str;
-	}
-	rc = ptr = str;
-	// Set '-' for negative decimals.
-	if (value < 0 && base == 10) {
-		*ptr++ = '-';
-	}
-	// Remember where the numbers start.
-	low = ptr;
-	// The actual conversion.
-	do {
-		// Modulo is negative for negative value. This trick makes abs()
-		// unnecessary.
-		*ptr++ = "zyxwvutsrqponmlkjihgfedcba9876543210123456789abcdefghijklmnop"
-				 "qrstuvwxyz"[35 + value % base];
-		value /= base;
-	} while (value);
-	// Terminating the string.
-	*ptr-- = '\0';
-	// Invert the numbers.
-	while (low < ptr) {
-		char tmp = *low;
-		*low++ = *ptr;
-		*ptr-- = tmp;
-	}
-	return rc;
-}
-
 char *ultoa(uint64_t value, char *str, int base) {
-	char *rc;
-	char *ptr;
-	char *low;
-	// Check for supported base.
-	if (base < 2 || base > 36) {
-		*str = '\0';
-		return str;
-	}
-	rc = ptr = str;
-	// Remember where the numbers start.
-	low = ptr;
-	// The actual conversion.
-	do {
-		*ptr++ = "0123456789abcdefghijklmnop"
-				 "qrstuvwxyz"[value % base];
-		value /= base;
-	} while (value);
-	// Terminating the string.
-	*ptr-- = '\0';
-	// Invert the numbers.
-	while (low < ptr) {
-		char tmp = *low;
-		*low++ = *ptr;
-		*ptr-- = tmp;
-	}
-	return rc;
-}
-
-char *uitoa(uint32_t value, char *str, int base) {
 	char *rc;
 	char *ptr;
 	char *low;

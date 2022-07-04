@@ -1,5 +1,5 @@
 ; Taken from Limine
-; Added memset/cpy(16/32/64)
+; Added memset32
 section .text
 
 global memcpy
@@ -8,27 +8,6 @@ memcpy:
     mov rax, rdi
     rep movsb
     ret
-    
-global memcpy16
-memcpy16:
-    mov rcx, rdx
-    mov rax, rdi
-    rep movsw
-    ret
-
-global memcpy32
-memcpy32:
-    mov rcx, rdx
-    mov rax, rdi
-    rep movsd
-    ret
-    
-global memcpy64
-memcpy64:
-    mov rcx, rdx
-    mov rax, rdi
-    rep movsq
-    ret
 
 global memset
 memset:
@@ -36,15 +15,6 @@ memset:
     mov rax, rsi
     mov rcx, rdx
     rep stosb
-    pop rax
-    ret
-
-global memset16
-memset16:
-    push rdi
-    mov rax, rsi
-    mov rcx, rdx
-    rep stosw
     pop rax
     ret
     
@@ -57,15 +27,6 @@ memset32:
     pop rax
     ret
     
-global memset64
-memset64:
-    push rdi
-    mov rax, rsi
-    mov rcx, rdx
-    rep stosq
-    pop rax
-    ret
-
 global memmove
 memmove:
     mov rcx, rdx
