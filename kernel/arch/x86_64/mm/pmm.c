@@ -21,23 +21,22 @@
 
 static void *bitmap;
 static size_t last_used_index = 0;
-static uintptr_t highest_page = 0;
+static uintptr_t highest_addr = 0;
 
 void pmm_init(struct limine_memmap_entry **memmap, size_t memmap_entries) {
 	// First, calculate how big the bitmap needs to be
 	for (size_t i = 0; i < memmap_entries; i++) {
 		if (memmap[i]->type != LIMINE_MEMMAP_USABLE &&
-			memmap[i]->type != LIMINE_MEMMAP_ACPI_RECLAIMABLE &&
-			memmap[i]->type != LIMINE_MEMMAP_BOOTLOADER_RECLAIMABLE)
+			memmap[i]->type != LIMINE_MEMMAP_ACPI_RECLAIMABLE)
 			continue;
 
 		uintptr_t top = memmap[i]->base + memmap[i]->length;
 
-		if (top > highest_page)
-			highest_page = top;
+		if (top > highest_addr)
+			highest_addr = top;
 	}
 
-	size_t bitmap_size = ALIGN_UP((highest_page / PAGE_SIZE) / 8, PAGE_SIZE);
+	size_t bitmap_size = ALIGN_UP((highest_addr / PAGE_SIZE) / 8, PAGE_SIZE);
 
 	// Second, find a location with enough free pages to host the bitmap
 	for (size_t i = 0; i < memmap_entries; i++) {
@@ -89,7 +88,7 @@ static void *inner_alloc(size_t count, size_t limit) {
 
 void *pmm_alloc(size_t count) {
 	size_t l = last_used_index;
-	void *ret = inner_alloc(count, highest_page / PAGE_SIZE);
+	void *ret = inner_alloc(count, highest_addr / PAGE_SIZE);
 	if (ret == NULL) {
 		last_used_index = 0;
 		ret = inner_alloc(count, l);
@@ -103,9 +102,10 @@ void *pmm_allocz(size_t count) {
 	if (ret == NULL)
 		return NULL;
 
-	void *ptr = (void *)ret + MEM_PHYS_OFFSET;
+	uint64_t *ptr = (uint64_t *)(ret + MEM_PHYS_OFFSET);
 
-	memset(ptr, 0, count * PAGE_SIZE);
+	for (size_t i = 0; i < count * (PAGE_SIZE / sizeof(uint64_t)); i++)
+		ptr[i] = 0;
 
 	return ret;
 }
