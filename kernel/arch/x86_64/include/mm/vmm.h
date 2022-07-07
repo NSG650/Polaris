@@ -20,7 +20,6 @@
 
 #include <limine.h>
 #include <reg.h>
-#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -33,14 +32,15 @@ struct pagemap {
 	uintptr_t *top_level;
 };
 
+enum page_size { Size4KiB, Size2MiB, Size1GiB };
+
 extern struct pagemap kernel_pagemap;
 
 void vmm_init(struct limine_memmap_entry **memmap, size_t memmap_entries);
 void vmm_switch_pagemap(struct pagemap *pagemap);
 struct pagemap *vmm_new_pagemap(void);
-bool vmm_map_page(struct pagemap *pagemap, uint64_t virt_addr,
-				  uint64_t phys_addr, uint64_t flags, bool hugepages,
-				  bool gbpages);
+void vmm_map_page(struct pagemap *pagemap, uint64_t virt_addr,
+				  uint64_t phys_addr, uint64_t flags, enum page_size pg_size);
 void vmm_page_fault_handler(registers_t *reg);
 
 #endif

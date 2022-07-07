@@ -21,6 +21,7 @@
 #include <io/ports.h>
 #include <mem/liballoc.h>
 #include <mm/vmm.h>
+#include <stdbool.h>
 
 mcfg_vec_t mcfg_entries;
 struct pci_device *pci_devices[256] = {0};

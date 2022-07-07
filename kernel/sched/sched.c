@@ -109,7 +109,7 @@ void process_create_elf(char *name, uint8_t state, uint64_t runtime,
 			for (uintptr_t p = 0;
 				 p < ROUND_UP(prog_header->mem_size, PAGE_SIZE); p++) {
 				vmm_map_page(proc->process_pagemap, prog_header->virt_addr + p,
-							 mem + p, 0b111, 0, 0);
+							 mem + p, 0b111, Size4KiB);
 			}
 			memset((void *)mem, 0, prog_header->mem_size);
 			memcpy((void *)mem,
@@ -146,7 +146,7 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 		thrd->reg.ss = 0x1b;
 		for (size_t p = 0; p < STACK_SIZE; p += PAGE_SIZE) {
 			vmm_map_page(proc->process_pagemap, VIRTUAL_STACK_ADDR + p,
-						 (thrd->reg.rsp) + p, 0b111, 0, 0);
+						 (thrd->reg.rsp) + p, 0b111, Size4KiB);
 		}
 		thrd->reg.rsp = VIRTUAL_STACK_ADDR + STACK_SIZE;
 		thrd->kernel_stack = (uint64_t)kmalloc(STACK_SIZE);

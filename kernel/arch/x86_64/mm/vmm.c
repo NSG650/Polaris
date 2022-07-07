@@ -49,36 +49,29 @@ static volatile struct limine_kernel_address_request kernel_address_request = {
 static volatile struct limine_kernel_file_request kernel_file_request = {
 	.id = LIMINE_KERNEL_FILE_REQUEST, .revision = 0};
 
+static volatile struct limine_5_level_paging_request five_level_paging_request =
+	{.id = LIMINE_5_LEVEL_PAGING_REQUEST, .revision = 0};
+
 void vmm_init(struct limine_memmap_entry **memmap, size_t memmap_entries) {
 	kernel_pagemap.top_level = pmm_allocz(1);
 	for (uint64_t p = 256; p < 512; p++)
 		get_next_level(kernel_pagemap.top_level, p);
 
-	for (uint64_t p = 0x200000; p < 0x40000000; p += 0x200000) {
-		vmm_map_page(&kernel_pagemap, p, p, 0b111, true, false);
-	}
-	// Use the biggest page size available
-	uint32_t a = 0, b = 0, c = 0, d = 0;
-	if (__get_cpuid(0x80000001, &a, &b, &c, &d)) {
-		if (d & CPUID_GBPAGE) {
-			// Use 1GB pages if available (biggest size on x86-64)
-			for (uint64_t p = 0; p < 4096UL * 1024 * 1024; p += 0x40000000) {
-				if (p != 0) {
-					vmm_map_page(&kernel_pagemap, p, p, 0b111, false, true);
-				}
-				vmm_map_page(&kernel_pagemap, p + MEM_PHYS_OFFSET, p, 0b111,
-							 false, true);
-			}
-		} else {
-			// Use 2MB pages otherwise (biggest size always available on x86-64)
-			for (uint64_t p = 0; p < 4096UL * 1024 * 1024; p += 0x200000) {
-				if (p >= 0x40000000) {
-					vmm_map_page(&kernel_pagemap, p, p, 0b111, true, false);
-				}
-				vmm_map_page(&kernel_pagemap, p + MEM_PHYS_OFFSET, p, 0b111,
-							 true, false);
-			}
+	for (uint64_t p = 0; p < 0x200000; p += PAGE_SIZE) {
+		if (p != 0) {
+			vmm_map_page(&kernel_pagemap, p, p, 0b111, Size4KiB);
 		}
+		vmm_map_page(&kernel_pagemap, p + MEM_PHYS_OFFSET, p, 0b111, Size4KiB);
+	}
+
+	for (uint64_t p = 0x200000; p < 0x40000000; p += 0x200000) {
+		vmm_map_page(&kernel_pagemap, p, p, 0b111, Size2MiB);
+		vmm_map_page(&kernel_pagemap, p + MEM_PHYS_OFFSET, p, 0b111, Size2MiB);
+	}
+
+	for (uint64_t p = 0x40000000; p < 4096UL * 1024 * 1024; p += 0x40000000) {
+		vmm_map_page(&kernel_pagemap, p, p, 0b111, Size1GiB);
+		vmm_map_page(&kernel_pagemap, p + MEM_PHYS_OFFSET, p, 0b111, Size1GiB);
 	}
 
 	for (size_t i = 0; i < memmap_entries; i++) {
@@ -88,9 +81,9 @@ void vmm_init(struct limine_memmap_entry **memmap, size_t memmap_entries) {
 		uint64_t aligned_length = aligned_top - aligned_base;
 		for (uint64_t p = 0; p < aligned_length; p += PAGE_SIZE) {
 			uint64_t page = aligned_base + p;
-			vmm_map_page(&kernel_pagemap, page, page, 0b111, false, false);
+			vmm_map_page(&kernel_pagemap, page, page, 0b111, Size4KiB);
 			vmm_map_page(&kernel_pagemap, page + MEM_PHYS_OFFSET, page, 0b111,
-						 false, false);
+						 Size4KiB);
 		}
 	}
 
@@ -98,7 +91,7 @@ void vmm_init(struct limine_memmap_entry **memmap, size_t memmap_entries) {
 		 p += PAGE_SIZE) {
 		uint64_t paddr = kernel_address_request.response->physical_base + p;
 		uint64_t vaddr = kernel_address_request.response->virtual_base + p;
-		vmm_map_page(&kernel_pagemap, vaddr, paddr, 0b111, false, false);
+		vmm_map_page(&kernel_pagemap, vaddr, paddr, 0b111, Size4KiB);
 	}
 	// Switch to the new page map, dropping Limine's default one
 	vmm_switch_pagemap(&kernel_pagemap);
@@ -117,55 +110,59 @@ struct pagemap *vmm_new_pagemap(void) {
 	return pagemap;
 }
 
-// Maps a page, without the present bit in "flags" (bit 0), unmaps a page;
-// the argument "gbpages" has more priority than "hugepages", meaning that if
-// "hugepages" and "gbpages" are true, and if 1GB pages are available,
-// uses 1GB pages, if 1GB pages aren't available, uses 2MB pages
-bool vmm_map_page(struct pagemap *pagemap, uint64_t virt_addr,
-				  uint64_t phys_addr, uint64_t flags, bool hugepages,
-				  bool gbpages) {
+// Maps a page, without the present bit in "flags" (bit 0), unmaps a page
+void vmm_map_page(struct pagemap *pagemap, uint64_t virt_addr,
+				  uint64_t phys_addr, uint64_t flags, enum page_size pg_size) {
+	// Calculate the indices in the various tables using the virtual address
+	size_t pml5_entry = (virt_addr & ((uint64_t)0x1FF << 48)) >> 48;
 	size_t pml4_entry = (virt_addr & ((uint64_t)0x1FF << 39)) >> 39;
 	size_t pml3_entry = (virt_addr & ((uint64_t)0x1FF << 30)) >> 30;
 	size_t pml2_entry = (virt_addr & ((uint64_t)0x1FF << 21)) >> 21;
 	size_t pml1_entry = (virt_addr & ((uint64_t)0x1FF << 12)) >> 12;
 
-	uint64_t *pml4, *pml3, *pml2, *pml1;
+	uint64_t *pml5, *pml4, *pml3, *pml2, *pml1;
 
-	// Allocate page map levels
-	pml4 = pagemap->top_level;
+	if (five_level_paging_request.response != NULL) {
+		pml5 = pagemap->top_level;
+		goto level5;
+	} else {
+		pml4 = pagemap->top_level;
+		goto level4;
+	}
+
+level5:
+	pml4 = get_next_level(pml5, pml5_entry);
+level4:
 	pml3 = get_next_level(pml4, pml4_entry);
-	if (pml3 == NULL)
-		return false;
 
-	// Use 1GB pages if requested
-	if (gbpages) {
+	if (pg_size == Size1GiB) {
 		uint32_t a = 0, b = 0, c = 0, d = 0;
 		if (__get_cpuid(0x80000001, &a, &b, &c, &d)) {
-			// Check for 1GB page support
+			// Check for 1GiB pages support.
 			if (d & CPUID_GBPAGE) {
 				pml3[pml3_entry] = phys_addr | flags | (1 << 7);
-				return true;
+				return;
+			} else {
+				// If 1GiB pages are not supported then emulate it by splitting
+				// them into 2MiB pages.
+				for (uint64_t i = 0; i < 0x40000000; i += 0x200000) {
+					vmm_map_page(pagemap, virt_addr + i, phys_addr + i, flags,
+								 Size2MiB);
+				}
 			}
 		}
 	}
 
 	pml2 = get_next_level(pml3, pml3_entry);
-	if (pml2 == NULL)
-		return false;
 
-	// Use 2MB pages if requested
-	if (hugepages) {
+	if (pg_size == Size2MiB) {
 		pml2[pml2_entry] = phys_addr | flags | (1 << 7);
-		return true;
+		return;
 	}
 
 	pml1 = get_next_level(pml2, pml2_entry);
-	if (pml1 == NULL)
-		return false;
 
-	// Use 4KB pages otherwise
 	pml1[pml1_entry] = phys_addr | flags;
-	return true;
 }
 
 void vmm_page_fault_handler(registers_t *reg) {
