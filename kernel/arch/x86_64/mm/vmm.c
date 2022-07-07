@@ -40,8 +40,8 @@ static uint64_t *get_next_level(uint64_t *current_level, size_t entry) {
 	return ret;
 }
 
-static volatile struct limine_hhdm_request hhdm_request = {
-	.id = LIMINE_HHDM_REQUEST, .revision = 0};
+volatile struct limine_hhdm_request hhdm_request = {.id = LIMINE_HHDM_REQUEST,
+													.revision = 0};
 
 static volatile struct limine_kernel_address_request kernel_address_request = {
 	.id = LIMINE_KERNEL_ADDRESS_REQUEST, .revision = 0};
@@ -66,8 +66,8 @@ void vmm_init(struct limine_memmap_entry **memmap, size_t memmap_entries) {
 				if (p != 0) {
 					vmm_map_page(&kernel_pagemap, p, p, 0b111, false, true);
 				}
-				vmm_map_page(&kernel_pagemap, p + hhdm_request.response->offset,
-							 p, 0b111, false, true);
+				vmm_map_page(&kernel_pagemap, p + MEM_PHYS_OFFSET, p, 0b111,
+							 false, true);
 			}
 		} else {
 			// Use 2MB pages otherwise (biggest size always available on x86-64)
@@ -75,8 +75,8 @@ void vmm_init(struct limine_memmap_entry **memmap, size_t memmap_entries) {
 				if (p >= 0x40000000) {
 					vmm_map_page(&kernel_pagemap, p, p, 0b111, true, false);
 				}
-				vmm_map_page(&kernel_pagemap, p + hhdm_request.response->offset,
-							 p, 0b111, true, false);
+				vmm_map_page(&kernel_pagemap, p + MEM_PHYS_OFFSET, p, 0b111,
+							 true, false);
 			}
 		}
 	}
@@ -89,8 +89,8 @@ void vmm_init(struct limine_memmap_entry **memmap, size_t memmap_entries) {
 		for (uint64_t p = 0; p < aligned_length; p += PAGE_SIZE) {
 			uint64_t page = aligned_base + p;
 			vmm_map_page(&kernel_pagemap, page, page, 0b111, false, false);
-			vmm_map_page(&kernel_pagemap, page + hhdm_request.response->offset,
-						 page, 0b111, false, false);
+			vmm_map_page(&kernel_pagemap, page + MEM_PHYS_OFFSET, page, 0b111,
+						 false, false);
 		}
 	}
 

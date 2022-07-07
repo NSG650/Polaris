@@ -24,8 +24,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+extern volatile struct limine_hhdm_request hhdm_request;
+
 #define PAGE_SIZE ((size_t)4096)
-#define MEM_PHYS_OFFSET ((uint64_t)0xFFFF800000000000)
+#define MEM_PHYS_OFFSET hhdm_request.response->offset
 
 struct pagemap {
 	uintptr_t *top_level;
