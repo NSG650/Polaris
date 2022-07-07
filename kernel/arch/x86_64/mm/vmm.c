@@ -75,15 +75,25 @@ void vmm_init(struct limine_memmap_entry **memmap, size_t memmap_entries) {
 	}
 
 	for (size_t i = 0; i < memmap_entries; i++) {
-		uint64_t aligned_base = ALIGN_DOWN(memmap[i]->base, PAGE_SIZE);
-		uint64_t aligned_top =
-			ALIGN_UP(memmap[i]->base + memmap[i]->length, PAGE_SIZE);
+		uint64_t base = memmap[i]->base;
+		uint64_t length = memmap[i]->length;
+		uint64_t top = base + length;
+
+		if (base < 0x100000000)
+			base = 0x100000000;
+
+		if (base >= top)
+			continue;
+
+		uint64_t aligned_base = ALIGN_DOWN(base, 0x40000000);
+		uint64_t aligned_top = ALIGN_UP(top, 0x40000000);
 		uint64_t aligned_length = aligned_top - aligned_base;
-		for (uint64_t p = 0; p < aligned_length; p += PAGE_SIZE) {
-			uint64_t page = aligned_base + p;
-			vmm_map_page(&kernel_pagemap, page, page, 0b111, Size4KiB);
+
+		for (uint64_t j = 0; j < aligned_length; j += 0x40000000) {
+			uint64_t page = aligned_base + j;
+			vmm_map_page(&kernel_pagemap, page, page, 0b111, Size1GiB);
 			vmm_map_page(&kernel_pagemap, page + MEM_PHYS_OFFSET, page, 0b111,
-						 Size4KiB);
+						 Size1GiB);
 		}
 	}
 
