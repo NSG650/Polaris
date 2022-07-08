@@ -15,30 +15,30 @@ ASFLAGS ?= -g
 
 # Internal C flags that should not be changed by the user.
 override INTERNALCFLAGS :=                \
-    -I.                                   \
-    -I include/                           \
-    -I arch/$(CONFIG_ARCH)/include/       \
-    -I arch/$(CONFIG_ARCH)/fw/lai/include \
-    -std=gnu11                            \
-    -ffreestanding                        \
-    -fno-stack-protector                  \
-    -fno-stack-check                      \
-    -fno-pie                              \
-    -fno-pic                              \
-    -MMD
+	-I.                                   \
+	-I include/                           \
+	-I arch/$(CONFIG_ARCH)/include/       \
+	-I arch/$(CONFIG_ARCH)/fw/lai/include \
+	-std=gnu11                            \
+	-ffreestanding                        \
+	-fno-stack-protector                  \
+	-fno-stack-check                      \
+	-fpie                                 \
+	-MMD
 
 # Internal linker flags that should not be changed by the user.
 override INTERNALLDFLAGS :=     \
-    -nostdlib                   \
-    -static                     \
-    -Wl,-z,max-page-size=0x1000 \
-    -Wl,-T,arch/$(CONFIG_ARCH)/linker.ld
+	-nostdlib                   \
+	-Wl,-static,-pie            \
+	-Wl,--no-dynamic-linker	    \
+	-Wl,-z,max-page-size=0x1000 \
+	-Wl,-T,arch/$(CONFIG_ARCH)/linker.ld
 
 # Internal assembler flags that should not be changed by the user.
 override INTERNALASFLAGS := \
-    -MD                     \
-    -MP                     \
-    -f elf64
+	-MD                     \
+	-MP                     \
+	-f elf64
 
 CARCHFILES := $(wildcard arch/$(CONFIG_ARCH)/*/*.c)
 CFILES := $(wildcard */*.c)
@@ -54,18 +54,17 @@ ifeq ($(CONFIG_ARCH),x86_64)
 	HEADER_DEPS := $(CARCHFILES:.c=.d) $(CFILES:.c=.d) $(ASMFILES:.asm=.d)
 
 	override INTERNALCFLAGS += \
-		-m64               \
-		-march=x86-64      \
-		-mabi=sysv         \
-		-masm=intel        \
-		-mno-80387         \
-		-mno-mmx           \
-		-mno-3dnow         \
-		-mno-sse           \
-		-mno-sse2          \
-		-mno-red-zone      \
-		-mcmodel=kernel
-	override INTERALLDFLAGS +=	\
+		-m64                   \
+		-march=x86-64          \
+		-mabi=sysv             \
+		-masm=intel            \
+		-mno-80387             \
+		-mno-mmx               \
+		-mno-3dnow             \
+		-mno-sse               \
+		-mno-sse2              \
+		-mno-red-zone
+	override INTERALLDFLAGS += \
 		-Wl,-m,elf_x86_64
 endif
 
