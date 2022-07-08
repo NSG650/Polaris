@@ -26,14 +26,14 @@ void hpet_init(void) {
 		0 - main counter is halted, timer interrupts are disabled
 		1 - main counter is running, timer interrupts are allowed if enabled
 	 */
-	outmmqw(&hpet->general_configuration, 0);
-	outmmqw(&hpet->main_counter_value, 0);
-	outmmqw(&hpet->general_configuration, 1);
+	mmoutq(&hpet->general_configuration, 0);
+	mmoutq(&hpet->main_counter_value, 0);
+	mmoutq(&hpet->general_configuration, 1);
 	timer_installed_b = true;
 }
 
 uint64_t hpet_counter_value(void) {
-	return inmmqw(&hpet->main_counter_value);
+	return mminq(&hpet->main_counter_value);
 }
 
 void hpet_sleep(uint64_t us) {

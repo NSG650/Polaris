@@ -64,14 +64,14 @@ static uint32_t legacy_pci_read(uint16_t seg, uint8_t bus, uint8_t slot,
 								uint8_t function, uint16_t offset,
 								uint8_t access_size) {
 	(void)seg;
-	outportdw(0xCF8, make_pci_address(bus, slot, function, offset));
+	outd(0xCF8, make_pci_address(bus, slot, function, offset));
 	switch (access_size) {
 		case 1:
-			return inportb(0xCFC + (offset & 3));
+			return inb(0xCFC + (offset & 3));
 		case 2:
-			return inportw(0xCFC + (offset & 2));
+			return inw(0xCFC + (offset & 2));
 		case 4:
-			return inportdw(0xCFC);
+			return ind(0xCFC);
 		default:
 			kprintf("PCI: Unknown access size: 0x%x\n", access_size);
 			return 0;
@@ -82,16 +82,16 @@ static void legacy_pci_write(uint16_t seg, uint8_t bus, uint8_t slot,
 							 uint8_t function, uint16_t offset, uint32_t value,
 							 uint8_t access_size) {
 	(void)seg;
-	outportdw(0xCF8, make_pci_address(bus, slot, function, offset));
+	outd(0xCF8, make_pci_address(bus, slot, function, offset));
 	switch (access_size) {
 		case 1:
-			outportb(0xCFC + (offset & 3), value);
+			outb(0xCFC + (offset & 3), value);
 			break;
 		case 2:
-			outportw(0xCFC + (offset & 2), value);
+			outw(0xCFC + (offset & 2), value);
 			break;
 		case 4:
-			outportdw(0xCFC, value);
+			outd(0xCFC, value);
 			break;
 		default:
 			kprintf("PCI: Unknown access size: 0x%x\n", access_size);
@@ -115,15 +115,15 @@ static uint32_t mcfg_pci_read(uint16_t seg, uint8_t bus, uint8_t slot,
 							 MEM_PHYS_OFFSET);
 				switch (access_size) {
 					case 1: {
-						return inmmb(addr);
+						return mminb(addr);
 					}
 
 					case 2: {
-						return inmmw(addr);
+						return mminw(addr);
 					}
 
 					case 4: {
-						return inmmdw(addr);
+						return mmind(addr);
 					}
 
 					default:
@@ -155,17 +155,17 @@ static void mcfg_pci_write(uint16_t seg, uint8_t bus, uint8_t slot,
 							 MEM_PHYS_OFFSET);
 				switch (access_size) {
 					case 1: {
-						outmmb(addr, value);
+						mmoutb(addr, value);
 						break;
 					}
 
 					case 2: {
-						outmmw(addr, value);
+						mmoutw(addr, value);
 						break;
 					}
 
 					case 4: {
-						outmmdw(addr, value);
+						mmoutd(addr, value);
 						break;
 					}
 

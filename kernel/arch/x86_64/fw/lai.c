@@ -81,27 +81,27 @@ void *laihost_scan(const char *signature, size_t index) {
 }
 
 void laihost_outb(uint16_t port, uint8_t val) {
-	outportb(port, val);
+	outb(port, val);
 }
 
 void laihost_outw(uint16_t port, uint16_t val) {
-	outportw(port, val);
+	outw(port, val);
 }
 
 void laihost_outd(uint16_t port, uint32_t val) {
-	outportdw(port, val);
+	outd(port, val);
 }
 
 uint8_t laihost_inb(uint16_t port) {
-	return inportb(port);
+	return inb(port);
 }
 
 uint16_t laihost_inw(uint16_t port) {
-	return inportw(port);
+	return inw(port);
 }
 
 uint32_t laihost_ind(uint16_t port) {
-	return inportdw(port);
+	return ind(port);
 }
 
 void laihost_pci_writeb(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t fun,

@@ -20,25 +20,25 @@
 #include <stdbool.h>
 
 void serial_init(void) {
-	outportb(COM1, 0);
-	outportb(COM1 + 3, 0x80);
-	outportb(COM1, 3);
-	outportb(COM1 + 1, 0);
-	outportb(COM1 + 3, 3);
-	outportb(COM1 + 2, 0xC7);
-	outportb(COM1 + 4, 0xB);
-	outportb(COM1 + 4, 0xF);
+	outb(COM1, 0);
+	outb(COM1 + 3, 0x80);
+	outb(COM1, 3);
+	outb(COM1 + 1, 0);
+	outb(COM1 + 3, 3);
+	outb(COM1 + 2, 0xC7);
+	outb(COM1 + 4, 0xB);
+	outb(COM1 + 4, 0xF);
 }
 
 static bool is_transmit_empty(void) {
-	return inportb(COM1 + 5) & 0x20;
+	return inb(COM1 + 5) & 0x20;
 }
 
 void serial_putchar(char c) {
 	while (!is_transmit_empty())
 		;
 
-	outportb(COM1, c);
+	outb(COM1, c);
 }
 
 void serial_puts(char *string) {

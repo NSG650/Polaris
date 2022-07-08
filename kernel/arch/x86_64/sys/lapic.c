@@ -33,14 +33,14 @@ static uint32_t lapic_read(uint32_t reg) {
 	if (x2apic) {
 		return rdmsr(reg_to_x2apic(reg));
 	}
-	return inmmdw((void *)lapic_addr + MEM_PHYS_OFFSET + reg);
+	return mmind((void *)lapic_addr + MEM_PHYS_OFFSET + reg);
 }
 
 static void lapic_write(uint32_t reg, uint32_t value) {
 	if (x2apic) {
 		wrmsr(reg_to_x2apic(reg), value);
 	} else {
-		outmmdw((void *)lapic_addr + MEM_PHYS_OFFSET + reg, value);
+		mmoutd((void *)lapic_addr + MEM_PHYS_OFFSET + reg, value);
 	}
 }
 

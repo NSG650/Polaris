@@ -4,13 +4,13 @@
 #include <sys/apic.h>
 
 static uint32_t ioapic_read(uintptr_t ioapic_address, size_t reg) {
-	outmmdw((void *)ioapic_address + MEM_PHYS_OFFSET, reg & 0xFF);
-	return inmmdw((void *)ioapic_address + MEM_PHYS_OFFSET + 16);
+	mmoutd((void *)ioapic_address + MEM_PHYS_OFFSET, reg & 0xFF);
+	return mmind((void *)ioapic_address + MEM_PHYS_OFFSET + 16);
 }
 
 static void ioapic_write(uintptr_t ioapic_address, size_t reg, uint32_t data) {
-	outmmdw((void *)ioapic_address + MEM_PHYS_OFFSET, reg & 0xFF);
-	outmmdw((void *)ioapic_address + MEM_PHYS_OFFSET + 16, data);
+	mmoutd((void *)ioapic_address + MEM_PHYS_OFFSET, reg & 0xFF);
+	mmoutd((void *)ioapic_address + MEM_PHYS_OFFSET + 16, data);
 }
 
 static uint32_t get_gsi_count(uintptr_t ioapic_address) {
