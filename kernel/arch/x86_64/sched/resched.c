@@ -23,10 +23,16 @@ void sched_resched_now(void) {
 }
 
 void resched(registers_t *reg) {
+	if (reg->cs & 0x03) {
+		asm volatile("swapgs" ::: "memory");
+	}
+
 	spinlock_acquire_or_wait(resched_lock);
+
 	struct thread *running_thrd = prcb_return_current_cpu()->running_thread;
 	if (running_thrd) {
 		running_thrd->reg = *reg;
+		running_thrd->stack = prcb_return_current_cpu()->user_stack;
 		spinlock_drop(running_thrd->lock);
 	}
 	int nex_index =
@@ -46,8 +52,17 @@ void resched(registers_t *reg) {
 	prcb_return_current_cpu()->running_thread = running_thrd;
 	prcb_return_current_cpu()->thread_index = nex_index;
 	prcb_return_current_cpu()->cpu_tss.rsp0 = running_thrd->kernel_stack;
+
+	prcb_return_current_cpu()->user_stack = running_thrd->stack;
+	prcb_return_current_cpu()->kernel_stack = running_thrd->kernel_stack;
+
 	apic_eoi();
 	timer_sched_oneshot(32, running_thrd->runtime);
+
+	if (running_thrd->reg.cs & 0x03) {
+		asm volatile("swapgs" ::: "memory");
+	}
+
 	vmm_switch_pagemap(running_thrd->mother_proc->process_pagemap);
 	resched_context_switch(&running_thrd->reg);
 }

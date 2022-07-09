@@ -12,7 +12,7 @@ static inline uint64_t rdmsr(uint32_t msr) {
 static inline void wrmsr(uint32_t msr, uint64_t value) {
 	uint32_t edx = value >> 32;
 	uint32_t eax = (uint32_t)value;
-	asm volatile("wrmsr" :: "a"(eax), "c"(msr), "d"(edx) : "memory");
+	asm volatile("wrmsr" ::"a"(eax), "c"(msr), "d"(edx) : "memory");
 }
 
 #endif

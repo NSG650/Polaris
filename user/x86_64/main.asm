@@ -6,13 +6,13 @@ extern main
 
 syscall0:
 	mov rax, rdi
-	int 0x80
+	syscall
 	ret
 
 syscall1:
 	mov rax, rdi
 	mov rdi, rsi
-	int 0x80
+	syscall
 	ret
 
 die:

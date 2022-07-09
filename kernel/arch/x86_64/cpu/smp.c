@@ -1,5 +1,4 @@
 #include <cpu/cr.h>
-#include <cpu/msr.h>
 #include <cpu/smp.h>
 #include <cpu_features.h>
 #include <cpuid.h>
@@ -28,12 +27,7 @@ char prcb_names[21][3] = {"Aa", "Ab", "E",	"H",  "Ua", "Ub", "Z",
 						  "F",	"Ga", "Gb", "Gc", "Gd", "Ja", "Jb",
 						  "Na", "Nb", "Ra", "Rb", "T",	"V",  "Y"};
 
-static void smp_set_gs(uint64_t address) {
-	wrmsr(0xc0000101, address);
-}
-static uint64_t smp_read_gs(void) {
-	return rdmsr(0xc0000101);
-}
+extern void amd_syscall_entry(void);
 
 static void smp_init_core(struct limine_smp_info *smp_info) {
 	spinlock_acquire_or_wait(smp_lock);
@@ -52,32 +46,36 @@ static void smp_init_core(struct limine_smp_info *smp_info) {
 	cr4 |= (3 << 9);
 	write_cr("4", cr4);
 
+	// Enable syscall in EFER
+	wrmsr(0xc0000080, rdmsr(0xc0000080) | 1);
+
+	// Set up syscall
+	wrmsr(0xc0000081, 0x13000800000000);
+	// Syscall entry address
+	wrmsr(0xc0000082, (uint64_t)amd_syscall_entry);
+	// Flags mask
+	wrmsr(0xc0000084, (uint64_t) ~((uint32_t)0x2));
+
 	// Security features
-
 	uint32_t a = 0, b = 0, c = 0, d = 0;
-	if (__get_cpuid(7, &a, &b, &c, &d)) {
-		if ((b & CPUID_SMEP)) {
-			cr4 = read_cr("4");
-			cr4 |= (1 << 20); // Enable SMEP
-			write_cr("4", cr4);
-		}
+	__get_cpuid(7, &a, &b, &c, &d);
+	if ((b & CPUID_SMEP)) {
+		cr4 = read_cr("4");
+		cr4 |= (1 << 20); // Enable SMEP
+		write_cr("4", cr4);
 	}
 
-	if (__get_cpuid(7, &a, &b, &c, &d)) {
-		if ((b & CPUID_SMAP)) {
-			cr4 = read_cr("4");
-			cr4 |= (1 << 21); // Enable SMAP
-			write_cr("4", cr4);
-			asm("clac");
-		}
+	if ((b & CPUID_SMAP)) {
+		cr4 = read_cr("4");
+		cr4 |= (1 << 21); // Enable SMAP
+		write_cr("4", cr4);
+		asm("clac");
 	}
 
-	if (__get_cpuid(7, &a, &b, &c, &d)) {
-		if ((c & CPUID_UMIP)) {
-			cr4 = read_cr("4");
-			cr4 |= (1 << 11); // Enable UMIP
-			write_cr("4", cr4);
-		}
+	if ((c & CPUID_UMIP)) {
+		cr4 = read_cr("4");
+		cr4 |= (1 << 11); // Enable UMIP
+		write_cr("4", cr4);
 	}
 
 	vmm_switch_pagemap(&kernel_pagemap);
@@ -93,7 +91,8 @@ static void smp_init_core(struct limine_smp_info *smp_info) {
 	ap->cpu_tss.ist1 = (uint64_t)pmm_allocz(32768 / PAGE_SIZE);
 	ap->cpu_tss.ist1 += MEM_PHYS_OFFSET + 32768;
 	vec_push(&prcbs, ap);
-	smp_set_gs((uint64_t)prcbs.data[ap->cpu_number]);
+	set_kernel_gs((uint64_t)prcbs.data[ap->cpu_number]);
+	set_user_gs((uint64_t)prcbs.data[ap->cpu_number]);
 	gdt_load_tss((size_t)&prcb_return_current_cpu()->cpu_tss);
 	kprintf("CPU%d: %s online!\n", prcb_return_current_cpu()->cpu_number,
 			prcb_return_current_cpu()->name);
@@ -135,7 +134,7 @@ void smp_init(struct limine_smp_response *smp_info) {
 }
 
 struct prcb *prcb_return_current_cpu(void) {
-	return (struct prcb *)smp_read_gs();
+	return (struct prcb *)read_kernel_gs();
 }
 
 uint64_t prcb_return_installed_cpus(void) {

@@ -1,7 +1,7 @@
 #include <sched/syscall.h>
 #include <sys/isr.h>
 
-static void syscall_handler(registers_t *reg) {
+void syscall_handler(registers_t *reg) {
 	struct syscall_arguments args = {.syscall_nr = reg->rax,
 									 .args0 = reg->rdi,
 									 .args1 = reg->rsi,
