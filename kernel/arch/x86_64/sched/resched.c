@@ -23,10 +23,6 @@ void sched_resched_now(void) {
 }
 
 void resched(registers_t *reg) {
-	if (reg->cs & 0x03) {
-		asm volatile("swapgs" ::: "memory");
-	}
-
 	spinlock_acquire_or_wait(resched_lock);
 
 	struct thread *running_thrd = prcb_return_current_cpu()->running_thread;
@@ -58,10 +54,6 @@ void resched(registers_t *reg) {
 
 	apic_eoi();
 	timer_sched_oneshot(32, running_thrd->runtime);
-
-	if (running_thrd->reg.cs & 0x03) {
-		asm volatile("swapgs" ::: "memory");
-	}
 
 	vmm_switch_pagemap(running_thrd->mother_proc->process_pagemap);
 	resched_context_switch(&running_thrd->reg);
