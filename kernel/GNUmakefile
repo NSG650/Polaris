@@ -58,11 +58,7 @@ ifeq ($(CONFIG_ARCH),x86_64)
 		-march=x86-64          \
 		-mabi=sysv             \
 		-masm=intel            \
-		-mno-80387             \
-		-mno-mmx               \
-		-mno-3dnow             \
-		-mno-sse               \
-		-mno-sse2              \
+		-mgeneral-regs-only    \
 		-mno-red-zone
 	override INTERALLDFLAGS += \
 		-Wl,-m,elf_x86_64
