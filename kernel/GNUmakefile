@@ -5,7 +5,7 @@ CONFIG_ARCH ?= x86_64
 override KERNEL := polaris.elf
 
 # User controllable CFLAGS.
-CFLAGS ?= -Wall -Wextra -O0 -g -pipe
+CFLAGS ?= -Wall -Wextra -g -Og -pipe
 
 # User controllable linker flags. We set none by default.
 LDFLAGS ?=

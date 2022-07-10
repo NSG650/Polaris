@@ -133,10 +133,6 @@ void smp_init(struct limine_smp_response *smp_info) {
 			prcb_return_installed_cpus());
 }
 
-struct prcb *prcb_return_current_cpu(void) {
-	return (struct prcb *)read_kernel_gs();
-}
-
 uint64_t prcb_return_installed_cpus(void) {
 	return initialised_cores;
 }
