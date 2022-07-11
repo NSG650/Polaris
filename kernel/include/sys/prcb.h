@@ -25,16 +25,15 @@ typedef vec_t(struct prcb *) prcb_vec_t;
 
 extern prcb_vec_t prcbs;
 
-#define prcb_return_current_cpu() ({ \
-	uint64_t cpu_number;             \
-	asm volatile(                    \
-		"mov %0, qword ptr gs:[0]"   \
-		: "=r" (cpu_number)          \
-		:                            \
-		: "memory"                   \
-	);                               \
-	prcbs.data[cpu_number];          \
-})
+#define prcb_return_current_cpu()               \
+	({                                          \
+		uint64_t cpu_number;                    \
+		asm volatile("mov %0, qword ptr gs:[0]" \
+					 : "=r"(cpu_number)         \
+					 :                          \
+					 : "memory");               \
+		prcbs.data[cpu_number];                 \
+	})
 
 uint64_t prcb_return_installed_cpus(void);
 

@@ -44,7 +44,7 @@ static volatile struct limine_stack_size_request stack_size_request = {
 	.id = LIMINE_STACK_SIZE_REQUEST,
 	.revision = 0,
 	.response = NULL,
-	.stack_size = 32768};
+	.stack_size = STACK_SIZE};
 
 static volatile struct limine_smp_request smp_request = {
 	.id = LIMINE_SMP_REQUEST, .revision = 0, .response = NULL, .flags = 1};

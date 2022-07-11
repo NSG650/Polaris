@@ -59,20 +59,20 @@ static void smp_init_core(struct limine_smp_info *smp_info) {
 	// Security features
 	uint32_t a = 0, b = 0, c = 0, d = 0;
 	__get_cpuid(7, &a, &b, &c, &d);
-	if ((b & CPUID_SMEP)) {
+	if (b & CPUID_SMEP) {
 		cr4 = read_cr("4");
 		cr4 |= (1 << 20); // Enable SMEP
 		write_cr("4", cr4);
 	}
 
-	if ((b & CPUID_SMAP)) {
+	if (b & CPUID_SMAP) {
 		cr4 = read_cr("4");
 		cr4 |= (1 << 21); // Enable SMAP
 		write_cr("4", cr4);
 		asm("clac");
 	}
 
-	if ((c & CPUID_UMIP)) {
+	if (c & CPUID_UMIP) {
 		cr4 = read_cr("4");
 		cr4 |= (1 << 11); // Enable UMIP
 		write_cr("4", cr4);
@@ -88,8 +88,8 @@ static void smp_init_core(struct limine_smp_info *smp_info) {
 	ap->running_thread = NULL;
 	ap->thread_index = 0;
 	// ap->cpu_tss.rsp0 = smp_info->target_stack;
-	ap->cpu_tss.ist1 = (uint64_t)pmm_allocz(32768 / PAGE_SIZE);
-	ap->cpu_tss.ist1 += MEM_PHYS_OFFSET + 32768;
+	ap->cpu_tss.ist1 = (uint64_t)pmm_allocz(STACK_SIZE / PAGE_SIZE);
+	ap->cpu_tss.ist1 += MEM_PHYS_OFFSET + STACK_SIZE;
 	vec_push(&prcbs, ap);
 	set_kernel_gs((uint64_t)prcbs.data[ap->cpu_number]);
 	set_user_gs((uint64_t)prcbs.data[ap->cpu_number]);
@@ -119,9 +119,6 @@ void smp_init(struct limine_smp_response *smp_info) {
 			continue;
 		}
 		spinlock_acquire_or_wait(smp_lock);
-		/*smp_info->smp_info[i].target_stack =
-			(uint64_t)pmm_allocz(32768 / PAGE_SIZE);
-		smp_info->smp_info[i].target_stack += MEM_PHYS_OFFSET + 32768;*/
 		smp_info->cpus[i]->goto_address = (limine_goto_address)smp_init_core;
 		spinlock_drop(smp_lock);
 		timer_sleep(100);

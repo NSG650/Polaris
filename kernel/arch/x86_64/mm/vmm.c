@@ -147,18 +147,17 @@ level4:
 
 	if (pg_size == Size1GiB) {
 		uint32_t a = 0, b = 0, c = 0, d = 0;
-		if (__get_cpuid(0x80000001, &a, &b, &c, &d)) {
-			// Check for 1GiB pages support.
-			if (d & CPUID_GBPAGE) {
-				pml3[pml3_entry] = phys_addr | flags | (1 << 7);
-				return;
-			} else {
-				// If 1GiB pages are not supported then emulate it by splitting
-				// them into 2MiB pages.
-				for (uint64_t i = 0; i < 0x40000000; i += 0x200000) {
-					vmm_map_page(pagemap, virt_addr + i, phys_addr + i, flags,
-								 Size2MiB);
-				}
+		__get_cpuid(0x80000001, &a, &b, &c, &d);
+		// Check for 1GiB pages support.
+		if (d & CPUID_GBPAGE) {
+			pml3[pml3_entry] = phys_addr | flags | (1 << 7);
+			return;
+		} else {
+			// If 1GiB pages are not supported then emulate it by splitting
+			// them into 2MiB pages.
+			for (uint64_t i = 0; i < 0x40000000; i += 0x200000) {
+				vmm_map_page(pagemap, virt_addr + i, phys_addr + i, flags,
+							 Size2MiB);
 			}
 		}
 	}
