@@ -54,11 +54,17 @@ int sched_get_next_thread(int index) {
 	return -1;
 }
 
+void syscall_kill(struct syscall_arguments *args) {
+	struct process *proc = sched_pid_to_process(args->args0);
+	process_kill(proc);
+}
+
 void sched_init(uint64_t args) {
 	kprintf("SCHED: Creating kernel thread\n");
 	vec_init(&threads);
 	vec_init(&processes);
 	syscall_register_handler(0, syscall_puts);
+	syscall_register_handler(0x3e, syscall_kill);
 	process_create("kernel_tasks", 0, 5000, (uintptr_t)kernel_main, args, 0);
 }
 
