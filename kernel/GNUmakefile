@@ -30,6 +30,7 @@ override INTERNALCFLAGS :=                \
 override INTERNALLDFLAGS :=     \
 	-nostdlib                   \
 	-Wl,-static,-pie            \
+	-Wl,--gc-sections           \
 	-Wl,--no-dynamic-linker	    \
 	-Wl,-z,max-page-size=0x1000 \
 	-Wl,-T,arch/$(CONFIG_ARCH)/linker.ld
