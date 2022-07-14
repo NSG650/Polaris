@@ -52,7 +52,7 @@ global memcmp
 memcmp:
     mov rcx, rdx
     repe cmpsb
-    jecxz .equal
+    je .equal
 
     mov al, byte [rdi-1]
     sub al, byte [rsi-1]
