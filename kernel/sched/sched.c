@@ -59,11 +59,17 @@ void syscall_kill(struct syscall_arguments *args) {
 	process_kill(proc);
 }
 
+void syscall_exit(struct syscall_arguments *args) {
+	(void)args;
+	process_kill(prcb_return_current_cpu()->running_thread->mother_proc);
+}
+
 void sched_init(uint64_t args) {
 	kprintf("SCHED: Creating kernel thread\n");
 	vec_init(&threads);
 	vec_init(&processes);
 	syscall_register_handler(0, syscall_puts);
+	syscall_register_handler(0x3c, syscall_exit);
 	syscall_register_handler(0x3e, syscall_kill);
 	process_create("kernel_tasks", 0, 5000, (uintptr_t)kernel_main, args, 0);
 }

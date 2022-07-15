@@ -13,5 +13,5 @@ void main(void) {
 	if (syscall0(1) == 0xff)
 		puts("The computer is on!\n");
 	puts("Exiting now\n");
-	syscall1(0x3e, 0);
+	syscall1(0x3c, 0);
 }
