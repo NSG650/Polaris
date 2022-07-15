@@ -17,7 +17,7 @@ void hpet_init(void) {
 	}
 	hpet = (struct hpet *)(hpet_table->address.base + MEM_PHYS_OFFSET);
 
-	kprintf("HPET: HPET at %p\n", (void *)hpet);
+	kprintf("HPET: HPET at 0x%p\n", (void *)hpet);
 
 	clk = hpet->general_capabilities >> 32;
 

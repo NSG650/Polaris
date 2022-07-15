@@ -51,7 +51,7 @@ struct gdtr {
 
 struct gdtr gdt = {0};
 struct gdt_ptr gdt_pointer = {0};
-lock_t gdt_lock = {0};
+lock_t gdt_lock;
 
 extern void gdt_reload(void);
 extern void tss_reload(void);

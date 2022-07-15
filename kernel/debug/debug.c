@@ -68,44 +68,64 @@ static void kprintf_(char *fmt, va_list args) {
 		kputs(string);
 		kputs("] ");
 	}
-	while (*fmt) {
-		if (*fmt == '%') {
-			fmt++;
-			if (*fmt == '%') {
+	for (;;) {
+		while (*fmt && *fmt != '%')
+			kputchar(*fmt++);
+
+		if (!*fmt++)
+			return;
+
+		switch (*fmt++) {
+			case '%':
 				kputchar('%');
+				break;
+			case 's': {
+				char *str = (char *)va_arg(args, const char *);
+				if (!str)
+					kputs("(null)");
+				else
+					kputs(str);
+				break;
 			}
-			if (*fmt == 's') {
-				kputs(va_arg(args, char *));
-			}
-			if (*fmt == 'S') {
-				const char *str = va_arg(args, char *);
+			case 'S': {
+				char *str = (char *)va_arg(args, const char *);
 				size_t len = va_arg(args, size_t);
-				for (size_t i = 0; i < len; i++) {
-					kputchar(str[i]);
-				}
+				if (!str)
+					kputs("(null)");
+				else
+					for (size_t i = 0; i < len; i++)
+						kputchar(str[i]);
+				break;
 			}
-			if (*fmt == 'x' || *fmt == 'p') {
+			case 'x':
+			case 'p': {
 				char string[20] = {0};
 				uint64_t number = va_arg(args, size_t);
 				ultoa(number, string, 16);
 				kputs(string);
+				break;
 			}
-			if (*fmt == 'd') {
+			case 'd': {
 				char string[21] = {0};
 				uint64_t number = va_arg(args, size_t);
 				ltoa(number, string, 10);
 				kputs(string);
+				break;
 			}
-			if (*fmt == 'u') {
+			case 'u': {
 				char string[21] = {0};
 				uint64_t number = va_arg(args, size_t);
 				ultoa(number, string, 10);
 				kputs(string);
+				break;
 			}
-		} else {
-			kputchar(*fmt);
+			case 'c':
+				kputchar((char)va_arg(args, int));
+				break;
+			default:
+				kputchar('?');
+				break;
 		}
-		fmt++;
 	}
 }
 

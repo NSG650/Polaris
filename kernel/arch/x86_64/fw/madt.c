@@ -43,7 +43,7 @@ void madt_init(void) {
 	if (!madt)
 		panic("Unable to find MADT table\n");
 	lapic_addr = madt->local_controller_addr;
-	kprintf("MADT: MADT at %p\n", madt);
+	kprintf("MADT: MADT at 0x%p\n", madt);
 	for (uint8_t *madt_ptr = (uint8_t *)madt->madt_entries_begin;
 		 (uintptr_t)madt_ptr < (uintptr_t)madt + madt->sdt.length;
 		 madt_ptr += *(madt_ptr + 1)) {

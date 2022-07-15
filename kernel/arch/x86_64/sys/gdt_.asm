@@ -9,11 +9,11 @@ gdt_reload:
 	retfq
 .flush:
 	mov eax, 0x10
-	mov ds, eax
-	mov es, eax
-	mov fs, eax
-	mov gs, eax
-	mov ss, eax
+	mov ds, ax
+	mov es, ax
+	mov fs, ax
+	mov gs, ax
+	mov ss, ax
 	ret
 
 global tss_reload
