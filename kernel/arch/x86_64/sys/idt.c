@@ -36,11 +36,11 @@ struct idt_entry idt[256] = {0};
 
 void idt_set_gate(size_t vec, void *handler, uint8_t ist) {
 	uint64_t p = (uint64_t)handler;
-	
+
 	idt[vec].offset_lo = (uint16_t)p;
 	idt[vec].selector = 8;
 	idt[vec].ist = ist;
-	
+
 	// most exceptions can occur in user mode too
 	// inb4 hypervisor injection exception from user mode :^)
 	if (vec < 32)
@@ -48,7 +48,7 @@ void idt_set_gate(size_t vec, void *handler, uint8_t ist) {
 	// interrupts only for kernel to handle
 	else
 		idt[vec].flags = 0x8E;
-	
+
 	idt[vec].offset_mid = (uint16_t)(p >> 16);
 	idt[vec].offset_hi = (uint32_t)(p >> 32);
 	idt[vec].zero = 0;
