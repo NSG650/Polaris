@@ -42,9 +42,20 @@ void idt_set_gate(size_t vec, void *handler, uint8_t ist) {
 	idt[vec].ist = ist;
 
 	// most exceptions can occur in user mode too
-	// inb4 hypervisor injection exception from user mode :^)
-	if (vec < 32)
-		idt[vec].flags = 0xEF;
+
+	if (vec < 0x10) {
+		/*
+			Non-maskable Interrupt 			2 (0x2) 	Interrupt 	- 		No
+			Device Not Available 			7 (0x7) 	Fault 		#NM 	No
+			Double Fault 					8 (0x8) 	Abort 		#DF Yes
+		   (Zero) Coprocessor Segment Overrun 	9 (0x9) 	Fault 		- No
+			Invalid TSS 					10 (0xA) 	Fault 		#TS 	Yes
+		*/
+		if (((vec < 0xB) && (vec > 0x6)) || vec == 0x2)
+			idt[vec].flags = 0x8F;
+		else
+			idt[vec].flags = 0xEF;
+	}
 	// interrupts only for kernel to handle
 	else
 		idt[vec].flags = 0x8E;

@@ -1,8 +1,10 @@
 #include <cpu/smp.h>
 #include <debug/debug.h>
+#include <sched/sched.h>
 #include <sys/apic.h>
 #include <sys/idt.h>
 #include <sys/isr.h>
+#include <sys/prcb.h>
 
 void isr_install(void) {
 	idt_set_gate(0, isr0, 0);
@@ -310,8 +312,16 @@ void isr_handle(registers_t *r) {
 		event_handlers[r->isrNumber](r);
 
 	if (r->isrNumber < 32) {
-		panic_((void *)r->rip, (void *)r->rbp, "Unhandled Exception: %s\n",
-			   isr_exception_messages[r->isrNumber]);
+		if (r->cs & 0x3) {
+			struct thread *thrd = prcb_return_current_cpu()->running_thread;
+			kprintf("Killing user thread tid %d under process %s for exception "
+					"%s\n",
+					thrd->tid, thrd->mother_proc->name,
+					isr_exception_messages[r->isrNumber]);
+			thread_kill(thrd, 1);
+		} else
+			panic_((void *)r->rip, (void *)r->rbp, "Unhandled Exception: %s\n",
+				   isr_exception_messages[r->isrNumber]);
 	}
 
 	if (r->isrNumber == 0xf0)

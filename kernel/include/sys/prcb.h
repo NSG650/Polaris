@@ -25,6 +25,8 @@ typedef vec_t(struct prcb *) prcb_vec_t;
 
 extern prcb_vec_t prcbs;
 
+#if defined(__x86_64__)
+
 #define prcb_return_current_cpu()               \
 	({                                          \
 		uint64_t cpu_number;                    \
@@ -34,6 +36,8 @@ extern prcb_vec_t prcbs;
 					 : "memory");               \
 		prcbs.data[cpu_number];                 \
 	})
+
+#endif
 
 uint64_t prcb_return_installed_cpus(void);
 
