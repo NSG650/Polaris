@@ -32,24 +32,29 @@
 
 lock_t write_lock;
 bool in_panic = false;
+bool put_to_fb = true;
+
 
 void kputchar(char c) {
 	spinlock_acquire_or_wait(write_lock);
 	if (c == '\n')
 		kputchar('\r');
 	kputchar_(c);
-	framebuffer_putchar(c);
+	if (put_to_fb)
+		framebuffer_putchar(c);
 	spinlock_drop(write_lock);
 }
 
 void kputs(char *string) {
 	spinlock_acquire(write_lock);
 	kputs_(string);
-	framebuffer_puts(string);
+	if (put_to_fb)
+		framebuffer_puts(string);
 	spinlock_drop(write_lock);
 }
 
 void syscall_puts(struct syscall_arguments *args) {
+	put_to_fb = true;
 	if (args->args0)
 		kputs((char *)args->args0);
 }
@@ -57,7 +62,7 @@ void syscall_puts(struct syscall_arguments *args) {
 static void kprintf_(char *fmt, va_list args) {
 	if (in_panic) {
 		kputs("*** PANIC:\t");
-	} else {
+	} else if (put_to_fb) {
 		uint64_t timer_tick = 0;
 		if (timer_installed()) {
 			timer_tick = timer_count();
@@ -129,13 +134,16 @@ static void kprintf_(char *fmt, va_list args) {
 	}
 }
 
-void kprintf(char *fmt, ...) {
+void kprintffos(bool fos, char *fmt, ...) {
+	if (!fos)
+		put_to_fb = 0;
 	spinlock_acquire_or_wait(write_lock);
 	va_list args;
 	va_start(args, fmt);
 	kprintf_(fmt, args);
 	va_end(args);
 	spinlock_drop(write_lock);
+	put_to_fb = 1;
 }
 
 void panic_(size_t *ip, size_t *bp, char *fmt, ...) {

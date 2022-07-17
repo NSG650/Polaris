@@ -309,7 +309,7 @@ void isr_handle(registers_t *r) {
 		swapgs();
 
 	if (event_handlers[r->isrNumber] != NULL)
-		event_handlers[r->isrNumber](r);
+		return event_handlers[r->isrNumber](r);
 
 	if (r->isrNumber < 32) {
 		if (r->cs & 0x3) {

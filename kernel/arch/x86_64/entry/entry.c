@@ -37,6 +37,8 @@
 #include <sys/isr.h>
 #include <sys/timer.h>
 
+void breakpoint_handler(registers_t *reg);
+
 static volatile struct limine_memmap_request memmap_request = {
 	.id = LIMINE_MEMMAP_REQUEST, .revision = 0};
 
@@ -81,6 +83,7 @@ void arch_entry(void) {
 	isr_register_handler(0xff, halt_current_cpu);
 	isr_register_handler(48, resched);
 	isr_register_handler(0xe, vmm_page_fault_handler);
+	isr_register_handler(0x3, breakpoint_handler);
 	acpi_init(rsdp_request.response->address);
 	pic_init();
 	apic_init();
