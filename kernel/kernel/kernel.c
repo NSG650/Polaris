@@ -11,6 +11,14 @@ void syscall_is_computer_on(struct syscall_arguments *args) {
 
 void kernel_thread(void) {
 	kprintf("I am a kernel thread\n");
+
+#if defined(__x86_64__)
+	asm volatile("int3\n"
+				 "xor rax, rax\n"
+				 "push 5\n"
+				 "pop rax\n");
+#endif
+
 	thread_kill(prcb_return_current_cpu()->running_thread, true);
 }
 
