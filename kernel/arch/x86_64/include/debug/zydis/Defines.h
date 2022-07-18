@@ -11,7 +11,8 @@
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
+ * The above copyright notice and this permission notice shall be included in
+all
  * copies or substantial portions of the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
@@ -34,38 +35,40 @@
 
 #include <Zycore/Defines.h>
 
-// This is a cut-down version of what CMake's `GenerateExportHeader` would usually generate. To
-// simplify builds without CMake, we define these things manually instead of relying on CMake
-// to generate the header.
+// This is a cut-down version of what CMake's `GenerateExportHeader` would
+// usually generate. To simplify builds without CMake, we define these things
+// manually instead of relying on CMake to generate the header.
 //
-// For static builds, our CMakeList will define `ZYDIS_STATIC_BUILD`. For shared library builds,
-// our CMake will define `ZYDIS_SHOULD_EXPORT` depending on whether the target is being imported or
-// exported. If CMake isn't used, users can manually define these to fit their use-case.
+// For static builds, our CMakeList will define `ZYDIS_STATIC_BUILD`. For shared
+// library builds, our CMake will define `ZYDIS_SHOULD_EXPORT` depending on
+// whether the target is being imported or exported. If CMake isn't used, users
+// can manually define these to fit their use-case.
 
-// Backward compatibility: CMake would previously generate these variables names. However, because
-// they have pretty cryptic names, we renamed them when we got rid of `GenerateExportHeader`. For
-// backward compatibility for users that don't use CMake and previously manually defined these, we
-// translate the old defines here and print a warning.
+// Backward compatibility: CMake would previously generate these variables
+// names. However, because they have pretty cryptic names, we renamed them when
+// we got rid of `GenerateExportHeader`. For backward compatibility for users
+// that don't use CMake and previously manually defined these, we translate the
+// old defines here and print a warning.
 #if defined(ZYDIS_STATIC_DEFINE)
-#   pragma message("ZYDIS_STATIC_DEFINE was renamed to ZYDIS_STATIC_BUILD.")
-#   define ZYDIS_STATIC_BUILD
+#pragma message("ZYDIS_STATIC_DEFINE was renamed to ZYDIS_STATIC_BUILD.")
+#define ZYDIS_STATIC_BUILD
 #endif
 #if defined(Zydis_EXPORTS)
-#   pragma message("Zydis_EXPORTS was renamed to ZYDIS_SHOULD_EXPORT.")
-#   define ZYDIS_SHOULD_EXPORT
+#pragma message("Zydis_EXPORTS was renamed to ZYDIS_SHOULD_EXPORT.")
+#define ZYDIS_SHOULD_EXPORT
 #endif
 
 /**
  * Symbol is exported in shared library builds.
  */
 #if defined(ZYDIS_STATIC_BUILD)
-#   define ZYDIS_EXPORT
+#define ZYDIS_EXPORT
 #else
-#   if defined(ZYDIS_SHOULD_EXPORT)
-#       define ZYDIS_EXPORT ZYAN_DLLEXPORT
-#   else
-#       define ZYDIS_EXPORT ZYAN_DLLIMPORT
-#   endif
+#if defined(ZYDIS_SHOULD_EXPORT)
+#define ZYDIS_EXPORT ZYAN_DLLEXPORT
+#else
+#define ZYDIS_EXPORT ZYAN_DLLIMPORT
+#endif
 #endif
 
 /**

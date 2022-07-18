@@ -11,7 +11,8 @@
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
+ * The above copyright notice and this permission notice shall be included in
+all
  * copies or substantial portions of the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
@@ -39,15 +40,19 @@
 extern "C" {
 #endif
 
-/* ============================================================================================== */
-/* Enums and types                                                                                */
-/* ============================================================================================== */
+/* ==============================================================================================
+ */
+/* Enums and types */
+/* ==============================================================================================
+ */
 
 #include <Zydis/Generated/EnumMnemonic.h>
 
-/* ============================================================================================== */
-/* Exported functions                                                                             */
-/* ============================================================================================== */
+/* ==============================================================================================
+ */
+/* Exported functions */
+/* ==============================================================================================
+ */
 
 /**
  * @addtogroup mnemonic Mnemonic
@@ -60,26 +65,31 @@ extern "C" {
  *
  * @param   mnemonic    The mnemonic.
  *
- * @return  The instruction mnemonic string or `ZYAN_NULL`, if an invalid mnemonic was passed.
+ * @return  The instruction mnemonic string or `ZYAN_NULL`, if an invalid
+ * mnemonic was passed.
  */
-ZYDIS_EXPORT const char* ZydisMnemonicGetString(ZydisMnemonic mnemonic);
+ZYDIS_EXPORT const char *ZydisMnemonicGetString(ZydisMnemonic mnemonic);
 
 /**
  * Returns the specified instruction mnemonic as `ZydisShortString`.
  *
  * @param   mnemonic    The mnemonic.
  *
- * @return  The instruction mnemonic string or `ZYAN_NULL`, if an invalid mnemonic was passed.
+ * @return  The instruction mnemonic string or `ZYAN_NULL`, if an invalid
+ * mnemonic was passed.
  *
- * The `buffer` of the returned struct is guaranteed to be zero-terminated in this special case.
+ * The `buffer` of the returned struct is guaranteed to be zero-terminated in
+ * this special case.
  */
-ZYDIS_EXPORT const ZydisShortString* ZydisMnemonicGetStringWrapped(ZydisMnemonic mnemonic);
+ZYDIS_EXPORT const ZydisShortString *
+ZydisMnemonicGetStringWrapped(ZydisMnemonic mnemonic);
 
 /**
  * @}
  */
 
-/* ============================================================================================== */
+/* ==============================================================================================
+ */
 
 #ifdef __cplusplus
 }

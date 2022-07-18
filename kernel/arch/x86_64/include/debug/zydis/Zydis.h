@@ -11,7 +11,8 @@
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
+ * The above copyright notice and this permission notice shall be included in
+all
  * copies or substantial portions of the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
@@ -36,20 +37,20 @@
 #include <Zycore/Types.h>
 
 #ifndef ZYDIS_DISABLE_DECODER
-#   include <Zydis/Decoder.h>
-#   include <Zydis/DecoderTypes.h>
+#include <Zydis/Decoder.h>
+#include <Zydis/DecoderTypes.h>
 #endif
 
 #ifndef ZYDIS_DISABLE_ENCODER
-#   include <Zydis/Encoder.h>
+#include <Zydis/Encoder.h>
 #endif
 
 #ifndef ZYDIS_DISABLE_FORMATTER
-#   include <Zydis/Formatter.h>
+#include <Zydis/Formatter.h>
 #endif
 
 #ifndef ZYDIS_DISABLE_SEGMENT
-#   include <Zydis/Segment.h>
+#include <Zydis/Segment.h>
 #endif
 
 #include <Zydis/MetaInfo.h>
@@ -63,82 +64,96 @@
 extern "C" {
 #endif
 
-/* ============================================================================================== */
-/* Macros                                                                                         */
-/* ============================================================================================== */
+/* ==============================================================================================
+ */
+/* Macros */
+/* ==============================================================================================
+ */
 
-/* ---------------------------------------------------------------------------------------------- */
-/* Constants                                                                                      */
-/* ---------------------------------------------------------------------------------------------- */
+/* ----------------------------------------------------------------------------------------------
+ */
+/* Constants */
+/* ----------------------------------------------------------------------------------------------
+ */
 
 /**
  * A macro that defines the zydis version.
  */
 #define ZYDIS_VERSION (ZyanU64)0x0004000000000000
 
-/* ---------------------------------------------------------------------------------------------- */
-/* Helper macros                                                                                  */
-/* ---------------------------------------------------------------------------------------------- */
+/* ----------------------------------------------------------------------------------------------
+ */
+/* Helper macros */
+/* ----------------------------------------------------------------------------------------------
+ */
 
 /**
  * Extracts the major-part of the zydis version.
  *
  * @param   version The zydis version value
  */
-#define ZYDIS_VERSION_MAJOR(version) (ZyanU16)(((version) & 0xFFFF000000000000) >> 48)
+#define ZYDIS_VERSION_MAJOR(version) \
+	(ZyanU16)(((version)&0xFFFF000000000000) >> 48)
 
 /**
  * Extracts the minor-part of the zydis version.
  *
  * @param   version The zydis version value
  */
-#define ZYDIS_VERSION_MINOR(version) (ZyanU16)(((version) & 0x0000FFFF00000000) >> 32)
+#define ZYDIS_VERSION_MINOR(version) \
+	(ZyanU16)(((version)&0x0000FFFF00000000) >> 32)
 
 /**
  * Extracts the patch-part of the zydis version.
  *
  * @param   version The zydis version value
  */
-#define ZYDIS_VERSION_PATCH(version) (ZyanU16)(((version) & 0x00000000FFFF0000) >> 16)
+#define ZYDIS_VERSION_PATCH(version) \
+	(ZyanU16)(((version)&0x00000000FFFF0000) >> 16)
 
 /**
  * Extracts the build-part of the zydis version.
  *
  * @param   version The zydis version value
  */
-#define ZYDIS_VERSION_BUILD(version) (ZyanU16)((version) & 0x000000000000FFFF)
+#define ZYDIS_VERSION_BUILD(version) (ZyanU16)((version)&0x000000000000FFFF)
 
-/* ---------------------------------------------------------------------------------------------- */
+/* ----------------------------------------------------------------------------------------------
+ */
 
-/* ============================================================================================== */
-/* Enums and types                                                                                */
-/* ============================================================================================== */
+/* ==============================================================================================
+ */
+/* Enums and types */
+/* ==============================================================================================
+ */
 
 /**
  * Defines the `ZydisFeature` enum.
  */
-typedef enum ZydisFeature_
-{
-    ZYDIS_FEATURE_DECODER,
-    ZYDIS_FEATURE_ENCODER,
-    ZYDIS_FEATURE_FORMATTER,
-    ZYDIS_FEATURE_AVX512,
-    ZYDIS_FEATURE_KNC,
-    ZYDIS_FEATURE_SEGMENT,
+typedef enum ZydisFeature_ {
+	ZYDIS_FEATURE_DECODER,
+	ZYDIS_FEATURE_ENCODER,
+	ZYDIS_FEATURE_FORMATTER,
+	ZYDIS_FEATURE_AVX512,
+	ZYDIS_FEATURE_KNC,
+	ZYDIS_FEATURE_SEGMENT,
 
-    /**
-     * Maximum value of this enum.
-     */
-    ZYDIS_FEATURE_MAX_VALUE = ZYDIS_FEATURE_KNC,
-    /**
-     * The minimum number of bits required to represent all values of this enum.
-     */
-    ZYDIS_FEATURE_REQUIRED_BITS = ZYAN_BITS_TO_REPRESENT(ZYDIS_FEATURE_MAX_VALUE)
+	/**
+	 * Maximum value of this enum.
+	 */
+	ZYDIS_FEATURE_MAX_VALUE = ZYDIS_FEATURE_KNC,
+	/**
+	 * The minimum number of bits required to represent all values of this enum.
+	 */
+	ZYDIS_FEATURE_REQUIRED_BITS =
+		ZYAN_BITS_TO_REPRESENT(ZYDIS_FEATURE_MAX_VALUE)
 } ZydisFeature;
 
-/* ============================================================================================== */
-/* Exported functions                                                                             */
-/* ============================================================================================== */
+/* ==============================================================================================
+ */
+/* Exported functions */
+/* ==============================================================================================
+ */
 
 /**
  * @addtogroup version Version
@@ -151,18 +166,19 @@ typedef enum ZydisFeature_
  *
  * @return  The zydis version.
  *
- * Use the macros provided in this file to extract the major, minor, patch and build part from the
- * returned version value.
+ * Use the macros provided in this file to extract the major, minor, patch and
+ * build part from the returned version value.
  */
 ZYDIS_EXPORT ZyanU64 ZydisGetVersion(void);
 
 /**
- * Checks, if the specified feature is enabled in the current zydis library instance.
+ * Checks, if the specified feature is enabled in the current zydis library
+ * instance.
  *
  * @param   feature The feature.
  *
- * @return  `ZYAN_STATUS_TRUE` if the feature is enabled, `ZYAN_STATUS_FALSE` if not. Another
- *          zyan status code, if an error occured.
+ * @return  `ZYAN_STATUS_TRUE` if the feature is enabled, `ZYAN_STATUS_FALSE` if
+ * not. Another zyan status code, if an error occured.
  */
 ZYDIS_EXPORT ZyanStatus ZydisIsFeatureEnabled(ZydisFeature feature);
 
@@ -170,7 +186,8 @@ ZYDIS_EXPORT ZyanStatus ZydisIsFeatureEnabled(ZydisFeature feature);
  * @}
  */
 
-/* ============================================================================================== */
+/* ==============================================================================================
+ */
 
 #ifdef __cplusplus
 }

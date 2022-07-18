@@ -11,7 +11,8 @@
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
+ * The above copyright notice and this permission notice shall be included in
+all
  * copies or substantial portions of the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
@@ -38,26 +39,32 @@
 extern "C" {
 #endif
 
-/* ============================================================================================== */
-/* Enums and types                                                                                */
-/* ============================================================================================== */
+/* ==============================================================================================
+ */
+/* Enums and types */
+/* ==============================================================================================
+ */
 
-#include <Zydis/Generated/EnumInstructionCategory.h>
-#include <Zydis/Generated/EnumISASet.h>
 #include <Zydis/Generated/EnumISAExt.h>
+#include <Zydis/Generated/EnumISASet.h>
+#include <Zydis/Generated/EnumInstructionCategory.h>
 
-/* ============================================================================================== */
-/* Exported functions                                                                             */
-/* ============================================================================================== */
+/* ==============================================================================================
+ */
+/* Exported functions */
+/* ==============================================================================================
+ */
 
- /**
+/**
  * Returns the specified instruction category string.
  *
  * @param   category    The instruction category.
  *
- * @return  The instruction category string or `ZYAN_NULL`, if an invalid category was passed.
+ * @return  The instruction category string or `ZYAN_NULL`, if an invalid
+ * category was passed.
  */
-ZYDIS_EXPORT const char* ZydisCategoryGetString(ZydisInstructionCategory category);
+ZYDIS_EXPORT const char *
+ZydisCategoryGetString(ZydisInstructionCategory category);
 
 /**
  * Returns the specified isa-set string.
@@ -66,18 +73,20 @@ ZYDIS_EXPORT const char* ZydisCategoryGetString(ZydisInstructionCategory categor
  *
  * @return  The isa-set string or `ZYAN_NULL`, if an invalid isa-set was passed.
  */
-ZYDIS_EXPORT const char* ZydisISASetGetString(ZydisISASet isa_set);
+ZYDIS_EXPORT const char *ZydisISASetGetString(ZydisISASet isa_set);
 
 /**
  * Returns the specified isa-extension string.
  *
  * @param   isa_ext The isa-extension.
  *
- * @return  The isa-extension string or `ZYAN_NULL`, if an invalid isa-extension was passed.
+ * @return  The isa-extension string or `ZYAN_NULL`, if an invalid isa-extension
+ * was passed.
  */
-ZYDIS_EXPORT const char* ZydisISAExtGetString(ZydisISAExt isa_ext);
+ZYDIS_EXPORT const char *ZydisISAExtGetString(ZydisISAExt isa_ext);
 
-/* ============================================================================================== */
+/* ==============================================================================================
+ */
 
 #ifdef __cplusplus
 }

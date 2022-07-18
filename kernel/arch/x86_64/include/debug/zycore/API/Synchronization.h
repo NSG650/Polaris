@@ -11,7 +11,8 @@
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
+ * The above copyright notice and this permission notice shall be included in
+all
  * copies or substantial portions of the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
@@ -41,87 +42,106 @@
 extern "C" {
 #endif
 
-/* ============================================================================================== */
-/* Enums and types                                                                                */
-/* ============================================================================================== */
+/* ==============================================================================================
+ */
+/* Enums and types */
+/* ==============================================================================================
+ */
 
-#if   defined(ZYAN_POSIX)
+#if defined(ZYAN_POSIX)
 
 #include <pthread.h>
 
-/* ---------------------------------------------------------------------------------------------- */
-/* Critical Section                                                                               */
-/* ---------------------------------------------------------------------------------------------- */
+/* ----------------------------------------------------------------------------------------------
+ */
+/* Critical Section */
+/* ----------------------------------------------------------------------------------------------
+ */
 
 typedef pthread_mutex_t ZyanCriticalSection;
 
-/* ---------------------------------------------------------------------------------------------- */
+/* ----------------------------------------------------------------------------------------------
+ */
 
 #elif defined(ZYAN_WINDOWS)
 
 #include <windows.h>
 
-/* ---------------------------------------------------------------------------------------------- */
-/* Critical Section                                                                               */
-/* ---------------------------------------------------------------------------------------------- */
+/* ----------------------------------------------------------------------------------------------
+ */
+/* Critical Section */
+/* ----------------------------------------------------------------------------------------------
+ */
 
 typedef CRITICAL_SECTION ZyanCriticalSection;
 
-/* ---------------------------------------------------------------------------------------------- */
+/* ----------------------------------------------------------------------------------------------
+ */
 
 #else
-#   error "Unsupported platform detected"
+#error "Unsupported platform detected"
 #endif
 
-/* ============================================================================================== */
-/* Exported functions                                                                             */
-/* ============================================================================================== */
+/* ==============================================================================================
+ */
+/* Exported functions */
+/* ==============================================================================================
+ */
 
-/* ---------------------------------------------------------------------------------------------- */
-/* Critical Section                                                                               */
-/* ---------------------------------------------------------------------------------------------- */
+/* ----------------------------------------------------------------------------------------------
+ */
+/* Critical Section */
+/* ----------------------------------------------------------------------------------------------
+ */
 
 /**
  * Initializes a critical section.
  *
  * @param   critical_section    A pointer to the `ZyanCriticalSection` struct.
  */
-ZYCORE_EXPORT ZyanStatus ZyanCriticalSectionInitialize(ZyanCriticalSection* critical_section);
+ZYCORE_EXPORT ZyanStatus
+ZyanCriticalSectionInitialize(ZyanCriticalSection *critical_section);
 
 /**
  * Enters a critical section.
  *
  * @param   critical_section    A pointer to the `ZyanCriticalSection` struct.
  */
-ZYCORE_EXPORT ZyanStatus ZyanCriticalSectionEnter(ZyanCriticalSection* critical_section);
+ZYCORE_EXPORT ZyanStatus
+ZyanCriticalSectionEnter(ZyanCriticalSection *critical_section);
 
 /**
  * Tries to enter a critical section.
  *
  * @param   critical_section    A pointer to the `ZyanCriticalSection` struct.
  *
- * @return  Returns `ZYAN_TRUE` if the critical section was successfully entered or `ZYAN_FALSE`,
- *          if not.
+ * @return  Returns `ZYAN_TRUE` if the critical section was successfully entered
+ * or `ZYAN_FALSE`, if not.
  */
-ZYCORE_EXPORT ZyanBool ZyanCriticalSectionTryEnter(ZyanCriticalSection* critical_section);
+ZYCORE_EXPORT ZyanBool
+ZyanCriticalSectionTryEnter(ZyanCriticalSection *critical_section);
 
 /**
  * Leaves a critical section.
  *
  * @param   critical_section    A pointer to the `ZyanCriticalSection` struct.
  */
-ZYCORE_EXPORT ZyanStatus ZyanCriticalSectionLeave(ZyanCriticalSection* critical_section);
+ZYCORE_EXPORT ZyanStatus
+ZyanCriticalSectionLeave(ZyanCriticalSection *critical_section);
 
 /**
  * Deletes a critical section.
  *
  * @param   critical_section    A pointer to the `ZyanCriticalSection` struct.
  */
-ZYCORE_EXPORT ZyanStatus ZyanCriticalSectionDelete(ZyanCriticalSection* critical_section);
+ZYCORE_EXPORT ZyanStatus
+ZyanCriticalSectionDelete(ZyanCriticalSection *critical_section);
 
-/* ---------------------------------------------------------------------------------------------- */
+/* ----------------------------------------------------------------------------------------------
+ */
 
-/* ============================================================================================== */
+/* ==============================================================================================
+ */
 
 #ifdef __cplusplus
 }

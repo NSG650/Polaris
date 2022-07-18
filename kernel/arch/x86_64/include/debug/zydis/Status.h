@@ -11,7 +11,8 @@
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
+ * The above copyright notice and this permission notice shall be included in
+all
  * copies or substantial portions of the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
@@ -38,100 +39,105 @@
 extern "C" {
 #endif
 
-/* ============================================================================================== */
-/* Status codes                                                                                   */
-/* ============================================================================================== */
+/* ==============================================================================================
+ */
+/* Status codes */
+/* ==============================================================================================
+ */
 
-/* ---------------------------------------------------------------------------------------------- */
-/* Module IDs                                                                                     */
-/* ---------------------------------------------------------------------------------------------- */
+/* ----------------------------------------------------------------------------------------------
+ */
+/* Module IDs */
+/* ----------------------------------------------------------------------------------------------
+ */
 
 /**
  * The zydis module id.
  */
-#define ZYAN_MODULE_ZYDIS   0x002u
+#define ZYAN_MODULE_ZYDIS 0x002u
 
-/* ---------------------------------------------------------------------------------------------- */
-/* Status codes                                                                                   */
-/* ---------------------------------------------------------------------------------------------- */
+/* ----------------------------------------------------------------------------------------------
+ */
+/* Status codes */
+/* ----------------------------------------------------------------------------------------------
+ */
 
-/* ---------------------------------------------------------------------------------------------- */
-/* Decoder                                                                                        */
-/* ---------------------------------------------------------------------------------------------- */
+/* ----------------------------------------------------------------------------------------------
+ */
+/* Decoder */
+/* ----------------------------------------------------------------------------------------------
+ */
 
 /**
  * An attempt was made to read data from an input data-source that has no more
  * data available.
  */
-#define ZYDIS_STATUS_NO_MORE_DATA \
-    ZYAN_MAKE_STATUS(1u, ZYAN_MODULE_ZYDIS, 0x00u)
+#define ZYDIS_STATUS_NO_MORE_DATA ZYAN_MAKE_STATUS(1u, ZYAN_MODULE_ZYDIS, 0x00u)
 
 /**
  * An general error occured while decoding the current instruction. The
  * instruction might be undefined.
  */
 #define ZYDIS_STATUS_DECODING_ERROR \
-    ZYAN_MAKE_STATUS(1u, ZYAN_MODULE_ZYDIS, 0x01u)
+	ZYAN_MAKE_STATUS(1u, ZYAN_MODULE_ZYDIS, 0x01u)
 
 /**
  * The instruction exceeded the maximum length of 15 bytes.
  */
 #define ZYDIS_STATUS_INSTRUCTION_TOO_LONG \
-    ZYAN_MAKE_STATUS(1u, ZYAN_MODULE_ZYDIS, 0x02u)
+	ZYAN_MAKE_STATUS(1u, ZYAN_MODULE_ZYDIS, 0x02u)
 
 /**
  * The instruction encoded an invalid register.
  */
-#define ZYDIS_STATUS_BAD_REGISTER \
-    ZYAN_MAKE_STATUS(1u, ZYAN_MODULE_ZYDIS, 0x03u)
+#define ZYDIS_STATUS_BAD_REGISTER ZYAN_MAKE_STATUS(1u, ZYAN_MODULE_ZYDIS, 0x03u)
 
 /**
  * A lock-prefix (F0) was found while decoding an instruction that does not
  * support locking.
  */
-#define ZYDIS_STATUS_ILLEGAL_LOCK \
-    ZYAN_MAKE_STATUS(1u, ZYAN_MODULE_ZYDIS, 0x04u)
+#define ZYDIS_STATUS_ILLEGAL_LOCK ZYAN_MAKE_STATUS(1u, ZYAN_MODULE_ZYDIS, 0x04u)
 
 /**
  * A legacy-prefix (F2, F3, 66) was found while decoding a XOP/VEX/EVEX/MVEX
  * instruction.
  */
 #define ZYDIS_STATUS_ILLEGAL_LEGACY_PFX \
-    ZYAN_MAKE_STATUS(1u, ZYAN_MODULE_ZYDIS, 0x05u)
+	ZYAN_MAKE_STATUS(1u, ZYAN_MODULE_ZYDIS, 0x05u)
 
 /**
  * A rex-prefix was found while decoding a XOP/VEX/EVEX/MVEX instruction.
  */
-#define ZYDIS_STATUS_ILLEGAL_REX \
-    ZYAN_MAKE_STATUS(1u, ZYAN_MODULE_ZYDIS, 0x06u)
+#define ZYDIS_STATUS_ILLEGAL_REX ZYAN_MAKE_STATUS(1u, ZYAN_MODULE_ZYDIS, 0x06u)
 
 /**
- * An invalid opcode-map value was found while decoding a XOP/VEX/EVEX/MVEX-prefix.
+ * An invalid opcode-map value was found while decoding a
+ * XOP/VEX/EVEX/MVEX-prefix.
  */
-#define ZYDIS_STATUS_INVALID_MAP \
-    ZYAN_MAKE_STATUS(1u, ZYAN_MODULE_ZYDIS, 0x07u)
+#define ZYDIS_STATUS_INVALID_MAP ZYAN_MAKE_STATUS(1u, ZYAN_MODULE_ZYDIS, 0x07u)
 
 /**
  * An error occured while decoding the EVEX-prefix.
  */
 #define ZYDIS_STATUS_MALFORMED_EVEX \
-    ZYAN_MAKE_STATUS(1u, ZYAN_MODULE_ZYDIS, 0x08u)
+	ZYAN_MAKE_STATUS(1u, ZYAN_MODULE_ZYDIS, 0x08u)
 
 /**
  * An error occured while decoding the MVEX-prefix.
  */
 #define ZYDIS_STATUS_MALFORMED_MVEX \
-    ZYAN_MAKE_STATUS(1u, ZYAN_MODULE_ZYDIS, 0x09u)
+	ZYAN_MAKE_STATUS(1u, ZYAN_MODULE_ZYDIS, 0x09u)
 
 /**
  * An invalid write-mask was specified for an EVEX/MVEX instruction.
  */
-#define ZYDIS_STATUS_INVALID_MASK \
-    ZYAN_MAKE_STATUS(1u, ZYAN_MODULE_ZYDIS, 0x0Au)
+#define ZYDIS_STATUS_INVALID_MASK ZYAN_MAKE_STATUS(1u, ZYAN_MODULE_ZYDIS, 0x0Au)
 
-/* ---------------------------------------------------------------------------------------------- */
-/* Formatter                                                                                      */
-/* ---------------------------------------------------------------------------------------------- */
+/* ----------------------------------------------------------------------------------------------
+ */
+/* Formatter */
+/* ----------------------------------------------------------------------------------------------
+ */
 
 /**
  * Returning this status code in some specified formatter callbacks will cause
@@ -145,20 +151,22 @@ extern "C" {
  * - `ZYDIS_FORMATTER_FUNC_FORMAT_OPERAND_PTR`
  * - `ZYDIS_FORMATTER_FUNC_FORMAT_OPERAND_IMM`
  */
-#define ZYDIS_STATUS_SKIP_TOKEN \
-    ZYAN_MAKE_STATUS(0u, ZYAN_MODULE_ZYDIS, 0x0Bu)
+#define ZYDIS_STATUS_SKIP_TOKEN ZYAN_MAKE_STATUS(0u, ZYAN_MODULE_ZYDIS, 0x0Bu)
 
-/* ---------------------------------------------------------------------------------------------- */
-/* Encoder                                                                                        */
-/* ---------------------------------------------------------------------------------------------- */
+/* ----------------------------------------------------------------------------------------------
+ */
+/* Encoder */
+/* ----------------------------------------------------------------------------------------------
+ */
 
 #define ZYDIS_STATUS_IMPOSSIBLE_INSTRUCTION \
-    ZYAN_MAKE_STATUS(1u, ZYAN_MODULE_ZYDIS, 0x0Cu)
+	ZYAN_MAKE_STATUS(1u, ZYAN_MODULE_ZYDIS, 0x0Cu)
 
-/* ---------------------------------------------------------------------------------------------- */
+/* ----------------------------------------------------------------------------------------------
+ */
 
-/* ============================================================================================== */
-
+/* ==============================================================================================
+ */
 
 #ifdef __cplusplus
 }

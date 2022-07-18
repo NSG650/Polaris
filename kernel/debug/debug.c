@@ -34,7 +34,6 @@ lock_t write_lock;
 bool in_panic = false;
 bool put_to_fb = true;
 
-
 void kputchar(char c) {
 	spinlock_acquire_or_wait(write_lock);
 	if (c == '\n')

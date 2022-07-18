@@ -11,7 +11,8 @@
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
- * The above copyright notice and this permission notice shall be included in all
+ * The above copyright notice and this permission notice shall be included in
+all
  * copies or substantial portions of the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
@@ -40,41 +41,45 @@
 extern "C" {
 #endif
 
-/* ============================================================================================== */
-/* Enums and types                                                                                */
-/* ============================================================================================== */
+/* ==============================================================================================
+ */
+/* Enums and types */
+/* ==============================================================================================
+ */
 
 #if !(defined(ZYAN_AARCH64) && defined(ZYAN_APPLE))
-#   pragma pack(push, 1)
+#pragma pack(push, 1)
 #endif
 
 /**
  * Defines the `ZydisShortString` struct.
  *
- * This compact struct is mainly used for internal string-tables to save up some bytes.
+ * This compact struct is mainly used for internal string-tables to save up some
+ * bytes.
  *
- * All fields in this struct should be considered as "private". Any changes may lead to unexpected
- * behavior.
+ * All fields in this struct should be considered as "private". Any changes may
+ * lead to unexpected behavior.
  */
-typedef struct ZydisShortString_
-{
-    /**
-     * The buffer that contains the actual (null-terminated) string.
-    */
-    const char* data;
-    /**
-     * The length (number of characters) of the string (without 0-termination).
-    */
-    ZyanU8 size;
+typedef struct ZydisShortString_ {
+	/**
+	 * The buffer that contains the actual (null-terminated) string.
+	 */
+	const char *data;
+	/**
+	 * The length (number of characters) of the string (without 0-termination).
+	 */
+	ZyanU8 size;
 } ZydisShortString;
 
 #if !(defined(ZYAN_AARCH64) && defined(ZYAN_APPLE))
-#   pragma pack(pop)
+#pragma pack(pop)
 #endif
 
-/* ============================================================================================== */
-/* Macros                                                                                         */
-/* ============================================================================================== */
+/* ==============================================================================================
+ */
+/* Macros */
+/* ==============================================================================================
+ */
 
 /**
  * Declares a `ZydisShortString` from a static C-style string.
@@ -82,9 +87,10 @@ typedef struct ZydisShortString_
  * @param   string  The C-string constant.
  */
 #define ZYDIS_MAKE_SHORTSTRING(string) \
-    { string, sizeof(string) - 1 }
+	{ string, sizeof(string) - 1 }
 
-/* ============================================================================================== */
+/* ==============================================================================================
+ */
 
 #ifdef __cplusplus
 }
