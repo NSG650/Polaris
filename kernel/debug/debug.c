@@ -45,7 +45,7 @@ void kputchar(char c) {
 }
 
 void kputs(char *string) {
-	spinlock_acquire(write_lock);
+	spinlock_acquire_or_wait(write_lock);
 	kputs_(string);
 	if (put_to_fb)
 		framebuffer_puts(string);
@@ -163,18 +163,7 @@ void panic_(size_t *ip, size_t *bp, char *fmt, ...) {
 	va_end(args);
 	kprintf("Crashed at 0x%p\n", ip);
 	kprintf("Stack trace:\n");
-#if defined(__x86_64__)
-	for (;;) {
-		size_t old_rbp = bp[0];
-		size_t ret_address = bp[1];
-		if (!ret_address)
-			break;
-		kprintf("0x%p\n", ret_address);
-		if (!old_rbp)
-			break;
-		bp = (void *)old_rbp;
-	}
-#endif
+	backtrace(ip, bp);
 	halt_current_cpu();
 	__builtin_unreachable();
 }
