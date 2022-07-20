@@ -166,7 +166,7 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 			vmm_map_page(proc->process_pagemap, VIRTUAL_STACK_ADDR + (thrd->reg.rsp) + p,
 						 (thrd->reg.rsp) + p, 0b111, Size4KiB);
 		}
-		thrd->reg.rsp = VIRTUAL_STACK_ADDR + STACK_SIZE;
+		thrd->reg.rsp = VIRTUAL_STACK_ADDR + STACK_SIZE + thrd->reg.rsp;
 		thrd->kernel_stack = (uint64_t)kmalloc(STACK_SIZE);
 		thrd->kernel_stack += STACK_SIZE;
 	} else {

@@ -12,6 +12,6 @@ void main(void) {
 	puts("Hello I am supposed to be the init\n");
 	if (syscall0(1) == 0xff)
 		puts("The computer is on!\n");
-	for(;;)
-		;
+	puts("Exiting now\n");
+	syscall1(0x3c, 0);
 }
