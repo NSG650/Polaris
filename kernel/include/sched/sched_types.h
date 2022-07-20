@@ -32,9 +32,6 @@ struct thread {
 	uint64_t stack;
 	uint64_t kernel_stack;
 	uint64_t sleeping_till;
-#if defined(__x86_64__)
-	struct pagemap *pagemap;
-#endif
 	struct process *mother_proc;
 };
 
@@ -43,6 +40,7 @@ typedef vec_t(struct thread *) thread_vec_t;
 struct process {
 	char name[256];
 	int64_t pid;
+	struct pagemap *process_pagemap;
 	uint8_t state;
 	uint64_t runtime;
 	thread_vec_t process_threads;
