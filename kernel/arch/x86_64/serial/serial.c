@@ -17,9 +17,13 @@
 
 #include <io/ports.h>
 #include <serial/serial.h>
+#include <locks/spinlock.h>
 #include <stdbool.h>
 
+lock_t serial_lock = {0};
+
 void serial_init(void) {
+	spinlock_acquire_or_wait(serial_lock);
 	outb(COM1, 0);
 	outb(COM1 + 3, 0x80);
 	outb(COM1, 3);
@@ -28,23 +32,30 @@ void serial_init(void) {
 	outb(COM1 + 2, 0xC7);
 	outb(COM1 + 4, 0xB);
 	outb(COM1 + 4, 0xF);
+	spinlock_drop(serial_lock);
 }
 
 static bool is_transmit_empty(void) {
+	spinlock_acquire_or_wait(serial_lock);
 	return inb(COM1 + 5) & 0x20;
+	spinlock_drop(serial_lock);
 }
 
 void serial_putchar(char c) {
+	spinlock_acquire_or_wait(serial_lock);
 	while (!is_transmit_empty())
 		;
 
 	outb(COM1, c);
+	spinlock_drop(serial_lock);
 }
 
 void serial_puts(char *string) {
+	spinlock_acquire_or_wait(serial_lock);
 	while (*string != '\0') {
 		if (*string == '\n')
 			serial_putchar('\r');
 		serial_putchar(*string++);
 	}
+	spinlock_drop(serial_lock);
 }
