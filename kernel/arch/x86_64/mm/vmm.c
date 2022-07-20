@@ -22,6 +22,7 @@
 #include <mem/liballoc.h>
 #include <mm/pmm.h>
 #include <mm/vmm.h>
+#include <sys/prcb.h>
 
 struct pagemap kernel_pagemap;
 
@@ -176,11 +177,22 @@ level4:
 
 void vmm_page_fault_handler(registers_t *reg) {
 	uint64_t faulting_address = read_cr("2");
-	int present = reg->errorCode & 0x1;
-	int read_write = reg->errorCode & 0x2;
-	int user_supervisor = reg->errorCode & 0x4;
-	int reserved = reg->errorCode & 0x8;
-	int execute = reg->errorCode & 0x10;
+	bool present = reg->errorCode & 0x1;
+	bool read_write = reg->errorCode & 0x2;
+	bool user_supervisor = reg->errorCode & 0x4;
+	bool reserved = reg->errorCode & 0x8;
+	bool execute = reg->errorCode & 0x10;
+	if (reg->cs & 0x3) {
+		struct thread *thrd = prcb_return_current_cpu()->running_thread;
+		kprintf("Killing user thread tid %d under process %s for\n", thrd->tid,
+				thrd->mother_proc->name);
+		kprintf("Page fault at 0x%p present: %s, read/write: %s, "
+				"user/supervisor: %s, reserved: %s, execute: %s\n",
+				faulting_address, present ? "P" : "NP", read_write ? "R" : "RW",
+				user_supervisor ? "U" : "S", reserved ? "R" : "NR",
+				execute ? "X" : "NX");
+		thread_kill(thrd, 1);
+	}
 	panic_((void *)reg->rip, (void *)reg->rbp,
 		   "Page fault at 0x%p present: %s, read/write: %s, "
 		   "user/supervisor: %s, reserved: %s, execute: %s\n",
