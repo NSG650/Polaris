@@ -3,6 +3,7 @@
 #include <fs/vfs.h>
 #include <kernel.h>
 #include <sched/sched.h>
+#include <sys/timer.h>
 #include <sys/prcb.h>
 
 void syscall_is_computer_on(struct syscall_arguments *args) {

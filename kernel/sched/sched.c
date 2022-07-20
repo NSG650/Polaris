@@ -47,6 +47,10 @@ int sched_get_next_thread(int index) {
 			index = 0;
 		}
 		struct thread *thread = threads.data[index];
+
+		if (thread->state != THREAD_READY_TO_RUN)
+			index++;
+
 		if (spinlock_acquire(thread->lock))
 			return index;
 		index++;
@@ -82,6 +86,7 @@ void process_create(char *name, uint8_t state, uint64_t runtime,
 	proc->runtime = runtime;
 	proc->state = state;
 	proc->pid = pid++;
+	proc->state = PROCESS_READY_TO_RUN;
 #if defined(__x86_64__)
 	if (user)
 		proc->process_pagemap = vmm_new_pagemap();
@@ -109,6 +114,7 @@ void process_create_elf(char *name, uint8_t state, uint64_t runtime,
 	proc->runtime = runtime;
 	proc->state = state;
 	proc->pid = pid++;
+	proc->state = PROCESS_READY_TO_RUN;
 #if defined(__x86_64__)
 	proc->process_pagemap = vmm_new_pagemap();
 	// taken from MandelbrotOS
@@ -171,6 +177,8 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 	}
 	thrd->reg.rflags = 0x202;
 #endif
+	thrd->state = THREAD_READY_TO_RUN;
+	thrd->sleeping_till = 0;
 	vec_push(&threads, thrd);
 	vec_push(&proc->process_threads, thrd);
 	spinlock_drop(thread_lock);

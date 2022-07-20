@@ -11,6 +11,16 @@
 #include "../../arch/x86_64/include/reg.h"
 #endif
 
+enum thread_states {
+	THREAD_NORMAL = 0,
+	THREAD_READY_TO_RUN,
+};
+
+enum process_states {
+	PROCESS_NORMAL = 0,
+	PROCESS_READY_TO_RUN
+};
+
 struct process;
 
 struct thread {
@@ -21,6 +31,7 @@ struct thread {
 	uint64_t runtime;
 	uint64_t stack;
 	uint64_t kernel_stack;
+	uint64_t sleeping_till;
 	struct process *mother_proc;
 };
 

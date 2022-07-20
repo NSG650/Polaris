@@ -9,6 +9,7 @@
 
 lock_t resched_lock;
 extern void resched_context_switch(registers_t *reg);
+uint64_t tick = 0;
 
 void sched_resched_now(void) {
 	int nex_index =
@@ -22,13 +23,18 @@ void sched_resched_now(void) {
 		halt();
 }
 
-void resched(registers_t *reg) {
-	spinlock_acquire_or_wait(resched_lock);
+uint64_t timer_sched_tick(void) {
+	return tick;
+}
 
+void resched(registers_t *reg) {
+	tick++;
+	spinlock_acquire_or_wait(resched_lock);
 	struct thread *running_thrd = prcb_return_current_cpu()->running_thread;
 	if (running_thrd) {
 		running_thrd->reg = *reg;
 		running_thrd->stack = prcb_return_current_cpu()->user_stack;
+		running_thrd->state = THREAD_READY_TO_RUN;
 		spinlock_drop(running_thrd->lock);
 	}
 	int nex_index =
@@ -51,6 +57,7 @@ void resched(registers_t *reg) {
 
 	prcb_return_current_cpu()->user_stack = running_thrd->stack;
 	prcb_return_current_cpu()->kernel_stack = running_thrd->kernel_stack;
+	prcb_return_current_cpu()->running_thread->state = THREAD_NORMAL;
 
 	apic_eoi();
 	timer_sched_oneshot(32, running_thrd->runtime);

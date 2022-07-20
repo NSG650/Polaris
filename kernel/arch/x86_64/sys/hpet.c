@@ -50,6 +50,10 @@ void timer_sleep(uint64_t ms) {
 	hpet_sleep(ms * 1000);
 }
 
+void timer_sleep_ns(uint64_t ns) {
+	hpet_sleep(ns / 1000);
+}
+
 uint64_t timer_count(void) {
 	return hpet_counter_value() / 1000;
 }
