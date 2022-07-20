@@ -163,7 +163,7 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 		thrd->reg.cs = 0x23;
 		thrd->reg.ss = 0x1b;
 		for (size_t p = 0; p < STACK_SIZE; p += PAGE_SIZE) {
-			vmm_map_page(proc->process_pagemap, VIRTUAL_STACK_ADDR + p,
+			vmm_map_page(proc->process_pagemap, VIRTUAL_STACK_ADDR + (thrd->reg.rsp) + p,
 						 (thrd->reg.rsp) + p, 0b111, Size4KiB);
 		}
 		thrd->reg.rsp = VIRTUAL_STACK_ADDR + STACK_SIZE;
