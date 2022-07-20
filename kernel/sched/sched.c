@@ -87,12 +87,6 @@ void process_create(char *name, uint8_t state, uint64_t runtime,
 	proc->state = state;
 	proc->pid = pid++;
 	proc->state = PROCESS_READY_TO_RUN;
-#if defined(__x86_64__)
-	if (user)
-		proc->process_pagemap = vmm_new_pagemap();
-	else
-		proc->process_pagemap = &kernel_pagemap;
-#endif
 	vec_init(&proc->process_threads);
 	vec_push(&processes, proc);
 	thread_create(pc_address, arguments, user, proc);
@@ -115,8 +109,14 @@ void process_create_elf(char *name, uint8_t state, uint64_t runtime,
 	proc->state = state;
 	proc->pid = pid++;
 	proc->state = PROCESS_READY_TO_RUN;
+	struct thread *thrd = kmalloc(sizeof(struct thread));
+	thrd->tid = tid++;
+	thrd->state = proc->state;
+	thrd->runtime = proc->runtime;
+	thrd->lock = 0;
+	thrd->mother_proc = proc;
 #if defined(__x86_64__)
-	proc->process_pagemap = vmm_new_pagemap();
+	thrd->pagemap = vmm_new_pagemap();
 	// taken from MandelbrotOS
 	struct elf_prog_header *prog_header =
 		(void *)(binary + header->prog_head_off);
@@ -126,7 +126,7 @@ void process_create_elf(char *name, uint8_t state, uint64_t runtime,
 				(uint64_t)pmm_alloc(ROUND_UP(prog_header->mem_size, PAGE_SIZE));
 			for (uintptr_t p = 0;
 				 p < ROUND_UP(prog_header->mem_size, PAGE_SIZE); p++) {
-				vmm_map_page(proc->process_pagemap, prog_header->virt_addr + p,
+				vmm_map_page(thrd->pagemap, prog_header->virt_addr + p,
 							 mem + p, 0b111, Size4KiB);
 			}
 			memset((void *)mem, 0, prog_header->mem_size);
@@ -137,11 +137,25 @@ void process_create_elf(char *name, uint8_t state, uint64_t runtime,
 		prog_header = (struct elf_prog_header *)((uint8_t *)prog_header +
 												 header->prog_head_size);
 	}
+	thrd->reg.rsp = (uint64_t)pmm_allocz(STACK_SIZE / PAGE_SIZE);
+	thrd->stack = thrd->reg.rsp;
+	thrd->reg.cs = 0x23;
+	thrd->reg.ss = 0x1b;
+	for (size_t p = 0; p < STACK_SIZE; p += PAGE_SIZE) {
+		vmm_map_page(thrd->pagemap, VIRTUAL_STACK_ADDR + p,
+					 (thrd->reg.rsp) + p, 0b111, Size4KiB);
+	}
+	thrd->reg.rsp = VIRTUAL_STACK_ADDR + STACK_SIZE;
+	thrd->kernel_stack = (uint64_t)kmalloc(STACK_SIZE);
+	thrd->kernel_stack += STACK_SIZE;
+	thrd->reg.rip = header->entry;
+	thrd->reg.rdi = 0;
 #endif
 	vec_init(&proc->process_threads);
 	vec_push(&processes, proc);
+	vec_push(&proc->process_threads, thrd);
+	vec_push(&threads, thrd);
 	kprintf("ELF entry point at 0x%p\n", header->entry);
-	thread_create((uintptr_t)header->entry, 0, 1, proc);
 	spinlock_drop(process_lock);
 }
 
@@ -160,16 +174,18 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 	thrd->reg.rsp = (uint64_t)pmm_allocz(STACK_SIZE / PAGE_SIZE);
 	thrd->stack = thrd->reg.rsp;
 	if (user) {
+		thrd->pagemap = vmm_new_pagemap();
 		thrd->reg.cs = 0x23;
 		thrd->reg.ss = 0x1b;
 		for (size_t p = 0; p < STACK_SIZE; p += PAGE_SIZE) {
-			vmm_map_page(proc->process_pagemap, VIRTUAL_STACK_ADDR + (thrd->reg.rsp) + p,
+			vmm_map_page(thrd->pagemap, VIRTUAL_STACK_ADDR + p,
 						 (thrd->reg.rsp) + p, 0b111, Size4KiB);
 		}
 		thrd->reg.rsp = VIRTUAL_STACK_ADDR + STACK_SIZE;
 		thrd->kernel_stack = (uint64_t)kmalloc(STACK_SIZE);
 		thrd->kernel_stack += STACK_SIZE;
 	} else {
+		thrd->pagemap = &kernel_pagemap;
 		thrd->reg.cs = 0x08;
 		thrd->reg.ss = 0x10;
 		thrd->reg.rsp += STACK_SIZE;

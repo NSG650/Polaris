@@ -62,6 +62,6 @@ void resched(registers_t *reg) {
 	apic_eoi();
 	timer_sched_oneshot(32, running_thrd->runtime);
 
-	vmm_switch_pagemap(running_thrd->mother_proc->process_pagemap);
+	vmm_switch_pagemap(running_thrd->pagemap);
 	resched_context_switch(&running_thrd->reg);
 }
