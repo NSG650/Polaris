@@ -104,16 +104,16 @@ static struct fs_node *vfs_look_for_node_under_node(struct fs_node *node,
 	return NULL;
 }
 
-// returns the file from the file path given
+// returns the node in which the file is present
 
-struct file *vfs_path_to_file(const char *path) {
+struct fs_node *vfs_path_to_node(const char *path) {
 	// split the string and store it in an array
 	size_t token_count = 0;
 	char *original_path = kmalloc(strlen(path) + 1);
 	strcpy(original_path, path);
 	char *save = path;
 	char *token;
-	struct fs_node *da_node = NULL;
+
 	while ((token = strtok_r(save, "/", &save))) {
 		token_count++;
 	}
@@ -127,7 +127,7 @@ struct file *vfs_path_to_file(const char *path) {
 		// Its the root node
 		kfree(original_path);
 		kfree(token_list);
-		da_node = mount_nodes.data[0];
+		return mount_nodes.data[0];
 	}
 
 	// look through every mounted node
@@ -141,32 +141,20 @@ struct file *vfs_path_to_file(const char *path) {
 				kfree(original_path);
 				kfree(token_list);
 				kfree(target_path);
-				da_node = mount_nodes.data[j];
+				return mount_nodes.data[j];
 			}
 		}
 	}
 
 	// look for the folder under the root node
-	da_node = vfs_look_for_node_under_node(mount_nodes.data[0], token_list, 0,
-										   token_count - 2);
+	struct fs_node *da_node = vfs_look_for_node_under_node(
+		mount_nodes.data[0], token_list, 0, token_count - 2);
 
-	if (!da_node) {
-		kfree(original_path);
-		kfree(token_list);
-		kfree(target_path);
-		return NULL;
-	}
+	kfree(original_path);
+	kfree(token_list);
+	kfree(target_path);
 
-	for (int i = 0; i < da_node->files.length; i++) {
-		struct file *a = da_node->files.data[i];
-		if (!strcmp(a->name, token_list[token_count - 1])) {
-			kfree(original_path);
-			kfree(token_list);
-			kfree(target_path);
-			return a;
-		}
-	}
-	return NULL;
+	return da_node;
 }
 
 void vfs_install_fs(struct fs *fs) {

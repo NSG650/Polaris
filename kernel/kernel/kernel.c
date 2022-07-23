@@ -23,8 +23,8 @@ void kernel_main(void *args) {
 
 	struct fs_node *root_node = vfs_node_create(NULL, "root");
 	vfs_node_mount(root_node, "/", "testfs");
-
-	kprintf("Creating file /fun/fun.txt\n");
+	
+	kprintf("Creating file /fun/hi.txt\n");
 	root_node->fs->mkdir(root_node, "fun");
 	struct file *fun_folder_file = root_node->fs->open(root_node, "fun");
 	struct fs_node *fun_folder = fun_folder_file->readdir(fun_folder_file);
@@ -36,6 +36,7 @@ void kernel_main(void *args) {
 		fun_folder->fs->open(fun_folder, "even_more_fun");
 	struct fs_node *even_more_fun =
 		even_more_fun_file->readdir(even_more_fun_file);
+	kprintf("%s\n", even_more_fun->target);
 	kprintf("Creating file /fun/even_more_fun/hi.txt\n");
 	even_more_fun->fs->create(even_more_fun, "hi.txt");
 	struct file *hi_dot_txt = fun_folder->fs->open(even_more_fun, "hi.txt");
@@ -43,13 +44,14 @@ void kernel_main(void *args) {
 	hi_dot_txt->write(hi_dot_txt, strlen("Hello There!"), 0,
 					  (uint8_t *)"Hello There!");
 	char *hi_dot_txt_data = kmalloc(hi_dot_txt->size);
-	struct file *b = vfs_path_to_file("/fun/even_more_fun/hi.txt");
-
-	if (b) {
-		b->read(b, b->size, 0, (uint8_t *)hi_dot_txt_data);
-	}
-
+	hi_dot_txt->read(hi_dot_txt, hi_dot_txt->size, 0,
+					 (uint8_t *)hi_dot_txt_data);
 	kprintf("/fun/even_more_fun/hi.txt: %s\n", hi_dot_txt_data);
+
+	struct fs_node *vfs_path_to_node(char *path);
+	struct fs_node *b = vfs_path_to_node("/fun/even_more_fun/fun.txt");
+	if (b)
+		kprintf("b: %s\n", b->target);
 
 	kfree(hi_dot_txt_data);
 	uint64_t *module_info = (uint64_t *)args;
