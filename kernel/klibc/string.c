@@ -98,6 +98,15 @@ tail:
 	return d;
 }
 
+char *strcat(char *dest, char *src) {
+	char* ptr = dest + strlen(dest);
+	while (*src != '\0') {
+        *ptr++ = *src++;
+    }
+	*ptr = '\0';
+	return dest;
+}
+
 char *ltoa(int64_t value, char *str, int base) {
 	char *rc;
 	char *ptr;

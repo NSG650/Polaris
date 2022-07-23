@@ -15,6 +15,7 @@ void resched(registers_t *reg);
 
 extern process_vec_t processes;
 extern thread_vec_t threads;
+extern thread_vec_t sleeping_threads;
 
 void sched_resched_now(void);
 int sched_get_next_thread(int index);
@@ -27,5 +28,6 @@ void process_kill(struct process *proc);
 void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 				   struct process *proc);
 void thread_kill(struct thread *thrd, bool r);
+// void thread_sleep(struct thread *thrd, uint64_t ticks);
 
 #endif

@@ -18,6 +18,7 @@ lock_t sched_lock;
 bool sched_runit = false;
 
 thread_vec_t threads;
+thread_vec_t sleeping_threads;
 process_vec_t processes;
 
 int64_t pid = -1;
@@ -72,6 +73,7 @@ void sched_init(uint64_t args) {
 	kprintf("SCHED: Creating kernel thread\n");
 	vec_init(&threads);
 	vec_init(&processes);
+	vec_init(&threads);
 	syscall_register_handler(0, syscall_puts);
 	syscall_register_handler(0x3c, syscall_exit);
 	syscall_register_handler(0x3e, syscall_kill);
@@ -209,4 +211,13 @@ void thread_kill(struct thread *thrd, bool r) {
 	spinlock_drop(thread_lock);
 	if (r)
 		sched_resched_now();
+}
+
+void thread_sleep(struct thread *thrd, uint64_t ticks) {
+	spinlock_acquire_or_wait(thread_lock);
+	thrd->state = THREAD_SLEEPING;
+	uint64_t sleep_till = timer_sched_tick() + ticks;
+	thrd->sleeping_till = ticks;
+	// dont use yet
+	spinlock_drop(thread_lock);
 }

@@ -14,6 +14,7 @@
 enum thread_states {
 	THREAD_NORMAL = 0,
 	THREAD_READY_TO_RUN,
+	THREAD_SLEEPING
 };
 
 enum process_states {
@@ -27,7 +28,7 @@ struct thread {
 	int64_t tid;
 	registers_t reg;
 	lock_t lock;
-	uint8_t state;
+	enum thread_states state;
 	uint64_t runtime;
 	uint64_t stack;
 	uint64_t kernel_stack;
@@ -41,7 +42,7 @@ struct process {
 	char name[256];
 	int64_t pid;
 	struct pagemap *process_pagemap;
-	uint8_t state;
+	enum process_states state;
 	uint64_t runtime;
 	thread_vec_t process_threads;
 };

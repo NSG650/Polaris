@@ -58,14 +58,14 @@ bool vfs_node_mount(struct fs_node *node, char *target, char *fs) {
 	}
 	struct fs *fs_ptr = vfs_fs_name_to_fs(fs);
 	if (!fs_ptr) {
-		kprintf("VFS: Failed to mount '%s' on '%s'. Filesystem not found\n",
+		kprintf("VFS: Failed to mount '%s' on '%s'. File system not found\n",
 				node->name, node->target);
 		return false;
 	}
 	node->fs = fs_ptr;
 	node->target = target;
 	vec_init(&node->files);
-	kprintf("VFS: Mounted '%s' node on '%s' with filesystem '%s'\n", node->name,
+	kprintf("VFS: Mounted '%s' node on '%s' with file system '%s'\n", node->name,
 			target, fs);
 	return true;
 }
