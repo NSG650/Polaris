@@ -3,10 +3,159 @@
 #include <klibc/mem.h>
 #include <locks/spinlock.h>
 
-fs_node_vec_t nodes;
+fs_node_vec_t mount_nodes;
 fs_vec_t filesystems;
 
 bool is_init[2] = {false};
+
+// Original Author for this function is mintsuki (https://github.com/mintsuki)
+
+/* Convert a relative path into an absolute path.
+   This is a freestanding function and can be used for any purpose :) */
+void vfs_get_absolute_path(char *path_ptr, const char *path, const char *pwd) {
+	char *orig_ptr = path_ptr;
+
+	if (!*path) {
+		strcpy(path_ptr, pwd);
+		return;
+	}
+
+	if (*path != '/') {
+		strcpy(path_ptr, pwd);
+		path_ptr += strlen(path_ptr);
+	} else {
+		*path_ptr = '/';
+		path_ptr++;
+		path++;
+	}
+
+	goto first_run;
+
+	for (;;) {
+		switch (*path) {
+			case '/':
+				path++;
+			first_run:
+				if (*path == '/')
+					continue;
+				if ((!strncmp(path, ".\0", 2)) || (!strncmp(path, "./\0", 3))) {
+					goto term;
+				}
+				if ((!strncmp(path, "..\0", 3)) ||
+					(!strncmp(path, "../\0", 4))) {
+					while (*path_ptr != '/')
+						path_ptr--;
+					if (path_ptr == orig_ptr)
+						path_ptr++;
+					goto term;
+				}
+				if (!strncmp(path, "../", 3)) {
+					while (*path_ptr != '/')
+						path_ptr--;
+					if (path_ptr == orig_ptr)
+						path_ptr++;
+					path += 2;
+					*path_ptr = 0;
+					continue;
+				}
+				if (!strncmp(path, "./", 2)) {
+					path += 1;
+					continue;
+				}
+				if (((path_ptr - 1) != orig_ptr) && (*(path_ptr - 1) != '/')) {
+					*path_ptr = '/';
+					path_ptr++;
+				}
+				continue;
+			case '\0':
+			term:
+				if ((*(path_ptr - 1) == '/') && ((path_ptr - 1) != orig_ptr))
+					path_ptr--;
+				*path_ptr = 0;
+				return;
+			default:
+				*path_ptr = *path;
+				path++;
+				path_ptr++;
+				continue;
+		}
+	}
+}
+
+static struct fs_node *vfs_look_for_node_under_node(struct fs_node *node,
+													char **name, size_t idx,
+													size_t max_idx) {
+	for (int i = 0; i < node->files.length; i++) {
+		struct file *a = node->files.data[i];
+		if (!strcmp(a->name, name[idx])) {
+			if (S_ISDIR(a->type)) {
+				struct fs_node *nodea = a->readdir(a);
+				if (idx != max_idx) {
+					return vfs_look_for_node_under_node(nodea, name, idx + 1,
+														max_idx);
+				} else {
+					return nodea;
+				}
+			} else {
+				return NULL;
+			}
+		}
+	}
+	return NULL;
+}
+
+// returns the node in which the file is present
+
+struct fs_node *vfs_path_to_node(const char *path) {
+	// split the string and store it in an array
+	size_t token_count = 0;
+	char *original_path = kmalloc(strlen(path) + 1);
+	strcpy(original_path, path);
+	char *save = path;
+	char *token;
+
+	while ((token = strtok_r(save, "/", &save))) {
+		token_count++;
+	}
+	save = original_path;
+	char **token_list = kmalloc(sizeof(char *) * token_count);
+	for (size_t i = 0; i < token_count; i++) {
+		token = strtok_r(save, "/", &save);
+		token_list[i] = token;
+	}
+	if (token_count == 1) {
+		// Its the root node
+		kfree(original_path);
+		kfree(token_list);
+		return mount_nodes.data[0];
+	}
+
+	// look through every mounted node
+	char *target_path = kmalloc(256);
+	// last entry is the file
+	for (size_t i = 0; i < token_count - 1; i++) {
+		strcat(target_path, "/");
+		strcat(target_path, token_list[i]);
+		for (int j = 0; j < mount_nodes.length; j++) {
+			if (!strcmp(mount_nodes.data[j]->target, target_path)) {
+				kfree(original_path);
+				kfree(token_list);
+				kfree(target_path);
+				return mount_nodes.data[j];
+			}
+		}
+	}
+
+	// look for the folder under the root node
+	struct fs_node *da_node = vfs_look_for_node_under_node(
+		mount_nodes.data[0], token_list, 0, token_count - 2);
+
+	kfree(original_path);
+	kfree(token_list);
+	kfree(target_path);
+
+	return da_node;
+}
 
 void vfs_install_fs(struct fs *fs) {
 	if (!is_init[1]) {
@@ -28,7 +177,7 @@ static struct fs *vfs_fs_name_to_fs(char *fs) {
 
 struct fs_node *vfs_node_create(struct fs_node *parent, char *name) {
 	if (!is_init[0]) {
-		vec_init(&nodes);
+		vec_init(&mount_nodes);
 		is_init[0] = true;
 	}
 	struct fs_node *node = kmalloc(sizeof(struct fs_node));
@@ -41,14 +190,14 @@ struct fs_node *vfs_node_create(struct fs_node *parent, char *name) {
 	} else {
 		node->parent = NULL;
 	}
-	vec_push(&nodes, node);
+	vec_push(&mount_nodes, node);
 	return node;
 }
 
 bool vfs_node_mount(struct fs_node *node, char *target, char *fs) {
-	for (int i = 0; i < nodes.length; i++) {
-		if (nodes.data[i]->target) {
-			if (!strcmp(nodes.data[i]->target, target)) {
+	for (int i = 0; i < mount_nodes.length; i++) {
+		if (mount_nodes.data[i]->target) {
+			if (!strcmp(mount_nodes.data[i]->target, target)) {
 				kprintf(
 					"VFS: Failed to mount '%s' on '%s'. Mount already exists\n",
 					node->name, node->target);

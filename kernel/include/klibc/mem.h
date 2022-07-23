@@ -31,9 +31,13 @@ void *memmove(void *d, const void *s, size_t n);
 char *strncpy(char *restrict d, const char *restrict s, size_t n);
 char *strcpy(char *restrict d, const char *restrict s);
 int strcmp(const char *l, const char *r);
+int strncmp(const char *_l, const char *_r, size_t n);
 char *strcat(char *dest, char *src);
 size_t strlen(const char *s);
 char *ltoa(int64_t value, char *str, int base);
 char *ultoa(uint64_t value, char *str, int base);
+char *strtok_r(char *str, const char *delim, char **saveptr);
+size_t strspn(const char *str, const char *accept);
+char *strpbrk(const char *str, const char *accept);
 
 #endif

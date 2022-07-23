@@ -98,6 +98,15 @@ tail:
 	return d;
 }
 
+int strncmp(const char *_l, const char *_r, size_t n) {
+	const uint8_t *l = (void *)_l, *r = (void *)_r;
+	if (!n--)
+		return 0;
+	for (; *l && *r && n && *l == *r; l++, r++, n--)
+		;
+	return *l - *r;
+}
+
 char *strcat(char *dest, char *src) {
 	char* ptr = dest + strlen(dest);
 	while (*src != '\0') {
@@ -169,4 +178,79 @@ char *ultoa(uint64_t value, char *str, int base) {
 		*ptr-- = tmp;
 	}
 	return rc;
+}
+
+size_t lfind(const char *str, const char accept) {
+	size_t i = 0;
+	while (str[i] != accept) {
+		i++;
+	}
+	return (size_t)(str) + i;
+}
+
+char *strtok_r(char *str, const char *delim, char **saveptr) {
+	char *token;
+	if (str == NULL) {
+		str = *saveptr;
+	}
+	str += strspn(str, delim);
+	if (*str == '\0') {
+		*saveptr = str;
+		return NULL;
+	}
+	token = str;
+	str = strpbrk(token, delim);
+	if (str == NULL) {
+		*saveptr = (char *)lfind(token, '\0');
+	} else {
+		*str = '\0';
+		*saveptr = str + 1;
+	}
+	return token;
+}
+
+size_t strspn(const char *str, const char *accept) {
+	const char *ptr = str;
+	const char *acc;
+
+	while (*str) {
+		for (acc = accept; *acc; ++acc) {
+			if (*str == *acc) {
+				break;
+			}
+		}
+		if (*acc == '\0') {
+			break;
+		}
+
+		str++;
+	}
+
+	return str - ptr;
+}
+
+char *strpbrk(const char *str, const char *accept) {
+	const char *acc = accept;
+
+	if (!*str) {
+		return NULL;
+	}
+
+	while (*str) {
+		for (acc = accept; *acc; ++acc) {
+			if (*str == *acc) {
+				break;
+			}
+		}
+		if (*acc) {
+			break;
+		}
+		++str;
+	}
+
+	if (*acc == '\0') {
+		return NULL;
+	}
+
+	return (char *)str;
 }
