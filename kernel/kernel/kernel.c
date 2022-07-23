@@ -38,7 +38,6 @@ void kernel_main(void *args) {
 					 (uint8_t *)hi_dot_txt_data);
 	kprintf("/fun/hi.txt: %s\n", hi_dot_txt_data);
 
-
 	kprintf("Creating folder /fun/even_more_fun\n");
 	fun_folder->fs->mkdir(fun_folder, "even_more_fun");
 	struct file *even_more_fun_file = fun_folder->fs->open(fun_folder, "even_more_fun");
@@ -46,6 +45,8 @@ void kernel_main(void *args) {
 	kprintf("Creating file /fun/even_more_fun/fun.txt\n");
 	even_more_fun->fs->create(even_more_fun, "fun.txt");
 	
+	vfs_dump_fs_tree(root_node);
+
 	kfree(hi_dot_txt_data);
 	uint64_t *module_info = (uint64_t *)args;
 	kprintf("ELF binary located at 0x%p\n", module_info[0]);

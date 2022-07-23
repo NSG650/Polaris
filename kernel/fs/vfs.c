@@ -69,3 +69,17 @@ bool vfs_node_mount(struct fs_node *node, char *target, char *fs) {
 			target, fs);
 	return true;
 }
+
+void vfs_dump_fs_tree(struct fs_node *node) {
+	kprintffos(0, "Dumping fs node\n");
+	kprintffos(0, "%s\n", node->target);
+	for (int i = 0; i < node->files.length; i++) {
+		struct file *file = node->files.data[i];
+		if (S_ISDIR(file->type)) {
+			struct fs_node *nodea = file->readdir(file);
+			vfs_dump_fs_tree(nodea);
+		}
+		else 
+			kprintffos(0, "%s%s\n", node->target, file->name);
+	}
+}

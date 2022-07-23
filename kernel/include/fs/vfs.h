@@ -50,5 +50,6 @@ struct file {
 void vfs_install_fs(struct fs *fs);
 struct fs_node *vfs_node_create(struct fs_node *parent, char *name);
 bool vfs_node_mount(struct fs_node *node, char *target, char *fs);
+void vfs_dump_fs_tree(struct fs_node *node);
 
 #endif

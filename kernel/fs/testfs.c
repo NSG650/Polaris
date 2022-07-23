@@ -61,7 +61,7 @@ uint32_t testfs_create(struct fs_node *node, char *name) {
 	new->read = testfs_read;
 	new->write = testfs_write;
 	new->readdir = NULL;
-	new->type = S_IFMT;
+	new->type = S_IFMT & S_IFREG;
 	new->data = kmalloc(new->allocated_size);
 	vec_push(&node->files, new);
 	return 0;
