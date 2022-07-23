@@ -23,7 +23,9 @@ user:
 $(ISO_IMAGE): limine kernel user
 	rm -rf build
 	mkdir -p build
-	cp kernel/$(KERNEL_ELF) user/$(PROGRAM_ELF) \
+	$(MAKE) -C root
+	cp user/$(PROGRAM_ELF) root/bin
+	cp kernel/$(KERNEL_ELF) ramdisk.tar \
 		limine.cfg limine/limine.sys limine/limine-cd.bin limine/limine-cd-efi.bin build/
 	xorriso -as mkisofs -b limine-cd.bin \
 		-no-emul-boot -boot-load-size 4 -boot-info-table \

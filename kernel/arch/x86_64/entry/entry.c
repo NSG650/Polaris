@@ -95,7 +95,7 @@ void arch_entry(void) {
 	size_t module_info[2] = {0};
 	struct limine_file *module = module_request.response->modules[0];
 	module_info[0] = (size_t)module->address;
-	module_info[1] = (size_t)module->address + module->size;
+	module_info[1] = (size_t)module->size;
 	sched_init((uint64_t)module_info);
 	timer_sched_oneshot(32, 20000);
 	sti();

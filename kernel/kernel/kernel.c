@@ -1,66 +1,47 @@
 #include <debug/debug.h>
+#include <fs/ramdisk.h>
 #include <fs/testfs.h>
 #include <fs/vfs.h>
 #include <kernel.h>
 #include <sched/sched.h>
-#include <sys/timer.h>
 #include <sys/prcb.h>
+#include <sys/timer.h>
 
 void syscall_is_computer_on(struct syscall_arguments *args) {
 	args->ret = 0xFF;
 }
 
-void kernel_thread(void) {
-	kprintf("I am a kernel thread\n");
-	thread_kill(prcb_return_current_cpu()->running_thread, true);
-}
-
 void kernel_main(void *args) {
-	thread_create((uintptr_t)kernel_thread, 0, 0,
-				  prcb_return_current_cpu()->running_thread->mother_proc);
 	vfs_install_fs(&testfs);
-
 
 	struct fs_node *root_node = vfs_node_create(NULL, "root");
 	vfs_node_mount(root_node, "/", "testfs");
-	
-	kprintf("Creating file /fun/hi.txt\n");
-	root_node->fs->mkdir(root_node, "fun");
-	struct file *fun_folder_file = root_node->fs->open(root_node, "fun");
-	struct fs_node *fun_folder = fun_folder_file->readdir(fun_folder_file);
-	fun_folder->fs->create(fun_folder, "fun.txt");
 
-	kprintf("Creating folder /fun/even_more_fun\n");
-	fun_folder->fs->mkdir(fun_folder, "even_more_fun");
-	struct file *even_more_fun_file =
-		fun_folder->fs->open(fun_folder, "even_more_fun");
-	struct fs_node *even_more_fun =
-		even_more_fun_file->readdir(even_more_fun_file);
-	kprintf("%s\n", even_more_fun->target);
-	kprintf("Creating file /fun/even_more_fun/hi.txt\n");
-	even_more_fun->fs->create(even_more_fun, "hi.txt");
-	struct file *hi_dot_txt = fun_folder->fs->open(even_more_fun, "hi.txt");
-	kprintf("Writing 'Hello There!' in /fun/even_more_fun/hi.txt\n");
-	hi_dot_txt->write(hi_dot_txt, strlen("Hello There!"), 0,
-					  (uint8_t *)"Hello There!");
-	char *hi_dot_txt_data = kmalloc(hi_dot_txt->size);
-	hi_dot_txt->read(hi_dot_txt, hi_dot_txt->size, 0,
-					 (uint8_t *)hi_dot_txt_data);
-	kprintf("/fun/even_more_fun/hi.txt: %s\n", hi_dot_txt_data);
-
-	struct fs_node *vfs_path_to_node(char *path);
-	struct fs_node *b = vfs_path_to_node("/fun/even_more_fun/fun.txt");
-	if (b)
-		kprintf("b: %s\n", b->target);
-
-	kfree(hi_dot_txt_data);
 	uint64_t *module_info = (uint64_t *)args;
-	kprintf("ELF binary located at 0x%p\n", module_info[0]);
+	kprintf("Ramdisk located at 0x%p\n", module_info[0]);
+
 	kprintf("Hello I am %s\n",
 			prcb_return_current_cpu()->running_thread->mother_proc->name);
 	syscall_register_handler(1, syscall_is_computer_on);
-	kprintf("Creating elf user process\n");
-	process_create_elf("init", 0, 2000, (uint8_t *)module_info[0]);
+
+	ramdisk_install(module_info[0], module_info[1]);
+	struct fs_node *folder = vfs_path_to_node("/fun/hi.txt");
+	struct file *file = NULL;
+	for (int i = 0; i < folder->files.length; i++) {
+		file = folder->files.data[i];
+		if (!strcmp(file->name, "hi.txt"))
+			break;
+	}
+	kprintf("/fun/hi.txt: %s", file->data);
+	folder = vfs_path_to_node("/bin/program64.elf");
+	file = NULL;
+	for (int i = 0; i < folder->files.length; i++) {
+		file = folder->files.data[i];
+		if (!strcmp(file->name, "program64.elf"))
+			break;
+	}
+	kprintf("Running init binary /bin/program64.elf\n");
+	process_create_elf("init", PROCESS_READY_TO_RUN, 2000, file->data);
 	for (;;)
 		;
 }
