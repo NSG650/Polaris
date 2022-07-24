@@ -111,7 +111,7 @@ struct fs_node *vfs_path_to_node(char *path) {
 	size_t token_count = 0;
 	char *original_path = kmalloc(strlen(path) + 1);
 	strcpy(original_path, path);
-	char *save = (char *)path;
+	char *save = path;
 	char *token;
 
 	while ((token = strtok_r(save, "/", &save))) {
