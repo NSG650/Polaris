@@ -45,8 +45,7 @@ uint32_t testfs_delete(struct fs_node *node, char *name) {
 		kfree(filex->data);
 		kfree(filex);
 		return 0;
-	}
-	else
+	} else
 		return 1;
 }
 
@@ -61,7 +60,7 @@ uint32_t testfs_create(struct fs_node *node, char *name) {
 	new->read = testfs_read;
 	new->write = testfs_write;
 	new->readdir = NULL;
-	new->type = S_IFMT & S_IFREG;
+	new->type = S_IFMT &S_IFREG;
 	new->data = kmalloc(new->allocated_size);
 	vec_push(&node->files, new);
 	return 0;
@@ -85,9 +84,9 @@ uint32_t testfs_mkdir(struct fs_node *node, char *name) {
 	new->read = NULL;
 	new->write = NULL;
 	new->readdir = testfs_readdir;
-	new->type = S_IFMT & S_IFDIR;
+	new->type = S_IFMT &S_IFDIR;
 	new->data = kmalloc(new->allocated_size);
-	
+
 	struct fs_node *folder = (struct fs_node *)new->data;
 
 	vec_init(&folder->files);
@@ -104,5 +103,8 @@ uint32_t testfs_mkdir(struct fs_node *node, char *name) {
 	return 0;
 }
 
-struct fs testfs = {
-	.name = "testfs", .open = testfs_open, .create = testfs_create, .delete = testfs_delete, .mkdir = testfs_mkdir};
+struct fs testfs = {.name = "testfs",
+					.open = testfs_open,
+					.create = testfs_create,
+					.delete = testfs_delete,
+					.mkdir = testfs_mkdir};

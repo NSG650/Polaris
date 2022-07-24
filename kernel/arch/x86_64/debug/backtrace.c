@@ -1,6 +1,6 @@
 #include <debug/debug.h>
 
-void backtrace(size_t *ip, size_t *bp) {
+void backtrace(size_t *bp) {
 	size_t old_rbp = bp[0];
 	size_t ret_address = bp[1];
 	for (;;) {

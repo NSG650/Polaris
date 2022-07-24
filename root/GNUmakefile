@@ -1,3 +1,3 @@
 .PHONY: all
 all: 
-	gtar -cf ../ramdisk.tar fun bin
+	tar -zcf ../ramdisk.tar.gz fun bin

@@ -111,7 +111,7 @@ struct fs_node *vfs_path_to_node(const char *path) {
 	size_t token_count = 0;
 	char *original_path = kmalloc(strlen(path) + 1);
 	strcpy(original_path, path);
-	char *save = path;
+	char *save = (char *)path;
 	char *token;
 
 	while ((token = strtok_r(save, "/", &save))) {
@@ -214,8 +214,8 @@ bool vfs_node_mount(struct fs_node *node, char *target, char *fs) {
 	node->fs = fs_ptr;
 	node->target = target;
 	vec_init(&node->files);
-	kprintf("VFS: Mounted '%s' node on '%s' with file system '%s'\n", node->name,
-			target, fs);
+	kprintf("VFS: Mounted '%s' node on '%s' with file system '%s'\n",
+			node->name, target, fs);
 	return true;
 }
 
@@ -226,8 +226,7 @@ void vfs_dump_fs_tree(struct fs_node *node) {
 		if (S_ISDIR(file->type)) {
 			struct fs_node *nodea = file->readdir(file);
 			vfs_dump_fs_tree(nodea);
-		}
-		else 
+		} else
 			kprintffos(0, "%s%s\n", node->target, file->name);
 	}
 }

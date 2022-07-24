@@ -16,8 +16,8 @@
  */
 
 #include <io/ports.h>
-#include <serial/serial.h>
 #include <locks/spinlock.h>
+#include <serial/serial.h>
 #include <stdbool.h>
 
 lock_t serial_lock = {0};

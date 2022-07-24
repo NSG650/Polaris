@@ -47,4 +47,9 @@ SECTIONS {
 		*(COMMON)
 		*(.bss .bss.*)
 	} :data
+
+	/* Discard notes since they may cause issues on some hosts. */
+	/DISCARD/ : {
+		*(.note .note.*)
+	}
 }

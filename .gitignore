@@ -111,7 +111,7 @@ GitHub.sublime-settings
 .idea/
 
 *.iso
-*.tar
+*.tar.gz
 
 
 # MacOS .DS_Store

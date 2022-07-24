@@ -163,7 +163,7 @@ void panic_(size_t *ip, size_t *bp, char *fmt, ...) {
 	va_end(args);
 	kprintf("Crashed at 0x%p\n", ip);
 	kprintf("Stack trace:\n");
-	backtrace(ip, bp);
+	backtrace(bp);
 	halt_current_cpu();
 	__builtin_unreachable();
 }

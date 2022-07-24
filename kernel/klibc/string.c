@@ -24,6 +24,27 @@
 #define HIGHS (ONES * (UCHAR_MAX / 2 + 1))
 #define HASZERO(x) (((x)-ONES) & ~(x)&HIGHS)
 
+static char *__strchrnul(const char *s, int c) {
+	c = (unsigned char)c;
+	if (!c)
+		return (char *)s + strlen(s);
+
+#ifdef __GNUC__
+	typedef size_t __attribute__((__may_alias__)) word;
+	const word *w;
+	for (; (uintptr_t)s % ALIGN; s++)
+		if (!*s || *(unsigned char *)s == c)
+			return (char *)s;
+	size_t k = ONES * c;
+	for (w = (void *)s; !HASZERO(*w) && !HASZERO(*w ^ k); w++)
+		;
+	s = (void *)w;
+#endif
+	for (; *s && *(unsigned char *)s != c; s++)
+		;
+	return (char *)s;
+}
+
 char *strcpy(char *restrict d, const char *restrict s) {
 #ifdef __GNUC__
 	typedef size_t __attribute__((__may_alias__)) word;
@@ -107,12 +128,8 @@ int strncmp(const char *_l, const char *_r, size_t n) {
 	return *l - *r;
 }
 
-char *strcat(char *dest, char *src) {
-	char* ptr = dest + strlen(dest);
-	while (*src != '\0') {
-        *ptr++ = *src++;
-    }
-	*ptr = '\0';
+char *strcat(char *restrict dest, const char *restrict src) {
+	strcpy(dest + strlen(dest), src);
 	return dest;
 }
 
@@ -188,69 +205,59 @@ size_t lfind(const char *str, const char accept) {
 	return (size_t)(str) + i;
 }
 
-char *strtok_r(char *str, const char *delim, char **saveptr) {
-	char *token;
-	if (str == NULL) {
-		str = *saveptr;
+#define BITOP(a, b, op)                                \
+	((a)[(size_t)(b) / (8 * sizeof *(a))] op(size_t) 1 \
+	 << ((size_t)(b) % (8 * sizeof *(a))))
+
+size_t strspn(const char *s, const char *c) {
+	const char *a = s;
+	size_t byteset[32 / sizeof(size_t)] = {0};
+
+	if (!c[0])
+		return 0;
+	if (!c[1]) {
+		for (; *s == *c; s++)
+			;
+		return s - a;
 	}
-	str += strspn(str, delim);
-	if (*str == '\0') {
-		*saveptr = str;
-		return NULL;
-	}
-	token = str;
-	str = strpbrk(token, delim);
-	if (str == NULL) {
-		*saveptr = (char *)lfind(token, '\0');
-	} else {
-		*str = '\0';
-		*saveptr = str + 1;
-	}
-	return token;
+
+	for (; *c && BITOP(byteset, *(unsigned char *)c, |=); c++)
+		;
+	for (; *s && BITOP(byteset, *(unsigned char *)s, &); s++)
+		;
+	return s - a;
 }
 
-size_t strspn(const char *str, const char *accept) {
-	const char *ptr = str;
-	const char *acc;
+static size_t strcspn(const char *s, const char *c) {
+	const char *a = s;
+	size_t byteset[32 / sizeof(size_t)];
 
-	while (*str) {
-		for (acc = accept; *acc; ++acc) {
-			if (*str == *acc) {
-				break;
-			}
-		}
-		if (*acc == '\0') {
-			break;
-		}
+	if (!c[0] || !c[1])
+		return __strchrnul(s, *c) - a;
 
-		str++;
-	}
-
-	return str - ptr;
+	memset(byteset, 0, sizeof byteset);
+	for (; *c && BITOP(byteset, *(unsigned char *)c, |=); c++)
+		;
+	for (; *s && !BITOP(byteset, *(unsigned char *)s, &); s++)
+		;
+	return s - a;
 }
 
-char *strpbrk(const char *str, const char *accept) {
-	const char *acc = accept;
-
-	if (!*str) {
+char *strtok_r(char *restrict s, const char *restrict sep, char **restrict p) {
+	if (!s && !(s = *p))
 		return NULL;
-	}
+	s += strspn(s, sep);
+	if (!*s)
+		return *p = 0;
+	*p = s + strcspn(s, sep);
+	if (**p)
+		*(*p)++ = 0;
+	else
+		*p = 0;
+	return s;
+}
 
-	while (*str) {
-		for (acc = accept; *acc; ++acc) {
-			if (*str == *acc) {
-				break;
-			}
-		}
-		if (*acc) {
-			break;
-		}
-		++str;
-	}
-
-	if (*acc == '\0') {
-		return NULL;
-	}
-
-	return (char *)str;
+char *strpbrk(const char *s, const char *b) {
+	s += strcspn(s, b);
+	return *s ? (char *)s : 0;
 }

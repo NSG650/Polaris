@@ -1,6 +1,7 @@
 #include <debug/debug.h>
 #include <fs/ramdisk.h>
 #include <fs/vfs.h>
+#include <mm/pmm.h>
 
 struct ustar_header {
 	char name[100];
@@ -32,27 +33,6 @@ enum {
 	USTAR_FIFO = '6',
 	USTAR_CONTIGOUS = '7'
 };
-
-#define DIV_ROUNDUP(A, B)        \
-	({                           \
-		typeof(A) _a_ = A;       \
-		typeof(B) _b_ = B;       \
-		(_a_ + (_b_ - 1)) / _b_; \
-	})
-
-#define ALIGN_UP(A, B)                  \
-	({                                  \
-		typeof(A) _a__ = A;             \
-		typeof(B) _b__ = B;             \
-		DIV_ROUNDUP(_a__, _b__) * _b__; \
-	})
-
-#define ALIGN_DOWN(A, B)   \
-	({                     \
-		typeof(A) _a_ = A; \
-		typeof(B) _b_ = B; \
-		(_a_ / _b_) * _b_; \
-	})
 
 static uint64_t octal_to_int(const char *s) {
 	uint64_t ret = 0;

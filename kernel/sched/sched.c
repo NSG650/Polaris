@@ -152,7 +152,7 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 	spinlock_acquire_or_wait(thread_lock);
 	struct thread *thrd = kmalloc(sizeof(struct thread));
 	thrd->tid = tid++;
-	thrd->state = proc->state;
+	thrd->state = (enum thread_states)proc->state;
 	thrd->runtime = proc->runtime;
 	thrd->lock = 0;
 	thrd->mother_proc = proc;
@@ -165,7 +165,8 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 		thrd->reg.cs = 0x23;
 		thrd->reg.ss = 0x1b;
 		for (size_t p = 0; p < STACK_SIZE; p += PAGE_SIZE) {
-			vmm_map_page(proc->process_pagemap, VIRTUAL_STACK_ADDR + (thrd->reg.rsp) + p,
+			vmm_map_page(proc->process_pagemap,
+						 VIRTUAL_STACK_ADDR + (thrd->reg.rsp) + p,
 						 (thrd->reg.rsp) + p, 0b111, Size4KiB);
 		}
 		thrd->reg.rsp = VIRTUAL_STACK_ADDR + STACK_SIZE + thrd->reg.rsp;

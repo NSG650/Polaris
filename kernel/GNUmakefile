@@ -32,13 +32,13 @@ override INTERNALLDFLAGS :=     \
 	-Wl,--gc-sections           \
 	-Wl,--no-dynamic-linker	    \
 	-Wl,-z,max-page-size=0x1000 \
-	-Wl,-T,arch/$(CONFIG_ARCH)/linker.ld 
+	-Wl,-T,arch/$(CONFIG_ARCH)/linker.ld
 
 # Internal assembler flags that should not be changed by the user.
 override INTERNALASFLAGS := \
 	-MD                     \
 	-MP                     \
-	-f elf64			
+	-f elf64
 
 CARCHFILES := $(wildcard arch/$(CONFIG_ARCH)/*/*.c)
 CFILES := $(wildcard */*.c)
@@ -62,12 +62,10 @@ ifeq ($(CONFIG_ARCH),x86_64)
 		-I arch/$(CONFIG_ARCH)/fw/lai/include \
 		-I arch/$(CONFIG_ARCH)/include/debug \
 		-mno-red-zone
-	
-	override INTERNALLDFLAGS += \
-		-Wl,-m,elf_x86_64 \
-		-L arch/$(CONFIG_ARCH)/debug/ -l:zydis.a \
-
-
+	override INTERNALLDFLAGS +=       \
+		-Wl,-m,elf_x86_64             \
+		-L arch/$(CONFIG_ARCH)/debug/ \
+		-l:zydis.a
 endif
 
 .PHONY: all

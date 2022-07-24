@@ -32,12 +32,12 @@ char *strncpy(char *restrict d, const char *restrict s, size_t n);
 char *strcpy(char *restrict d, const char *restrict s);
 int strcmp(const char *l, const char *r);
 int strncmp(const char *_l, const char *_r, size_t n);
-char *strcat(char *dest, char *src);
+char *strcat(char *restrict dest, const char *restrict src);
 size_t strlen(const char *s);
 char *ltoa(int64_t value, char *str, int base);
 char *ultoa(uint64_t value, char *str, int base);
-char *strtok_r(char *str, const char *delim, char **saveptr);
-size_t strspn(const char *str, const char *accept);
-char *strpbrk(const char *str, const char *accept);
+char *strtok_r(char *restrict s, const char *restrict sep, char **restrict p);
+size_t strspn(const char *s, const char *c);
+char *strpbrk(const char *s, const char *b);
 
 #endif

@@ -1,7 +1,7 @@
 #include <debug/debug.h>
 #include <klibc/mem.h>
 #include <sys/isr.h>
-#include <zydis/Zydis.h>
+#include <Zydis/Zydis.h>
 
 #define DUMP_SIZE 100
 
