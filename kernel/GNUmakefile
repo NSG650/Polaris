@@ -14,15 +14,15 @@ LDFLAGS ?=
 ASFLAGS ?= -g
 
 # Internal C flags that should not be changed by the user.
-override INTERNALCFLAGS :=                \
-	-I.                                   \
-	-I include/                           \
-	-I arch/$(CONFIG_ARCH)/include/       \
-	-std=gnu11                            \
-	-ffreestanding                        \
-	-fno-stack-protector                  \
-	-fno-stack-check                      \
-	-fpie                                 \
+override INTERNALCFLAGS :=          \
+	-I.                             \
+	-I include/                     \
+	-I arch/$(CONFIG_ARCH)/include/ \
+	-std=gnu11                      \
+	-ffreestanding                  \
+	-fno-stack-protector            \
+	-fno-stack-check                \
+	-fpie                           \
 	-MMD
 
 # Internal linker flags that should not be changed by the user.
@@ -53,14 +53,14 @@ ifeq ($(CONFIG_ARCH),x86_64)
 	OBJ := $(CARCHFILES:.c=.o) $(CFILES:.c=.o) $(ASMFILES:.asm=.o)
 	HEADER_DEPS := $(CARCHFILES:.c=.d) $(CFILES:.c=.d) $(ASMFILES:.asm=.d)
 
-	override INTERNALCFLAGS += \
-		-m64                   \
-		-march=x86-64          \
-		-mabi=sysv             \
-		-masm=intel            \
-		-mgeneral-regs-only    \
+	override INTERNALCFLAGS +=                \
+		-m64                                  \
+		-march=x86-64                         \
+		-mabi=sysv                            \
+		-masm=intel                           \
+		-mgeneral-regs-only                   \
 		-I arch/$(CONFIG_ARCH)/fw/lai/include \
-		-I arch/$(CONFIG_ARCH)/include/debug \
+		-I arch/$(CONFIG_ARCH)/include/debug  \
 		-mno-red-zone
 	override INTERNALLDFLAGS +=       \
 		-Wl,-m,elf_x86_64             \
