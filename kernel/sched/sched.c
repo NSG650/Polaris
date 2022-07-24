@@ -152,7 +152,7 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 	spinlock_acquire_or_wait(thread_lock);
 	struct thread *thrd = kmalloc(sizeof(struct thread));
 	thrd->tid = tid++;
-	thrd->state = (enum thread_states)proc->state;
+	thrd->state = THREAD_READY_TO_RUN;
 	thrd->runtime = proc->runtime;
 	thrd->lock = 0;
 	thrd->mother_proc = proc;

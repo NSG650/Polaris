@@ -97,7 +97,7 @@ void ramdisk_install(uintptr_t ramdisk_address, uint64_t ramdisk_size) {
 						void *buf = (void *)h + 512;
 						kfree(a->data);
 						a->allocated_size = size;
-						a->write = 0;
+						a->write = NULL;
 						a->size = size;
 						a->data = (uint8_t *)buf;
 					}

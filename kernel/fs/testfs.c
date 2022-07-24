@@ -40,7 +40,8 @@ uint32_t testfs_delete(struct fs_node *node, char *name) {
 			break;
 		}
 	}
-	if (filex) {
+	// If you can't write. You can't delete them either
+	if (filex && filex->write) {
 		vec_remove(&node->files, filex);
 		kfree(filex->data);
 		kfree(filex);

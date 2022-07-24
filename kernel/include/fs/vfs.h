@@ -51,6 +51,9 @@ void vfs_install_fs(struct fs *fs);
 struct fs_node *vfs_node_create(struct fs_node *parent, char *name);
 bool vfs_node_mount(struct fs_node *node, char *target, char *fs);
 void vfs_dump_fs_tree(struct fs_node *node);
-struct fs_node *vfs_path_to_node(const char *path);
+struct fs_node *vfs_path_to_node(char *path);
+struct file *vfs_find_file_in_node(struct fs_node *node, char *path);
+
+#define vfs_open_file(A) vfs_find_file_in_node(vfs_path_to_node(A), A);
 
 #endif

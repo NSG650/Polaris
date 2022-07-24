@@ -106,7 +106,7 @@ static struct fs_node *vfs_look_for_node_under_node(struct fs_node *node,
 
 // returns the node in which the file is present
 
-struct fs_node *vfs_path_to_node(const char *path) {
+struct fs_node *vfs_path_to_node(char *path) {
 	// split the string and store it in an array
 	size_t token_count = 0;
 	char *original_path = kmalloc(strlen(path) + 1);
@@ -155,6 +155,37 @@ struct fs_node *vfs_path_to_node(const char *path) {
 	kfree(target_path);
 
 	return da_node;
+}
+
+struct file *vfs_find_file_in_node(struct fs_node *node, char *path) {
+	size_t token_count = 0;
+	char *original_path = kmalloc(strlen(path) + 1);
+	strcpy(original_path, path);
+	char *save = (char *)path;
+	char *token;
+
+	while ((token = strtok_r(save, "/", &save))) {
+		token_count++;
+	}
+	save = original_path;
+	char **token_list = kmalloc(sizeof(char *) * token_count);
+	for (size_t i = 0; i < token_count; i++) {
+		token = strtok_r(save, "/", &save);
+		token_list[i] = token;
+	}
+
+	struct file *f = NULL;
+
+	for (int i = 0; i < node->files.length; i++) {
+		if (!strcmp(node->files.data[i]->name, token_list[token_count - 1])) {
+			f = node->files.data[i];
+			break;
+		}
+	}
+
+	kfree(original_path);
+	kfree(token_list);
+	return f;
 }
 
 void vfs_install_fs(struct fs *fs) {
