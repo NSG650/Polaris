@@ -105,12 +105,14 @@ static struct fs_node *vfs_look_for_node_under_node(struct fs_node *node,
 }
 
 // returns the node in which the file is present
-
-struct fs_node *vfs_path_to_node(char *path) {
+// theres alot to fix in this :confounded:
+struct fs_node *vfs_path_to_node(char *patha) {
 	// split the string and store it in an array
 	size_t token_count = 0;
-	char *original_path = kmalloc(strlen(path) + 1);
-	strcpy(original_path, path);
+	char *path = kmalloc(strlen(patha) + 1);
+	char *original_path = kmalloc(strlen(patha) + 1);
+	strcpy(original_path, patha);
+	strcpy(path, patha);
 	char *save = path;
 	char *token;
 
@@ -125,6 +127,7 @@ struct fs_node *vfs_path_to_node(char *path) {
 	}
 	if (token_count == 1) {
 		// Its the root node
+		kfree(path);
 		kfree(original_path);
 		kfree(token_list);
 		return mount_nodes.data[0];
@@ -138,6 +141,7 @@ struct fs_node *vfs_path_to_node(char *path) {
 		strcat(target_path, token_list[i]);
 		for (int j = 0; j < mount_nodes.length; j++) {
 			if (!strcmp(mount_nodes.data[j]->target, target_path)) {
+				kfree(path);
 				kfree(original_path);
 				kfree(token_list);
 				kfree(target_path);
@@ -150,6 +154,7 @@ struct fs_node *vfs_path_to_node(char *path) {
 	struct fs_node *da_node = vfs_look_for_node_under_node(
 		mount_nodes.data[0], token_list, 0, token_count - 2);
 
+	kfree(path);
 	kfree(original_path);
 	kfree(token_list);
 	kfree(target_path);
@@ -158,33 +163,32 @@ struct fs_node *vfs_path_to_node(char *path) {
 }
 
 struct file *vfs_find_file_in_node(struct fs_node *node, char *path) {
-	size_t token_count = 0;
-	char *original_path = kmalloc(strlen(path) + 1);
-	strcpy(original_path, path);
-	char *save = (char *)path;
-	char *token;
+	// just copy the string till '/' then reverse it
+	// there you go
+	// your file name
 
-	while ((token = strtok_r(save, "/", &save))) {
-		token_count++;
+	char *file_name = kmalloc(strlen(path) + 1);
+	size_t a = strlen(path) - 1;
+	size_t c = 0;
+	while(path[a] != '/') {
+		file_name[c] = path[a];
+		a--;
+		c++;
 	}
-	save = original_path;
-	char **token_list = kmalloc(sizeof(char *) * token_count);
-	for (size_t i = 0; i < token_count; i++) {
-		token = strtok_r(save, "/", &save);
-		token_list[i] = token;
-	}
+	file_name[c] = '\0';
+
+	strrev(file_name);
 
 	struct file *f = NULL;
 
 	for (int i = 0; i < node->files.length; i++) {
-		if (!strcmp(node->files.data[i]->name, token_list[token_count - 1])) {
+		if (!strcmp(node->files.data[i]->name, file_name)) {
 			f = node->files.data[i];
 			break;
 		}
 	}
 
-	kfree(original_path);
-	kfree(token_list);
+	kfree(file_name);
 	return f;
 }
 

@@ -39,5 +39,6 @@ char *ultoa(uint64_t value, char *str, int base);
 char *strtok_r(char *restrict s, const char *restrict sep, char **restrict p);
 size_t strspn(const char *s, const char *c);
 char *strpbrk(const char *s, const char *b);
+void strrev(char *str);
 
 #endif

@@ -261,3 +261,14 @@ char *strpbrk(const char *s, const char *b) {
 	s += strcspn(s, b);
 	return *s ? (char *)s : 0;
 }
+
+void strrev(char *str) {
+    size_t i, j;
+    char a;
+    size_t len = strlen((const char *)str);
+    for (i = 0, j = len - 1; i < j; i++, j--) {
+        a = str[i];
+        str[i] = str[j];
+        str[j] = a;
+    }
+}
