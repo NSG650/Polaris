@@ -167,8 +167,10 @@ typedef struct ZyanStringView_ {
 /**
  * Defines an uninitialized `ZyanString` instance.
  */
-#define ZYAN_STRING_INITIALIZER \
-	{ /* flags  */ 0, /* vector */ ZYAN_VECTOR_INITIALIZER }
+#define ZYAN_STRING_INITIALIZER                 \
+	{ /* flags  */                              \
+		0, /* vector */ ZYAN_VECTOR_INITIALIZER \
+	}
 
 /* ----------------------------------------------------------------------------------------------
  */

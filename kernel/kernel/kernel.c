@@ -30,8 +30,8 @@ void kernel_main(void *args) {
 		We shouldn't directly read the file data but instead should call the
 		file system to read the file. This data can vary depending on the fs or
 		the device it's stored on. For example this data can contain info about
-	    the sector or block address for the particular file. So this should be
-	    avoided.
+		the sector or block address for the particular file. So this should be
+		avoided.
 	*/
 
 	struct file *file = vfs_open_file("/fun/hi.txt");

@@ -170,7 +170,7 @@ struct file *vfs_find_file_in_node(struct fs_node *node, char *path) {
 	char *file_name = kmalloc(strlen(path) + 1);
 	size_t a = strlen(path) - 1;
 	size_t c = 0;
-	while(path[a] != '/') {
+	while (path[a] != '/') {
 		file_name[c] = path[a];
 		a--;
 		c++;
