@@ -24,30 +24,18 @@
 #include <stddef.h>
 
 static inline bool bitmap_test(void *bitmap, size_t bit) {
-	bool ret;
-	asm volatile("bt %1, %2"
-				 : "=@ccc"(ret)
-				 : "m"(FLAT_PTR(bitmap)), "r"(bit)
-				 : "memory");
-	return ret;
+	uint8_t *bitmap_u8 = bitmap;
+	return bitmap_u8[bit / 8] & (1 << (bit % 8));
 }
 
-static inline bool bitmap_set(void *bitmap, size_t bit) {
-	bool ret;
-	asm volatile("bts %1, %2"
-				 : "=@ccc"(ret), "+m"(FLAT_PTR(bitmap))
-				 : "r"(bit)
-				 : "memory");
-	return ret;
+static inline void bitmap_set(void *bitmap, size_t bit) {
+	uint8_t *bitmap_u8 = bitmap;
+	bitmap_u8[bit / 8] |= (1 << (bit % 8));
 }
 
-static inline bool bitmap_unset(void *bitmap, size_t bit) {
-	bool ret;
-	asm volatile("btr %1, %2"
-				 : "=@ccc"(ret), "+m"(FLAT_PTR(bitmap))
-				 : "r"(bit)
-				 : "memory");
-	return ret;
+static inline void bitmap_reset(void *bitmap, size_t bit) {
+	uint8_t *bitmap_u8 = bitmap;
+	bitmap_u8[bit / 8] &= ~(1 << (bit % 8));
 }
 
 #define DIV_ROUNDUP(A, B)        \
@@ -71,9 +59,9 @@ static inline bool bitmap_unset(void *bitmap, size_t bit) {
 		(_a_ / _b_) * _b_; \
 	})
 
-void *pmm_alloc(size_t count);
-void *pmm_allocz(size_t count);
-void pmm_free(void *ptr, size_t count);
+void *pmm_alloc(size_t pages);
+void *pmm_allocz(size_t pages);
+void pmm_free(void *addr, size_t pages);
 void pmm_init(struct limine_memmap_entry **memmap, size_t memmap_entries);
 
 #endif

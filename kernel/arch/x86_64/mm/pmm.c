@@ -16,27 +16,32 @@
  */
 
 #include <klibc/mem.h>
+#include <locks/spinlock.h>
 #include <mm/pmm.h>
 #include <mm/vmm.h>
 
-static void *bitmap;
-static size_t last_used_index = 0;
-static uintptr_t highest_addr = 0;
+static lock_t memory_lock = 0;
+static uint8_t *bitmap = NULL;
+static uint64_t total_page_count = 0;
+static uint64_t last_used_index = 0;
+static uint64_t free_pages = 0;
 
 void pmm_init(struct limine_memmap_entry **memmap, size_t memmap_entries) {
+	uint64_t highest_addr = 0;
+
 	// First, calculate how big the bitmap needs to be
 	for (size_t i = 0; i < memmap_entries; i++) {
 		if (memmap[i]->type != LIMINE_MEMMAP_USABLE &&
-			memmap[i]->type != LIMINE_MEMMAP_ACPI_RECLAIMABLE)
+			memmap[i]->type != LIMINE_MEMMAP_BOOTLOADER_RECLAIMABLE)
 			continue;
 
-		uintptr_t top = memmap[i]->base + memmap[i]->length;
-
+		uint64_t top = memmap[i]->base + memmap[i]->length;
 		if (top > highest_addr)
 			highest_addr = top;
 	}
 
-	size_t bitmap_size = ALIGN_UP((highest_addr / PAGE_SIZE) / 8, PAGE_SIZE);
+	total_page_count = highest_addr / PAGE_SIZE;
+	size_t bitmap_size = ALIGN_UP(total_page_count / 8, PAGE_SIZE);
 
 	// Second, find a location with enough free pages to host the bitmap
 	for (size_t i = 0; i < memmap_entries; i++) {
@@ -61,18 +66,20 @@ void pmm_init(struct limine_memmap_entry **memmap, size_t memmap_entries) {
 		if (memmap[i]->type != LIMINE_MEMMAP_USABLE)
 			continue;
 
-		for (uintptr_t j = 0; j < memmap[i]->length; j += PAGE_SIZE)
-			bitmap_unset(bitmap, (memmap[i]->base + j) / PAGE_SIZE);
+		for (uint64_t j = 0; j < memmap[i]->length; j += PAGE_SIZE) {
+			bitmap_reset(bitmap, (memmap[i]->base + j) / PAGE_SIZE);
+			free_pages++;
+		}
 	}
 }
 
-static void *inner_alloc(size_t count, size_t limit) {
+static void *inner_alloc(size_t pages, size_t limit) {
 	size_t p = 0;
 
 	while (last_used_index < limit) {
 		if (!bitmap_test(bitmap, last_used_index++)) {
-			if (++p == count) {
-				size_t page = last_used_index - count;
+			if (++p == pages) {
+				size_t page = last_used_index - pages;
 				for (size_t i = page; i < last_used_index; i++) {
 					bitmap_set(bitmap, i);
 				}
@@ -86,34 +93,34 @@ static void *inner_alloc(size_t count, size_t limit) {
 	return NULL;
 }
 
-void *pmm_alloc(size_t count) {
-	size_t l = last_used_index;
-	void *ret = inner_alloc(count, highest_addr / PAGE_SIZE);
+void *pmm_alloc(size_t pages) {
+	spinlock_acquire_or_wait(memory_lock);
+	size_t last = last_used_index;
+	void *ret = inner_alloc(pages, total_page_count);
 	if (ret == NULL) {
 		last_used_index = 0;
-		ret = inner_alloc(count, l);
+		ret = inner_alloc(pages, last);
 	}
+	free_pages -= pages;
+	spinlock_drop(memory_lock);
 	return ret;
 }
 
-void *pmm_allocz(size_t count) {
-	char *ret = (char *)pmm_alloc(count);
+void *pmm_allocz(size_t pages) {
+	void *ret = pmm_alloc(pages);
 
-	if (ret == NULL)
-		return NULL;
-
-	uint64_t *ptr = (uint64_t *)(ret + MEM_PHYS_OFFSET);
-
-	for (size_t i = 0; i < count * (PAGE_SIZE / sizeof(uint64_t)); i++)
-		ptr[i] = 0;
+	if (ret != NULL)
+		memset(ret + MEM_PHYS_OFFSET, 0, pages * PAGE_SIZE);
 
 	return ret;
 }
 
-void pmm_free(void *ptr, size_t count) {
-	size_t page = (size_t)ptr / PAGE_SIZE;
-	for (size_t i = page; i < page + count; i++)
-		bitmap_unset(bitmap, i);
+void pmm_free(void *addr, size_t pages) {
+	spinlock_acquire_or_wait(memory_lock);
+	size_t page = (size_t)addr / PAGE_SIZE;
+	for (size_t i = page; i < page + pages; i++)
+		bitmap_reset(bitmap, i);
+	spinlock_drop(memory_lock);
 }
 
 // liballoc
