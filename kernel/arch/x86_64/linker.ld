@@ -21,19 +21,29 @@ SECTIONS {
 	/* that is the beginning of the region. */
 	. = 0xffffffff80000000;
 
+	text_start_addr = .;
+
 	.text : {
 		*(.text .text.*)
 	} :text
 
+	text_end_addr = .;
+
 	/* Move to the next memory page for .rodata */
 	. += CONSTANT(MAXPAGESIZE);
+
+	rodata_start_addr = .;
 
 	.rodata : {
 		*(.rodata .rodata.*)
 	} :rodata
 
+	rodata_end_addr = .;
+
 	/* Move to the next memory page for .data */
 	. += CONSTANT(MAXPAGESIZE);
+
+	data_start_addr = .;
 
 	.data : {
 		*(.data .data.*)
@@ -47,6 +57,8 @@ SECTIONS {
 		*(COMMON)
 		*(.bss .bss.*)
 	} :data
+
+	data_end_addr = .;
 
 	/* Discard notes since they may cause issues on some hosts. */
 	/DISCARD/ : {

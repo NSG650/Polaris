@@ -26,6 +26,10 @@
 
 struct pagemap kernel_pagemap;
 
+extern char text_start_addr[], text_end_addr[];
+extern char rodata_start_addr[], rodata_end_addr[];
+extern char data_start_addr[], data_end_addr[];
+
 static uint64_t *get_next_level(uint64_t *current_level, size_t entry) {
 	uint64_t *ret;
 	if (current_level[entry] & 1) {
@@ -46,9 +50,6 @@ volatile struct limine_hhdm_request hhdm_request = {.id = LIMINE_HHDM_REQUEST,
 
 static volatile struct limine_kernel_address_request kernel_address_request = {
 	.id = LIMINE_KERNEL_ADDRESS_REQUEST, .revision = 0};
-
-static volatile struct limine_kernel_file_request kernel_file_request = {
-	.id = LIMINE_KERNEL_FILE_REQUEST, .revision = 0};
 
 static volatile struct limine_5_level_paging_request five_level_paging_request =
 	{.id = LIMINE_5_LEVEL_PAGING_REQUEST, .revision = 0};
@@ -98,11 +99,35 @@ void vmm_init(struct limine_memmap_entry **memmap, size_t memmap_entries) {
 		}
 	}
 
-	for (uint64_t p = 0; p < kernel_file_request.response->kernel_file->size;
-		 p += PAGE_SIZE) {
-		uint64_t paddr = kernel_address_request.response->physical_base + p;
-		uint64_t vaddr = kernel_address_request.response->virtual_base + p;
-		vmm_map_page(&kernel_pagemap, vaddr, paddr, 0b111, Size4KiB);
+	uintptr_t text_start = ALIGN_DOWN((uintptr_t)text_start_addr, PAGE_SIZE),
+			  rodata_start =
+				  ALIGN_DOWN((uintptr_t)rodata_start_addr, PAGE_SIZE),
+			  data_start = ALIGN_DOWN((uintptr_t)data_start_addr, PAGE_SIZE),
+			  text_end = ALIGN_UP((uintptr_t)text_end_addr, PAGE_SIZE),
+			  rodata_end = ALIGN_UP((uintptr_t)rodata_end_addr, PAGE_SIZE),
+			  data_end = ALIGN_UP((uintptr_t)data_end_addr, PAGE_SIZE);
+
+	uint64_t paddr = kernel_address_request.response->physical_base;
+	uint64_t vaddr = kernel_address_request.response->virtual_base;
+
+	for (uintptr_t text_addr = text_start; text_addr < text_end;
+		 text_addr += PAGE_SIZE) {
+		uintptr_t phys = text_addr - vaddr + paddr;
+		vmm_map_page(&kernel_pagemap, text_addr, phys, 1, Size4KiB);
+	}
+
+	for (uintptr_t rodata_addr = rodata_start; rodata_addr < rodata_end;
+		 rodata_addr += PAGE_SIZE) {
+		uintptr_t phys = rodata_addr - vaddr + paddr;
+		vmm_map_page(&kernel_pagemap, rodata_addr, phys, 1 | 1ull << 63ull,
+					 Size4KiB);
+	}
+
+	for (uintptr_t data_addr = data_start; data_addr < data_end;
+		 data_addr += PAGE_SIZE) {
+		uintptr_t phys = data_addr - vaddr + paddr;
+		vmm_map_page(&kernel_pagemap, data_addr, phys, 0b11 | 1ull << 63ull,
+					 Size4KiB);
 	}
 	// Switch to the new page map, dropping Limine's default one
 	vmm_switch_pagemap(&kernel_pagemap);
