@@ -1,5 +1,6 @@
 #include <klibc/mem.h>
 #include <limits.h>
+#include <mm/slab.h>
 
 /*
  * Copyright 2021, 2022 NSG650
@@ -271,4 +272,30 @@ void strrev(char *str) {
 		str[i] = str[j];
 		str[j] = a;
 	}
+}
+
+// Taken from https://stackoverflow.com/a/34957656
+
+size_t strsplit(const char *txt, char delim, char ***tokens) {
+	size_t *tklen, *t, count = 1;
+	char **arr, *p = (char *)txt;
+
+	while (*p != '\0')
+		if (*p++ == delim)
+			count += 1;
+	t = tklen = kcalloc(count, sizeof(int));
+	for (p = (char *)txt; *p != '\0'; p++)
+		*p == delim ? *t++ : (*t)++;
+	*tokens = arr = kmalloc(count * sizeof(char *));
+	t = tklen;
+	p = *arr++ = kcalloc(*(t++) + 1, sizeof(char *));
+	while (*txt != '\0') {
+		if (*txt == delim) {
+			p = *arr++ = kcalloc(*(t++) + 1, sizeof(char *));
+			txt++;
+		} else
+			*p++ = *txt++;
+	}
+	kfree(tklen);
+	return count;
 }

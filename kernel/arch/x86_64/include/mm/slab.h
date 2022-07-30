@@ -20,4 +20,6 @@ static inline void kfree(void *addr) {
 	return slab_free(addr);
 }
 
+#define kcalloc(A, B) kmalloc(A * sizeof(B))
+
 #endif

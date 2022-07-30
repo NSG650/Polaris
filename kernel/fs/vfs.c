@@ -105,30 +105,13 @@ static struct fs_node *vfs_look_for_node_under_node(struct fs_node *node,
 }
 
 // returns the node in which the file is present
-// theres alot to fix in this :confounded:
 struct fs_node *vfs_path_to_node(char *patha) {
 	// split the string and store it in an array
-	size_t token_count = 0;
-	char *path = kmalloc(strlen(patha) + 1);
-	char *original_path = kmalloc(strlen(patha) + 1);
-	strcpy(original_path, patha);
-	strcpy(path, patha);
-	char *save = path;
-	char *token;
+	char **token_list = NULL;
+	size_t token_count = strsplit(patha, '/', &token_list);
 
-	while ((token = strtok_r(save, "/", &save))) {
-		token_count++;
-	}
-	save = original_path;
-	char **token_list = kmalloc(sizeof(char *) * token_count);
-	for (size_t i = 0; i < token_count; i++) {
-		token = strtok_r(save, "/", &save);
-		token_list[i] = token;
-	}
-	if (token_count == 1) {
+	if (token_count < 3) {
 		// Its the root node
-		kfree(path);
-		kfree(original_path);
 		kfree(token_list);
 		return mount_nodes.data[0];
 	}
@@ -136,13 +119,11 @@ struct fs_node *vfs_path_to_node(char *patha) {
 	// look through every mounted node
 	char *target_path = kmalloc(256);
 	// last entry is the file
-	for (size_t i = 0; i < token_count - 1; i++) {
+	for (size_t i = 1; i < token_count - 1; i++) {
 		strcat(target_path, "/");
 		strcat(target_path, token_list[i]);
 		for (int j = 0; j < mount_nodes.length; j++) {
 			if (!strcmp(mount_nodes.data[j]->target, target_path)) {
-				kfree(path);
-				kfree(original_path);
 				kfree(token_list);
 				kfree(target_path);
 				return mount_nodes.data[j];
@@ -152,12 +133,9 @@ struct fs_node *vfs_path_to_node(char *patha) {
 
 	// look for the folder under the root node
 	struct fs_node *da_node = vfs_look_for_node_under_node(
-		mount_nodes.data[0], token_list, 0, token_count - 2);
+		mount_nodes.data[0], token_list, 1, token_count - 2);
 
-	kfree(path);
-	kfree(original_path);
 	kfree(token_list);
-	kfree(target_path);
 
 	return da_node;
 }

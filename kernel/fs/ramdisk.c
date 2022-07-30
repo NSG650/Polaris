@@ -75,34 +75,26 @@ void ramdisk_install(uintptr_t ramdisk_address, uint64_t ramdisk_size) {
 				strcat(fun, h->name);
 				struct fs_node *node = vfs_path_to_node(fun);
 				if (node) {
-					size_t token_count = 0;
-					char *original_path = kmalloc(strlen(fun) + 1);
-					strcpy(original_path, fun);
-					char *save = fun;
-					char *token;
-
-					while ((token = strtok_r(save, "/", &save))) {
-						token_count++;
+					char *file_name = kmalloc(strlen(fun) + 1);
+					size_t a = strlen(fun) - 1;
+					size_t c = 0;
+					while (fun[a] != '/') {
+						file_name[c] = fun[a];
+						a--;
+						c++;
 					}
-					save = original_path;
-					char **token_list = kmalloc(sizeof(char *) * token_count);
-					for (size_t i = 0; i < token_count; i++) {
-						token = strtok_r(save, "/", &save);
-						token_list[i] = token;
-					}
-					node->fs->create(node, token_list[token_count - 1]);
-					struct file *a =
-						node->fs->open(node, token_list[token_count - 1]);
-					if (a) {
+					file_name[c] = '\0';
+					strrev(file_name);
+					node->fs->create(node, file_name);
+					struct file *ab = node->fs->open(node, file_name);
+					if (ab) {
 						void *buf = (void *)h + 512;
-						kfree(a->data);
-						a->allocated_size = size;
-						a->write = NULL;
-						a->size = size;
-						a->data = (uint8_t *)buf;
+						kfree(ab->data);
+						ab->allocated_size = size;
+						ab->write = NULL;
+						ab->size = size;
+						ab->data = (uint8_t *)buf;
 					}
-					kfree(original_path);
-					kfree(token_list);
 				}
 				kfree(fun);
 				break;
