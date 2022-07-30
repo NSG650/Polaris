@@ -19,7 +19,7 @@
 #include <io/mmio.h>
 #include <io/pci.h>
 #include <io/ports.h>
-#include <mem/liballoc.h>
+#include <mm/slab.h>
 #include <mm/vmm.h>
 #include <stdbool.h>
 

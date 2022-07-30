@@ -1,7 +1,7 @@
 #include <fb/fb.h>
 #include <klibc/mem.h>
 #include <locks/spinlock.h>
-#include <mem/liballoc.h>
+#include <mm/slab.h>
 
 /*
  * Copyright 2021, 2022 NSG650

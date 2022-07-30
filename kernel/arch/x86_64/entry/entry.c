@@ -24,6 +24,7 @@
 #include <klibc/mem.h>
 #include <limine.h>
 #include <mm/pmm.h>
+#include <mm/slab.h>
 #include <mm/vmm.h>
 #include <sched/sched.h>
 #include <sched/syscall.h>
@@ -65,6 +66,7 @@ void arch_entry(void) {
 	size_t memmap_entries = memmap_request.response->entry_count;
 	pmm_init(memmap, memmap_entries);
 	vmm_init(memmap, memmap_entries);
+	slab_init();
 	struct limine_framebuffer *framebuffer =
 		framebuffer_request.response->framebuffers[0];
 	struct framebuffer fb;

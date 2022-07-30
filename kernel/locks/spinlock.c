@@ -40,18 +40,3 @@ retry_lock:
 void spinlock_drop(lock_t spin) {
 	__atomic_clear(&spin, __ATOMIC_RELEASE);
 }
-
-// liballoc
-lock_t lib_lock;
-
-int liballoc_lock() {
-	spinlock_acquire(lib_lock);
-	cli();
-	return 0;
-}
-
-int liballoc_unlock() {
-	spinlock_drop(lib_lock);
-	sti();
-	return 0;
-}

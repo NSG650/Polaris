@@ -122,15 +122,3 @@ void pmm_free(void *addr, size_t pages) {
 		bitmap_reset(bitmap, i);
 	spinlock_drop(memory_lock);
 }
-
-// liballoc
-
-void *liballoc_alloc(size_t size) {
-	void *x = pmm_allocz(size);
-	return x + MEM_PHYS_OFFSET;
-}
-
-int liballoc_free(void *x, size_t size) {
-	pmm_free(x - MEM_PHYS_OFFSET, size);
-	return 0;
-}

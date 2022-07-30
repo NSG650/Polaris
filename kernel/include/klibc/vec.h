@@ -8,7 +8,7 @@
 #define VEC_H
 
 #include <klibc/mem.h>
-#include <mem/liballoc.h>
+#include <mm/slab.h>
 
 #define VEC_VERSION "0.2.1"
 

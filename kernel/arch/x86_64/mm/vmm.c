@@ -19,8 +19,8 @@
 #include <cpu_features.h>
 #include <cpuid.h>
 #include <debug/debug.h>
-#include <mem/liballoc.h>
 #include <mm/pmm.h>
+#include <mm/slab.h>
 #include <mm/vmm.h>
 #include <sys/prcb.h>
 

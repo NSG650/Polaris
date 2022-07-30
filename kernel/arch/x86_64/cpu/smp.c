@@ -6,8 +6,8 @@
 #include <klibc/mem.h>
 #include <klibc/vec.h>
 #include <locks/spinlock.h>
-#include <mem/liballoc.h>
 #include <mm/pmm.h>
+#include <mm/slab.h>
 #include <mm/vmm.h>
 #include <sys/apic.h>
 #include <sys/gdt.h>

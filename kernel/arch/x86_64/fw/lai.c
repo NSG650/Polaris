@@ -6,7 +6,7 @@
 #include <lai/drivers/ec.h>
 #include <lai/helpers/sci.h>
 #include <lai/host.h>
-#include <mem/liballoc.h>
+#include <mm/slab.h>
 #include <mm/vmm.h>
 #include <stdbool.h>
 #include <sys/hpet.h>
