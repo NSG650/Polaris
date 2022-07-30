@@ -65,8 +65,8 @@ void arch_entry(void) {
 	struct limine_memmap_entry **memmap = memmap_request.response->entries;
 	size_t memmap_entries = memmap_request.response->entry_count;
 	pmm_init(memmap, memmap_entries);
-	vmm_init(memmap, memmap_entries);
 	slab_init();
+	vmm_init(memmap, memmap_entries);
 	struct limine_framebuffer *framebuffer =
 		framebuffer_request.response->framebuffers[0];
 	struct framebuffer fb;
