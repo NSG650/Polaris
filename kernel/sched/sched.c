@@ -11,10 +11,7 @@
 
 #define VIRTUAL_STACK_ADDR 0x70000000000
 
-uint8_t elf_ident[4] = {0x7f, 'E', 'L', 'F'};
-#define ROUND_UP(__addr, __align) (((__addr) + (__align)-1) & ~((__align)-1))
-
-lock_t sched_lock;
+lock_t sched_lock = 0;
 bool sched_runit = false;
 
 thread_vec_t threads;
@@ -22,9 +19,9 @@ thread_vec_t sleeping_threads;
 process_vec_t processes;
 
 int64_t pid = -1;
-lock_t process_lock;
+lock_t process_lock = 0;
 
-lock_t thread_lock;
+lock_t thread_lock = 0;
 int64_t tid = 0;
 
 struct process *sched_pid_to_process(int64_t process_pid) {
@@ -104,13 +101,20 @@ void process_create(char *name, uint8_t state, uint64_t runtime,
 void process_create_elf(char *name, uint8_t state, uint64_t runtime,
 						uint8_t *binary) {
 	spinlock_acquire_or_wait(process_lock);
-	struct elf_header *header = (struct elf_header *)binary;
-	if (header->type != 2) {
+	Elf64_Ehdr *header = (Elf64_Ehdr *)binary;
+	if (header->e_type != ET_EXEC) {
 		return;
 	}
-	if (memcmp((void *)header->identifier, elf_ident, 4)) {
+	if (memcmp(header->e_ident, ELFMAG, SELFMAG)) {
 		return;
 	}
+#if defined(__x86_64__)
+	if (header->e_ident[EI_CLASS] != ELFCLASS64 ||
+		header->e_ident[EI_DATA] != ELFDATA2LSB ||
+		header->e_ident[EI_OSABI] != 0 || header->e_machine != EM_X86_64) {
+		return;
+	}
+#endif
 	struct process *proc = kmalloc(sizeof(struct process));
 	strncpy(proc->name, name, 256);
 	proc->runtime = runtime;
@@ -119,31 +123,45 @@ void process_create_elf(char *name, uint8_t state, uint64_t runtime,
 	proc->state = PROCESS_READY_TO_RUN;
 #if defined(__x86_64__)
 	proc->process_pagemap = vmm_new_pagemap();
-	// taken from MandelbrotOS
-	struct elf_prog_header *prog_header =
-		(void *)(binary + header->prog_head_off);
-	for (size_t i = 0; i < header->prog_head_count; i++) {
-		if (prog_header->type == 1) {
-			uint64_t mem =
-				(uint64_t)pmm_alloc(ROUND_UP(prog_header->mem_size, PAGE_SIZE));
-			for (uintptr_t p = 0;
-				 p < ROUND_UP(prog_header->mem_size, PAGE_SIZE); p++) {
-				vmm_map_page(proc->process_pagemap, prog_header->virt_addr + p,
-							 mem + p, 0b111, Size4KiB);
+	for (size_t i = 0; i < header->e_phnum; i++) {
+		Elf64_Phdr *phdr =
+			(void *)(binary + header->e_phoff + i * header->e_phentsize);
+
+		switch (phdr->p_type) {
+			case PT_LOAD: {
+				int prot = 0b101;
+				if (phdr->p_flags & PF_W) {
+					prot |= 0b10;
+				}
+				if ((phdr->p_flags & PF_X) == 0) {
+					prot |= 1ULL << 63ULL;
+				}
+
+				size_t misalign = phdr->p_vaddr & (PAGE_SIZE - 1);
+				size_t page_count =
+					DIV_ROUNDUP(phdr->p_memsz + misalign, PAGE_SIZE);
+
+				void *phys = pmm_allocz(page_count);
+
+				for (size_t p = 0; p < page_count * PAGE_SIZE; p += PAGE_SIZE) {
+					vmm_map_page(proc->process_pagemap, phdr->p_vaddr + p,
+								 (uint64_t)phys + p, prot, Size4KiB);
+				}
+
+				memcpy(phys + misalign + MEM_PHYS_OFFSET,
+					   (void *)((uint64_t)binary + phdr->p_offset),
+					   phdr->p_filesz);
+
+				break;
 			}
-			memset((void *)mem, 0, prog_header->mem_size);
-			memcpy((void *)mem,
-				   (void *)((uint64_t)binary + prog_header->offset),
-				   prog_header->file_size);
+				// Open for expansion
 		}
-		prog_header = (struct elf_prog_header *)((uint8_t *)prog_header +
-												 header->prog_head_size);
 	}
 #endif
 	vec_init(&proc->process_threads);
 	vec_push(&processes, proc);
-	kprintf("ELF entry point at 0x%p\n", header->entry);
-	thread_create((uintptr_t)header->entry, 0, 1, proc);
+	kprintf("ELF entry point at 0x%p\n", header->e_entry);
+	thread_create((uintptr_t)header->e_entry, 0, 1, proc);
 	spinlock_drop(process_lock);
 }
 

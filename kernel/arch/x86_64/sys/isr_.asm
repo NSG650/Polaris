@@ -86,7 +86,7 @@ isr%1:
 
 %endmacro
 
-%define has_errcode(i) (i == 8 || (i >= 10 && i <= 14) || i == 17 || i == 21)
+%define has_errcode(i) (i == 8 || (i >= 10 && i <= 14) || i == 17 || i == 21 || i == 29 || i == 30)
 
 ; Define ISRs
 %assign i 0
