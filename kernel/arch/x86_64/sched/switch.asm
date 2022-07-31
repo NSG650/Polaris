@@ -10,9 +10,9 @@ resched_context_switch:
 	pop r10
 	pop r9
 	pop r8
-	pop rbp
-	pop rdi
 	pop rsi
+	pop rdi
+	pop rbp
 	pop rdx
 	pop rcx
 	pop rbx

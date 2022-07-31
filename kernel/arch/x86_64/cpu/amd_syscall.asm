@@ -23,9 +23,9 @@ amd_syscall_entry:
 	push rbx
 	push rcx
 	push rdx
-	push rsi
-	push rdi
 	push rbp
+	push rdi
+	push rsi
 	push r8
 	push r9
 	push r10
@@ -46,9 +46,9 @@ amd_syscall_entry:
 	pop r10
 	pop r9
 	pop r8
-	pop rbp
-	pop rdi
 	pop rsi
+	pop rdi
+	pop rbp
 	pop rdx
 	pop rcx
 	pop rbx
