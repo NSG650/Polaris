@@ -10,6 +10,8 @@ struct syscall_arguments {
 	uint64_t args1;
 	uint64_t args2;
 	uint64_t args3;
+	uint64_t args4;
+	uint64_t args5;
 	uint64_t ret;
 };
 

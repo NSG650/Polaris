@@ -7,6 +7,8 @@ void syscall_handler(registers_t *reg) {
 									 .args1 = reg->rsi,
 									 .args2 = reg->rdx,
 									 .args3 = reg->r10,
+									 .args4 = reg->r8,
+									 .args5 = reg->r9,
 									 .ret = reg->rax};
 	syscall_handle(&args);
 	reg->rax = args.ret;
