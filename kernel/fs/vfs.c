@@ -1,7 +1,10 @@
 #include <debug/debug.h>
+#include <errno.h>
 #include <fs/vfs.h>
 #include <klibc/mem.h>
 #include <locks/spinlock.h>
+#include <sched/sched.h>
+#include <sys/prcb.h>
 
 fs_node_vec_t mount_nodes;
 fs_vec_t filesystems;
@@ -242,4 +245,22 @@ void vfs_dump_fs_tree(struct fs_node *node) {
 		} else
 			kprintffos(0, "%s%s\n", node->target, file->name);
 	}
+}
+
+void syscall_open(struct syscall_arguments *args) {
+	char *path = kmalloc(256);
+	struct process *proc =
+		prcb_return_current_cpu()->running_thread->mother_proc;
+	vfs_get_absolute_path(path, (char *)args->args0, proc->cwd);
+	struct file *file = vfs_open_file(path);
+	if (file) {
+		vec_push(&proc->file_descriptors, file);
+		args->ret = proc->file_descriptors.length - 1;
+	} else
+		args->ret = -ENOENT;
+	kfree(path);
+}
+
+void syscall_read(struct syscall_arguments *args) {
+	args->ret = -ENOSYS;
 }

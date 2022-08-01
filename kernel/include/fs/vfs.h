@@ -3,6 +3,7 @@
 
 #include <klibc/vec.h>
 #include <locks/spinlock.h>
+#include <sched/syscall.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -55,5 +56,8 @@ struct fs_node *vfs_path_to_node(char *patha);
 struct file *vfs_find_file_in_node(struct fs_node *node, char *path);
 
 #define vfs_open_file(A) vfs_find_file_in_node(vfs_path_to_node(A), A);
+
+void syscall_open(struct syscall_arguments *args);
+void syscall_read(struct syscall_arguments *args);
 
 #endif

@@ -9,11 +9,14 @@ extern uint64_t syscall3(uint64_t syscall_number, uint64_t args0,
 						 uint64_t args1, uint64_t args2);
 
 void puts(char *string) {
-	syscall1(0, (uint64_t)string);
+	syscall1(0x67, (uint64_t)string);
+}
+
+int open(char *path, int32_t mode) {
+	syscall2(0x2, (uint64_t)path, mode);
 }
 
 void main(void) {
 	puts("Hello I am supposed to be the init\n");
-	if (syscall0(1) == 0xff)
-		puts("The computer is on!\n");
+	open("/fun/hi.txt", 0x2);
 }

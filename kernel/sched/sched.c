@@ -71,7 +71,7 @@ void sched_init(uint64_t args) {
 	vec_init(&threads);
 	vec_init(&processes);
 	vec_init(&threads);
-	syscall_register_handler(0, syscall_puts);
+	syscall_register_handler(0x67, syscall_puts);
 	syscall_register_handler(0x3c, syscall_exit);
 	syscall_register_handler(0x3e, syscall_kill);
 	process_create("kernel_tasks", 0, 5000, (uintptr_t)kernel_main, args, 0);
@@ -92,8 +92,10 @@ void process_create(char *name, uint8_t state, uint64_t runtime,
 	else
 		proc->process_pagemap = &kernel_pagemap;
 #endif
+	vec_init(&proc->file_descriptors);
 	vec_init(&proc->process_threads);
 	vec_push(&processes, proc);
+	strncpy(proc->cwd, "/", 256);
 	thread_create(pc_address, arguments, user, proc);
 	spinlock_drop(process_lock);
 }
@@ -158,8 +160,10 @@ void process_create_elf(char *name, uint8_t state, uint64_t runtime,
 		}
 	}
 #endif
+	vec_init(&proc->file_descriptors);
 	vec_init(&proc->process_threads);
 	vec_push(&processes, proc);
+	strncpy(proc->cwd, "/", 256);
 	kprintf("ELF entry point at 0x%p\n", header->e_entry);
 	thread_create((uintptr_t)header->e_entry, 0, 1, proc);
 	spinlock_drop(process_lock);

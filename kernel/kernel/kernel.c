@@ -7,10 +7,6 @@
 #include <sys/prcb.h>
 #include <sys/timer.h>
 
-void syscall_is_computer_on(struct syscall_arguments *args) {
-	args->ret = 0xFF;
-}
-
 void kernel_main(void *args) {
 	vfs_install_fs(&testfs);
 
@@ -22,9 +18,10 @@ void kernel_main(void *args) {
 
 	kprintf("Hello I am %s\n",
 			prcb_return_current_cpu()->running_thread->mother_proc->name);
-	syscall_register_handler(1, syscall_is_computer_on);
-
 	ramdisk_install(module_info[0], module_info[1]);
+
+	syscall_register_handler(0x0, syscall_read);
+	syscall_register_handler(0x2, syscall_open);
 
 	/*
 		We shouldn't directly read the file data but instead should call the
@@ -34,12 +31,7 @@ void kernel_main(void *args) {
 		avoided.
 	*/
 
-	struct file *file = vfs_open_file("/fun/hi.txt");
-
-	if (file)
-		kprintf("/fun/hi.txt: %s", file->data);
-
-	file = vfs_open_file("/bin/program64.elf");
+	struct file *file = vfs_open_file("/bin/program64.elf");
 
 	if (!file)
 		panic("No init found!\n");

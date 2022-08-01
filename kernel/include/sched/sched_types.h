@@ -1,6 +1,7 @@
 #ifndef SCHED_TYPES_H
 #define SCHED_TYPES_H
 
+#include <fs/vfs.h>
 #include <klibc/vec.h>
 #include <locks/spinlock.h>
 #include <stddef.h>
@@ -38,6 +39,8 @@ struct process {
 	enum process_states state;
 	uint64_t runtime;
 	thread_vec_t process_threads;
+	file_vec_t file_descriptors;
+	char cwd[256];
 };
 
 typedef vec_t(struct process *) process_vec_t;
