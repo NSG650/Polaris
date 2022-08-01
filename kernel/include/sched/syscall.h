@@ -20,5 +20,7 @@ typedef void (*syscall_handler_t)(struct syscall_arguments *);
 void syscall_install_handler(void);
 void syscall_register_handler(int n, void *handler);
 void syscall_handle(struct syscall_arguments *args);
+void syscall_helper_copy_to_user(uintptr_t user_addr, void *buffer,
+								 size_t count);
 
 #endif

@@ -200,6 +200,44 @@ level4:
 	pml1[pml1_entry] = phys_addr | flags;
 }
 
+// Only works for 4KiB pages
+uint64_t vmm_virt_to_phys(struct pagemap *pagemap, uint64_t virt_addr) {
+	size_t pml5_entry = (virt_addr & ((uint64_t)0x1FF << 48)) >> 48;
+	size_t pml4_entry = (virt_addr & ((uint64_t)0x1FF << 39)) >> 39;
+	size_t pml3_entry = (virt_addr & ((uint64_t)0x1FF << 30)) >> 30;
+	size_t pml2_entry = (virt_addr & ((uint64_t)0x1FF << 21)) >> 21;
+	size_t pml1_entry = (virt_addr & ((uint64_t)0x1FF << 12)) >> 12;
+
+	uint64_t *pml5, *pml4, *pml3, *pml2, *pml1;
+
+	if (five_level_paging_request.response != NULL) {
+		pml5 = pagemap->top_level;
+		goto level5;
+	} else {
+		pml4 = pagemap->top_level;
+		goto level4;
+	}
+
+level5:
+	pml4 = get_next_level(pml5, pml5_entry);
+level4:
+	pml3 = get_next_level(pml4, pml4_entry);
+
+	pml2 = get_next_level(pml3, pml3_entry);
+	pml1 = get_next_level(pml2, pml2_entry);
+
+	if (!(pml1[pml1_entry] & 1))
+		return 0;
+
+	return (pml1[pml1_entry]) & ~((uintptr_t)0xfff);
+}
+
+uint64_t vmm_virt_to_kernel(struct pagemap *pagemap, uint64_t virt_addr) {
+	uint64_t aligned_virtual_address = ALIGN_DOWN(virt_addr, PAGE_SIZE);
+	uint64_t phys_addr = vmm_virt_to_phys(pagemap, virt_addr);
+	return (phys_addr + MEM_PHYS_OFFSET + virt_addr - aligned_virtual_address);
+}
+
 void vmm_page_fault_handler(registers_t *reg) {
 	uint64_t faulting_address = read_cr("2");
 	bool present = reg->errorCode & 0x1;

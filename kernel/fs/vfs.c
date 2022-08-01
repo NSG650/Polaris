@@ -262,5 +262,11 @@ void syscall_open(struct syscall_arguments *args) {
 }
 
 void syscall_read(struct syscall_arguments *args) {
-	args->ret = -ENOSYS;
+	struct process *proc =
+		prcb_return_current_cpu()->running_thread->mother_proc;
+	struct file *file = proc->file_descriptors.data[args->args0];
+	uint8_t *data = kmalloc(args->args2);
+	file->read(file, args->args2, 0, data);
+	syscall_helper_copy_to_user(args->args1, data, args->args2);
+	kfree(data);
 }

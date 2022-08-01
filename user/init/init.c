@@ -16,7 +16,15 @@ int open(char *path, int32_t mode) {
 	syscall2(0x2, (uint64_t)path, mode);
 }
 
+void read(int fd, void *data, size_t count) {
+	syscall3(0x0, fd, (uint64_t)data, count);
+}
+
 void main(void) {
 	puts("Hello I am supposed to be the init\n");
-	open("/fun/hi.txt", 0x2);
+	int fd = open("/fun/hi.txt", 0x2);
+	char fun[128] = {0};
+	puts("Reading /fun/hi.txt: \n");
+	read(fd, fun, 128);
+	puts(fun);
 }
