@@ -17,11 +17,11 @@
 #include <sys/timer.h>
 
 prcb_vec_t prcbs;
-uint8_t bsp_lapic_core;
-uint64_t cpu_count = 0;
-uint64_t initialised_cores = 0;
+static uint8_t bsp_lapic_core = 0;
+static size_t cpu_count = 0;
+static size_t initialized_cores = 0;
 bool is_smp = false;
-lock_t smp_lock;
+lock_t smp_lock = 0;
 
 char prcb_names[21][3] = {"Aa", "Ab", "E",	"H",  "Ua", "Ub", "Z",
 						  "F",	"Ga", "Gb", "Gc", "Gd", "Ja", "Jb",
@@ -34,6 +34,32 @@ static void smp_init_core(struct limine_smp_info *smp_info) {
 	cli();
 	gdt_init();
 	isr_install();
+
+	vmm_switch_pagemap(&kernel_pagemap);
+
+	struct prcb *ap = kmalloc(sizeof(struct prcb));
+
+	if (cpu_count > 21) {
+		ltoa(smp_info->lapic_id, ap->name, 16);
+	} else {
+		strcpy(ap->name, prcb_names[smp_info->lapic_id]);
+	}
+
+	ap->cpu_number = smp_info->lapic_id;
+	ap->running_thread = NULL;
+	ap->thread_index = 0;
+
+	ap->cpu_tss.rsp0 = (uint64_t)pmm_allocz(STACK_SIZE / PAGE_SIZE);
+	ap->cpu_tss.rsp0 += MEM_PHYS_OFFSET + STACK_SIZE;
+
+	ap->cpu_tss.ist1 = (uint64_t)pmm_allocz(STACK_SIZE / PAGE_SIZE);
+	ap->cpu_tss.ist1 += MEM_PHYS_OFFSET + STACK_SIZE;
+
+	vec_push(&prcbs, ap);
+	set_kernel_gs((uint64_t)prcbs.data[ap->cpu_number]);
+	set_user_gs((uint64_t)prcbs.data[ap->cpu_number]);
+	gdt_load_tss((size_t)&prcb_return_current_cpu()->cpu_tss);
+
 	// SSE/SSE2
 	uint64_t cr0 = 0;
 	cr0 = read_cr("0");
@@ -78,32 +104,19 @@ static void smp_init_core(struct limine_smp_info *smp_info) {
 		write_cr("4", cr4);
 	}
 
-	vmm_switch_pagemap(&kernel_pagemap);
-	struct prcb *ap = kmalloc(sizeof(struct prcb));
-	if (cpu_count > 21) {
-		ltoa(smp_info->lapic_id, ap->name, 16);
-	}
-	strcpy(ap->name, prcb_names[smp_info->lapic_id]);
-	ap->cpu_number = smp_info->lapic_id;
-	ap->running_thread = NULL;
-	ap->thread_index = 0;
-	// ap->cpu_tss.rsp0 = smp_info->target_stack;
-	ap->cpu_tss.ist1 = (uint64_t)pmm_allocz(STACK_SIZE / PAGE_SIZE);
-	ap->cpu_tss.ist1 += MEM_PHYS_OFFSET + STACK_SIZE;
-	vec_push(&prcbs, ap);
-	set_kernel_gs((uint64_t)prcbs.data[ap->cpu_number]);
-	set_user_gs((uint64_t)prcbs.data[ap->cpu_number]);
-	gdt_load_tss((size_t)&prcb_return_current_cpu()->cpu_tss);
-	kprintf("CPU%d: %s online!\n", prcb_return_current_cpu()->cpu_number,
+	lapic_init(smp_info->lapic_id);
+
+	kprintf("CPU%u: %s online!\n", prcb_return_current_cpu()->cpu_number,
 			prcb_return_current_cpu()->name);
-	initialised_cores++;
+
+	initialized_cores++;
 	spinlock_drop(smp_lock);
 	if (prcb_return_current_cpu()->cpu_number != bsp_lapic_core) {
-		lapic_init(smp_info->lapic_id);
-		// timer_sched_oneshot(32, 20000);
+		timer_sched_oneshot(32, 20000);
 		sti();
 		for (;;)
 			halt();
+		__builtin_unreachable();
 	}
 }
 
@@ -119,17 +132,17 @@ void smp_init(struct limine_smp_response *smp_info) {
 			continue;
 		}
 		spinlock_acquire_or_wait(smp_lock);
-		smp_info->cpus[i]->goto_address = (limine_goto_address)smp_init_core;
+		smp_info->cpus[i]->goto_address = smp_init_core;
 		spinlock_drop(smp_lock);
 		timer_sleep(100);
 	}
-	while (initialised_cores != cpu_count)
-		;
+	while (initialized_cores != cpu_count)
+		pause();
 	is_smp = true;
-	kprintf("SMP: %d CPUs installed in the system\n",
+	kprintf("SMP: %u CPUs installed in the system\n",
 			prcb_return_installed_cpus());
 }
 
-uint64_t prcb_return_installed_cpus(void) {
-	return initialised_cores;
+size_t prcb_return_installed_cpus(void) {
+	return initialized_cores;
 }

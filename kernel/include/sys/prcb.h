@@ -39,6 +39,6 @@ extern prcb_vec_t prcbs;
 
 #endif
 
-uint64_t prcb_return_installed_cpus(void);
+size_t prcb_return_installed_cpus(void);
 
 #endif

@@ -7,7 +7,7 @@
 #include <sys/prcb.h>
 #include <sys/timer.h>
 
-lock_t resched_lock;
+lock_t resched_lock = 0;
 extern void resched_context_switch(registers_t *reg);
 uint64_t tick = 0;
 

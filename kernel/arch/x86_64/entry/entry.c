@@ -88,7 +88,6 @@ void arch_entry(void) {
 	isr_register_handler(0x3, breakpoint_handler);
 	acpi_init(rsdp_request.response->address);
 	pic_init();
-	apic_init();
 	smp_init(smp_request.response);
 	ioapic_redirect_irq(0, 48);
 	syscall_install_handler();

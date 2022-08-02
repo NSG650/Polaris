@@ -12,7 +12,7 @@
 
 static uintptr_t lapic_addr = 0;
 static bool x2apic = false;
-uint32_t tick_in_10ms;
+uint32_t tick_in_10ms = 0;
 
 // Converts xAPIC MMIO offset into x2APIC MSR
 static uint32_t reg_to_x2apic(uint32_t reg) {
@@ -75,6 +75,9 @@ static void lapic_set_nmi(uint8_t vec, uint8_t current_processor_id,
 }
 
 void lapic_init(uint8_t cpu_id) {
+	if (lapic_addr == 0) {
+		lapic_addr = acpi_get_lapic();
+	}
 	kprintf("LAPIC: Setting LAPIC on CPU%d\n", cpu_id);
 	// Enable APIC and x2APIC if available
 	uint64_t apic_msr = rdmsr(0x1B);
@@ -138,9 +141,4 @@ void apic_send_ipi(uint8_t lapic_id, uint8_t vector) {
 		lapic_write(0x310, (lapic_id << 24));
 		lapic_write(0x300, vector);
 	}
-}
-
-void apic_init(void) {
-	lapic_addr = acpi_get_lapic();
-	lapic_init(madt_local_apics.data[0]->processor_id);
 }
