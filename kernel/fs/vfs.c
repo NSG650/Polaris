@@ -143,7 +143,8 @@ struct fs_node *vfs_path_to_node(char *patha) {
 	return da_node;
 }
 
-struct file *vfs_find_file_in_node(struct fs_node *node, char *path) {
+struct file *vfs_find_file_in_node(struct fs_node *node, char *path,
+								   uint8_t fdn) {
 	// just copy the string till '/' then reverse it
 	// there you go
 	// your file name
@@ -167,6 +168,23 @@ struct file *vfs_find_file_in_node(struct fs_node *node, char *path) {
 			f = node->files.data[i];
 			break;
 		}
+	}
+
+	// create the file/folder
+	// 0x0 - don't create
+	// 0x1 - create file
+	// 0x2 - create folder
+
+	if (f == NULL && fdn) {
+		if (fdn & 0x1) {
+			node->fs->create(node, file_name);
+			kfree(file_name);
+		}
+		if (fdn & 0x2) {
+			node->fs->mkdir(node, file_name);
+			kfree(file_name);
+		}
+		f = vfs_find_file_in_node(node, path, 0x0);
 	}
 
 	kfree(file_name);
@@ -252,7 +270,7 @@ void syscall_open(struct syscall_arguments *args) {
 	struct process *proc =
 		prcb_return_current_cpu()->running_thread->mother_proc;
 	vfs_get_absolute_path(path, (char *)args->args0, proc->cwd);
-	struct file *file = vfs_open_file(path);
+	struct file *file = vfs_open_file(path, args->args1);
 	if (file) {
 		vec_push(&proc->file_descriptors, file);
 		args->ret = proc->file_descriptors.length - 1;
@@ -265,8 +283,23 @@ void syscall_read(struct syscall_arguments *args) {
 	struct process *proc =
 		prcb_return_current_cpu()->running_thread->mother_proc;
 	struct file *file = proc->file_descriptors.data[args->args0];
+	if (!file) {
+		args->ret = -ENOENT;
+		return;
+	}
 	uint8_t *data = kmalloc(args->args2);
 	file->read(file, args->args2, 0, data);
 	syscall_helper_copy_to_user(args->args1, data, args->args2);
 	kfree(data);
+}
+
+void syscall_write(struct syscall_arguments *args) {
+	struct process *proc =
+		prcb_return_current_cpu()->running_thread->mother_proc;
+	struct file *file = proc->file_descriptors.data[args->args0];
+	if (!file) {
+		args->ret = -ENOENT;
+		return;
+	}
+	file->write(file, args->args2, 0, (void *)args->args1);
 }

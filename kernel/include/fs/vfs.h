@@ -53,11 +53,13 @@ struct fs_node *vfs_node_create(struct fs_node *parent, char *name);
 bool vfs_node_mount(struct fs_node *node, char *target, char *fs);
 void vfs_dump_fs_tree(struct fs_node *node);
 struct fs_node *vfs_path_to_node(char *patha);
-struct file *vfs_find_file_in_node(struct fs_node *node, char *path);
+struct file *vfs_find_file_in_node(struct fs_node *node, char *path,
+								   uint8_t fdn);
 
-#define vfs_open_file(A) vfs_find_file_in_node(vfs_path_to_node(A), A);
+#define vfs_open_file(A, B) vfs_find_file_in_node(vfs_path_to_node(A), A, B);
 
 void syscall_open(struct syscall_arguments *args);
 void syscall_read(struct syscall_arguments *args);
+void syscall_write(struct syscall_arguments *args);
 
 #endif

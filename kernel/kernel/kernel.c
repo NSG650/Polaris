@@ -21,6 +21,7 @@ void kernel_main(void *args) {
 	ramdisk_install(module_info[0], module_info[1]);
 
 	syscall_register_handler(0x0, syscall_read);
+	syscall_register_handler(0x1, syscall_write);
 	syscall_register_handler(0x2, syscall_open);
 
 	/*
@@ -31,7 +32,7 @@ void kernel_main(void *args) {
 		avoided.
 	*/
 
-	struct file *file = vfs_open_file("/bin/program64.elf");
+	struct file *file = vfs_open_file("/bin/program64.elf", 0x0);
 
 	if (!file)
 		panic("No init found!\n");
