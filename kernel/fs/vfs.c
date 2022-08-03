@@ -275,18 +275,18 @@ void syscall_open(struct syscall_arguments *args) {
 		vec_push(&proc->file_descriptors, file);
 		args->ret = proc->file_descriptors.length - 1;
 	} else
-		args->ret = -ENOENT;
+		prcb_return_current_cpu()->errno_val = -ENONET;
 	kfree(path);
 }
 
 void syscall_read(struct syscall_arguments *args) {
 	struct process *proc =
 		prcb_return_current_cpu()->running_thread->mother_proc;
-	struct file *file = proc->file_descriptors.data[args->args0];
-	if (!file) {
-		args->ret = -ENOENT;
+	if ((int)args->args0 > proc->file_descriptors.length) {
+		prcb_return_current_cpu()->errno_val = -ENONET;
 		return;
 	}
+	struct file *file = proc->file_descriptors.data[args->args0];
 	uint8_t *data = kmalloc(args->args2);
 	args->ret = file->read(file, data, 0, args->args2);
 	syscall_helper_copy_to_user(args->args1, data, args->args2);
@@ -296,10 +296,10 @@ void syscall_read(struct syscall_arguments *args) {
 void syscall_write(struct syscall_arguments *args) {
 	struct process *proc =
 		prcb_return_current_cpu()->running_thread->mother_proc;
-	struct file *file = proc->file_descriptors.data[args->args0];
-	if (!file) {
-		args->ret = -ENOENT;
+	if ((int)args->args0 > proc->file_descriptors.length) {
+		prcb_return_current_cpu()->errno_val = -ENONET;
 		return;
 	}
-	args->ret = file->write(file, (void *)args->args1, 0, args->args2);
+	struct file *file = proc->file_descriptors.data[args->args0];
+	file->write(file, args->args2, 0, (void *)args->args1);
 }

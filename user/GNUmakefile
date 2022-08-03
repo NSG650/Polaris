@@ -1,8 +1,10 @@
 CONFIG_ARCH ?= x86_64
 
-CFILES := $(wildcard */*.c)
+CINITFILES := $(wildcard init/*.c)
+CTESTFILES := $(wildcard test/*.c)
 ASMFILES := $(wildcard $(CONFIG_ARCH)/*.asm)
-OBJ := $(CFILES:.c=.o) $(ASMFILES:.asm=.o)
+INITOBJ := $(CINITFILES:.c=.o) $(ASMFILES:.asm=.o)
+TESTOBJ := $(CTESTFILES:.c=.o) $(ASMFILES:.asm=.o)
 
 ifeq ($(CONFIG_ARCH),x86_64)
 	AS := nasm
@@ -14,8 +16,15 @@ ifeq ($(CONFIG_ARCH),x86_64)
 endif
 
 .PHONY: all
-all: $(OBJ)
-	$(LD) $(LDFLAGS) $^ -o program64.elf
+all:
+	$(MAKE) init
+	$(MAKE) test
+
+init: $(INITOBJ)
+	$(LD) $(LDFLAGS) $^ -o init.elf
+
+test: $(TESTOBJ)
+	$(LD) $(LDFLAGS) $^ -o test.elf
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -25,4 +34,4 @@ all: $(OBJ)
 
 .PHONY: clean
 clean:
-	rm -rf *.elf $(OBJ)
+	rm -rf *.elf $(INITOBJ) $(TESTOBJ)

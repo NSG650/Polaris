@@ -31,6 +31,7 @@ struct thread {
 };
 
 typedef vec_t(struct thread *) thread_vec_t;
+typedef vec_t(struct process *) process_vec_t;
 
 struct process {
 	char name[256];
@@ -41,9 +42,9 @@ struct process {
 	thread_vec_t process_threads;
 	file_vec_t file_descriptors;
 	char cwd[256];
+	struct process *parent_process;
+	process_vec_t child_processes;
 };
-
-typedef vec_t(struct process *) process_vec_t;
 
 #define STACK_SIZE 32768
 

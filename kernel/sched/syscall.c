@@ -1,15 +1,12 @@
 #include <errno.h>
 #include <sched/syscall.h>
+#include <sys/prcb.h>
 
 syscall_handler_t syscalls[256] = {NULL};
 
-void syscall_register_handler(int n, void *handler) {
-	syscalls[n] = handler;
-}
-
 void syscall_handle(struct syscall_arguments *args) {
 	if (syscalls[args->syscall_nr] == NULL) {
-		args->ret = -ENOSYS;
+		prcb_return_current_cpu()->errno_val = -ENOSYS;
 		return;
 	}
 	syscalls[args->syscall_nr](args);

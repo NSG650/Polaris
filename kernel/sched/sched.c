@@ -66,19 +66,32 @@ void syscall_exit(struct syscall_arguments *args) {
 	process_kill(prcb_return_current_cpu()->running_thread->mother_proc);
 }
 
+void syscall_getpid(struct syscall_arguments *args) {
+	args->ret = prcb_return_current_cpu()->running_thread->mother_proc->pid;
+}
+
+void syscall_getppid(struct syscall_arguments *args) {
+	args->ret = prcb_return_current_cpu()
+					->running_thread->mother_proc->parent_process->pid;
+}
+
 void sched_init(uint64_t args) {
 	kprintf("SCHED: Creating kernel thread\n");
 	vec_init(&threads);
 	vec_init(&processes);
 	vec_init(&threads);
+	syscall_register_handler(0x27, syscall_getpid);
 	syscall_register_handler(0x67, syscall_puts);
+	syscall_register_handler(0x6e, syscall_getppid);
 	syscall_register_handler(0x3c, syscall_exit);
 	syscall_register_handler(0x3e, syscall_kill);
-	process_create("kernel_tasks", 0, 5000, (uintptr_t)kernel_main, args, 0);
+	process_create("kernel_tasks", 0, 5000, (uintptr_t)kernel_main, args, 0,
+				   NULL);
 }
 
 void process_create(char *name, uint8_t state, uint64_t runtime,
-					uintptr_t pc_address, uint64_t arguments, bool user) {
+					uintptr_t pc_address, uint64_t arguments, bool user,
+					struct process *parent_process) {
 	spinlock_acquire_or_wait(process_lock);
 	struct process *proc = kmalloc(sizeof(struct process));
 	strncpy(proc->name, name, 256);
@@ -94,14 +107,17 @@ void process_create(char *name, uint8_t state, uint64_t runtime,
 #endif
 	vec_init(&proc->file_descriptors);
 	vec_init(&proc->process_threads);
+	vec_init(&proc->child_processes);
 	vec_push(&processes, proc);
 	strncpy(proc->cwd, "/", 256);
+	if (parent_process)
+		vec_push(&parent_process->child_processes, proc);
 	thread_create(pc_address, arguments, user, proc);
 	spinlock_drop(process_lock);
 }
 
 void process_create_elf(char *name, uint8_t state, uint64_t runtime,
-						uint8_t *binary) {
+						uint8_t *binary, struct process *parent_process) {
 	spinlock_acquire_or_wait(process_lock);
 	Elf64_Ehdr *header = (Elf64_Ehdr *)binary;
 	if (header->e_type != ET_EXEC) {
@@ -161,10 +177,12 @@ void process_create_elf(char *name, uint8_t state, uint64_t runtime,
 	}
 #endif
 	vec_init(&proc->file_descriptors);
+	vec_init(&proc->child_processes);
 	vec_init(&proc->process_threads);
 	vec_push(&processes, proc);
 	strncpy(proc->cwd, "/", 256);
-	kprintf("ELF entry point at 0x%p\n", header->e_entry);
+	if (parent_process)
+		vec_push(&parent_process->child_processes, proc);
 	thread_create((uintptr_t)header->e_entry, 0, 1, proc);
 	spinlock_drop(process_lock);
 }
@@ -213,6 +231,20 @@ void process_kill(struct process *proc) {
 	spinlock_acquire_or_wait(process_lock);
 	for (int i = 0; i < proc->process_threads.length; i++)
 		thread_kill(proc->process_threads.data[i], false);
+
+	vec_deinit(&proc->file_descriptors);
+	if (proc->parent_process)
+		vec_remove(&proc->parent_process->child_processes, proc);
+
+	// child processes are now owned by the init
+	for (int i = 0; i < proc->child_processes.length; i++) {
+		struct process *child_process = proc->child_processes.data[i];
+		child_process->parent_process =
+			processes.data[1]; // the init proc is the second process
+							   // first one is the kernel
+		vec_push(&processes.data[1]->child_processes, child_process);
+	}
+
 	vec_remove(&processes, proc);
 	spinlock_drop(process_lock);
 	sched_resched_now();

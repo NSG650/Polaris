@@ -16,6 +16,7 @@ struct prcb {
 	char name[3];
 	struct thread *running_thread;
 	uint64_t thread_index;
+	uint64_t errno_val;
 #if defined(__x86_64__)
 	struct tss cpu_tss;
 #endif

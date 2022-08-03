@@ -32,13 +32,14 @@ void kernel_main(void *args) {
 		avoided.
 	*/
 
-	struct file *file = vfs_open_file("/bin/program64.elf", 0x0);
+	struct file *file = vfs_open_file("/bin/init.elf", 0x0);
 
 	if (!file)
 		panic("No init found!\n");
 
-	kprintf("Running init binary /bin/program64.elf\n");
-	process_create_elf("init", PROCESS_READY_TO_RUN, 2000, file->data);
+	kprintf("Running init binary /bin/init.elf\n");
+	process_create_elf("init", PROCESS_READY_TO_RUN, 2000, file->data,
+					   prcb_return_current_cpu()->running_thread->mother_proc);
 	for (;;)
 		;
 }

@@ -3,7 +3,7 @@ CONFIG_ARCH ?= x86_64
 NAME := polaris
 ISO_IMAGE := $(NAME).iso
 KERNEL_ELF = $(NAME).elf
-PROGRAM_ELF = program64.elf
+PROGRAM_ELF = $(wildcard user/*.elf)
 
 .PHONY: all
 all: $(ISO_IMAGE)
@@ -23,7 +23,7 @@ user:
 $(ISO_IMAGE): limine kernel user
 	rm -rf build
 	mkdir -p build
-	cp user/$(PROGRAM_ELF) root/bin
+	cp $(PROGRAM_ELF) root/bin
 	$(MAKE) -C root
 	cp kernel/$(KERNEL_ELF) ramdisk.tar.gz \
 		limine.cfg limine/limine.sys limine/limine-cd.bin limine/limine-cd-efi.bin build/
