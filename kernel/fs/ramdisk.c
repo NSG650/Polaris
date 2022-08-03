@@ -31,7 +31,8 @@ enum {
 	USTAR_BLOCK_DEV = '4',
 	USTAR_DIRECTORY = '5',
 	USTAR_FIFO = '6',
-	USTAR_CONTIGOUS = '7'
+	USTAR_CONTIGOUS = '7',
+	USTAR_GNU_LONG_PATH = 'L'
 };
 
 static uint64_t octal_to_int(const char *s) {
@@ -45,34 +46,29 @@ static uint64_t octal_to_int(const char *s) {
 }
 
 void ramdisk_install(uintptr_t ramdisk_address, uint64_t ramdisk_size) {
-	struct ustar_header *h = (void *)ramdisk_address;
-	for (;;) {
-		if (strncmp(h->signature, "ustar", 5))
-			break;
-		uintptr_t size = octal_to_int(h->size);
+	struct ustar_header *current_file = (void *)ramdisk_address;
+	char *name_override = NULL;
 
-		switch (h->type) {
-			case USTAR_DIRECTORY: {
-				char *fun = kmalloc(256);
-				memset(fun, 0, 256);
-				strcat(fun, "/");
-				size_t s = strlen(h->name);
-				h->name[s - 1] = '\0';
-				strcat(fun, h->name);
-				struct fs_node *node = vfs_path_to_node(fun);
-				if (node) {
-					node->fs->mkdir(node, h->name);
-				}
-				kfree(fun);
-				break;
-			}
+	while (strncmp(current_file->signature, "ustar", 5) == 0) {
+		char *name = current_file->name;
+		if (name_override != NULL) {
+			name = name_override;
+			name_override = NULL;
+		}
+
+		if (strcmp(name, "./") == 0)
+			continue;
+
+		size_t size = octal_to_int(current_file->size);
+
+		switch (current_file->type) {
 			case USTAR_REGULAR:
 			case USTAR_NORMAL:
 			case USTAR_CONTIGOUS: {
 				char *fun = kmalloc(256);
 				memset(fun, 0, 256);
 				strcat(fun, "/");
-				strcat(fun, h->name);
+				strcat(fun, name);
 				struct fs_node *node = vfs_path_to_node(fun);
 				if (node) {
 					char *file_name = kmalloc(strlen(fun) + 1);
@@ -88,7 +84,7 @@ void ramdisk_install(uintptr_t ramdisk_address, uint64_t ramdisk_size) {
 					node->fs->create(node, file_name);
 					struct file *ab = node->fs->open(node, file_name);
 					if (ab) {
-						void *buf = (void *)h + 512;
+						void *buf = (void *)current_file + 512;
 						kfree(ab->data);
 						ab->allocated_size = size;
 						ab->write = NULL;
@@ -99,12 +95,28 @@ void ramdisk_install(uintptr_t ramdisk_address, uint64_t ramdisk_size) {
 				kfree(fun);
 				break;
 			}
+			case USTAR_DIRECTORY: {
+				char *fun = kmalloc(256);
+				memset(fun, 0, 256);
+				strcat(fun, "/");
+				size_t s = strlen(name);
+				name[s - 1] = '\0';
+				strcat(fun, name);
+				struct fs_node *node = vfs_path_to_node(fun);
+				if (node) {
+					node->fs->mkdir(node, name);
+				}
+				kfree(fun);
+				break;
+			}
+			case USTAR_GNU_LONG_PATH: {
+				name_override = (void *)current_file + 512;
+				name_override[size] = 0;
+				break;
+			}
 		}
 
-		h = (void *)h + 512 + ALIGN_UP(size, 512);
-
-		if ((uintptr_t)h >= ramdisk_address + ramdisk_size)
-			break;
+		current_file = (void *)current_file + 512 + ALIGN_UP(size, 512);
 	}
 	kprintf("VFS: Loaded ramdisk of size %u\n", ramdisk_size);
 }
