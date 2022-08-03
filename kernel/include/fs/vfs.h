@@ -42,8 +42,8 @@ struct file {
 	int32_t type;
 	size_t size;
 	size_t allocated_size;
-	uint32_t (*read)(struct file *, size_t, size_t, uint8_t *);
-	uint32_t (*write)(struct file *, size_t, size_t, uint8_t *);
+	ssize_t (*read)(struct file *, void *, off_t, size_t);
+	ssize_t (*write)(struct file *, const void *, off_t, size_t);
 	struct fs_node *(*readdir)(struct file *);
 	uint8_t *data;
 };

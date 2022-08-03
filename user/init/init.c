@@ -16,12 +16,12 @@ int open(char *path, int32_t mode) {
 	return syscall2(0x2, (uint64_t)path, mode);
 }
 
-void read(int fd, void *data, size_t count) {
-	syscall3(0x0, fd, (uint64_t)data, count);
+int64_t read(int fd, void *data, size_t count) {
+	return syscall3(0x0, fd, (uint64_t)data, count);
 }
 
-void write(int fd, void *data, size_t count) {
-	syscall3(0x1, fd, (uint64_t)data, count);
+int64_t write(int fd, void *data, size_t count) {
+	return syscall3(0x1, fd, (uint64_t)data, count);
 }
 
 void main(void) {

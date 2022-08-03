@@ -1,30 +1,42 @@
 #include <fs/vfs.h>
 #include <klibc/mem.h>
 
-uint32_t testfs_read(struct file *this, size_t count, size_t offset,
-					 uint8_t *out) {
+ssize_t tmpfs_read(struct file *this, void *buf, off_t offset, size_t count) {
 	spinlock_acquire_or_wait(this->lock);
-	if (offset + count > (size_t)this->size)
-		count -= (offset + count) - this->size;
-	memcpy(out, this->data + offset, count);
+
+	size_t actual_count = count;
+
+	if ((off_t)(offset + count) >= (off_t)this->size)
+		actual_count = count - ((offset + count) - this->size);
+
+	memcpy(buf, this->data + offset, actual_count);
 	spinlock_drop(this->lock);
-	return 0;
+
+	return actual_count;
 }
 
-uint32_t testfs_write(struct file *this, size_t count, size_t offset,
-					  uint8_t *in) {
+ssize_t tmpfs_write(struct file *this, const void *buf, off_t offset,
+					size_t count) {
 	spinlock_acquire_or_wait(this->lock);
-	if (offset + count > this->allocated_size) {
-		this->allocated_size *= 2;
-		krealloc(this->data, this->allocated_size);
+
+	if (offset + count >= this->allocated_size) {
+		size_t new_capacity = this->allocated_size;
+		while (offset + count >= new_capacity)
+			new_capacity *= 2;
+
+		this->data = krealloc(this->data, new_capacity);
+		this->allocated_size = new_capacity;
 	}
-	memcpy(this->data + offset, in, count);
+
+	memcpy(this->data + offset, buf, count);
 	this->size += (offset + count) - this->size;
+
 	spinlock_drop(this->lock);
-	return 0;
+
+	return (ssize_t)count;
 }
 
-struct file *testfs_open(struct fs_node *node, char *name) {
+struct file *tmpfs_open(struct fs_node *node, char *name) {
 	for (int i = 0; i < node->files.length; i++) {
 		if (!strcmp(node->files.data[i]->name, name))
 			return node->files.data[i];
@@ -32,7 +44,7 @@ struct file *testfs_open(struct fs_node *node, char *name) {
 	return NULL;
 }
 
-uint32_t testfs_delete(struct fs_node *node, char *name) {
+uint32_t tmpfs_delete(struct fs_node *node, char *name) {
 	struct file *filex = NULL;
 	for (int i = 0; i < node->files.length; i++) {
 		if (!strcmp(node->files.data[i]->name, name)) {
@@ -50,7 +62,7 @@ uint32_t testfs_delete(struct fs_node *node, char *name) {
 		return 1;
 }
 
-uint32_t testfs_create(struct fs_node *node, char *name) {
+uint32_t tmpfs_create(struct fs_node *node, char *name) {
 	struct file *new = kmalloc(sizeof(struct file));
 	new->name = name;
 	new->size = 0;
@@ -58,8 +70,8 @@ uint32_t testfs_create(struct fs_node *node, char *name) {
 	new->uid = 0;
 	new->gid = 0;
 	new->lock = 0;
-	new->read = testfs_read;
-	new->write = testfs_write;
+	new->read = tmpfs_read;
+	new->write = tmpfs_write;
 	new->readdir = NULL;
 	new->type = S_IFMT &S_IFREG;
 	new->data = kmalloc(new->allocated_size);
@@ -67,14 +79,14 @@ uint32_t testfs_create(struct fs_node *node, char *name) {
 	return 0;
 }
 
-struct fs_node *testfs_readdir(struct file *file) {
+struct fs_node *tmpfs_readdir(struct file *file) {
 	if (S_ISDIR(file->type)) {
 		return (struct fs_node *)file->data;
 	}
 	return NULL;
 }
 
-uint32_t testfs_mkdir(struct fs_node *node, char *name) {
+uint32_t tmpfs_mkdir(struct fs_node *node, char *name) {
 	struct file *new = kmalloc(sizeof(struct file));
 	new->name = name;
 	new->size = 0;
@@ -84,7 +96,7 @@ uint32_t testfs_mkdir(struct fs_node *node, char *name) {
 	new->lock = 0;
 	new->read = NULL;
 	new->write = NULL;
-	new->readdir = testfs_readdir;
+	new->readdir = tmpfs_readdir;
 	new->type = S_IFMT &S_IFDIR;
 	new->data = kmalloc(new->allocated_size);
 
@@ -104,8 +116,8 @@ uint32_t testfs_mkdir(struct fs_node *node, char *name) {
 	return 0;
 }
 
-struct fs testfs = {.name = "testfs",
-					.open = testfs_open,
-					.create = testfs_create,
-					.delete = testfs_delete,
-					.mkdir = testfs_mkdir};
+struct fs tmpfs = {.name = "tmpfs",
+				   .open = tmpfs_open,
+				   .create = tmpfs_create,
+				   .delete = tmpfs_delete,
+				   .mkdir = tmpfs_mkdir};

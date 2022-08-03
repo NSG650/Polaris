@@ -3,6 +3,6 @@
 
 #include <fs/vfs.h>
 
-extern struct fs testfs;
+extern struct fs tmpfs;
 
 #endif

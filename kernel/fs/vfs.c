@@ -288,7 +288,7 @@ void syscall_read(struct syscall_arguments *args) {
 		return;
 	}
 	uint8_t *data = kmalloc(args->args2);
-	file->read(file, args->args2, 0, data);
+	args->ret = file->read(file, data, 0, args->args2);
 	syscall_helper_copy_to_user(args->args1, data, args->args2);
 	kfree(data);
 }
@@ -301,5 +301,5 @@ void syscall_write(struct syscall_arguments *args) {
 		args->ret = -ENOENT;
 		return;
 	}
-	file->write(file, args->args2, 0, (void *)args->args1);
+	args->ret = file->write(file, (void *)args->args1, 0, args->args2);
 }

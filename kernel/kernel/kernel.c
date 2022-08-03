@@ -1,6 +1,6 @@
 #include <debug/debug.h>
 #include <fs/ramdisk.h>
-#include <fs/testfs.h>
+#include <fs/tmpfs.h>
 #include <fs/vfs.h>
 #include <kernel.h>
 #include <sched/sched.h>
@@ -8,10 +8,10 @@
 #include <sys/timer.h>
 
 void kernel_main(void *args) {
-	vfs_install_fs(&testfs);
+	vfs_install_fs(&tmpfs);
 
 	struct fs_node *root_node = vfs_node_create(NULL, "root");
-	vfs_node_mount(root_node, "/", "testfs");
+	vfs_node_mount(root_node, "/", "tmpfs");
 
 	uint64_t *module_info = (uint64_t *)args;
 	kprintf("Ramdisk located at 0x%p\n", module_info[0]);
