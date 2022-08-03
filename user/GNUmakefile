@@ -16,9 +16,7 @@ ifeq ($(CONFIG_ARCH),x86_64)
 endif
 
 .PHONY: all
-all:
-	$(MAKE) init
-	$(MAKE) test
+all: init test
 
 init: $(INITOBJ)
 	$(LD) $(LDFLAGS) $^ -o init.elf

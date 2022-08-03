@@ -19,6 +19,7 @@ enum process_states { PROCESS_NORMAL = 0, PROCESS_READY_TO_RUN };
 struct process;
 
 struct thread {
+	uint64_t errno;
 	int64_t tid;
 	registers_t reg;
 	lock_t lock;
