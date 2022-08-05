@@ -28,6 +28,7 @@ struct thread {
 	uint64_t stack;
 	uint64_t kernel_stack;
 	uint64_t sleeping_till;
+	void *fpu_storage;
 	struct process *mother_proc;
 };
 

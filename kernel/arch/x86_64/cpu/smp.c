@@ -16,6 +16,10 @@
 #include <sys/prcb.h>
 #include <sys/timer.h>
 
+size_t fpu_storage_size = 0;
+void (*fpu_save)(void *ctx) = NULL;
+void (*fpu_restore)(void *ctx) = NULL;
+
 prcb_vec_t prcbs;
 static uint8_t bsp_lapic_core = 0;
 static size_t cpu_count = 0;
@@ -103,6 +107,10 @@ static void smp_init_core(struct limine_smp_info *smp_info) {
 		cr4 |= (1 << 11); // Enable UMIP
 		write_cr("4", cr4);
 	}
+
+	fpu_storage_size = 512;
+	fpu_save = fxsave;
+	fpu_restore = fxrstor;
 
 	lapic_init(smp_info->lapic_id);
 

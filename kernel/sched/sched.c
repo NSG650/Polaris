@@ -1,4 +1,5 @@
 #include <asm/asm.h>
+#include <cpu/smp.h>
 #include <debug/debug.h>
 #include <errno.h>
 #include <kernel.h>
@@ -220,6 +221,16 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 	}
 	thrd->reg.rflags = 0x202;
 #endif
+	thrd->fpu_storage =
+		pmm_allocz(DIV_ROUNDUP(fpu_storage_size, PAGE_SIZE)) + MEM_PHYS_OFFSET;
+	if (user) {
+		fpu_restore(thrd->fpu_storage);
+		uint16_t default_fcw = 0b1100111111;
+		asm volatile("fldcw %0" ::"m"(default_fcw) : "memory");
+		uint32_t default_mxcsr = 0b1111110000000;
+		asm volatile("ldmxcsr %0" ::"m"(default_mxcsr) : "memory");
+		fpu_save(thrd->fpu_storage);
+	}
 	thrd->state = THREAD_READY_TO_RUN;
 	thrd->sleeping_till = 0;
 	vec_push(&threads, thrd);

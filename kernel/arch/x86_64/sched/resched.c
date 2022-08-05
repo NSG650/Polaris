@@ -1,4 +1,5 @@
 #include <asm/asm.h>
+#include <cpu/smp.h>
 #include <debug/debug.h>
 #include <klibc/mem.h>
 #include <mm/vmm.h>
@@ -34,6 +35,7 @@ void resched(registers_t *reg) {
 	if (running_thrd) {
 		running_thrd->reg = *reg;
 		running_thrd->stack = prcb_return_current_cpu()->user_stack;
+		fpu_save(running_thrd->fpu_storage);
 		running_thrd->state = THREAD_READY_TO_RUN;
 		spinlock_drop(running_thrd->lock);
 	}
@@ -51,6 +53,8 @@ void resched(registers_t *reg) {
 			halt();
 	}
 	running_thrd = threads.data[nex_index];
+	fpu_restore(running_thrd->fpu_storage);
+
 	prcb_return_current_cpu()->running_thread = running_thrd;
 	prcb_return_current_cpu()->thread_index = nex_index;
 	prcb_return_current_cpu()->cpu_tss.rsp0 = running_thrd->kernel_stack;
