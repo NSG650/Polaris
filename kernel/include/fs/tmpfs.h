@@ -1,5 +1,5 @@
-#ifndef TESTFS_H
-#define TESTFS_H
+#ifndef TMPFS_H
+#define TMPFS_H
 
 #include <fs/vfs.h>
 

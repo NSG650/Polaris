@@ -38,7 +38,6 @@ struct file {
 	char *name;
 	lock_t lock;
 	struct stat fstat;
-	size_t allocated_size;
 	ssize_t (*read)(struct file *, void *, off_t, size_t);
 	ssize_t (*write)(struct file *, const void *, off_t, size_t);
 	struct fs_node *(*readdir)(struct file *);
