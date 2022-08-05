@@ -108,9 +108,42 @@ static void smp_init_core(struct limine_smp_info *smp_info) {
 		write_cr("4", cr4);
 	}
 
-	fpu_storage_size = 512;
-	fpu_save = fxsave;
-	fpu_restore = fxrstor;
+	__get_cpuid(1, &a, &b, &c, &d);
+	if (c & bit_XSAVE) {
+		// Enable XSAVE and x{get,set}bv
+		cr4 = read_cr("4");
+		cr4 |= (uint64_t)1 << 18;
+		write_cr("4", cr4);
+
+		uint64_t xcr0 = 0;
+		xcr0 |= (uint64_t)1 << 0;
+		xcr0 |= (uint64_t)1 << 1;
+
+		if (c & bit_AVX) {
+			xcr0 |= (uint64_t)1 << 2;
+		}
+
+		__get_cpuid(7, &a, &b, &c, &d);
+		if (b & bit_AVX512F) {
+			xcr0 |= (uint64_t)1 << 5;
+			xcr0 |= (uint64_t)1 << 6;
+			xcr0 |= (uint64_t)1 << 7;
+		}
+
+		wrxcr(0, xcr0);
+
+		if (!__get_cpuid(13, &a, &b, &c, &d)) {
+			panic("CPUID failure");
+		}
+
+		fpu_storage_size = c;
+		fpu_save = xsave;
+		fpu_restore = xrstor;
+	} else {
+		fpu_storage_size = 512;
+		fpu_save = fxsave;
+		fpu_restore = fxrstor;
+	}
 
 	lapic_init(smp_info->lapic_id);
 
