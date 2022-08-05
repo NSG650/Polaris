@@ -90,6 +90,11 @@ uint32_t tmpfs_create(struct fs_node *node, char *name) {
 	new->stat = tmpfs_fstat;
 	new->data = kmalloc(sizeof(struct tmpfs_private_data));
 
+	new->fstat.st_size = 0;
+	new->fstat.st_blocks = 0;
+	new->fstat.st_blksize = 512;
+	new->fstat.st_nlink = 1;
+
 	struct tmpfs_private_data *tpd = (struct tmpfs_private_data *)new->data;
 	tpd->allocated_size = 1024;
 	tpd->actual_data = kmalloc(tpd->allocated_size);
@@ -99,7 +104,7 @@ uint32_t tmpfs_create(struct fs_node *node, char *name) {
 }
 
 uint32_t tmpfs_mkdir(struct fs_node *node, char *name) {
-		for (int i = 0; i < node->files.length; i++) {
+	for (int i = 0; i < node->files.length; i++) {
 		if (!strcmp(node->files.data[i]->name, name)) {
 			return 1;
 		}
@@ -112,6 +117,11 @@ uint32_t tmpfs_mkdir(struct fs_node *node, char *name) {
 	new->stat = tmpfs_fstat;
 	new->readdir = tmpfs_readdir;
 	new->data = kmalloc(sizeof(struct fs_node));
+
+	new->fstat.st_size = 0;
+	new->fstat.st_blocks = 0;
+	new->fstat.st_blksize = 512;
+	new->fstat.st_nlink = 1;
 
 	struct fs_node *folder = (struct fs_node *)new->data;
 
