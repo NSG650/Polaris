@@ -42,6 +42,7 @@ struct file {
 	ssize_t (*read)(struct file *, void *, off_t, size_t);
 	ssize_t (*write)(struct file *, const void *, off_t, size_t);
 	struct fs_node *(*readdir)(struct file *);
+	struct stat *(*stat)(struct file *);
 	uint8_t *data;
 };
 

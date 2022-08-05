@@ -24,21 +24,17 @@ void kernel_main(void *args) {
 	syscall_register_handler(0x1, syscall_write);
 	syscall_register_handler(0x2, syscall_open);
 
-	/*
-		We shouldn't directly read the file data but instead should call the
-		file system to read the file. This data can vary depending on the fs or
-		the device it's stored on. For example this data can contain info about
-		the sector or block address for the particular file. So this should be
-		avoided.
-	*/
-
 	struct file *file = vfs_open_file("/bin/init.elf", 0x0);
 
 	if (!file)
 		panic("No init found!\n");
 
+	struct stat *file_stat = file->stat(file);
+	uint8_t *init_binary = kmalloc(file_stat->st_size);
+	file->read(file, init_binary, 0, file_stat->st_size);
+
 	kprintf("Running init binary /bin/init.elf\n");
-	process_create_elf("init", PROCESS_READY_TO_RUN, 2000, file->data,
+	process_create_elf("init", PROCESS_READY_TO_RUN, 2000, init_binary,
 					   prcb_return_current_cpu()->running_thread->mother_proc);
 	for (;;)
 		;

@@ -1,6 +1,14 @@
 #include <fs/vfs.h>
 #include <klibc/mem.h>
 
+struct fs_node *tmpfs_readdir(struct file *file) {
+	return (struct fs_node *)file->data;
+}
+
+struct stat *tmpfs_fstat(struct file *file) {
+	return &file->fstat;
+}
+
 ssize_t tmpfs_read(struct file *this, void *buf, off_t offset, size_t count) {
 	spinlock_acquire_or_wait(this->lock);
 
@@ -63,6 +71,11 @@ uint32_t tmpfs_delete(struct fs_node *node, char *name) {
 }
 
 uint32_t tmpfs_create(struct fs_node *node, char *name) {
+	for (int i = 0; i < node->files.length; i++) {
+		if (!strcmp(node->files.data[i]->name, name)) {
+			return 1;
+		}
+	}
 	struct file *new = kmalloc(sizeof(struct file));
 	new->name = name;
 	new->allocated_size = 1024;
@@ -70,22 +83,25 @@ uint32_t tmpfs_create(struct fs_node *node, char *name) {
 	new->read = tmpfs_read;
 	new->write = tmpfs_write;
 	new->readdir = NULL;
+	new->stat = tmpfs_fstat;
 	new->data = kmalloc(new->allocated_size);
 	vec_push(&node->files, new);
 	return 0;
 }
 
-struct fs_node *tmpfs_readdir(struct file *file) {
-	return (struct fs_node *)file->data;
-}
-
 uint32_t tmpfs_mkdir(struct fs_node *node, char *name) {
+		for (int i = 0; i < node->files.length; i++) {
+		if (!strcmp(node->files.data[i]->name, name)) {
+			return 1;
+		}
+	}
 	struct file *new = kmalloc(sizeof(struct file));
 	new->name = name;
 	new->allocated_size = sizeof(struct fs_node);
 	new->lock = 0;
 	new->read = NULL;
 	new->write = NULL;
+	new->stat = tmpfs_fstat;
 	new->readdir = tmpfs_readdir;
 	new->data = kmalloc(new->allocated_size);
 
