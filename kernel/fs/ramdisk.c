@@ -1,7 +1,7 @@
 #include <debug/debug.h>
 #include <fs/ramdisk.h>
 #include <fs/vfs.h>
-#include <mm/pmm.h>
+#include <klibc/misc.h>
 
 struct ustar_header {
 	char name[100];

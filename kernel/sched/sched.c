@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <kernel.h>
 #include <klibc/elf.h>
+#include <klibc/misc.h>
 #include <klibc/vec.h>
 #include <sched/sched.h>
 #include <sched/syscall.h>

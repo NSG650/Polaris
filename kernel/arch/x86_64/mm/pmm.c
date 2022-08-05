@@ -16,6 +16,7 @@
  */
 
 #include <klibc/mem.h>
+#include <klibc/misc.h>
 #include <locks/spinlock.h>
 #include <mm/pmm.h>
 #include <mm/vmm.h>

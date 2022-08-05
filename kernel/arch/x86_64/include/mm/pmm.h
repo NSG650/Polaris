@@ -38,27 +38,6 @@ static inline void bitmap_reset(void *bitmap, size_t bit) {
 	bitmap_u8[bit / 8] &= ~(1 << (bit % 8));
 }
 
-#define DIV_ROUNDUP(A, B)        \
-	({                           \
-		typeof(A) _a_ = A;       \
-		typeof(B) _b_ = B;       \
-		(_a_ + (_b_ - 1)) / _b_; \
-	})
-
-#define ALIGN_UP(A, B)                  \
-	({                                  \
-		typeof(A) _a__ = A;             \
-		typeof(B) _b__ = B;             \
-		DIV_ROUNDUP(_a__, _b__) * _b__; \
-	})
-
-#define ALIGN_DOWN(A, B)   \
-	({                     \
-		typeof(A) _a_ = A; \
-		typeof(B) _b_ = B; \
-		(_a_ / _b_) * _b_; \
-	})
-
 void *pmm_alloc(size_t pages);
 void *pmm_allocz(size_t pages);
 void pmm_free(void *addr, size_t pages);

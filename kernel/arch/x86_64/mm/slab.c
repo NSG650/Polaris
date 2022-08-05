@@ -1,4 +1,5 @@
 #include <klibc/mem.h>
+#include <klibc/misc.h>
 #include <locks/spinlock.h>
 #include <mm/pmm.h>
 #include <mm/slab.h>
@@ -31,8 +32,6 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-
-#define SIZEOF_ARRAY(ARRAY) (sizeof(ARRAY) / sizeof(ARRAY[0]))
 
 struct slab {
 	lock_t lock;

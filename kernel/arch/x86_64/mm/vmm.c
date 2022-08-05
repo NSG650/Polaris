@@ -19,6 +19,7 @@
 #include <cpu_features.h>
 #include <cpuid.h>
 #include <debug/debug.h>
+#include <klibc/misc.h>
 #include <mm/pmm.h>
 #include <mm/slab.h>
 #include <mm/vmm.h>
