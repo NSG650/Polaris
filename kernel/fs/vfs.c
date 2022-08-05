@@ -91,7 +91,7 @@ static struct fs_node *vfs_look_for_node_under_node(struct fs_node *node,
 	for (int i = 0; i < node->files.length; i++) {
 		struct file *a = node->files.data[i];
 		if (!strcmp(a->name, name[idx])) {
-			if (S_ISDIR(a->type)) {
+			if (a->readdir) {
 				struct fs_node *nodea = a->readdir(a);
 				if (idx != max_idx) {
 					return vfs_look_for_node_under_node(nodea, name, idx + 1,
@@ -257,7 +257,7 @@ void vfs_dump_fs_tree(struct fs_node *node) {
 	kprintffos(0, "%s\n", node->target);
 	for (int i = 0; i < node->files.length; i++) {
 		struct file *file = node->files.data[i];
-		if (S_ISDIR(file->type)) {
+		if (file->readdir) {
 			struct fs_node *nodea = file->readdir(file);
 			vfs_dump_fs_tree(nodea);
 		} else

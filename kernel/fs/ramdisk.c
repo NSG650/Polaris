@@ -85,11 +85,7 @@ void ramdisk_install(uintptr_t ramdisk_address, uint64_t ramdisk_size) {
 					struct file *ab = node->fs->open(node, file_name);
 					if (ab) {
 						void *buf = (void *)current_file + 512;
-						kfree(ab->data);
-						ab->allocated_size = size;
-						ab->write = NULL;
-						ab->size = size;
-						ab->data = (uint8_t *)buf;
+						ab->write(ab, buf, 0, size);
 					}
 				}
 				kfree(fun);

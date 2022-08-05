@@ -37,10 +37,7 @@ struct fs {
 struct file {
 	char *name;
 	lock_t lock;
-	int32_t uid;
-	int32_t gid;
-	int32_t type;
-	size_t size;
+	struct stat fstat;
 	size_t allocated_size;
 	ssize_t (*read)(struct file *, void *, off_t, size_t);
 	ssize_t (*write)(struct file *, const void *, off_t, size_t);

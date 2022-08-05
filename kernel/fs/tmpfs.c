@@ -6,8 +6,8 @@ ssize_t tmpfs_read(struct file *this, void *buf, off_t offset, size_t count) {
 
 	size_t actual_count = count;
 
-	if ((off_t)(offset + count) >= (off_t)this->size)
-		actual_count = count - ((offset + count) - this->size);
+	if ((off_t)(offset + count) >= (off_t)this->fstat.st_size)
+		actual_count = count - ((offset + count) - this->fstat.st_size);
 
 	memcpy(buf, this->data + offset, actual_count);
 	spinlock_drop(this->lock);
@@ -29,7 +29,7 @@ ssize_t tmpfs_write(struct file *this, const void *buf, off_t offset,
 	}
 
 	memcpy(this->data + offset, buf, count);
-	this->size += (offset + count) - this->size;
+	this->fstat.st_size += (offset + count) - this->fstat.st_size;
 
 	spinlock_drop(this->lock);
 
@@ -65,39 +65,28 @@ uint32_t tmpfs_delete(struct fs_node *node, char *name) {
 uint32_t tmpfs_create(struct fs_node *node, char *name) {
 	struct file *new = kmalloc(sizeof(struct file));
 	new->name = name;
-	new->size = 0;
 	new->allocated_size = 1024;
-	new->uid = 0;
-	new->gid = 0;
 	new->lock = 0;
 	new->read = tmpfs_read;
 	new->write = tmpfs_write;
 	new->readdir = NULL;
-	new->type = S_IFMT &S_IFREG;
 	new->data = kmalloc(new->allocated_size);
 	vec_push(&node->files, new);
 	return 0;
 }
 
 struct fs_node *tmpfs_readdir(struct file *file) {
-	if (S_ISDIR(file->type)) {
-		return (struct fs_node *)file->data;
-	}
-	return NULL;
+	return (struct fs_node *)file->data;
 }
 
 uint32_t tmpfs_mkdir(struct fs_node *node, char *name) {
 	struct file *new = kmalloc(sizeof(struct file));
 	new->name = name;
-	new->size = 0;
 	new->allocated_size = sizeof(struct fs_node);
-	new->uid = 0;
-	new->gid = 0;
 	new->lock = 0;
 	new->read = NULL;
 	new->write = NULL;
 	new->readdir = tmpfs_readdir;
-	new->type = S_IFMT &S_IFDIR;
 	new->data = kmalloc(new->allocated_size);
 
 	struct fs_node *folder = (struct fs_node *)new->data;
