@@ -18,6 +18,8 @@ enum process_states { PROCESS_NORMAL = 0, PROCESS_READY_TO_RUN };
 
 struct process;
 
+#define MAX_EVENTS 32
+
 struct thread {
 	uint64_t errno;
 	int64_t tid;
@@ -29,6 +31,9 @@ struct thread {
 	uint64_t kernel_stack;
 	uint64_t sleeping_till;
 	void *fpu_storage;
+	size_t which_event;
+	size_t attached_events_i;
+	struct event *attached_events[MAX_EVENTS];
 	struct process *mother_proc;
 };
 
@@ -36,7 +41,6 @@ typedef vec_t(struct thread *) thread_vec_t;
 typedef vec_t(struct process *) process_vec_t;
 
 struct process {
-	char name[256];
 	int64_t pid;
 	struct pagemap *process_pagemap;
 	enum process_states state;
@@ -46,6 +50,7 @@ struct process {
 	char cwd[256];
 	struct process *parent_process;
 	process_vec_t child_processes;
+	char name[256];
 };
 
 #define STACK_SIZE 32768
