@@ -22,9 +22,9 @@ void hpet_init(void) {
 	clk = hpet->general_capabilities >> 32;
 
 	/*
-	  General Configuration Register
-		0 - main counter is halted, timer interrupts are disabled
-		1 - main counter is running, timer interrupts are allowed if enabled
+	 * General Configuration Register
+	 *     0 - main counter is halted, timer interrupts are disabled
+	 *     1 - main counter is running, timer interrupts are allowed if enabled
 	 */
 	mmoutq(&hpet->general_configuration, 0);
 	mmoutq(&hpet->main_counter_value, 0);
