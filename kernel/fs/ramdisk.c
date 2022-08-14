@@ -59,50 +59,28 @@ void ramdisk_install(uintptr_t ramdisk_address, uint64_t ramdisk_size) {
 		if (strcmp(name, "./") == 0)
 			continue;
 
+		size_t mode = octal_to_int(current_file->mode);
 		size_t size = octal_to_int(current_file->size);
 
+		struct vfs_node *node = NULL;
 		switch (current_file->type) {
 			case USTAR_REGULAR:
 			case USTAR_NORMAL:
 			case USTAR_CONTIGOUS: {
-				char *fun = kmalloc(256);
-				memset(fun, 0, 256);
-				strcat(fun, "/");
-				strcat(fun, name);
-				struct fs_node *node = vfs_path_to_node(fun);
+				node = vfs_create(vfs_root, name, mode | S_IFREG);
 				if (node) {
-					char *file_name = kmalloc(strlen(fun) + 1);
-					size_t a = strlen(fun) - 1;
-					size_t c = 0;
-					while (fun[a] != '/') {
-						file_name[c] = fun[a];
-						a--;
-						c++;
-					}
-					file_name[c] = '\0';
-					strrev(file_name);
-					node->fs->create(node, file_name);
-					struct file *ab = node->fs->open(node, file_name);
-					if (ab) {
-						void *buf = (void *)current_file + 512;
-						ab->write(ab, buf, 0, size);
-					}
+					struct resource *resource = node->resource;
+					resource->write(resource, NULL, (void *)current_file + 512,
+									0, size);
 				}
-				kfree(fun);
+				break;
+			}
+			case USTAR_SYM_LINK: {
+				vfs_symlink(vfs_root, current_file->linkname, name);
 				break;
 			}
 			case USTAR_DIRECTORY: {
-				char *fun = kmalloc(256);
-				memset(fun, 0, 256);
-				strcat(fun, "/");
-				size_t s = strlen(name);
-				name[s - 1] = '\0';
-				strcat(fun, name);
-				struct fs_node *node = vfs_path_to_node(fun);
-				if (node) {
-					node->fs->mkdir(node, name);
-				}
-				kfree(fun);
+				vfs_create(vfs_root, name, mode | S_IFDIR);
 				break;
 			}
 			case USTAR_GNU_LONG_PATH: {
@@ -114,5 +92,6 @@ void ramdisk_install(uintptr_t ramdisk_address, uint64_t ramdisk_size) {
 
 		current_file = (void *)current_file + 512 + ALIGN_UP(size, 512);
 	}
+
 	kprintf("VFS: Loaded ramdisk of size %u\n", ramdisk_size);
 }

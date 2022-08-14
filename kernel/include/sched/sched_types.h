@@ -2,6 +2,7 @@
 #define SCHED_TYPES_H
 
 #include <fs/vfs.h>
+#include <klibc/resource.h>
 #include <klibc/vec.h>
 #include <locks/spinlock.h>
 #include <stddef.h>
@@ -18,6 +19,7 @@ enum process_states { PROCESS_NORMAL = 0, PROCESS_READY_TO_RUN };
 
 struct process;
 
+#define MAX_FDS 256
 #define MAX_EVENTS 32
 
 struct thread {
@@ -42,12 +44,14 @@ typedef vec_t(struct process *) process_vec_t;
 
 struct process {
 	int64_t pid;
-	struct pagemap *process_pagemap;
 	enum process_states state;
+	struct pagemap *process_pagemap;
 	uint64_t runtime;
 	thread_vec_t process_threads;
-	file_vec_t file_descriptors;
-	char cwd[256];
+	struct vfs_node *cwd;
+	lock_t fds_lock;
+	mode_t umask;
+	struct f_descriptor *fds[MAX_FDS];
 	struct process *parent_process;
 	process_vec_t child_processes;
 	char name[256];

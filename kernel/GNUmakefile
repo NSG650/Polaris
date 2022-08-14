@@ -5,7 +5,7 @@ CONFIG_ARCH ?= x86_64
 override KERNEL := polaris.elf
 
 # User controllable CFLAGS.
-CFLAGS ?= -Wall -Wextra -g -Og -pipe
+CFLAGS ?= -Wall -Wextra -Wvla -Wshadow -g -Og -pipe
 
 # User controllable linker flags. We set none by default.
 LDFLAGS ?=
@@ -19,6 +19,7 @@ override INTERNALCFLAGS :=          \
 	-I include/                     \
 	-I arch/$(CONFIG_ARCH)/include/ \
 	-std=gnu11                      \
+	-fms-extensions                 \
 	-ffreestanding                  \
 	-fno-stack-protector            \
 	-fno-stack-check                \

@@ -1,62 +1,66 @@
 #ifndef VFS_H
 #define VFS_H
 
-#include <klibc/vec.h>
+#include <klibc/hashmap.h>
+#include <klibc/resource.h>
 #include <locks/spinlock.h>
-#include <sched/syscall.h>
 #include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <types.h>
 
-struct fs;
-struct fs_node;
-struct file;
+struct vfs_filesystem;
 
-typedef vec_t(struct fs_node *) fs_node_vec_t;
-typedef vec_t(struct fs *) fs_vec_t;
-typedef vec_t(struct file *) file_vec_t;
-
-struct fs_node {
+struct vfs_node {
+	struct vfs_node *mountpoint;
+	struct vfs_node *redir;
+	struct resource *resource;
+	struct vfs_filesystem *filesystem;
 	char *name;
-	char *target;
-	struct fs *fs;
-	file_vec_t files;
-	struct fs_node *parent;
-	fs_node_vec_t nodes;
+	struct vfs_node *parent;
+	HASHMAP_TYPE(struct vfs_node *) children;
+	lock_t children_lock;
+	char *symlink_target;
 };
 
-struct fs {
-	char *name;
-	struct file *(*open)(struct fs_node *, char *);
-	uint32_t (*create)(struct fs_node *, char *);
-	uint32_t (*delete)(struct fs_node *, char *);
-	uint32_t (*mkdir)(struct fs_node *, char *);
+struct vfs_filesystem {
+	void (*populate)(struct vfs_filesystem *, struct vfs_node *);
+	struct vfs_node *(*mount)(struct vfs_node *, const char *,
+							  struct vfs_node *);
+	struct vfs_node *(*create)(struct vfs_filesystem *, struct vfs_node *,
+							   const char *, int);
+	struct vfs_node *(*symlink)(struct vfs_filesystem *, struct vfs_node *,
+								const char *, const char *);
+	struct vfs_node *(*link)(struct vfs_filesystem *, struct vfs_node *,
+							 const char *, struct vfs_node *);
 };
 
-struct file {
-	char *name;
-	lock_t lock;
-	struct stat fstat;
-	ssize_t (*read)(struct file *, void *, off_t, size_t);
-	ssize_t (*write)(struct file *, const void *, off_t, size_t);
-	struct fs_node *(*readdir)(struct file *);
-	struct stat *(*stat)(struct file *);
-	uint8_t *data;
-};
+extern struct vfs_node *vfs_root;
 
-void vfs_install_fs(struct fs *fs);
-struct fs_node *vfs_node_create(struct fs_node *parent, char *name);
-bool vfs_node_mount(struct fs_node *node, char *target, char *fs);
-void vfs_dump_fs_tree(struct fs_node *node);
-struct fs_node *vfs_path_to_node(char *patha);
-struct file *vfs_find_file_in_node(struct fs_node *node, char *path,
-								   uint8_t fdn);
+void vfs_init(void);
+struct vfs_node *vfs_create_node(struct vfs_filesystem *fs,
+								 struct vfs_node *parent, const char *name,
+								 bool dir);
+void vfs_add_filesystem(struct vfs_filesystem *fs, const char *identifier);
+struct vfs_node *vfs_get_node(struct vfs_node *parent, const char *path,
+							  bool follow_links);
+bool vfs_mount(struct vfs_node *parent, const char *source, const char *target,
+			   const char *fs_name);
+struct vfs_node *vfs_symlink(struct vfs_node *parent, const char *dest,
+							 const char *target);
+struct vfs_node *vfs_create(struct vfs_node *parent, const char *name,
+							int mode);
+size_t vfs_pathname(struct vfs_node *node, char *buffer, size_t len);
+bool vfs_fdnum_path_to_node(int dir_fdnum, const char *path, bool empty_path,
+							bool enoent_error, struct vfs_node **parent,
+							struct vfs_node **node, char **basename);
 
-#define vfs_open_file(A, B) vfs_find_file_in_node(vfs_path_to_node(A), A, B);
-
+void syscall_openat(struct syscall_arguments *args);
 void syscall_open(struct syscall_arguments *args);
-void syscall_read(struct syscall_arguments *args);
-void syscall_write(struct syscall_arguments *args);
+void syscall_fstatat(struct syscall_arguments *args);
+void syscall_getcwd(struct syscall_arguments *args);
+void syscall_chdir(struct syscall_arguments *args);
+void syscall_readdir(struct syscall_arguments *args);
+void syscall_readlinkat(struct syscall_arguments *args);
+void syscall_linkat(struct syscall_arguments *args);
+void syscall_unlinkat(struct syscall_arguments *args);
+void syscall_mkdirat(struct syscall_arguments *args);
 
 #endif

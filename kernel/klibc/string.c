@@ -156,6 +156,14 @@ char *strcat(char *restrict dest, const char *restrict src) {
 	return dest;
 }
 
+char *strdup(const char *s) {
+	size_t l = strlen(s);
+	char *d = kmalloc(l + 1);
+	if (!d)
+		return NULL;
+	return memcpy(d, s, l + 1);
+}
+
 char *ltoa(int64_t value, char *str, int base) {
 	char *rc;
 	char *ptr;

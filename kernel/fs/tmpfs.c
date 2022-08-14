@@ -1,146 +1,235 @@
+#include <debug/debug.h>
+#include <errno.h>
+#include <fs/tmpfs.h>
 #include <fs/vfs.h>
-#include <klibc/mem.h>
+#include <klibc/misc.h>
+#include <klibc/resource.h>
+#include <locks/spinlock.h>
+#include <mm/pmm.h>
+#include <mm/slab.h>
+#include <mm/vmm.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <sys/prcb.h>
+#include <types.h>
 
-struct tmpfs_private_data {
-	uint8_t *actual_data;
-	size_t allocated_size;
+struct tmpfs_resource {
+	struct resource;
+
+	void *data;
+	size_t capacity;
 };
 
-struct fs_node *tmpfs_readdir(struct file *file) {
-	return (struct fs_node *)file->data;
-}
+struct tmpfs {
+	struct vfs_filesystem;
 
-struct stat *tmpfs_fstat(struct file *file) {
-	return &file->fstat;
-}
+	uint64_t dev_id;
+	uint64_t inode_counter;
+};
 
-ssize_t tmpfs_read(struct file *this, void *buf, off_t offset, size_t count) {
+static ssize_t tmpfs_resource_read(struct resource *_this,
+								   struct f_description *description, void *buf,
+								   off_t offset, size_t count) {
+	(void)description;
+
+	struct tmpfs_resource *this = (struct tmpfs_resource *)_this;
+
 	spinlock_acquire_or_wait(this->lock);
-	struct tmpfs_private_data *tpd = (struct tmpfs_private_data *)this->data;
+
 	size_t actual_count = count;
 
-	if ((off_t)(offset + count) >= (off_t)this->fstat.st_size)
-		actual_count = count - ((offset + count) - this->fstat.st_size);
+	if ((off_t)(offset + count) >= this->stat.st_size) {
+		actual_count = count - ((offset + count) - this->stat.st_size);
+	}
 
-	memcpy(buf, tpd->actual_data + offset, actual_count);
+	memcpy(buf, this->data + offset, actual_count);
 	spinlock_drop(this->lock);
 
 	return actual_count;
 }
 
-ssize_t tmpfs_write(struct file *this, const void *buf, off_t offset,
-					size_t count) {
-	spinlock_acquire_or_wait(this->lock);
-	struct tmpfs_private_data *tpd = (struct tmpfs_private_data *)this->data;
-	if (offset + count >= tpd->allocated_size) {
-		size_t new_capacity = tpd->allocated_size;
-		while (offset + count >= new_capacity)
-			new_capacity *= 2;
+static ssize_t tmpfs_resource_write(struct resource *_this,
+									struct f_description *description,
+									const void *buf, off_t offset,
+									size_t count) {
+	(void)description;
 
-		tpd->actual_data = krealloc(tpd->actual_data, new_capacity);
-		tpd->allocated_size = new_capacity;
+	ssize_t ret = -1;
+	struct tmpfs_resource *this = (struct tmpfs_resource *)_this;
+
+	spinlock_acquire_or_wait(this->lock);
+
+	if (offset + count >= this->capacity) {
+		size_t new_capacity = this->capacity;
+		while (offset + count >= new_capacity) {
+			new_capacity *= 2;
+		}
+
+		void *new_data = krealloc(this->data, new_capacity);
+		if (new_data == NULL) {
+			errno = ENOMEM;
+			goto fail;
+		}
+
+		this->data = new_data;
+		this->capacity = new_capacity;
 	}
 
-	memcpy(tpd->actual_data + offset, buf, count);
-	this->fstat.st_size += (offset + count) - this->fstat.st_size;
+	memcpy(this->data + offset, buf, count);
 
+	if ((off_t)(offset + count) >= this->stat.st_size) {
+		this->stat.st_size = (off_t)(offset + count);
+		this->stat.st_blocks =
+			DIV_ROUNDUP(this->stat.st_size, this->stat.st_blksize);
+	}
+
+	ret = count;
+
+fail:
 	spinlock_drop(this->lock);
-
-	return (ssize_t)count;
+	return ret;
 }
 
-struct file *tmpfs_open(struct fs_node *node, char *name) {
-	for (int i = 0; i < node->files.length; i++) {
-		if (!strcmp(node->files.data[i]->name, name))
-			return node->files.data[i];
+static inline struct tmpfs_resource *create_tmpfs_resource(struct tmpfs *this,
+														   int mode) {
+	struct tmpfs_resource *resource =
+		resource_create(sizeof(struct tmpfs_resource));
+	if (resource == NULL) {
+		return resource;
 	}
+
+	if (S_ISREG(mode)) {
+		resource->capacity = 4096;
+		resource->data = kmalloc(resource->capacity);
+	}
+
+	resource->read = tmpfs_resource_read;
+	resource->write = tmpfs_resource_write;
+
+	resource->stat.st_size = 0;
+	resource->stat.st_blocks = 0;
+	resource->stat.st_blksize = 512;
+	resource->stat.st_dev = this->dev_id;
+	resource->stat.st_ino = this->inode_counter++;
+	resource->stat.st_mode = mode;
+	resource->stat.st_nlink = 1;
+
+	// TODO: Port time stuff in
+	// resource->stat.st_atim = realtime_clock;
+	// resource->stat.st_ctim = realtime_clock;
+	// resource->stat.st_mtim = realtime_clock;
+
+	return resource;
+}
+
+static inline struct vfs_filesystem *tmpfs_instantiate(void);
+
+static struct vfs_node *tmpfs_mount(struct vfs_node *parent, const char *name,
+									struct vfs_node *source) {
+	(void)source;
+
+	struct vfs_filesystem *new_fs = tmpfs_instantiate();
+	struct vfs_node *ret = new_fs->create(new_fs, parent, name, 0644 | S_IFDIR);
+	return ret;
+}
+
+static struct vfs_node *tmpfs_create(struct vfs_filesystem *_this,
+									 struct vfs_node *parent, const char *name,
+									 int mode) {
+	struct tmpfs *this = (struct tmpfs *)_this;
+	struct vfs_node *new_node = NULL;
+	struct tmpfs_resource *resource = NULL;
+
+	new_node = vfs_create_node(_this, parent, name, S_ISDIR(mode));
+	if (new_node == NULL) {
+		goto fail;
+	}
+
+	resource = create_tmpfs_resource(this, mode);
+	if (resource == NULL) {
+		goto fail;
+	}
+
+	new_node->resource = (struct resource *)resource;
+	return new_node;
+
+fail:
+	if (new_node != NULL) {
+		kfree(new_node); // TODO: Use vfs_destroy_node
+	}
+	if (resource != NULL) {
+		kfree(resource);
+	}
+
 	return NULL;
 }
 
-uint32_t tmpfs_delete(struct fs_node *node, char *name) {
-	struct file *filex = NULL;
-	for (int i = 0; i < node->files.length; i++) {
-		if (!strcmp(node->files.data[i]->name, name)) {
-			filex = node->files.data[i];
-			break;
-		}
+static struct vfs_node *tmpfs_symlink(struct vfs_filesystem *_this,
+									  struct vfs_node *parent, const char *name,
+									  const char *target) {
+	struct tmpfs *this = (struct tmpfs *)_this;
+	struct vfs_node *new_node = NULL;
+	struct tmpfs_resource *resource = NULL;
+
+	new_node = vfs_create_node(_this, parent, name, false);
+	if (new_node == NULL) {
+		goto fail;
 	}
-	// If you can't write. You can't delete them either
-	if (filex && filex->write) {
-		vec_remove(&node->files, filex);
-		kfree(filex->data);
-		kfree(filex);
-		return 0;
-	} else
-		return 1;
+
+	resource = create_tmpfs_resource(this, 0777 | S_IFLNK);
+	if (resource == NULL) {
+		goto fail;
+	}
+
+	new_node->resource = (struct resource *)resource;
+	new_node->symlink_target = strdup(target);
+	return new_node;
+
+fail:
+	if (new_node != NULL) {
+		kfree(new_node); // TODO: Use vfs_destroy_node
+	}
+	if (resource != NULL) {
+		kfree(resource);
+	}
+
+	return NULL;
 }
 
-uint32_t tmpfs_create(struct fs_node *node, char *name) {
-	for (int i = 0; i < node->files.length; i++) {
-		if (!strcmp(node->files.data[i]->name, name)) {
-			return 1;
-		}
+static struct vfs_node *tmpfs_link(struct vfs_filesystem *_this,
+								   struct vfs_node *parent, const char *name,
+								   struct vfs_node *node) {
+	if (S_ISDIR(node->resource->stat.st_mode)) {
+		errno = EISDIR;
+		return NULL;
 	}
-	struct file *new = kmalloc(sizeof(struct file));
-	new->name = name;
-	new->lock = 0;
-	new->read = tmpfs_read;
-	new->write = tmpfs_write;
-	new->readdir = NULL;
-	new->stat = tmpfs_fstat;
-	new->data = kmalloc(sizeof(struct tmpfs_private_data));
 
-	new->fstat.st_size = 0;
-	new->fstat.st_blocks = 0;
-	new->fstat.st_blksize = 512;
-	new->fstat.st_nlink = 1;
+	struct vfs_node *new_node = vfs_create_node(_this, parent, name, false);
+	if (new_node == NULL) {
+		return NULL;
+	}
 
-	struct tmpfs_private_data *tpd = (struct tmpfs_private_data *)new->data;
-	tpd->allocated_size = 1024;
-	tpd->actual_data = kmalloc(tpd->allocated_size);
-
-	vec_push(&node->files, new);
-	return 0;
+	new_node->resource = node->resource;
+	return new_node;
 }
 
-uint32_t tmpfs_mkdir(struct fs_node *node, char *name) {
-	for (int i = 0; i < node->files.length; i++) {
-		if (!strcmp(node->files.data[i]->name, name)) {
-			return 1;
-		}
+static inline struct vfs_filesystem *tmpfs_instantiate(void) {
+	struct tmpfs *new_fs = kmalloc(sizeof(struct tmpfs));
+	if (new_fs == NULL) {
+		return NULL;
 	}
-	struct file *new = kmalloc(sizeof(struct file));
-	new->name = name;
-	new->lock = 0;
-	new->read = NULL;
-	new->write = NULL;
-	new->stat = tmpfs_fstat;
-	new->readdir = tmpfs_readdir;
-	new->data = kmalloc(sizeof(struct fs_node));
 
-	new->fstat.st_size = 0;
-	new->fstat.st_blocks = 0;
-	new->fstat.st_blksize = 512;
-	new->fstat.st_nlink = 1;
+	new_fs->mount = tmpfs_mount;
+	new_fs->create = tmpfs_create;
+	new_fs->symlink = tmpfs_symlink;
+	new_fs->link = tmpfs_link;
 
-	struct fs_node *folder = (struct fs_node *)new->data;
-
-	vec_init(&folder->files);
-	vec_init(&folder->nodes);
-
-	folder->parent = node;
-	folder->fs = node->fs;
-	folder->target = kmalloc(256);
-	strcat(folder->target, node->target);
-	strcat(folder->target, name);
-	strcat(folder->target, "/");
-	vec_push(&node->files, new);
-	vec_push(&node->nodes, folder);
-	return 0;
+	return (struct vfs_filesystem *)new_fs;
 }
 
-struct fs tmpfs = {.name = "tmpfs",
-				   .open = tmpfs_open,
-				   .create = tmpfs_create,
-				   .delete = tmpfs_delete,
-				   .mkdir = tmpfs_mkdir};
+void tmpfs_init(void) {
+	struct vfs_filesystem *tmpfs = tmpfs_instantiate();
+	if (tmpfs) {
+		vfs_add_filesystem(tmpfs, "tmpfs");
+	}
+}

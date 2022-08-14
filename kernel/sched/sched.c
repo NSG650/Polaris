@@ -102,18 +102,27 @@ void process_create(char *name, uint8_t state, uint64_t runtime,
 	proc->pid = pid++;
 	proc->state = PROCESS_READY_TO_RUN;
 #if defined(__x86_64__)
-	if (user)
+	if (user) {
 		proc->process_pagemap = vmm_new_pagemap();
-	else
+	} else {
 		proc->process_pagemap = &kernel_pagemap;
+	}
 #endif
-	vec_init(&proc->file_descriptors);
 	vec_init(&proc->process_threads);
 	vec_init(&proc->child_processes);
 	vec_push(&processes, proc);
-	strncpy(proc->cwd, "/", 256);
-	if (parent_process)
+	if (parent_process) {
 		vec_push(&parent_process->child_processes, proc);
+		if (parent_process->cwd != NULL) {
+			proc->cwd = parent_process->cwd;
+		} else {
+			proc->cwd = vfs_root;
+		}
+		proc->umask = parent_process->umask;
+	} else {
+		proc->cwd = vfs_root;
+		proc->umask = S_IWGRP | S_IWOTH;
+	}
 	thread_create(pc_address, arguments, user, proc);
 	spinlock_drop(process_lock);
 }
@@ -178,13 +187,21 @@ void process_create_elf(char *name, uint8_t state, uint64_t runtime,
 		}
 	}
 #endif
-	vec_init(&proc->file_descriptors);
 	vec_init(&proc->child_processes);
 	vec_init(&proc->process_threads);
 	vec_push(&processes, proc);
-	strncpy(proc->cwd, "/", 256);
-	if (parent_process)
+	if (parent_process) {
 		vec_push(&parent_process->child_processes, proc);
+		if (parent_process->cwd != NULL) {
+			proc->cwd = parent_process->cwd;
+		} else {
+			proc->cwd = vfs_root;
+		}
+		proc->umask = parent_process->umask;
+	} else {
+		proc->cwd = vfs_root;
+		proc->umask = S_IWGRP | S_IWOTH;
+	}
 	thread_create((uintptr_t)header->e_entry, 0, 1, proc);
 	spinlock_drop(process_lock);
 }
@@ -244,7 +261,6 @@ void process_kill(struct process *proc) {
 	for (int i = 0; i < proc->process_threads.length; i++)
 		thread_kill(proc->process_threads.data[i], false);
 
-	vec_deinit(&proc->file_descriptors);
 	if (proc->parent_process)
 		vec_remove(&proc->parent_process->child_processes, proc);
 

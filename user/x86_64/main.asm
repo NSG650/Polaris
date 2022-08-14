@@ -4,6 +4,8 @@ global syscall0
 global syscall1
 global syscall2
 global syscall3
+global syscall4
+global syscall5
 extern main
 
 syscall0:
@@ -29,6 +31,25 @@ syscall3:
 	mov rdi, rsi
 	mov rsi, rdx
 	mov rdx, rcx
+	syscall
+	ret
+
+syscall4:
+	mov rax, rdi
+	mov rdi, rsi
+	mov rsi, rdx
+	mov rdx, rcx
+	mov r10, r8
+	syscall
+	ret
+
+syscall5:
+	mov rax, rdi
+	mov rdi, rsi
+	mov rsi, rdx
+	mov rdx, rcx
+	mov r10, r8
+	mov r8, r9
 	syscall
 	ret
 

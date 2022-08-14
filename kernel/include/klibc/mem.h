@@ -41,5 +41,6 @@ size_t strspn(const char *s, const char *c);
 char *strpbrk(const char *s, const char *b);
 void strrev(char *str);
 size_t strsplit(const char *txt, char delim, char ***tokens);
+char *strdup(const char *s);
 
 #endif
