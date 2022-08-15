@@ -132,9 +132,7 @@ static void smp_init_core(struct limine_smp_info *smp_info) {
 
 		wrxcr(0, xcr0);
 
-		if (!__get_cpuid(13, &a, &b, &c, &d)) {
-			panic("CPUID failure");
-		}
+		__cpuid(13, a, b, c, d);
 
 		fpu_storage_size = c;
 		fpu_save = xsave;
