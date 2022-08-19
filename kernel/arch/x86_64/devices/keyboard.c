@@ -4,6 +4,7 @@
 #include <debug/debug.h>
 #include <sys/apic.h>
 #include <devices/keyboard.h>
+#include <fb/fb.h>
 
 // Hello old friend
 
@@ -73,6 +74,9 @@ void keyboard_gets(char *string, size_t count) {
 		key = keyboard_read();
 		if (key == 0xE && c) {
 			string[c--] = '\0';
+			framebuff.tex_x--;
+			framebuffer_putchar(' ');
+			framebuff.tex_x--;
 			continue;
 		}
 		if (key == 0x2A) {
@@ -94,8 +98,10 @@ void keyboard_gets(char *string, size_t count) {
 		if(ktoc(key) == 0){
             continue;
         }
-        string[c++] = ktoc(key);
+        char a = string[c++] = ktoc(key);
+		framebuffer_putchar(a);
 	}
+	framebuffer_putchar('\n');
 	string[c] = '\0';
 }
 
