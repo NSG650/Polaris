@@ -111,6 +111,7 @@ void process_create(char *name, uint8_t state, uint64_t runtime,
 	vec_init(&proc->process_threads);
 	vec_init(&proc->child_processes);
 	vec_push(&processes, proc);
+
 	if (parent_process) {
 		vec_push(&parent_process->child_processes, proc);
 		if (parent_process->cwd != NULL) {

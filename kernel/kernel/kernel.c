@@ -8,6 +8,7 @@
 #include <sched/sched.h>
 #include <sys/prcb.h>
 #include <sys/timer.h>
+#include <devices/console.h>
 
 void kernel_main(void *args) {
 	vfs_init();
@@ -43,6 +44,7 @@ void kernel_main(void *args) {
 	syscall_register_handler(0x10b, syscall_readlinkat);
 	syscall_register_handler(0x10c, syscall_fchmodat);
 	syscall_register_handler(0x124, syscall_dup3);
+	console_init();
 
 	struct vfs_node *file = vfs_get_node(vfs_root, "/bin/init.elf", true);
 
@@ -51,6 +53,7 @@ void kernel_main(void *args) {
 						 file->resource->stat.st_size);
 
 	kprintf("Running init binary /bin/init.elf\n");
+
 	process_create_elf("init", PROCESS_READY_TO_RUN, 2000, init_binary,
 					   prcb_return_current_cpu()->running_thread->mother_proc);
 	for (;;)

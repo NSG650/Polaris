@@ -56,6 +56,15 @@ syscall5:
 die:
 	jmp die
 
+global memset
+memset:
+    push rdi
+    mov rax, rsi
+    mov rcx, rdx
+    rep stosb
+    pop rax
+    ret
+
 _start:
 	call main
 	jmp die

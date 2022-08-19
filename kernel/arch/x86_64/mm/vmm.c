@@ -264,3 +264,12 @@ void vmm_page_fault_handler(registers_t *reg) {
 		   user_supervisor ? "U" : "S", reserved ? "R" : "NR",
 		   execute ? "X" : "NX");
 }
+
+struct pagemap *vmm_fork_pagemap(void) {
+	struct thread *thrd = prcb_return_current_cpu()->running_thread;
+	struct process *proc = thrd->mother_proc;
+	struct pagemap *target_pagemap = proc->process_pagemap;
+	struct pagemap *new_pagemap = kmalloc(sizeof(struct pagemap));
+	new_pagemap->top_level = pmm_allocz(1);
+	return NULL;
+}

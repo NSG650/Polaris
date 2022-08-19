@@ -53,7 +53,6 @@ void kputs(char *string) {
 }
 
 void syscall_puts(struct syscall_arguments *args) {
-	put_to_fb = true;
 	if (args->args0)
 		kputs((char *)args->args0);
 }
@@ -61,7 +60,7 @@ void syscall_puts(struct syscall_arguments *args) {
 static void kprintf_(char *fmt, va_list args) {
 	if (in_panic) {
 		kputs("*** PANIC:\t");
-	} else if (put_to_fb) {
+	} else {
 		uint64_t timer_tick = 0;
 		if (timer_installed()) {
 			timer_tick = timer_count();
@@ -143,11 +142,11 @@ void kprintffos(bool fos, char *fmt, ...) {
 	kprintf_(fmt, args);
 	va_end(args);
 	spinlock_drop(write_lock);
-	put_to_fb = 1;
 }
 
 void panic_(size_t *ip, size_t *bp, char *fmt, ...) {
 	cli();
+	put_to_fb = 1;
 	extern bool is_smp;
 	if (in_panic) {
 		halt_other_cpus();

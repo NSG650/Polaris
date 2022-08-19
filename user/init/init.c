@@ -12,6 +12,13 @@ extern uint64_t syscall5(uint64_t syscall_number, uint64_t args0,
 						 uint64_t args1, uint64_t args2, uint64_t args3,
 						 uint64_t args4);
 
+size_t strlen(char *string) {
+	size_t count = 0;
+	while (*string++)
+		count++;
+	return count;
+}
+
 void puts(char *string) {
 	syscall1(0x67, (uint64_t)string);
 }
@@ -54,6 +61,8 @@ int unlinkat(int dirfd, const char *pathname, int flags) {
 	return syscall3(0x107, dirfd, (uint64_t)pathname, flags);
 }
 
+void *memset(void *d, int c, size_t n);
+
 void main(void) {
 	puts("Hello I am supposed to be the init\n");
 
@@ -92,4 +101,17 @@ void main(void) {
 	close(fd);
 	puts("Reading /file_from_user.txt:\n");
 	puts(fun);
+
+	int stdin = open("/dev/console", O_RDONLY, 0);
+	int stdout = open("/dev/console", O_RDWR, 0);
+
+
+	write(stdout, "Hello from init!\n", strlen("Hello from init!\n"));
+	for (;;) {
+		memset(fun, 0, 128);
+		write(stdout, "\nType something\n", strlen("\nType something\n"));
+		read(stdin, fun, 128);
+		write(stdout, "Got:\n", strlen("Got:\n"));
+		write(stdout, fun, 128);
+	}
 }
