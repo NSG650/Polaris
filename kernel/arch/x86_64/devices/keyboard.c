@@ -87,12 +87,16 @@ void keyboard_gets(char *string, size_t count) {
 					break;
 				if (key == 0xE && c) {
 					string[c--] = '\0';
+					framebuff.tex_x--;
+					framebuffer_putchar(' ');
+					framebuff.tex_x--;
 					continue;
 				}
 				if(ktocSHIFT(key) == 0){
                     continue;
                 }
-                string[c++] = ktocSHIFT(key);
+				char a = string[c++] = ktocSHIFT(key);
+				framebuffer_putchar(a);
 			}
 		}
 		if(ktoc(key) == 0){
