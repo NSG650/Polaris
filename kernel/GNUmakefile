@@ -41,18 +41,15 @@ override INTERNALASFLAGS := \
 	-MP                     \
 	-f elf64
 
-CARCHFILES := $(wildcard arch/$(CONFIG_ARCH)/*/*.c)
-CFILES := $(wildcard */*.c)
-ASMFILES := $(wildcard arch/$(CONFIG_ARCH)/*/*.asm)
+CARCHFILES := $(shell find ./arch/$(CONFIG_ARCH) -type f -name '*.c')
+CFILES := $(shell find . -path ./arch -prune -type f -o -name '*.c')
+ASMFILES := $(shell find ./arch/$(CONFIG_ARCH) -type f -name '*.asm')
 OBJ := $(CARCHFILES:.c=.o) $(CFILES:.c=.o) $(ASMFILES:.asm=.o)
 HEADER_DEPS := $(CARCHFILES:.c=.d) $(CFILES:.c=.d) $(ASMFILES:.asm=.d)
 
 ifeq ($(CONFIG_ARCH),x86_64)
 	CC := x86_64-elf-gcc
 	AS := nasm
-	CARCHFILES += $(wildcard arch/$(CONFIG_ARCH)/fw/lai/*/*.c)
-	OBJ := $(CARCHFILES:.c=.o) $(CFILES:.c=.o) $(ASMFILES:.asm=.o)
-	HEADER_DEPS := $(CARCHFILES:.c=.d) $(CFILES:.c=.d) $(ASMFILES:.asm=.d)
 
 	override INTERNALCFLAGS +=                \
 		-m64                                  \
