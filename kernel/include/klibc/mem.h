@@ -18,9 +18,9 @@
  * limitations under the License.
  */
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
 
 #define memzero(a, b) memset(a, 0, b)
 

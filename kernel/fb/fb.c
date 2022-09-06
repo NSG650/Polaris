@@ -453,8 +453,7 @@ static void framebuffer_putc(char c, int x, int y) {
 					(y + x_bit) * framebuff.width + x + y_bit)
 					framebuffer_putpx(x + y_bit, y + x_bit, framebuff.tex_color,
 									  true);
-			}
-			else if (c == ' ') {
+			} else if (c == ' ') {
 				if (framebuff.width * framebuff.height >
 					(y + x_bit) * framebuff.width + x + y_bit)
 					framebuffer_putpx(x + y_bit, y + x_bit, framebuff.bg_color,

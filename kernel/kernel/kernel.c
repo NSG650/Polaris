@@ -1,4 +1,5 @@
 #include <debug/debug.h>
+#include <devices/console.h>
 #include <fs/devtmpfs.h>
 #include <fs/ramdisk.h>
 #include <fs/streams.h>
@@ -8,7 +9,6 @@
 #include <sched/sched.h>
 #include <sys/prcb.h>
 #include <sys/timer.h>
-#include <devices/console.h>
 
 void kernel_main(void *args) {
 	vfs_init();

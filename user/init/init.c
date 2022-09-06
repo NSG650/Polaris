@@ -105,7 +105,6 @@ void main(void) {
 	int stdin = open("/dev/console", O_RDONLY, 0);
 	int stdout = open("/dev/console", O_RDWR, 0);
 
-
 	write(stdout, "Hello from init!\n", strlen("Hello from init!\n"));
 	for (;;) {
 		memset(fun, 0, 128);
