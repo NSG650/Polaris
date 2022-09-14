@@ -87,6 +87,7 @@ void sched_init(uint64_t args) {
 	syscall_register_handler(0x6e, syscall_getppid);
 	syscall_register_handler(0x3c, syscall_exit);
 	syscall_register_handler(0x3e, syscall_kill);
+	syscall_register_handler(0x9d, syscall_prctl);
 	process_create("kernel_tasks", 0, 5000, (uintptr_t)kernel_main, args, 0,
 				   NULL);
 }
@@ -249,6 +250,8 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 		uint32_t default_mxcsr = 0b1111110000000;
 		asm volatile("ldmxcsr %0" ::"m"(default_mxcsr) : "memory");
 		fpu_save(thrd->fpu_storage);
+		thrd->fs_base = 0;
+		thrd->gs_base = 0;
 	}
 	thrd->state = THREAD_READY_TO_RUN;
 	thrd->sleeping_till = 0;

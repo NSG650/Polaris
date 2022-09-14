@@ -37,6 +37,10 @@ struct thread {
 	size_t attached_events_i;
 	struct event *attached_events[MAX_EVENTS];
 	struct process *mother_proc;
+#if defined(__x86_64__)
+	uint64_t gs_base;
+	uint64_t fs_base;
+#endif
 };
 
 typedef vec_t(struct thread *) thread_vec_t;
@@ -45,7 +49,9 @@ typedef vec_t(struct process *) process_vec_t;
 struct process {
 	int64_t pid;
 	enum process_states state;
+#if defined(__x86_64__)
 	struct pagemap *process_pagemap;
+#endif
 	uint64_t runtime;
 	thread_vec_t process_threads;
 	struct vfs_node *cwd;

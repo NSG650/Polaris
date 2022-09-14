@@ -55,6 +55,13 @@ void resched(registers_t *reg) {
 	running_thrd = threads.data[nex_index];
 	fpu_restore(running_thrd->fpu_storage);
 
+	// Don't fuck with the kernel gs
+
+	if (running_thrd->reg.cs & 0x3) {
+		set_user_gs(running_thrd->gs_base);
+		set_fs_base(running_thrd->fs_base);
+	}
+
 	prcb_return_current_cpu()->running_thread = running_thrd;
 	prcb_return_current_cpu()->thread_index = nex_index;
 	prcb_return_current_cpu()->cpu_tss.rsp0 = running_thrd->kernel_stack;

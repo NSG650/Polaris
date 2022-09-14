@@ -31,4 +31,6 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 void thread_kill(struct thread *thrd, bool r);
 // void thread_sleep(struct thread *thrd, uint64_t ticks);
 
+void syscall_prctl(struct syscall_arguments *args);
+
 #endif
