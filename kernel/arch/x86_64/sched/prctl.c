@@ -1,5 +1,7 @@
 #include <sched/sched.h>
 #include <cpu/smp.h>
+#include <sys/prcb.h>
+#include <errno.h>
 
 #define ARCH_SET_GS 0x1001
 #define ARCH_SET_FS 0x1002
@@ -22,6 +24,9 @@ void syscall_prctl(struct syscall_arguments *args) {
 			break;
 		case ARCH_GET_FS:
 			args->ret = read_fs_base();
+			break;
+		default:
+			prcb_return_current_cpu()->running_thread->errno = -EINVAL;
 			break;
 	}
 
