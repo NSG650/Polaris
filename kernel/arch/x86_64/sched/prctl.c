@@ -11,7 +11,6 @@
 void syscall_prctl(struct syscall_arguments *args) {
 	int option = (int)args->args0;
 	uint64_t arg2 = args->args1;
-
 	switch (option) {
 		case ARCH_SET_GS:
 			set_user_gs(arg2);
@@ -26,7 +25,7 @@ void syscall_prctl(struct syscall_arguments *args) {
 			args->ret = read_fs_base();
 			break;
 		default:
-			prcb_return_current_cpu()->running_thread->errno = -EINVAL;
+			errno = -EINVAL;
 			break;
 	}
 
