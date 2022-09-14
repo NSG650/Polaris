@@ -58,7 +58,6 @@ void resched(registers_t *reg) {
 	// Don't fuck with the kernel gs
 
 	if (running_thrd->reg.cs & 0x3) {
-		set_user_gs(running_thrd->gs_base);
 		set_fs_base(running_thrd->fs_base);
 	}
 
