@@ -13,7 +13,12 @@
 #include "../../arch/x86_64/include/reg.h"
 #endif
 
-enum thread_states { THREAD_NORMAL = 0, THREAD_READY_TO_RUN, THREAD_SLEEPING };
+enum thread_states {
+	THREAD_NORMAL = 0,
+	THREAD_READY_TO_RUN,
+	THREAD_SLEEPING,
+	THREAD_WAITING_FOR_FUTEX
+};
 
 enum process_states { PROCESS_NORMAL = 0, PROCESS_READY_TO_RUN };
 
