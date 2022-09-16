@@ -60,6 +60,7 @@ void syscall_futex(struct syscall_arguments *args) {
 				errno = -EFAULT;
 				return;
 			}
+			return;
 		case FUTEX_WAKE:
 		case FUTEX_WAKE_BITSET:
 			futex_wake(from_kernel_address);

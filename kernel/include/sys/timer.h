@@ -27,9 +27,16 @@ uint64_t timer_count(void);
 uint64_t timer_sched_tick(void);
 void timer_stop_sched(void);
 void timer_sleep_ns(uint64_t ns);
+uint64_t timer_get_sleep_ns(uint64_t ns);
+uint64_t timer_get_abs_count(void);
 
 #if defined(__x86_64__)
 void timer_sched_oneshot(uint8_t isr, uint32_t us);
 #endif
+
+struct __kernel_timespec {
+	long long tv_sec;  /* seconds */
+	long long tv_nsec; /* nanoseconds */
+};
 
 #endif

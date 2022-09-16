@@ -13,15 +13,7 @@ extern void resched_context_switch(registers_t *reg);
 uint64_t tick = 0;
 
 void sched_resched_now(void) {
-	int nex_index =
-		sched_get_next_thread(prcb_return_current_cpu()->thread_index);
-	apic_eoi();
-	timer_sched_oneshot(32, 20000);
-	prcb_return_current_cpu()->running_thread = NULL;
-	prcb_return_current_cpu()->thread_index = nex_index;
-	sti();
-	for (;;)
-		halt();
+	asm volatile("int 0x30");
 }
 
 uint64_t timer_sched_tick(void) {
@@ -31,6 +23,15 @@ uint64_t timer_sched_tick(void) {
 void resched(registers_t *reg) {
 	tick++;
 	spinlock_acquire_or_wait(resched_lock);
+
+	for (int i = 0; i < threads.length; i++) {
+		struct thread *th = threads.data[i];
+		if (th->sleeping_till > timer_get_abs_count()) {
+			th->sleeping_till = 0;
+			th->state = THREAD_READY_TO_RUN;
+		}
+	}
+
 	struct thread *running_thrd = prcb_return_current_cpu()->running_thread;
 	if (running_thrd) {
 		running_thrd->reg = *reg;

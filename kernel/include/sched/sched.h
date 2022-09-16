@@ -29,7 +29,7 @@ void process_kill(struct process *proc);
 void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 				   struct process *proc);
 void thread_kill(struct thread *thrd, bool r);
-// void thread_sleep(struct thread *thrd, uint64_t ticks);
+void thread_sleep(struct thread *thrd, uint64_t ns);
 
 void syscall_prctl(struct syscall_arguments *args);
 

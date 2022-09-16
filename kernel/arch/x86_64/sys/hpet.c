@@ -57,3 +57,12 @@ void timer_sleep_ns(uint64_t ns) {
 uint64_t timer_count(void) {
 	return hpet_counter_value() / 1000;
 }
+
+uint64_t timer_get_sleep_ns(uint64_t ns) {
+	uint64_t us = ns / 1000;
+	return hpet_counter_value() + (us * 1000000000) / clk;
+}
+
+uint64_t timer_get_abs_count(void) {
+	return hpet_counter_value();
+}

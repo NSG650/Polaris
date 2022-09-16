@@ -77,6 +77,14 @@ void syscall_getppid(struct syscall_arguments *args) {
 					->running_thread->mother_proc->parent_process->pid;
 }
 
+void syscall_nanosleep(struct syscall_arguments *args) {
+	struct __kernel_timespec *from_user =
+		(struct __kernel_timespec *)args->args0;
+	uint64_t seconds_to_ns = from_user->tv_sec * 1000000000;
+	uint64_t total_sleep = seconds_to_ns + from_user->tv_nsec;
+	thread_sleep(prcb_return_current_cpu()->running_thread, total_sleep);
+}
+
 void sched_init(uint64_t args) {
 	kprintf("SCHED: Creating kernel thread\n");
 	vec_init(&threads);
@@ -240,7 +248,7 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 		thrd->kernel_stack = thrd->reg.rsp;
 	}
 	thrd->reg.rflags = 0x202;
-#endif
+
 	thrd->fpu_storage =
 		pmm_allocz(DIV_ROUNDUP(fpu_storage_size, PAGE_SIZE)) + MEM_PHYS_OFFSET;
 	if (user) {
@@ -253,6 +261,7 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 		thrd->fs_base = 0;
 		thrd->gs_base = 0;
 	}
+#endif
 	thrd->state = THREAD_READY_TO_RUN;
 	thrd->sleeping_till = 0;
 	vec_push(&threads, thrd);
@@ -300,11 +309,13 @@ void thread_kill(struct thread *thrd, bool r) {
 		sched_resched_now();
 }
 
-void thread_sleep(struct thread *thrd, uint64_t ticks) {
+void thread_sleep(struct thread *thrd, uint64_t ns) {
+	cli();
 	spinlock_acquire_or_wait(thread_lock);
 	thrd->state = THREAD_SLEEPING;
-	uint64_t sleep_till = timer_sched_tick() + ticks;
-	thrd->sleeping_till = ticks;
-	// dont use yet
+	thrd->sleeping_till = timer_get_sleep_ns(ns);
 	spinlock_drop(thread_lock);
+	sti();
+	if (prcb_return_current_cpu()->running_thread == thrd)
+		sched_resched_now();
 }
