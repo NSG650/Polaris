@@ -96,6 +96,7 @@ void sched_init(uint64_t args) {
 	syscall_register_handler(0x3c, syscall_exit);
 	syscall_register_handler(0x3e, syscall_kill);
 	syscall_register_handler(0x9d, syscall_prctl);
+	syscall_register_handler(0x23, syscall_nanosleep);
 	process_create("kernel_tasks", 0, 5000, (uintptr_t)kernel_main, args, 0,
 				   NULL);
 }
