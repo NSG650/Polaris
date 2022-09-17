@@ -6,6 +6,8 @@
 #include <locks/spinlock.h>
 #include <stdbool.h>
 
+extern lock_t vfs_lock;
+
 struct vfs_filesystem;
 
 struct vfs_node {
@@ -16,7 +18,6 @@ struct vfs_node {
 	char *name;
 	struct vfs_node *parent;
 	HASHMAP_TYPE(struct vfs_node *) children;
-	lock_t children_lock;
 	char *symlink_target;
 };
 
@@ -47,6 +48,7 @@ struct vfs_node *vfs_symlink(struct vfs_node *parent, const char *dest,
 							 const char *target);
 struct vfs_node *vfs_create(struct vfs_node *parent, const char *name,
 							int mode);
+bool vfs_unlink(struct vfs_node *parent, const char *path);
 size_t vfs_pathname(struct vfs_node *node, char *buffer, size_t len);
 bool vfs_fdnum_path_to_node(int dir_fdnum, const char *path, bool empty_path,
 							bool enoent_error, struct vfs_node **parent,

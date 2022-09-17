@@ -25,6 +25,26 @@ static inline uint32_t hash(const void *data, size_t length) {
 #define HASHMAP_INIT(CAP) \
 	{ .cap = (CAP), .buckets = NULL }
 
+#define HASHMAP_DELETE(HASHMAP)                                     \
+	do {                                                            \
+		__auto_type HASHMAP_DELETE_hashmap = HASHMAP;               \
+                                                                    \
+		if (HASHMAP_DELETE_hashmap->buckets == NULL) {              \
+			break;                                                  \
+		}                                                           \
+                                                                    \
+		for (size_t HASHMAP_DELETE_i = 0;                           \
+			 HASHMAP_DELETE_i < HASHMAP_DELETE_hashmap->cap;        \
+			 HASHMAP_DELETE_i++) {                                  \
+			__auto_type HASHMAP_DELETE_bucket =                     \
+				&HASHMAP_DELETE_hashmap->buckets[HASHMAP_DELETE_i]; \
+                                                                    \
+			kfree(HASHMAP_DELETE_bucket->items);                    \
+		}                                                           \
+                                                                    \
+		kfree(HASHMAP_DELETE_hashmap->buckets);                     \
+	} while (0)
+
 #define HASHMAP_TYPE(TYPE)                              \
 	struct {                                            \
 		size_t cap;                                     \
@@ -79,6 +99,63 @@ static inline uint32_t hash(const void *data, size_t length) {
 		const char *HASHMAP_SGET_string = (STRING);    \
 		HASHMAP_GET(HASHMAP, RET, HASHMAP_SGET_string, \
 					strlen(HASHMAP_SGET_string));      \
+	})
+
+#define HASHMAP_REMOVE(HASHMAP, KEY_DATA, KEY_LENGTH)                        \
+	({                                                                       \
+		__label__ out;                                                       \
+                                                                             \
+		bool HASHMAP_REMOVE_ok = false;                                      \
+                                                                             \
+		__auto_type HASHMAP_REMOVE_key_data = KEY_DATA;                      \
+		__auto_type HASHMAP_REMOVE_key_length = KEY_LENGTH;                  \
+                                                                             \
+		__auto_type HASHMAP_REMOVE_hashmap = HASHMAP;                        \
+                                                                             \
+		if (HASHMAP_REMOVE_hashmap->buckets == NULL) {                       \
+			goto out;                                                        \
+		}                                                                    \
+                                                                             \
+		size_t HASHMAP_REMOVE_hash =                                         \
+			hash(HASHMAP_REMOVE_key_data, HASHMAP_REMOVE_key_length);        \
+		size_t HASHMAP_REMOVE_index =                                        \
+			HASHMAP_REMOVE_hash % HASHMAP_REMOVE_hashmap->cap;               \
+                                                                             \
+		__auto_type HASHMAP_REMOVE_bucket =                                  \
+			&HASHMAP_REMOVE_hashmap->buckets[HASHMAP_REMOVE_index];          \
+                                                                             \
+		for (size_t HASHMAP_REMOVE_i = 0;                                    \
+			 HASHMAP_REMOVE_i < HASHMAP_REMOVE_bucket->filled;               \
+			 HASHMAP_REMOVE_i++) {                                           \
+			if (HASHMAP_REMOVE_key_length !=                                 \
+				HASHMAP_REMOVE_bucket->items[HASHMAP_REMOVE_i].key_length) { \
+				continue;                                                    \
+			}                                                                \
+			if (memcmp(                                                      \
+					HASHMAP_REMOVE_key_data,                                 \
+					HASHMAP_REMOVE_bucket->items[HASHMAP_REMOVE_i].key_data, \
+					HASHMAP_REMOVE_key_length) == 0) {                       \
+				if (HASHMAP_REMOVE_i != HASHMAP_REMOVE_bucket->filled - 1) { \
+					memcpy(&HASHMAP_REMOVE_bucket->items[HASHMAP_REMOVE_i],  \
+						   &HASHMAP_REMOVE_bucket                            \
+								->items[HASHMAP_REMOVE_bucket->filled - 1],  \
+						   sizeof(*HASHMAP_REMOVE_bucket->items));           \
+				}                                                            \
+				HASHMAP_REMOVE_bucket->filled--;                             \
+				HASHMAP_REMOVE_ok = true;                                    \
+				break;                                                       \
+			}                                                                \
+		}                                                                    \
+                                                                             \
+	out:                                                                     \
+		HASHMAP_REMOVE_ok;                                                   \
+	})
+
+#define HASHMAP_SREMOVE(HASHMAP, STRING)                \
+	({                                                  \
+		const char *HASHMAP_SREMOVE_string = (STRING);  \
+		HASHMAP_REMOVE(HASHMAP, HASHMAP_SREMOVE_string, \
+					   strlen(HASHMAP_SREMOVE_string)); \
 	})
 
 #define HASHMAP_INSERT(HASHMAP, KEY_DATA, KEY_LENGTH, ITEM)                \

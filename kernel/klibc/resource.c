@@ -62,6 +62,15 @@ static bool stub_unref(struct resource *this,
 	return true;
 }
 
+static bool stub_truncate(struct resource *this,
+						  struct f_description *description, size_t length) {
+	(void)this;
+	(void)description;
+	(void)length;
+	errno = ENOSYS;
+	return false;
+}
+
 void *resource_create(size_t size) {
 	struct resource *res = kmalloc(size);
 	if (res == NULL) {
@@ -72,6 +81,7 @@ void *resource_create(size_t size) {
 	res->write = stub_write;
 	res->ioctl = resource_default_ioctl;
 	res->unref = stub_unref;
+	res->truncate = stub_truncate;
 	return res;
 }
 

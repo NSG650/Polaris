@@ -27,7 +27,7 @@ struct dirent {
 	char d_name[256];
 };
 
-static lock_t vfs_lock = 0;
+lock_t vfs_lock = 0;
 
 struct vfs_node *vfs_create_node(struct vfs_filesystem *fs,
 								 struct vfs_node *parent, const char *name,
@@ -55,10 +55,8 @@ static void create_dotentries(struct vfs_node *node, struct vfs_node *parent) {
 	dot->redir = node;
 	dotdot->redir = parent;
 
-	spinlock_acquire_or_wait(node->children_lock);
 	HASHMAP_SINSERT(&node->children, ".", dot);
 	HASHMAP_SINSERT(&node->children, "..", dotdot);
-	spinlock_drop(node->children_lock);
 }
 
 static HASHMAP_TYPE(struct vfs_filesystem *) filesystems;
@@ -323,11 +321,56 @@ struct vfs_node *vfs_symlink(struct vfs_node *parent, const char *dest,
 	struct vfs_node *target_node =
 		target_fs->symlink(target_fs, r.target_parent, r.basename, dest);
 
-	spinlock_acquire_or_wait(r.target_parent->children_lock);
 	HASHMAP_SINSERT(&r.target_parent->children, r.basename, target_node);
-	spinlock_drop(r.target_parent->children_lock);
 
 	ret = target_node;
+
+cleanup:
+	if (r.basename != NULL) {
+		kfree(r.basename);
+	}
+	spinlock_drop(vfs_lock);
+	return ret;
+}
+
+bool vfs_unlink(struct vfs_node *parent, const char *path) {
+	bool ret = false;
+
+	spinlock_acquire_or_wait(vfs_lock);
+
+	struct path2node_res r = path2node(parent, path);
+
+	if (r.target_parent == NULL) {
+		goto cleanup;
+	}
+
+	if (r.target == NULL) {
+		goto cleanup;
+	}
+
+	if (r.target->mountpoint != NULL) {
+		errno = EBUSY;
+		goto cleanup;
+	}
+
+	if (!HASHMAP_SREMOVE(&r.target_parent->children, r.basename)) {
+		goto cleanup;
+	}
+
+	if (!r.target->resource->unref(r.target->resource, NULL)) {
+		goto cleanup;
+	}
+
+	kfree(r.target->name);
+	if (r.target->symlink_target != NULL) {
+		kfree(r.target->symlink_target);
+	}
+
+	if (S_ISDIR(r.target->resource->stat.st_mode)) {
+		HASHMAP_DELETE(&r.target->children);
+	}
+
+	ret = true;
 
 cleanup:
 	if (r.basename != NULL) {
@@ -481,10 +524,20 @@ void syscall_openat(struct syscall_arguments *args) {
 		return;
 	}
 
+	if (!S_ISREG(node->resource->stat.st_mode) && (flags & O_TRUNC) != 0) {
+		errno = EINVAL;
+		args->ret = -1;
+		return;
+	}
+
 	struct f_descriptor *fd = fd_create_from_resource(node->resource, flags);
 	if (fd == NULL) {
 		args->ret = -1;
 		return;
+	}
+
+	if ((flags & O_TRUNC) != 0) {
+		node->resource->truncate(node->resource, fd->description, 0);
 	}
 
 	fd->description->node = node;
@@ -544,7 +597,7 @@ void syscall_fstatat(struct syscall_arguments *args) {
 		stat_src = &node->resource->stat;
 	}
 
-	memcpy(stat_buf, stat_src, sizeof(struct stat));
+	*stat_buf = *stat_src;
 	args->ret = 0;
 }
 
@@ -609,31 +662,31 @@ void syscall_readdir(struct syscall_arguments *args) {
 	void *buffer = (void *)args->args1;
 	size_t *size = (size_t *)args->args2;
 
+	int ret = -1;
+	spinlock_acquire_or_wait(vfs_lock);
+
 	struct f_descriptor *dir_fd = fd_from_fdnum(proc, dir_fdnum);
 	if (dir_fd == NULL) {
 		errno = EBADF;
-		args->ret = -1;
-		return;
+		goto cleanup;
 	}
 
 	struct vfs_node *dir_node = dir_fd->description->node;
 	if (!S_ISDIR(dir_fd->description->res->stat.st_mode)) {
 		errno = ENOTDIR;
-		args->ret = -1;
-		return;
+		goto cleanup;
 	}
 
-	spinlock_acquire_or_wait(dir_node->children_lock);
-
 	size_t entries_length = 0;
-	for (size_t i = 0; i < dir_node->children.cap; i++) {
-		typeof(dir_node->children.buckets) bucket =
-			&dir_node->children.buckets[i];
+	if (dir_node->children.buckets != NULL) {
+		for (size_t i = 0; i < dir_node->children.cap; i++) {
+			__auto_type bucket = &dir_node->children.buckets[i];
 
-		for (size_t j = 0; j < bucket->filled; j++) {
-			struct vfs_node *child = bucket->items[j].item;
-			entries_length +=
-				sizeof(struct dirent) - 1024 + strlen(child->name) + 1;
+			for (size_t j = 0; j < bucket->filled; j++) {
+				struct vfs_node *child = bucket->items[j].item;
+				entries_length +=
+					sizeof(struct dirent) - 1024 + strlen(child->name) + 1;
+			}
 		}
 	}
 
@@ -643,60 +696,61 @@ void syscall_readdir(struct syscall_arguments *args) {
 	if (entries_length > *size) {
 		*size = entries_length;
 		errno = ENOBUFS;
-		spinlock_drop(dir_node->children_lock);
-		args->ret = -1;
-		return;
+		goto cleanup;
 	}
 
 	size_t offset = 0;
-	for (size_t i = 0; i < dir_node->children.cap; i++) {
-		typeof(dir_node->children.buckets) bucket =
-			&dir_node->children.buckets[i];
+	if (dir_node->children.buckets != NULL) {
+		for (size_t i = 0; i < dir_node->children.cap; i++) {
+			__auto_type bucket = &dir_node->children.buckets[i];
 
-		for (size_t j = 0; j < bucket->filled; j++) {
-			struct vfs_node *child = bucket->items[j].item;
-			struct vfs_node *reduced = reduce_node(child, false);
-			struct dirent *ent = buffer + offset;
+			for (size_t j = 0; j < bucket->filled; j++) {
+				struct vfs_node *child = bucket->items[j].item;
+				struct vfs_node *reduced = reduce_node(child, false);
+				struct dirent *ent = buffer + offset;
 
-			ent->d_ino = reduced->resource->stat.st_ino;
-			ent->d_reclen =
-				sizeof(struct dirent) - 1024 + strlen(child->name) + 1;
-			ent->d_off = 0;
+				ent->d_ino = reduced->resource->stat.st_ino;
+				ent->d_reclen =
+					sizeof(struct dirent) - 1024 + strlen(child->name) + 1;
+				ent->d_off = 0;
 
-			switch (reduced->resource->stat.st_mode & S_IFMT) {
-				case S_IFBLK:
-					ent->d_type = DT_BLK;
-					break;
-				case S_IFCHR:
-					ent->d_type = DT_CHR;
-					break;
-				case S_IFIFO:
-					ent->d_type = DT_FIFO;
-					break;
-				case S_IFREG:
-					ent->d_type = DT_REG;
-					break;
-				case S_IFDIR:
-					ent->d_type = DT_DIR;
-					break;
-				case S_IFLNK:
-					ent->d_type = DT_LNK;
-					break;
-				case S_IFSOCK:
-					ent->d_type = DT_SOCK;
-					break;
+				switch (reduced->resource->stat.st_mode & S_IFMT) {
+					case S_IFBLK:
+						ent->d_type = DT_BLK;
+						break;
+					case S_IFCHR:
+						ent->d_type = DT_CHR;
+						break;
+					case S_IFIFO:
+						ent->d_type = DT_FIFO;
+						break;
+					case S_IFREG:
+						ent->d_type = DT_REG;
+						break;
+					case S_IFDIR:
+						ent->d_type = DT_DIR;
+						break;
+					case S_IFLNK:
+						ent->d_type = DT_LNK;
+						break;
+					case S_IFSOCK:
+						ent->d_type = DT_SOCK;
+						break;
+				}
+
+				memcpy(ent->d_name, child->name, strlen(child->name) + 1);
+				offset += ent->d_reclen;
 			}
-
-			memcpy(ent->d_name, child->name, strlen(child->name) + 1);
-			offset += ent->d_reclen;
 		}
 	}
 
-	spinlock_drop(dir_node->children_lock);
-
 	struct dirent *terminator = buffer + offset;
 	terminator->d_reclen = 0;
-	args->ret = 0;
+	ret = 0;
+
+cleanup:
+	spinlock_drop(vfs_lock);
+	args->ret = ret;
 }
 
 void syscall_readlinkat(struct syscall_arguments *args) {
@@ -798,9 +852,7 @@ void syscall_linkat(struct syscall_arguments *args) {
 		return;
 	}
 
-	spinlock_acquire_or_wait(new_parent->children_lock);
 	HASHMAP_SINSERT(&new_parent->children, basename, node);
-	spinlock_drop(new_parent->children_lock);
 	args->ret = 0;
 }
 
@@ -810,8 +862,9 @@ void syscall_unlinkat(struct syscall_arguments *args) {
 	int flags = args->args2;
 
 	struct vfs_node *parent = NULL, *node = NULL;
+	char *basename = NULL;
 	if (!vfs_fdnum_path_to_node(dir_fdnum, path, false, true, &parent, &node,
-								NULL)) {
+								&basename)) {
 		args->ret = -1;
 		return;
 	}
@@ -822,9 +875,7 @@ void syscall_unlinkat(struct syscall_arguments *args) {
 		return;
 	}
 
-	// XXX implement hashmap remove @@@mint
-
-	node->resource->unref(node->resource, NULL);
+	vfs_unlink(parent, basename);
 	args->ret = 0;
 }
 

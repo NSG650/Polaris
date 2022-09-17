@@ -24,11 +24,11 @@ static inline uintptr_t read_user_gs(void) {
 }
 
 static inline void set_fs_base(uint64_t address) {
-    wrmsr(0xc0000100, address);
+	wrmsr(0xc0000100, address);
 }
 
 static inline uintptr_t read_fs_base(void) {
-    return rdmsr(0xc0000100);
+	return rdmsr(0xc0000100);
 }
 
 static inline void swapgs(void) {

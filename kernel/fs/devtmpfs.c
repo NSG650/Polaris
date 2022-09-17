@@ -95,6 +95,42 @@ fail:
 	return ret;
 }
 
+static bool devtmpfs_truncate(struct resource *this_,
+							  struct f_description *description,
+							  size_t length) {
+	(void)description;
+
+	struct devtmpfs_resource *this = (struct devtmpfs_resource *)this_;
+
+	if (length > this->capacity) {
+		size_t new_capacity = this->capacity;
+		while (new_capacity < length) {
+			new_capacity *= 2;
+		}
+
+		void *new_data = kmalloc(new_capacity);
+		if (new_data == NULL) {
+			errno = ENOMEM;
+			goto fail;
+		}
+
+		memcpy(new_data, this->data, this->capacity);
+		kfree(this->data);
+
+		this->data = new_data;
+		this->capacity = new_capacity;
+	}
+
+	this->stat.st_size = (off_t)length;
+	this->stat.st_blocks =
+		DIV_ROUNDUP(this->stat.st_size, this->stat.st_blksize);
+
+	return true;
+
+fail:
+	return false;
+}
+
 static inline struct devtmpfs_resource *
 create_devtmpfs_resource(struct devtmpfs *this, int mode) {
 	struct devtmpfs_resource *resource =
@@ -110,6 +146,7 @@ create_devtmpfs_resource(struct devtmpfs *this, int mode) {
 
 	resource->read = devtmpfs_resource_read;
 	resource->write = devtmpfs_resource_write;
+	resource->truncate = devtmpfs_truncate;
 
 	resource->stat.st_size = 0;
 	resource->stat.st_blocks = 0;
@@ -261,8 +298,8 @@ bool devtmpfs_add_device(struct resource *device, const char *name) {
 	device->stat.st_ino = fs->inode_counter++;
 	device->stat.st_nlink = 1;
 
-	spinlock_acquire_or_wait(devtmpfs_root->children_lock);
+	spinlock_acquire_or_wait(vfs_lock);
 	HASHMAP_SINSERT(&devtmpfs_root->children, name, new_node);
-	spinlock_drop(devtmpfs_root->children_lock);
+	spinlock_drop(vfs_lock);
 	return new_node;
 }
