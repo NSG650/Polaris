@@ -1,5 +1,5 @@
 [submodule "kernel/arch/x86_64/fw/lai"]
-	path = kernel/arch/x86_64/fw/lai
+	path = kernel/arch/x86_64-pc/fw/lai
 	url = https://github.com/managarm/lai
 	shallow = true
 [submodule "limine"]
