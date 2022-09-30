@@ -1,5 +1,5 @@
-# Target processor architecture.
 CONFIG_ARCH ?= x86_64
+CONFIG_TARGET ?= pc
 
 # This is the name that our final kernel executable will have.
 override KERNEL := polaris.elf
@@ -16,8 +16,8 @@ ASFLAGS ?= -g
 # Internal C flags that should not be changed by the user.
 override INTERNALCFLAGS :=          \
 	-I.                             \
-	-I include/                     \
-	-I arch/$(CONFIG_ARCH)/include/ \
+	-I ../../include/               \
+	-I include/ 					\
 	-std=gnu11                      \
 	-fms-extensions                 \
 	-ffreestanding                  \
@@ -33,7 +33,7 @@ override INTERNALLDFLAGS :=     \
 	-Wl,--gc-sections           \
 	-Wl,--no-dynamic-linker	    \
 	-Wl,-z,max-page-size=0x1000 \
-	-Wl,-T,arch/$(CONFIG_ARCH)/linker.ld
+	-Wl,-Tlinker.ld
 
 # Internal assembler flags that should not be changed by the user.
 override INTERNALASFLAGS := \
@@ -41,36 +41,34 @@ override INTERNALASFLAGS := \
 	-MP                     \
 	-f elf64
 
-CARCHFILES := $(shell find ./arch/$(CONFIG_ARCH) -type f -name '*.c')
-CFILES := $(shell find . -path ./arch -prune -type f -o -name '*.c')
-ASMFILES := $(shell find ./arch/$(CONFIG_ARCH) -type f -name '*.asm')
-OBJ := $(CARCHFILES:.c=.o) $(CFILES:.c=.o) $(ASMFILES:.asm=.o)
-HEADER_DEPS := $(CARCHFILES:.c=.d) $(CFILES:.c=.d) $(ASMFILES:.asm=.d)
+CFILES := $(shell find ../../ -path ./ -prune -type f -o -name '*.c')
+ASMFILES := $(shell find ../../ -type f -name '*.asm')
+OBJ := $(CFILES:.c=.o) $(ASMFILES:.asm=.o)
+HEADER_DEPS :=  $(CFILES:.c=.d) $(ASMFILES:.asm=.d)
 
-ifeq ($(CONFIG_ARCH),x86_64)
-	CC := x86_64-elf-gcc
-	AS := nasm
+CC := x86_64-elf-gcc
+AS := nasm
 
-	override INTERNALCFLAGS +=                \
-		-m64                                  \
-		-march=x86-64                         \
-		-mabi=sysv                            \
-		-masm=intel                           \
-		-mgeneral-regs-only                   \
-		-I arch/$(CONFIG_ARCH)/fw/lai/include \
-		-I arch/$(CONFIG_ARCH)/include/debug  \
-		-mno-red-zone
-	override INTERNALLDFLAGS +=       \
-		-Wl,-m,elf_x86_64             \
-		-L arch/$(CONFIG_ARCH)/debug/ \
-		-l:zydis.a
-endif
+override INTERNALCFLAGS +=                \
+	-m64                                  \
+	-march=x86-64                         \
+	-mabi=sysv                            \
+	-masm=intel                           \
+	-mgeneral-regs-only                   \
+	-I fw/lai/include \
+	-I include/debug  \
+	-mno-red-zone
+
+override INTERNALLDFLAGS +=       \
+	-Wl,-m,elf_x86_64             \
+	-L debug/ \
+	-l:zydis.a
 
 .PHONY: all
 all: $(KERNEL)
 
 limine.h:
-	curl https://raw.githubusercontent.com/limine-bootloader/limine/trunk/limine.h -o arch/$(CONFIG_ARCH)/include/$@
+	curl https://raw.githubusercontent.com/limine-bootloader/limine/trunk/limine.h -o include/$@
 
 # Link rules for the final kernel executable.
 $(KERNEL): $(OBJ)
@@ -92,4 +90,4 @@ clean:
 
 .PHONY: distclean
 distclean: clean
-	rm -f arch/$(CONFIG_ARCH)/include/limine.h
+	rm -f include/limine.h

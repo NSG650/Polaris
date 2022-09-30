@@ -9,8 +9,8 @@
 #include <stdint.h>
 
 #if defined(__x86_64__)
-#include "../../arch/x86_64/include/mm/vmm.h"
-#include "../../arch/x86_64/include/reg.h"
+#include "../../arch/x86_64-pc/include/mm/vmm.h"
+#include "../../arch/x86_64-pc/include/reg.h"
 #endif
 
 enum thread_states {

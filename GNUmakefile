@@ -1,4 +1,5 @@
 CONFIG_ARCH ?= x86_64
+CONFIG_TARGET ?= pc
 
 NAME := polaris
 ISO_IMAGE := $(NAME).iso
@@ -14,7 +15,7 @@ limine:
 
 .PHONY: kernel
 kernel:
-	$(MAKE) -C kernel
+	$(MAKE) -C kernel/arch/$(CONFIG_ARCH)-$(CONFIG_TARGET)
 
 .PHONY: user
 user:
@@ -25,7 +26,7 @@ $(ISO_IMAGE): limine kernel user
 	mkdir -p build
 	cp $(PROGRAM_ELF) root/bin
 	$(MAKE) -C root
-	cp kernel/$(KERNEL_ELF) ramdisk.tar.gz \
+	cp kernel/arch/$(CONFIG_ARCH)-$(CONFIG_TARGET)/$(KERNEL_ELF) ramdisk.tar.gz \
 		limine.cfg limine/limine.sys limine/limine-cd.bin limine/limine-cd-efi.bin build/
 	xorriso -as mkisofs -b limine-cd.bin \
 		-no-emul-boot -boot-load-size 4 -boot-info-table \
@@ -37,12 +38,12 @@ $(ISO_IMAGE): limine kernel user
 
 .PHONY: clean
 clean:
-	rm -rf build *.iso *.img
-	$(MAKE) -C kernel clean
+	rm -rf build *.iso *.img *.tar.gz
+	$(MAKE) -C kernel/arch/$(CONFIG_ARCH)-$(CONFIG_TARGET) clean
 
 .PHONY: distclean
 distclean: clean
-	$(MAKE) -C kernel distclean
+	$(MAKE) -C kernel/arch/$(CONFIG_ARCH)-$(CONFIG_TARGET) distclean
 
 .PHONY: format
 format:

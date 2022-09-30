@@ -27,7 +27,7 @@
 #include <sys/prcb.h>
 #include <sys/timer.h>
 #if defined(__x86_64__)
-#include "../arch/x86_64/include/mm/vmm.h"
+#include "../arch/x86_64-pc/include/mm/vmm.h"
 #endif
 
 lock_t write_lock;
