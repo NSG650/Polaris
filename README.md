@@ -34,3 +34,4 @@ CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
+- [Zydis](https://github.com/zyantific/zydis): For x86_64 disassembly. Precompiled library is included in `/kernel/arch/x86_64-pc/debug`
