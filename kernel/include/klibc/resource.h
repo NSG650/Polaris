@@ -18,6 +18,7 @@ struct resource {
 	size_t refcount;
 	lock_t lock;
 	struct stat stat;
+	bool can_mmap;
 
 	ssize_t (*read)(struct resource *this, struct f_description *description,
 					void *buf, off_t offset, size_t count);
@@ -25,6 +26,7 @@ struct resource {
 					 const void *buf, off_t offset, size_t count);
 	int (*ioctl)(struct resource *this, struct f_description *description,
 				 uint64_t request, uint64_t arg);
+	void *(*mmap)(struct resource *this, size_t file_page, int flags);
 	bool (*unref)(struct resource *this, struct f_description *description);
 	bool (*truncate)(struct resource *this, struct f_description *description,
 					 size_t length);

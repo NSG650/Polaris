@@ -54,6 +54,13 @@ static ssize_t stub_write(struct resource *this,
 	return -1;
 }
 
+static void *stub_mmap(struct resource *this, size_t file_page, int flags) {
+	(void)this;
+	(void)file_page;
+	(void)flags;
+	return NULL;
+}
+
 static bool stub_unref(struct resource *this,
 					   struct f_description *description) {
 	(void)this;
@@ -80,6 +87,7 @@ void *resource_create(size_t size) {
 	res->read = stub_read;
 	res->write = stub_write;
 	res->ioctl = resource_default_ioctl;
+	res->mmap = stub_mmap;
 	res->unref = stub_unref;
 	res->truncate = stub_truncate;
 	return res;

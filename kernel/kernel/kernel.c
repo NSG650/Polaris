@@ -6,6 +6,7 @@
 #include <fs/tmpfs.h>
 #include <fs/vfs.h>
 #include <kernel.h>
+#include <mm/mmap.h>
 #include <sched/sched.h>
 #include <sys/prcb.h>
 #include <sys/timer.h>
@@ -31,6 +32,8 @@ void kernel_main(void *args) {
 	syscall_register_handler(0x2, syscall_open);
 	syscall_register_handler(0x3, syscall_close);
 	syscall_register_handler(0x8, syscall_seek);
+	syscall_register_handler(0x9, syscall_mmap);
+	syscall_register_handler(0xb, syscall_munmap);
 	syscall_register_handler(0x10, syscall_ioctl);
 	syscall_register_handler(0x48, syscall_fcntl);
 	syscall_register_handler(0x4f, syscall_getcwd);

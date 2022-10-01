@@ -5,6 +5,7 @@
 #include <klibc/misc.h>
 #include <klibc/resource.h>
 #include <locks/spinlock.h>
+#include <mm/mmap.h>
 #include <mm/pmm.h>
 #include <mm/slab.h>
 #include <mm/vmm.h>
@@ -95,6 +96,30 @@ fail:
 	return ret;
 }
 
+static void *devtmpfs_resource_mmap(struct resource *_this, size_t file_page,
+									int flags) {
+	struct devtmpfs_resource *this = (struct devtmpfs_resource *)_this;
+
+	spinlock_acquire_or_wait(this->lock);
+
+	void *ret = NULL;
+	if ((flags & MAP_SHARED) != 0) {
+		ret = (this->data + file_page * PAGE_SIZE) - MEM_PHYS_OFFSET;
+	} else {
+		ret = pmm_alloc(1);
+		if (ret == NULL) {
+			goto cleanup;
+		}
+
+		memcpy(ret + MEM_PHYS_OFFSET, this->data + file_page * PAGE_SIZE,
+			   PAGE_SIZE);
+	}
+
+cleanup:
+	spinlock_drop(this->lock);
+	return ret;
+}
+
 static bool devtmpfs_truncate(struct resource *this_,
 							  struct f_description *description,
 							  size_t length) {
@@ -142,10 +167,12 @@ create_devtmpfs_resource(struct devtmpfs *this, int mode) {
 	if (S_ISREG(mode)) {
 		resource->capacity = 4096;
 		resource->data = kmalloc(resource->capacity);
+		resource->can_mmap = true;
 	}
 
 	resource->read = devtmpfs_resource_read;
 	resource->write = devtmpfs_resource_write;
+	resource->mmap = devtmpfs_resource_mmap;
 	resource->truncate = devtmpfs_truncate;
 
 	resource->stat.st_size = 0;

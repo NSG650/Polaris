@@ -115,7 +115,7 @@ void process_create(char *name, uint8_t state, uint64_t runtime,
 	if (user) {
 		proc->process_pagemap = vmm_new_pagemap();
 	} else {
-		proc->process_pagemap = &kernel_pagemap;
+		proc->process_pagemap = kernel_pagemap;
 	}
 #endif
 	vec_init(&proc->process_threads);
@@ -130,9 +130,13 @@ void process_create(char *name, uint8_t state, uint64_t runtime,
 			proc->cwd = vfs_root;
 		}
 		proc->umask = parent_process->umask;
+		proc->mmap_anon_base = parent_process->mmap_anon_base;
+		proc->process_pagemap =
+			vmm_fork_pagemap(parent_process->process_pagemap);
 	} else {
 		proc->cwd = vfs_root;
 		proc->umask = S_IWGRP | S_IWOTH;
+		proc->mmap_anon_base = 0x80000000000;
 	}
 	thread_create(pc_address, arguments, user, proc);
 	spinlock_drop(process_lock);

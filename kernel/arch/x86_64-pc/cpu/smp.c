@@ -39,7 +39,7 @@ static void smp_init_core(struct limine_smp_info *smp_info) {
 	gdt_init();
 	isr_install();
 
-	vmm_switch_pagemap(&kernel_pagemap);
+	vmm_switch_pagemap(kernel_pagemap);
 
 	struct prcb *ap = kmalloc(sizeof(struct prcb));
 

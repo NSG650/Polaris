@@ -40,7 +40,7 @@ uint64_t syscall_helper_user_to_kernel_address(uintptr_t user_addr) {
 
 void syscall_helper_copy_to_user(uintptr_t user_addr, void *buffer,
 								 size_t count) {
-	vmm_switch_pagemap(&kernel_pagemap);
+	vmm_switch_pagemap(kernel_pagemap);
 
 	struct process *proc =
 		prcb_return_current_cpu()->running_thread->mother_proc;

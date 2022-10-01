@@ -11,6 +11,9 @@ extern uint64_t syscall4(uint64_t syscall_number, uint64_t args0,
 extern uint64_t syscall5(uint64_t syscall_number, uint64_t args0,
 						 uint64_t args1, uint64_t args2, uint64_t args3,
 						 uint64_t args4);
+extern uint64_t syscall6(uint64_t syscall_number, uint64_t args0,
+						 uint64_t args1, uint64_t args2, uint64_t args3,
+						 uint64_t args4, uint64_t args5);
 
 size_t strlen(char *string) {
 	size_t count = 0;
@@ -59,6 +62,15 @@ int linkat(int olddirfd, const char *oldpath, int newdirfd, const char *newpath,
 
 int unlinkat(int dirfd, const char *pathname, int flags) {
 	return syscall3(0x107, dirfd, (uint64_t)pathname, flags);
+}
+
+void *mmap(void *addr, size_t length, int prot, int flags, int fd,
+		   off_t offset) {
+	return (void *)syscall6(0x9, (uint64_t)addr, length, prot, flags, fd, offset);
+}
+
+int munmap(void *addr, size_t length) {
+	return syscall2(0xb, (uint64_t)addr, length);
 }
 
 void *memset(void *d, int c, size_t n);

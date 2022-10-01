@@ -57,6 +57,7 @@ struct process {
 #if defined(__x86_64__)
 	struct pagemap *process_pagemap;
 #endif
+	uintptr_t mmap_anon_base;
 	uint64_t runtime;
 	thread_vec_t process_threads;
 	struct vfs_node *cwd;
