@@ -58,6 +58,8 @@ extern uint64_t syscall6(uint64_t syscall_number, uint64_t args0,
 						 uint64_t args1, uint64_t args2, uint64_t args3,
 						 uint64_t args4, uint64_t args5);
 
+extern void *memcpy(void *restrict dest, const void *restrict src, size_t n);
+
 size_t strlen(char *string) {
 	size_t count = 0;
 	while (*string++)
@@ -109,7 +111,8 @@ int unlinkat(int dirfd, const char *pathname, int flags) {
 
 void *mmap(void *addr, size_t length, int prot, int flags, int fd,
 		   off_t offset) {
-	return (void *)syscall6(0x9, (uint64_t)addr, length, prot, flags, fd, offset);
+	return (void *)syscall6(0x9, (uint64_t)addr, length, prot, flags, fd,
+							offset);
 }
 
 int munmap(void *addr, size_t length) {

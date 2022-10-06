@@ -41,7 +41,7 @@ override INTERNALASFLAGS := \
 	-MP                     \
 	-f elf64
 
-CFILES := $(shell find ../../ -path ./ -prune -type f -o -name '*.c')
+CFILES := $(shell find ../../ -path . -prune -type f -o -name '*.c')
 ASMFILES := $(shell find ../../ -type f -name '*.asm')
 OBJ := $(CFILES:.c=.o) $(ASMFILES:.asm=.o)
 HEADER_DEPS :=  $(CFILES:.c=.d) $(ASMFILES:.asm=.d)

@@ -47,4 +47,4 @@ distclean: clean
 
 .PHONY: format
 format:
-	clang-format -i $(shell find . \( -iname *.h -o -iname *.c \) -not -ipath "*./limine*" -not -iname "limine.h" -not -ipath "*./kernel/arch/x86_64/fw/lai/*" -not -ipath "*./kernel/arch/x86_64/include/debug/Zydis/*" -not -ipath "*./kernel/arch/x86_64/include/debug/Zycore/*")
+	clang-format -i $(shell find . \( -iname *.h -o -iname *.c \) -not -ipath "*./limine*" -not -iname "limine.h" -not -ipath "*./kernel/arch/x86_64-pc/fw/lai/*" -not -ipath "*./kernel/arch/x86_64-pc/include/debug/Zydis/*" -not -ipath "*./kernel/arch/x86_64-pc/include/debug/Zycore/*")

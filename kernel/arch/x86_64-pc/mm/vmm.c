@@ -327,14 +327,12 @@ level4:
 	return &pml1[pml1_entry];
 }
 
-// Only works for 4KiB pages
 uint64_t vmm_virt_to_phys(struct pagemap *pagemap, uint64_t virt_addr) {
 	uint64_t *pte = vmm_virt_to_pte(pagemap, virt_addr, false);
-
-	if (pte == NULL || (((*pte) & 0xfff) & 1) == 0)
+	if (pte == NULL || (((*pte) & ~0xffffffffff000) & 1) == 0)
 		return INVALID_PHYS;
 
-	return (*pte) & ~((uintptr_t)0xfff);
+	return ((*pte) & 0xffffffffff000);
 }
 
 uint64_t vmm_virt_to_kernel(struct pagemap *pagemap, uint64_t virt_addr) {
@@ -452,21 +450,13 @@ struct pagemap *vmm_fork_pagemap(struct pagemap *pagemap) {
 						goto cleanup;
 					}
 
-					void *old_page = (void *)((*old_pte) & ~((uintptr_t)0xfff));
+					void *old_page = (void *)((*old_pte) & 0xffffffffff000);
 					void *page = pmm_alloc(1);
-					// HACK: vmm_virt_to_pte sometimes returns result +
-					// 0x8000000000000000 unsure what causes that so I am
-					// definitely going to hell for this
-					if ((uint64_t)old_page >= 0x8000000000000000) {
-						old_page -= 0x8000000000000000;
-					}
-					if ((uint64_t)page >= 0x8000000000000000) {
-						page -= 0x8000000000000000;
-					}
+
 					if (page == NULL) {
 						goto cleanup;
 					}
-					kprintf("Gonna copy to 0x%p from 0x%p!\n", page, old_page);
+
 					memcpy(page + MEM_PHYS_OFFSET, old_page + MEM_PHYS_OFFSET,
 						   PAGE_SIZE);
 					*new_pte = ((*old_pte) & 0xfff) | (uint64_t)page;

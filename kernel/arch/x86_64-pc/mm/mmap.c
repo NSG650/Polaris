@@ -1,8 +1,8 @@
 #include <cpu/cr.h>
+#include <debug/debug.h>
 #include <errno.h>
 #include <klibc/misc.h>
 #include <mm/mmap.h>
-#include <debug/debug.h>
 
 struct addr2range {
 	struct mmap_range_local *range;
@@ -325,8 +325,6 @@ bool munmap(struct pagemap *pagemap, uintptr_t addr, size_t length) {
 
 		spinlock_drop(pagemap->lock);
 
-		kprintf("here\n");
-
 		if (snip_length == local_range->length &&
 			global_range->locals.length == 1) {
 			if ((local_range->flags & MAP_ANONYMOUS) != 0) {
@@ -345,11 +343,6 @@ bool munmap(struct pagemap *pagemap, uintptr_t addr, size_t length) {
 						errno = EINVAL;
 						return false;
 					}
-					// check kernel/arch/x86_64-pc/mm/vmm.c:457
-					if (phys >= 0x8000000000000000) {
-						phys -= 0x8000000000000000;
-					}
-					kprintf("%p\n", phys);
 					pmm_free((void *)phys, 1);
 				}
 			} else {

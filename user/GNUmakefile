@@ -11,7 +11,7 @@ ifeq ($(CONFIG_ARCH),x86_64)
 	CC := x86_64-elf-gcc
 	LD := x86_64-elf-ld
 	LDFLAGS := -T$(CONFIG_ARCH)/linker.ld
-	ASFLAGS := -felf64 -O3 -static
+	ASFLAGS := -felf64 -static
 	CFLAGS := -Os -ffreestanding -mno-red-zone -fno-pic -fno-pie -static
 endif
 
