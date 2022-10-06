@@ -454,10 +454,19 @@ struct pagemap *vmm_fork_pagemap(struct pagemap *pagemap) {
 
 					void *old_page = (void *)((*old_pte) & ~((uintptr_t)0xfff));
 					void *page = pmm_alloc(1);
+					// HACK: vmm_virt_to_pte sometimes returns result +
+					// 0x8000000000000000 unsure what causes that so I am
+					// definitely going to hell for this
+					if ((uint64_t)old_page >= 0x8000000000000000) {
+						old_page -= 0x8000000000000000;
+					}
+					if ((uint64_t)page >= 0x8000000000000000) {
+						page -= 0x8000000000000000;
+					}
 					if (page == NULL) {
 						goto cleanup;
 					}
-
+					kprintf("Gonna copy to 0x%p from 0x%p!\n", page, old_page);
 					memcpy(page + MEM_PHYS_OFFSET, old_page + MEM_PHYS_OFFSET,
 						   PAGE_SIZE);
 					*new_pte = ((*old_pte) & 0xfff) | (uint64_t)page;

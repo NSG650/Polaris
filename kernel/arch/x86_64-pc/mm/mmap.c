@@ -345,6 +345,10 @@ bool munmap(struct pagemap *pagemap, uintptr_t addr, size_t length) {
 						errno = EINVAL;
 						return false;
 					}
+					// check kernel/arch/x86_64-pc/mm/vmm.c:457
+					if (phys >= 0x8000000000000000) {
+						phys -= 0x8000000000000000;
+					}
 					kprintf("%p\n", phys);
 					pmm_free((void *)phys, 1);
 				}

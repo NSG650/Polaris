@@ -26,11 +26,12 @@ void process_create(char *name, uint8_t state, uint64_t runtime,
 void process_create_elf(char *name, uint8_t state, uint64_t runtime,
 						uint8_t *binary, struct process *parent_process);
 void process_kill(struct process *proc);
+int process_fork(struct process *proc, struct thread *thrd);
 void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 				   struct process *proc);
 void thread_kill(struct thread *thrd, bool r);
 void thread_sleep(struct thread *thrd, uint64_t ns);
-
+void thread_fork(struct thread *pthrd, struct process *fproc);
 void syscall_prctl(struct syscall_arguments *args);
 
 #endif

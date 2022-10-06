@@ -1,5 +1,48 @@
 #include "types.h"
 
+int stdin = -1;
+int stdout = -1;
+
+#define PROT_NONE 0x00
+#define PROT_READ 0x01
+#define PROT_WRITE 0x02
+#define PROT_EXEC 0x04
+
+#define MAP_FAILED ((void *)(-1))
+#define MAP_FILE 0x00
+#define MAP_SHARED 0x01
+#define MAP_PRIVATE 0x02
+#define MAP_FIXED 0x10
+#define MAP_ANON 0x20
+#define MAP_ANONYMOUS 0x20
+#define MAP_NORESERVE 0x4000
+
+#define MS_ASYNC 0x01
+#define MS_INVALIDATE 0x02
+#define MS_SYNC 0x04
+
+#define MCL_CURRENT 0x01
+#define MCL_FUTURE 0x02
+
+#define POSIX_MADV_NORMAL 0
+#define POSIX_MADV_RANDOM 1
+#define POSIX_MADV_SEQUENTIAL 2
+#define POSIX_MADV_WILLNEED 3
+#define POSIX_MADV_DONTNEED 4
+
+#define MADV_NORMAL 0
+#define MADV_RANDOM 1
+#define MADV_SEQUENTIAL 2
+#define MADV_WILLNEED 3
+#define MADV_DONTNEED 4
+#define MADV_FREE 8
+
+#define MREMAP_MAYMOVE 1
+#define MREMAP_FIXED 2
+
+#define MFD_CLOEXEC 1U
+#define MFD_ALLOW_SEALING 2U
+
 extern uint64_t syscall0(uint64_t syscall_number);
 extern uint64_t syscall1(uint64_t syscall_number, uint64_t args0);
 extern uint64_t syscall2(uint64_t syscall_number, uint64_t args0,
@@ -73,9 +116,20 @@ int munmap(void *addr, size_t length) {
 	return syscall2(0xb, (uint64_t)addr, length);
 }
 
+int fork(void) {
+	return syscall0(0x39);
+}
+
+void puts_to_console(char *string) {
+	write(stdout, string, strlen(string));
+}
+
 void *memset(void *d, int c, size_t n);
 
 void main(void) {
+	stdin = open("/dev/console", O_RDONLY, 0);
+	stdout = open("/dev/console", O_RDWR, 0);
+
 	puts("Hello I am supposed to be the init\n");
 
 	// Change directory to /fun so we can use relative paths
@@ -114,15 +168,21 @@ void main(void) {
 	puts("Reading /file_from_user.txt:\n");
 	puts(fun);
 
-	int stdin = open("/dev/console", O_RDONLY, 0);
-	int stdout = open("/dev/console", O_RDWR, 0);
-
-	write(stdout, "Hello from init!\n", strlen("Hello from init!\n"));
-	for (;;) {
-		memset(fun, 0, 128);
-		write(stdout, "\nType something\n", strlen("\nType something\n"));
-		read(stdin, fun, 128);
-		write(stdout, "Got:\n", strlen("Got:\n"));
-		write(stdout, fun, 128);
+	if (!fork()) {
+		puts_to_console("Hello I am the forked process!\n");
+		for (;;)
+			;
 	}
+
+	puts_to_console("Hello from init!\n");
+
+	puts_to_console("mmap/munmap tests\n");
+	char *p = mmap(0, 512, PROT_READ | PROT_WRITE | PROT_EXEC,
+				   MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	memcpy(p, "Hello this is in mmaped memory\n",
+		   strlen("Hello this is in mmaped memory\n"));
+	puts_to_console(p);
+	munmap(p, 512);
+
+	puts_to_console("Ayy we did not die!\n");
 }
