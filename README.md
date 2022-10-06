@@ -2,7 +2,7 @@
 An attempt at OSDev and make a Unix-like kernel
 
 # Note
-This branch is not maintained anymore. Check the rewrite branch for progress made. The rewrite branch will be merged soon.
+This branch is not maintained anymore. Check the master branch for progress made.
 
 # How to build?
 Clone recursively the repository (Git `--recursive` flag)
