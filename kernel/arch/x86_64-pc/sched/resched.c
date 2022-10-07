@@ -2,6 +2,7 @@
 #include <cpu/smp.h>
 #include <debug/debug.h>
 #include <klibc/mem.h>
+#include <klibc/time.h>
 #include <mm/vmm.h>
 #include <sched/sched.h>
 #include <sys/apic.h>
@@ -22,6 +23,7 @@ uint64_t timer_sched_tick(void) {
 
 void resched(registers_t *reg) {
 	tick++;
+	timer_handler();
 	spinlock_acquire_or_wait(resched_lock);
 
 	for (int i = 0; i < threads.length; i++) {

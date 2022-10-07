@@ -22,6 +22,7 @@
 #include <fw/acpi.h>
 #include <fw/madt.h>
 #include <klibc/mem.h>
+#include <klibc/time.h>
 #include <limine.h>
 #include <mm/pmm.h>
 #include <mm/slab.h>
@@ -89,6 +90,7 @@ void arch_entry(void) {
 	acpi_init(rsdp_request.response->address);
 	pic_init();
 	smp_init(smp_request.response);
+	time_init();
 	ioapic_redirect_irq(0, 48);
 	syscall_install_handler();
 	if (module_request.response->module_count < 1)

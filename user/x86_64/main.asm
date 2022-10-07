@@ -82,10 +82,10 @@ memset:
 
 global memcpy
 memcpy:
-    mov rcx, rdx
-    mov rax, rdi
-    rep movsb
-    ret
+	mov rcx, rdx
+	mov rax, rdi
+	rep movsb
+	ret
 
 _start:
 	call main
