@@ -68,5 +68,6 @@ void timer_disarm(struct timer *timer);
 void timer_handler(void);
 
 void time_init(void);
+void syscall_getclock(struct syscall_arguments *args);
 
 #endif

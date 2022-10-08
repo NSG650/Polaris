@@ -59,6 +59,7 @@ void time_init(void) {
 		boot_time_request.response;
 
 	time_realtime.tv_sec = boot_time_resp->boot_time;
+	syscall_register_handler(0x13a, syscall_getclock);
 }
 
 void timer_handler(void) {
