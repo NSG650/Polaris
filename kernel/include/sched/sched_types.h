@@ -20,7 +20,7 @@ enum thread_states {
 	THREAD_WAITING_FOR_FUTEX
 };
 
-enum process_states { PROCESS_NORMAL = 0, PROCESS_READY_TO_RUN };
+enum process_states { PROCESS_NORMAL = 0, PROCESS_READY_TO_RUN, PROCESS_BLOCKED };
 
 struct process;
 

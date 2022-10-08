@@ -123,6 +123,10 @@ int fork(void) {
 	return syscall0(0x39);
 }
 
+int execve(char *path, char **argv, char **envp) {
+	return syscall3(0x3b, (uint64_t)path, (uint64_t)argv, (uint64_t)envp);
+}
+
 void puts_to_console(char *string) {
 	write(stdout, string, strlen(string));
 }
@@ -173,6 +177,18 @@ void main(void) {
 
 	if (!fork()) {
 		puts_to_console("Hello I am the forked process!\n");
+		char *argv[] = {
+			"/bin/test.elf",
+			"cool",
+			NULL
+		};
+		char *envp[] = {
+			"YES=YES",
+			NULL
+		};
+		if (execve(argv[0], argv, envp) == -1) {
+			puts_to_console("execve failed\n");
+		}
 		for (;;)
 			;
 	}

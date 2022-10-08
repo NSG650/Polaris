@@ -92,6 +92,23 @@ void syscall_fork(struct syscall_arguments *args) {
 	args->ret = process_fork(running_process, running_thread);
 }
 
+void syscall_execve(struct syscall_arguments *args) {
+	/*char *path = (char *)args->args0;
+	char **argv = (char **)args->args1;
+	char **envp = (char**)args->args2;
+	kprintf("path = %s\n", path);
+	for (int i = 0; argv[i] != NULL; i++) {
+		kprintf("argv[%d] = %s\n", i, argv[i]);
+	}
+	for (int i = 0; envp[i] != NULL; i++) {
+		kprintf("envp[%d] = %s\n", i, envp[i]);
+	}
+	args->ret = -1;*/
+	if (!process_execve(prcb_return_current_cpu()->running_thread->mother_proc, 
+	(char *)args->args0, (char **)args->args1, (char**)args->args2))
+		args->ret = -1;
+}
+
 void sched_init(uint64_t args) {
 	kprintf("SCHED: Creating kernel thread\n");
 	vec_init(&threads);
@@ -105,6 +122,7 @@ void sched_init(uint64_t args) {
 	syscall_register_handler(0x9d, syscall_prctl);
 	syscall_register_handler(0x23, syscall_nanosleep);
 	syscall_register_handler(0x39, syscall_fork);
+	syscall_register_handler(0x3b, syscall_execve);
 	process_create("kernel_tasks", 0, 5000, (uintptr_t)kernel_main, args, 0,
 				   NULL);
 }
@@ -220,9 +238,11 @@ void process_create_elf(char *name, uint8_t state, uint64_t runtime,
 			proc->cwd = vfs_root;
 		}
 		proc->umask = parent_process->umask;
+		proc->mmap_anon_base = parent_process->mmap_anon_base;
 	} else {
 		proc->cwd = vfs_root;
 		proc->umask = S_IWGRP | S_IWOTH;
+		proc->mmap_anon_base = 0x80000000000;
 	}
 	thread_create((uintptr_t)header->e_entry, 0, 1, proc);
 	spinlock_drop(process_lock);
@@ -258,7 +278,7 @@ int process_fork(struct process *proc, struct thread *thrd) {
 	}
 
 	thread_fork(thrd, fproc);
-
+	proc->state = PROCESS_READY_TO_RUN;
 	spinlock_drop(process_lock);
 	return fproc->pid;
 }
@@ -307,7 +327,6 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 		thrd->gs_base = 0;
 	}
 #endif
-	thrd->state = THREAD_READY_TO_RUN;
 	thrd->sleeping_till = 0;
 	vec_push(&threads, thrd);
 	vec_push(&proc->process_threads, thrd);
@@ -340,6 +359,105 @@ void thread_fork(struct thread *pthrd, struct process *fproc) {
 	spinlock_drop(thread_lock);
 }
 
+bool process_execve(struct process *proc, char *path, char **argv, char **envp) {
+	spinlock_acquire_or_wait(process_lock);
+
+	struct vfs_node *file = vfs_get_node(vfs_root, path, true);
+	if (!file)
+		return false;
+
+	proc->state = PROCESS_BLOCKED;
+	
+	uint8_t *binary = kmalloc(file->resource->stat.st_size);
+	file->resource->read(file->resource, NULL, binary, 0,
+						 file->resource->stat.st_size);
+
+	for (int i = 0; i < proc->process_threads.length; i++)
+		thread_kill(proc->process_threads.data[i], false);
+
+	// child processes are now owned by the init
+	for (int i = 0; i < proc->child_processes.length; i++) {
+		struct process *child_process = proc->child_processes.data[i];
+		child_process->parent_process =
+			processes.data[1]; // the init proc is the second process
+							   // first one is the kernel
+		vec_push(&processes.data[1]->child_processes, child_process);
+	}
+
+	proc->process_pagemap = vmm_new_pagemap();
+
+	strncpy(proc->name, path, 256);
+
+	Elf64_Ehdr *header = (Elf64_Ehdr *)binary;
+	if (header->e_type != ET_EXEC) {
+		return false;
+	}
+	if (memcmp(header->e_ident, ELFMAG, SELFMAG)) {
+		return false;
+	}
+#if defined(__x86_64__)
+	if (header->e_ident[EI_CLASS] != ELFCLASS64 ||
+		header->e_ident[EI_DATA] != ELFDATA2LSB ||
+		header->e_ident[EI_OSABI] != 0 || header->e_machine != EM_X86_64) {
+		return false;
+	}
+
+	for (size_t i = 0; i < header->e_phnum; i++) {
+		Elf64_Phdr *phdr =
+			(void *)(binary + header->e_phoff + i * header->e_phentsize);
+
+		switch (phdr->p_type) {
+			case PT_LOAD: {
+				int prot = PROT_READ;
+				if (phdr->p_flags & PF_W) {
+					prot |= PROT_WRITE;
+				}
+				if (phdr->p_flags & PF_X) {
+					prot |= PROT_EXEC;
+				}
+
+				size_t misalign = phdr->p_vaddr & (PAGE_SIZE - 1);
+				size_t page_count =
+					DIV_ROUNDUP(phdr->p_memsz + misalign, PAGE_SIZE);
+
+				void *phys = pmm_allocz(page_count);
+
+				mmap_range(proc->process_pagemap, phdr->p_vaddr,
+						   (uintptr_t)phys, page_count * PAGE_SIZE, prot,
+						   MAP_ANONYMOUS);
+
+				memcpy(phys + misalign + MEM_PHYS_OFFSET,
+					   (void *)((uint64_t)binary + phdr->p_offset),
+					   phdr->p_filesz);
+
+				break;
+			}
+				// Open for expansion
+		}
+	}
+
+	Elf64_Auxval aux = {
+		.at_entry = header->e_entry,
+		.at_phent = header->e_phentsize,
+		.at_phnum = header->e_phnum
+	};
+
+#endif
+	//if(!thread_execve(proc, header->e_entry, argv, envp, &aux)) {
+	//	spinlock_drop(process_lock);
+	//	return false;
+	//}
+
+	thread_create(header->e_entry, 0, 1, proc);
+	
+	proc->state = PROCESS_READY_TO_RUN;
+
+	spinlock_drop(process_lock);
+	sched_resched_now();
+	// wont make it here lol
+	return true;
+}
+
 void process_kill(struct process *proc) {
 	spinlock_acquire_or_wait(process_lock);
 	for (int i = 0; i < proc->process_threads.length; i++)
@@ -362,6 +480,82 @@ void process_kill(struct process *proc) {
 	sched_resched_now();
 }
 
+bool thread_execve(struct process *proc, uintptr_t pc_address, char **argv, char **envp, Elf64_Auxval *aux) {
+	spinlock_acquire_or_wait(thread_lock);
+
+	// the crazy execve stuff
+
+	// first get the length of the envp and argv
+	size_t argc = 0;
+	size_t envc = 0;
+
+	char did_we_find_null = 0;
+
+	for (size_t i = 0; i < 128; i++) {
+		if (!argv[i]) {
+			did_we_find_null++;
+			break;
+		}
+		argc++;
+	}
+
+	for (size_t i = 0; i < 128; i++) {
+		if (!envp[i]) {
+			did_we_find_null++;
+			break;
+		}
+		envc++;
+	}
+
+	// its not a valid argv or envp
+	if (did_we_find_null < 2) {
+		spinlock_drop(thread_lock);
+		return false;
+	}
+
+	struct thread *thrd = kmalloc(sizeof(struct thread));
+	thrd->tid = tid++;
+	thrd->state = THREAD_READY_TO_RUN;
+	thrd->runtime = proc->runtime;
+	thrd->lock = 0;
+	thrd->mother_proc = proc;
+#if defined(__x86_64__)
+	thrd->reg.rip = pc_address;
+	thrd->reg.rsp = (uint64_t)pmm_allocz(STACK_SIZE / PAGE_SIZE);
+	thrd->stack = thrd->reg.rsp;
+	thrd->reg.cs = 0x23;
+	thrd->reg.ss = 0x1b;
+	mmap_range(proc->process_pagemap, VIRTUAL_STACK_ADDR - STACK_SIZE,
+		(uintptr_t)thrd->reg.rsp, STACK_SIZE, PROT_READ | PROT_WRITE,
+		MAP_ANONYMOUS);
+	thrd->reg.rsp = VIRTUAL_STACK_ADDR;
+	thrd->kernel_stack = (uint64_t)kmalloc(STACK_SIZE);
+	thrd->kernel_stack += STACK_SIZE;
+	thrd->reg.rflags = 0x202;
+
+	// :woozy_face:
+
+	kprintf("rsp: %p\n", thrd->reg.rsp);
+
+	thrd->fpu_storage =
+	pmm_allocz(DIV_ROUNDUP(fpu_storage_size, PAGE_SIZE)) + MEM_PHYS_OFFSET;
+	fpu_restore(thrd->fpu_storage);
+	uint16_t default_fcw = 0b1100111111;
+	asm volatile("fldcw %0" ::"m"(default_fcw) : "memory");
+	uint32_t default_mxcsr = 0b1111110000000;
+	asm volatile("ldmxcsr %0" ::"m"(default_mxcsr) : "memory");
+	fpu_save(thrd->fpu_storage);
+	thrd->fs_base = 0;
+	thrd->gs_base = 0;
+#endif
+	thrd->state = THREAD_READY_TO_RUN;
+	thrd->sleeping_till = 0;
+	vec_push(&threads, thrd);
+	vec_push(&proc->process_threads, thrd);
+	spinlock_drop(thread_lock);
+	return true;
+}
+
 void thread_kill(struct thread *thrd, bool r) {
 	spinlock_acquire_or_wait(thread_lock);
 	if (thrd->mother_proc->pid < 1) {
@@ -370,6 +564,7 @@ void thread_kill(struct thread *thrd, bool r) {
 	}
 #if defined(__x86_64__)
 	pmm_free((void *)thrd->stack, STACK_SIZE / PAGE_SIZE);
+	// pmm_free((void *)thrd->fpu_storage, DIV_ROUNDUP(fpu_storage_size, PAGE_SIZE));
 	kfree((void *)thrd->kernel_stack);
 #endif
 	vec_remove(&thrd->mother_proc->process_threads, thrd);

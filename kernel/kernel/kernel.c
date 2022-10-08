@@ -51,6 +51,9 @@ void kernel_main(void *args) {
 
 	struct vfs_node *file = vfs_get_node(vfs_root, "/bin/init.elf", true);
 
+	if (!file)
+		panic("No init found!\n");
+
 	uint8_t *init_binary = kmalloc(file->resource->stat.st_size);
 	file->resource->read(file->resource, NULL, init_binary, 0,
 						 file->resource->stat.st_size);

@@ -47,7 +47,7 @@ static ssize_t console_write(struct resource *_this,
 
 void console_init(void) {
 	framebuffer_clear(0);
-	kprintffos(0, "\n");
+	kprintffos(0, "Bye bye!\n");
 	console_device = resource_create(sizeof(struct console));
 	console_device->read = console_read;
 	console_device->write = console_write;
