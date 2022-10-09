@@ -46,29 +46,33 @@ ASMFILES := $(shell find ../../ -type f -name '*.asm')
 OBJ := $(CFILES:.c=.o) $(ASMFILES:.asm=.o)
 HEADER_DEPS :=  $(CFILES:.c=.d) $(ASMFILES:.asm=.d)
 
-CC := x86_64-elf-gcc
+CROSS_TOOLCHAIN ?= x86_64-elf
+
+CC := $(CROSS_TOOLCHAIN)-gcc
 AS := nasm
 
-override INTERNALCFLAGS +=                \
-	-m64                                  \
-	-march=x86-64                         \
-	-mabi=sysv                            \
-	-masm=intel                           \
-	-mgeneral-regs-only                   \
-	-I fw/lai/include \
-	-I include/debug  \
+override INTERNALCFLAGS += \
+	-m64                   \
+	-march=x86-64          \
+	-mabi=sysv             \
+	-masm=intel            \
+	-mgeneral-regs-only    \
+	-I fw/lai/include      \
+	-I include/debug       \
 	-mno-red-zone
 
-override INTERNALLDFLAGS +=       \
-	-Wl,-m,elf_x86_64             \
-	-L debug/ \
+override INTERNALLDFLAGS += \
+	-Wl,-m,elf_x86_64       \
+	-L debug/               \
 	-l:zydis.a
 
 .PHONY: all
 all: $(KERNEL)
 
+# Don't try to download if it already exists.
 limine.h:
-	curl https://raw.githubusercontent.com/limine-bootloader/limine/trunk/limine.h -o include/$@
+	[ -s include/$@ ] || curl \
+		https://raw.githubusercontent.com/limine-bootloader/limine/trunk/limine.h -o include/$@
 
 # Link rules for the final kernel executable.
 $(KERNEL): $(OBJ)
