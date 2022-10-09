@@ -1,0 +1,17 @@
+name=automake
+from_source=automake
+revision=1
+imagedeps="gcc"
+hostrundeps="autoconf"
+
+configure() {
+    "${source_dir}"/configure --prefix="${prefix}"
+}
+
+build() {
+    make -j${parallelism}
+}
+
+install() {
+    DESTDIR="${dest_dir}" make install-strip
+}

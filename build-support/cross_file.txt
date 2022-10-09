@@ -1,0 +1,12 @@
+[binaries]
+c = 'x86_64-polaris-gcc'
+cpp = 'x86_64-polaris-g++'
+ar = 'x86_64-polaris-ar'
+strip = 'x86_64-polaris-strip'
+pkgconfig = 'x86_64-polaris-pkg-config'
+
+[host_machine]
+system = 'polaris'
+cpu_family = 'x86_64'
+cpu = 'x86_64'
+endian = 'little'

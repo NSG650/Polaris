@@ -116,3 +116,11 @@ GitHub.sublime-settings
 
 # MacOS .DS_Store
 *.DS_Store
+
+# Jinx
+/jinx
+/builds
+/host-builds
+/host-pkgs
+/pkgs
+/sources

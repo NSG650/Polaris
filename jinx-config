@@ -1,0 +1,2 @@
+export CFLAGS="-O2 -pipe -march=x86-64 -mtune=generic"
+export CXXFLAGS="${CFLAGS}"

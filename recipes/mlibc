@@ -1,0 +1,16 @@
+name=mlibc
+from_source=mlibc
+revision=1
+deps="mlibc-base libintl libiconv libxcrypt"
+
+configure() {
+    true
+}
+
+build() {
+    true
+}
+
+install() {
+    true
+}

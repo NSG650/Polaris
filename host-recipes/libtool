@@ -1,0 +1,18 @@
+name=libtool
+from_source=libtool
+revision=1
+hostdeps="autoconf automake"
+imagedeps="help2man gcc"
+
+configure() {
+    "${source_dir}"/configure \
+        --prefix="${prefix}"
+}
+
+build() {
+    make -j${parallelism}
+}
+
+install() {
+    DESTDIR="${dest_dir}" make install-strip
+}
