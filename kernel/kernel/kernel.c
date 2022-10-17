@@ -49,18 +49,9 @@ void kernel_main(void *args) {
 	syscall_register_handler(0x124, syscall_dup3);
 	console_init();
 
-	struct vfs_node *file = vfs_get_node(vfs_root, "/bin/init.elf", true);
-
-	if (!file)
-		panic("No init found!\n");
-
-	uint8_t *init_binary = kmalloc(file->resource->stat.st_size);
-	file->resource->read(file->resource, NULL, init_binary, 0,
-						 file->resource->stat.st_size);
-
 	kprintf("Running init binary /bin/init.elf\n");
 
-	process_create_elf("init", PROCESS_READY_TO_RUN, 2000, init_binary,
+	process_create_elf("init", PROCESS_READY_TO_RUN, 2000, "/bin/init.elf",
 					   prcb_return_current_cpu()->running_thread->mother_proc);
 	for (;;)
 		;

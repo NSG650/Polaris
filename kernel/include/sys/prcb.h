@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #if defined(__x86_64__)
-#include "../../arch/x86_64-pc/include/sys/gdt.h"
+#include <sys/gdt.h>
 #endif
 #include <klibc/vec.h>
 #include <sched/sched.h>

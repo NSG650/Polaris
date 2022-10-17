@@ -9,8 +9,8 @@
 #include <stdint.h>
 
 #if defined(__x86_64__)
-#include "../../arch/x86_64-pc/include/mm/vmm.h"
-#include "../../arch/x86_64-pc/include/reg.h"
+#include <mm/vmm.h>
+#include <reg.h>
 #endif
 
 enum thread_states {
@@ -20,7 +20,11 @@ enum thread_states {
 	THREAD_WAITING_FOR_FUTEX
 };
 
-enum process_states { PROCESS_NORMAL = 0, PROCESS_READY_TO_RUN, PROCESS_BLOCKED };
+enum process_states {
+	PROCESS_NORMAL = 0,
+	PROCESS_READY_TO_RUN,
+	PROCESS_BLOCKED
+};
 
 struct process;
 

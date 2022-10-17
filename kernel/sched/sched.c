@@ -9,6 +9,7 @@
 #include <mm/mmap.h>
 #include <sched/sched.h>
 #include <sched/syscall.h>
+#include <sys/elf.h>
 #include <sys/prcb.h>
 #include <sys/timer.h>
 
@@ -104,8 +105,8 @@ void syscall_execve(struct syscall_arguments *args) {
 		kprintf("envp[%d] = %s\n", i, envp[i]);
 	}
 	args->ret = -1;*/
-	if (!process_execve(prcb_return_current_cpu()->running_thread->mother_proc, 
-	(char *)args->args0, (char **)args->args1, (char**)args->args2))
+	if (!process_execve((char *)args->args0, (char **)args->args1,
+						(char **)args->args2))
 		args->ret = -1;
 }
 
@@ -168,65 +169,21 @@ void process_create(char *name, uint8_t state, uint64_t runtime,
 	spinlock_drop(process_lock);
 }
 
-void process_create_elf(char *name, uint8_t state, uint64_t runtime,
-						uint8_t *binary, struct process *parent_process) {
+void process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
+						struct process *parent_process) {
 	spinlock_acquire_or_wait(process_lock);
-	Elf64_Ehdr *header = (Elf64_Ehdr *)binary;
-	if (header->e_type != ET_EXEC) {
-		return;
-	}
-	if (memcmp(header->e_ident, ELFMAG, SELFMAG)) {
-		return;
-	}
-#if defined(__x86_64__)
-	if (header->e_ident[EI_CLASS] != ELFCLASS64 ||
-		header->e_ident[EI_DATA] != ELFDATA2LSB ||
-		header->e_ident[EI_OSABI] != 0 || header->e_machine != EM_X86_64) {
-		return;
-	}
-#endif
 	struct process *proc = kmalloc(sizeof(struct process));
 	strncpy(proc->name, name, 256);
 	proc->runtime = runtime;
 	proc->state = state;
 	proc->pid = pid++;
 	proc->state = PROCESS_READY_TO_RUN;
-#if defined(__x86_64__)
 	proc->process_pagemap = vmm_new_pagemap();
-	for (size_t i = 0; i < header->e_phnum; i++) {
-		Elf64_Phdr *phdr =
-			(void *)(binary + header->e_phoff + i * header->e_phentsize);
 
-		switch (phdr->p_type) {
-			case PT_LOAD: {
-				int prot = PROT_READ;
-				if (phdr->p_flags & PF_W) {
-					prot |= PROT_WRITE;
-				}
-				if (phdr->p_flags & PF_X) {
-					prot |= PROT_EXEC;
-				}
+	struct auxval auxv;
+	struct vfs_node *node = vfs_get_node(vfs_root, path, true);
+	elf_load(proc->process_pagemap, node->resource, 0, &auxv, NULL);
 
-				size_t misalign = phdr->p_vaddr & (PAGE_SIZE - 1);
-				size_t page_count =
-					DIV_ROUNDUP(phdr->p_memsz + misalign, PAGE_SIZE);
-
-				void *phys = pmm_allocz(page_count);
-
-				mmap_range(proc->process_pagemap, phdr->p_vaddr,
-						   (uintptr_t)phys, page_count * PAGE_SIZE, prot,
-						   MAP_ANONYMOUS);
-
-				memcpy(phys + misalign + MEM_PHYS_OFFSET,
-					   (void *)((uint64_t)binary + phdr->p_offset),
-					   phdr->p_filesz);
-
-				break;
-			}
-				// Open for expansion
-		}
-	}
-#endif
 	vec_init(&proc->child_processes);
 	vec_init(&proc->process_threads);
 	vec_push(&processes, proc);
@@ -244,7 +201,7 @@ void process_create_elf(char *name, uint8_t state, uint64_t runtime,
 		proc->umask = S_IWGRP | S_IWOTH;
 		proc->mmap_anon_base = 0x80000000000;
 	}
-	thread_create((uintptr_t)header->e_entry, 0, 1, proc);
+	thread_create((uintptr_t)auxv.at_entry, 0, 1, proc);
 	spinlock_drop(process_lock);
 }
 
@@ -359,102 +316,63 @@ void thread_fork(struct thread *pthrd, struct process *fproc) {
 	spinlock_drop(thread_lock);
 }
 
-bool process_execve(struct process *proc, char *path, char **argv, char **envp) {
+bool process_execve(char *path, char **argv, char **envp) {
 	spinlock_acquire_or_wait(process_lock);
 
-	struct vfs_node *file = vfs_get_node(vfs_root, path, true);
-	if (!file)
-		return false;
+	struct thread *thread = prcb_return_current_cpu()->running_thread;
+	struct process *proc = thread->mother_proc;
 
 	proc->state = PROCESS_BLOCKED;
-	
-	uint8_t *binary = kmalloc(file->resource->stat.st_size);
-	file->resource->read(file->resource, NULL, binary, 0,
-						 file->resource->stat.st_size);
 
-	for (int i = 0; i < proc->process_threads.length; i++)
+	struct pagemap *new_pagemap = vmm_new_pagemap();
+	struct auxval auxv, ld_auxv;
+	char *ld_path;
+
+	proc->cwd = vfs_root;
+	struct vfs_node *node = vfs_get_node(proc->cwd, path, true);
+	if (node == NULL || !elf_load(new_pagemap, node->resource, 0, &auxv, &ld_path))
+		return false;
+
+	// We will need this later
+	/*struct vfs_node *ld_node = vfs_get_node(proc->cwd, ld_path, true);
+	if (ld_node == NULL || !elf_load(new_pagemap, ld_node->resource, 0x40000000, &ld_auxv, NULL))
+		return false;*/
+
+	struct pagemap *old_pagemap = proc->process_pagemap;
+
+	proc->process_pagemap = new_pagemap;
+	proc->mmap_anon_base = 0x80000000000;
+
+	int stuff = proc->process_threads.length;
+	for (int i = 0; i < stuff; i++)
 		thread_kill(proc->process_threads.data[i], false);
 
-	// child processes are now owned by the init
-	for (int i = 0; i < proc->child_processes.length; i++) {
+	// Child processes are now owned by the init
+	/*for (int i = 0; i < proc->child_processes.length; i++) {
 		struct process *child_process = proc->child_processes.data[i];
-		child_process->parent_process =
-			processes.data[1]; // the init proc is the second process
-							   // first one is the kernel
+		child_process->parent_process = processes.data[1];
 		vec_push(&processes.data[1]->child_processes, child_process);
-	}
+	}*/
 
-	proc->process_pagemap = vmm_new_pagemap();
+	uint64_t entry = ld_path == NULL ? auxv.at_entry : ld_auxv.at_entry;
 
-	strncpy(proc->name, path, 256);
+	vfs_pathname(node, proc->name, sizeof(proc->name) - 1);
 
-	Elf64_Ehdr *header = (Elf64_Ehdr *)binary;
-	if (header->e_type != ET_EXEC) {
-		return false;
-	}
-	if (memcmp(header->e_ident, ELFMAG, SELFMAG)) {
-		return false;
-	}
-#if defined(__x86_64__)
-	if (header->e_ident[EI_CLASS] != ELFCLASS64 ||
-		header->e_ident[EI_DATA] != ELFDATA2LSB ||
-		header->e_ident[EI_OSABI] != 0 || header->e_machine != EM_X86_64) {
-		return false;
-	}
-
-	for (size_t i = 0; i < header->e_phnum; i++) {
-		Elf64_Phdr *phdr =
-			(void *)(binary + header->e_phoff + i * header->e_phentsize);
-
-		switch (phdr->p_type) {
-			case PT_LOAD: {
-				int prot = PROT_READ;
-				if (phdr->p_flags & PF_W) {
-					prot |= PROT_WRITE;
-				}
-				if (phdr->p_flags & PF_X) {
-					prot |= PROT_EXEC;
-				}
-
-				size_t misalign = phdr->p_vaddr & (PAGE_SIZE - 1);
-				size_t page_count =
-					DIV_ROUNDUP(phdr->p_memsz + misalign, PAGE_SIZE);
-
-				void *phys = pmm_allocz(page_count);
-
-				mmap_range(proc->process_pagemap, phdr->p_vaddr,
-						   (uintptr_t)phys, page_count * PAGE_SIZE, prot,
-						   MAP_ANONYMOUS);
-
-				memcpy(phys + misalign + MEM_PHYS_OFFSET,
-					   (void *)((uint64_t)binary + phdr->p_offset),
-					   phdr->p_filesz);
-
-				break;
-			}
-				// Open for expansion
-		}
-	}
-
-	Elf64_Auxval aux = {
-		.at_entry = header->e_entry,
-		.at_phent = header->e_phentsize,
-		.at_phnum = header->e_phnum
-	};
-
-#endif
-	//if(!thread_execve(proc, header->e_entry, argv, envp, &aux)) {
+	// if(!thread_execve(proc, header->e_entry, argv, envp, &aux)) {
 	//	spinlock_drop(process_lock);
 	//	return false;
-	//}
+	// }
 
-	thread_create(header->e_entry, 0, 1, proc);
-	
+	thread_create(entry, 0, 1, proc);
+
 	proc->state = PROCESS_READY_TO_RUN;
+	vmm_switch_pagemap(kernel_pagemap);
 
 	spinlock_drop(process_lock);
+
+	//vmm_destroy_pagemap(old_pagemap);
 	sched_resched_now();
-	// wont make it here lol
+	__builtin_unreachable();
 	return true;
 }
 
@@ -480,7 +398,8 @@ void process_kill(struct process *proc) {
 	sched_resched_now();
 }
 
-bool thread_execve(struct process *proc, uintptr_t pc_address, char **argv, char **envp, Elf64_Auxval *aux) {
+bool thread_execve(struct process *proc, uintptr_t pc_address, char **argv,
+				   char **envp, struct auxval *aux) {
 	spinlock_acquire_or_wait(thread_lock);
 
 	// the crazy execve stuff
@@ -526,8 +445,8 @@ bool thread_execve(struct process *proc, uintptr_t pc_address, char **argv, char
 	thrd->reg.cs = 0x23;
 	thrd->reg.ss = 0x1b;
 	mmap_range(proc->process_pagemap, VIRTUAL_STACK_ADDR - STACK_SIZE,
-		(uintptr_t)thrd->reg.rsp, STACK_SIZE, PROT_READ | PROT_WRITE,
-		MAP_ANONYMOUS);
+			   (uintptr_t)thrd->reg.rsp, STACK_SIZE, PROT_READ | PROT_WRITE,
+			   MAP_ANONYMOUS);
 	thrd->reg.rsp = VIRTUAL_STACK_ADDR;
 	thrd->kernel_stack = (uint64_t)kmalloc(STACK_SIZE);
 	thrd->kernel_stack += STACK_SIZE;
@@ -538,7 +457,7 @@ bool thread_execve(struct process *proc, uintptr_t pc_address, char **argv, char
 	kprintf("rsp: %p\n", thrd->reg.rsp);
 
 	thrd->fpu_storage =
-	pmm_allocz(DIV_ROUNDUP(fpu_storage_size, PAGE_SIZE)) + MEM_PHYS_OFFSET;
+		pmm_allocz(DIV_ROUNDUP(fpu_storage_size, PAGE_SIZE)) + MEM_PHYS_OFFSET;
 	fpu_restore(thrd->fpu_storage);
 	uint16_t default_fcw = 0b1100111111;
 	asm volatile("fldcw %0" ::"m"(default_fcw) : "memory");
@@ -564,7 +483,8 @@ void thread_kill(struct thread *thrd, bool r) {
 	}
 #if defined(__x86_64__)
 	pmm_free((void *)thrd->stack, STACK_SIZE / PAGE_SIZE);
-	// pmm_free((void *)thrd->fpu_storage, DIV_ROUNDUP(fpu_storage_size, PAGE_SIZE));
+	// pmm_free((void *)thrd->fpu_storage, DIV_ROUNDUP(fpu_storage_size,
+	// PAGE_SIZE));
 	kfree((void *)thrd->kernel_stack);
 #endif
 	vec_remove(&thrd->mother_proc->process_threads, thrd);

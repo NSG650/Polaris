@@ -175,20 +175,16 @@ void main(void) {
 	puts("Reading /file_from_user.txt:\n");
 	puts(fun);
 
+	chdir("/");
+
 	if (!fork()) {
 		puts_to_console("Hello I am the forked process!\n");
-		char *argv[] = {
-			"/bin/test.elf",
-			"cool",
-			NULL
-		};
-		char *envp[] = {
-			"YES=YES",
-			NULL
-		};
+		char *argv[] = {"/bin/test.elf", "cool", NULL};
+		char *envp[] = {"YES=YES", NULL};
 		if (execve(argv[0], argv, envp) == -1) {
 			puts_to_console("execve failed\n");
 		}
+		puts_to_console("execve failed\n");
 		for (;;)
 			;
 	}
