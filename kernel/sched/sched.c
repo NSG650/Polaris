@@ -15,6 +15,8 @@
 
 #define VIRTUAL_STACK_ADDR 0x70000000000
 
+struct resource *std_console_device;
+
 lock_t sched_lock = 0;
 bool sched_runit = false;
 
@@ -169,7 +171,7 @@ void process_create(char *name, uint8_t state, uint64_t runtime,
 	spinlock_drop(process_lock);
 }
 
-void process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
+bool process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
 						struct process *parent_process) {
 	spinlock_acquire_or_wait(process_lock);
 	struct process *proc = kmalloc(sizeof(struct process));
@@ -180,9 +182,19 @@ void process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
 	proc->state = PROCESS_READY_TO_RUN;
 	proc->process_pagemap = vmm_new_pagemap();
 
-	struct auxval auxv;
+	struct auxval auxv, ld_aux;
 	struct vfs_node *node = vfs_get_node(vfs_root, path, true);
-	elf_load(proc->process_pagemap, node->resource, 0, &auxv, NULL);
+	const char *ld_path;
+
+	if(!node || !elf_load(proc->process_pagemap, node->resource, 0, &auxv, &ld_path))
+		return false;
+
+	kprintf("ld_path: %s\n", ld_path);
+
+	struct vfs_node *ld_node = vfs_get_node(vfs_root, ld_path, true);
+
+	if(!ld_node || !elf_load(proc->process_pagemap, ld_node->resource, 0x40000000, &ld_aux, NULL))
+		return false;
 
 	vec_init(&proc->child_processes);
 	vec_init(&proc->process_threads);
@@ -201,6 +213,12 @@ void process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
 		proc->umask = S_IWGRP | S_IWOTH;
 		proc->mmap_anon_base = 0x80000000000;
 	}
+
+	for (int i = 0; i < 3; i++)
+		fdnum_create_from_resource(proc, std_console_device, 0, i, true);
+
+	kprintf("Entry point at: 0x%p\n", (uintptr_t)auxv.at_entry);
+
 	thread_create((uintptr_t)auxv.at_entry, 0, 1, proc);
 	spinlock_drop(process_lock);
 }
@@ -362,6 +380,9 @@ bool process_execve(char *path, char **argv, char **envp) {
 	//	spinlock_drop(process_lock);
 	//	return false;
 	// }
+
+	for (int i = 0; i < 3; i++)
+		fdnum_create_from_resource(proc, std_console_device, 0, i, true);
 
 	thread_create(entry, 0, 1, proc);
 

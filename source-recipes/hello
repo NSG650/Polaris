@@ -1,0 +1,10 @@
+name=hello
+version=1.2
+source_method=git
+clone_url="https://github.com/lowlevelmemes/hello"
+tag=v1.2
+commit="7af30271e9c22de981e95326cb7bad514b3bd1bf"
+
+regenerate() {
+    true
+}

@@ -18,6 +18,7 @@ void resched(registers_t *reg);
 extern process_vec_t processes;
 extern thread_vec_t threads;
 extern thread_vec_t sleeping_threads;
+extern struct resource *std_console_device;
 
 void sched_resched_now(void);
 int sched_get_next_thread(int index);
@@ -25,7 +26,7 @@ void sched_init(uint64_t args);
 void process_create(char *name, uint8_t state, uint64_t runtime,
 					uintptr_t pc_address, uint64_t arguments, bool user,
 					struct process *parent_process);
-void process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
+bool process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
 						struct process *parent_process);
 void process_kill(struct process *proc);
 int process_fork(struct process *proc, struct thread *thrd);

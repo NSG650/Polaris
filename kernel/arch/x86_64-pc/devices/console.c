@@ -14,7 +14,7 @@ struct console_info {
 };
 
 struct console {
-	struct resource;
+	struct resource res;
 	char **console_buffer;
 	struct console_info info;
 };
@@ -49,14 +49,14 @@ void console_init(void) {
 	framebuffer_clear(0);
 	kprintffos(0, "Bye bye!\n");
 	console_device = resource_create(sizeof(struct console));
-	console_device->read = console_read;
-	console_device->write = console_write;
-	console_device->ioctl = resource_default_ioctl;
-	console_device->stat.st_size = 0;
-	console_device->stat.st_blocks = 0;
-	console_device->stat.st_blksize = 4096;
-	console_device->stat.st_rdev = resource_create_dev_id();
-	console_device->stat.st_mode = 0644 | S_IFCHR;
+	console_device->res.read = console_read;
+	console_device->res.write = console_write;
+	console_device->res.ioctl = resource_default_ioctl;
+	console_device->res.stat.st_size = 0;
+	console_device->res.stat.st_blocks = 0;
+	console_device->res.stat.st_blksize = 4096;
+	console_device->res.stat.st_rdev = resource_create_dev_id();
+	console_device->res.stat.st_mode = 0644 | S_IFCHR;
 	console_device->info.height = framebuff.height / 16;
 	console_device->info.width = framebuff.width / 8;
 	console_device->info.tex_x = 0;

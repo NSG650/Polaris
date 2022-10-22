@@ -1,7 +1,7 @@
 #include "types.h"
 
-int stdin = -1;
-int stdout = -1;
+int stdin = 0;
+int stdout = 1;
 
 #define PROT_NONE 0x00
 #define PROT_READ 0x01
@@ -134,9 +134,6 @@ void puts_to_console(char *string) {
 void *memset(void *d, int c, size_t n);
 
 void main(void) {
-	stdin = open("/dev/console", O_RDONLY, 0);
-	stdout = open("/dev/console", O_RDWR, 0);
-
 	puts("Hello I am supposed to be the init\n");
 
 	// Change directory to /fun so we can use relative paths
@@ -179,12 +176,6 @@ void main(void) {
 
 	if (!fork()) {
 		puts_to_console("Hello I am the forked process!\n");
-		char *argv[] = {"/bin/test.elf", "cool", NULL};
-		char *envp[] = {"YES=YES", NULL};
-		if (execve(argv[0], argv, envp) == -1) {
-			puts_to_console("execve failed\n");
-		}
-		puts_to_console("execve failed\n");
 		for (;;)
 			;
 	}

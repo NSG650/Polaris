@@ -40,4 +40,7 @@ extern bool put_to_fb;
 
 #define kprintf(...) kprintffos(put_to_fb, __VA_ARGS__)
 
+// printf debugging best debugging
+#define crash_or_not() kprintf("Do we crash? %s:%d\n", __FILE__, __LINE__)
+
 #endif
