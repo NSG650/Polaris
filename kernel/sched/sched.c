@@ -140,6 +140,7 @@ void process_create(char *name, uint8_t state, uint64_t runtime,
 	proc->state = state;
 	proc->pid = pid++;
 	proc->state = PROCESS_READY_TO_RUN;
+	memset(&proc->auxv, 0, sizeof(struct auxval));
 #if defined(__x86_64__)
 	if (user) {
 		proc->process_pagemap = vmm_new_pagemap();
@@ -196,6 +197,10 @@ bool process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
 	if(!ld_node || !elf_load(proc->process_pagemap, ld_node->resource, 0x40000000, &ld_aux, NULL))
 		return false;
 
+	uint64_t entry = ld_path == NULL ? auxv.at_entry : ld_aux.at_entry;
+
+	proc->auxv = auxv;
+
 	vec_init(&proc->child_processes);
 	vec_init(&proc->process_threads);
 	vec_push(&processes, proc);
@@ -217,10 +222,11 @@ bool process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
 	for (int i = 0; i < 3; i++)
 		fdnum_create_from_resource(proc, std_console_device, 0, i, true);
 
-	kprintf("Entry point at: 0x%p\n", (uintptr_t)auxv.at_entry);
+	kprintf("Entry point at: 0x%p\n", (uintptr_t)entry);
 
-	thread_create((uintptr_t)auxv.at_entry, 0, 1, proc);
+	thread_create((uintptr_t)entry, 0, 1, proc);
 	spinlock_drop(process_lock);
+	return true;
 }
 
 int process_fork(struct process *proc, struct thread *thrd) {
@@ -300,6 +306,78 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 		fpu_save(thrd->fpu_storage);
 		thrd->fs_base = 0;
 		thrd->gs_base = 0;
+
+		const char *argv[] = {proc->name, NULL};
+		const char *envp[] = {"USER=root", NULL};
+		struct auxval auxv = proc->auxv;
+
+		uint64_t *stack = (uint64_t *)(thrd->stack + STACK_SIZE);
+
+		// the stack structure address values are not accurate
+		/*
+		 * 	0x70000000000 - "USER=root\0" 	// envp[0][9]
+		 * 	0x6fffffffff6 - proc->name 		// argv[0][255]
+		 *	0x6fffffffef6 - 0x0, 0x0		// zeros
+		 *	0x6fffffffee6 - AT_ENTRY
+		 *	0x6fffffffede - 0x400789		// example values
+		 *	0x6fffffffed6 - AT_PHDR
+		 *	0x6fffffffece - 2
+		 *	0x6fffffffec6 - AT_PHENT
+		 *	0x6fffffffebe - 7
+		 *	0x6fffffffeb6 - AT_PHNUM
+		 *	0x6fffffffeae - 5
+		 *	0x6fffffffea6 - 0x0 			// START OF ENVP
+		 *	0x6fffffffe9e - 0x6fffffffff6	// pointer to envp[0][9] aka envp[0]
+		 *	0x6fffffffe96 - 0x0				// START OF ARGV
+		 *	0x6fffffffe8e - 0x6fffffffef6	// pointer to argv[0][0] aka argv[0]
+		 *	0x6fffffffe86 - 1				// argc
+		 */
+
+		stack -= strlen(envp[0]) + 1;
+		memcpy((void *)stack, envp[0], strlen(envp[0]) + 1);
+		kprintf("%s\n", stack);
+		uint64_t address_difference =
+			(thrd->stack + STACK_SIZE) - (uint64_t)stack;
+		uint64_t addr_to_env =
+			(uint64_t)VIRTUAL_STACK_ADDR - address_difference;
+		kprintf("env located at: 0x%p\n", addr_to_env);
+
+		stack -= strlen(argv[0]) + 1;
+		memcpy((void *)stack, argv[0], strlen(argv[0]) + 1);
+		kprintf("%s\n", stack);
+		address_difference = (thrd->stack + STACK_SIZE) - (uint64_t)stack;
+		uint64_t addr_to_arg =
+			(uint64_t)VIRTUAL_STACK_ADDR - address_difference;
+		kprintf("arg located at: 0x%p\n", addr_to_arg);
+
+		*(--stack) = 0;
+		*(--stack) = 0;
+		stack -= 2;
+		stack[0] = 9;
+		stack[1] = auxv.at_entry;
+		stack -= 2;
+		stack[0] = 3;
+		stack[1] = auxv.at_phdr;
+		stack -= 2;
+		stack[0] = 4;
+		stack[1] = auxv.at_phent;
+		stack -= 2;
+		stack[0] = 5;
+		stack[1] = auxv.at_phnum;
+
+		*(--stack) = 0;
+		*(--stack) = addr_to_env;
+
+		*(--stack) = 0;
+		*(--stack) = addr_to_arg;
+
+		*(--stack) = 1;
+
+		address_difference = (thrd->stack + STACK_SIZE) - (uint64_t)stack;
+		kprintf("Stack difference: 0x%p\n", address_difference);
+		thrd->reg.rsp -= address_difference;
+
+		kprintf("Thread RSP: 0x%p\n", thrd->reg.rsp);
 	}
 #endif
 	thrd->sleeping_till = 0;

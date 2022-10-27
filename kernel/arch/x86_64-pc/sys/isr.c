@@ -318,6 +318,8 @@ void isr_handle(registers_t *r) {
 					"%s\n",
 					thrd->tid, thrd->mother_proc->name,
 					isr_exception_messages[r->isrNumber]);
+			kprintf("User thread crashed at address: 0x%p\n", r->rip);
+			backtrace((void *)r->rbp);
 			thread_kill(thrd, 1);
 		} else
 			panic_((void *)r->rip, (void *)r->rbp, "Unhandled Exception: %s\n",

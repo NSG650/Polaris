@@ -7,6 +7,7 @@
 #include <locks/spinlock.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <sys/elf.h>
 
 #if defined(__x86_64__)
 #include <mm/vmm.h>
@@ -70,6 +71,7 @@ struct process {
 	struct f_descriptor *fds[MAX_FDS];
 	struct process *parent_process;
 	process_vec_t child_processes;
+	struct auxval auxv;
 	char name[256];
 };
 

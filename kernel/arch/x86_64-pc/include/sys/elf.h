@@ -1,6 +1,7 @@
 #ifndef _SYS__ELF_H
 #define _SYS__ELF_H
 
+#include <klibc/elf.h>
 #include <klibc/resource.h>
 #include <mm/vmm.h>
 #include <stdbool.h>

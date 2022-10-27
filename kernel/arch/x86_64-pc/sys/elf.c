@@ -1,4 +1,3 @@
-#include <klibc/elf.h>
 #include <klibc/misc.h>
 #include <mm/mmap.h>
 #include <mm/pmm.h>
@@ -12,11 +11,6 @@ bool elf_load(struct pagemap *pagemap, struct resource *res, uint64_t load_base,
 	if (res->read(res, NULL, &header, 0, sizeof(header)) < 0) {
 		return false;
 	}
-
-	/*if (header.e_type != ET_EXEC) {
-		return false;
-	}*/
-	
 
 	if (memcmp(header.e_ident, ELFMAG, SELFMAG)) {
 		return false;
