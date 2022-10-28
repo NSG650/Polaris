@@ -1,3 +1,4 @@
+#include "debug/debug.h"
 #include <fb/fb.h>
 #include <klibc/mem.h>
 #include <locks/spinlock.h>
@@ -384,6 +385,8 @@ void framebuffer_init(struct framebuffer *fb) {
 	framebuff.tex_x = fb->tex_x;
 	framebuff.tex_y = fb->tex_y;
 	framebuff.tex_color = fb->tex_color;
+	framebuff.tex_height = fb->height / 16;
+	framebuff.tex_width = fb->width / 8;
 	framebuff.back_address = kmalloc(framebuff.pitch * framebuff.height);
 	framebuff.bg_color = fb->bg_color;
 	framebuffer_clear(framebuff.bg_color);
@@ -453,7 +456,7 @@ static void framebuffer_putc(char c, int x, int y) {
 					(y + x_bit) * framebuff.width + x + y_bit)
 					framebuffer_putpx(x + y_bit, y + x_bit, framebuff.tex_color,
 									  true);
-			} else if (c == ' ') {
+			} else {
 				if (framebuff.width * framebuff.height >
 					(y + x_bit) * framebuff.width + x + y_bit)
 					framebuffer_putpx(x + y_bit, y + x_bit, framebuff.bg_color,
@@ -463,8 +466,121 @@ static void framebuffer_putc(char c, int x, int y) {
 	}
 }
 
-void framebuffer_putchar(char c) {
+static int escape = 0;
+static int esc_value0 = 0;
+static int esc_value1 = 0;
+static int *esc_value = &esc_value0;
+static int esc_default0 = 1;
+static int esc_default1 = 1;
+static int *esc_default = &esc_default0;
+
+static uint32_t ansi_colours[] = {
+	0x00073642, // black
+	0x00dc322f, // red
+	0x00859900, // green
+	0x00b58900, // yellow
+	0x00268bd2, // blue
+	0x00d33682, // magenta
+	0x002aa198, // cyan
+	0x00eee8d5	// grey
+};
+
+static void framebuffer_parse(char c) {
+	if (c >= '0' && c <= '9') {
+		*esc_value *= 10;
+		*esc_value += c - '0';
+		*esc_default = 0;
+		return;
+	}
 	switch (c) {
+		case '[':
+			return;
+		case ';':
+			esc_value = &esc_value1;
+			esc_default = &esc_default1;
+			return;
+		case 'A':
+			if (esc_default0)
+				esc_value0 = 1;
+			if (esc_value0 > framebuff.tex_y)
+				esc_value0 = framebuff.tex_y;
+			framebuff.tex_y = framebuff.tex_y - esc_value0;
+			break;
+		case 'B':
+			if (esc_default0)
+				esc_value0 = 1;
+			if ((framebuff.tex_y + esc_value0) > (framebuff.tex_width - 1))
+				esc_value0 = (framebuff.tex_width - 1) - framebuff.tex_y;
+			framebuff.tex_y = framebuff.tex_y + esc_value0;
+			break;
+		case 'D':
+			if (esc_default0)
+				esc_value0 = 1;
+			if (esc_value0 > framebuff.tex_x)
+				esc_value0 = framebuff.tex_x;
+			framebuff.tex_x = framebuff.tex_x + esc_value0;
+			break;
+		case 'H':
+			esc_value0--;
+			esc_value1--;
+			if (esc_default0)
+				esc_value0 = 0;
+			if (esc_default1)
+				esc_value1 = 0;
+			if (esc_value1 >= (framebuff.tex_height / 2))
+				esc_value1 = (framebuff.tex_height / 2) - 1;
+			if (esc_value0 >= framebuff.tex_width)
+				esc_value0 = framebuff.tex_width - 1;
+			framebuff.tex_x = esc_value1;
+			framebuff.tex_y = esc_value0;
+			break;
+		case 'm':
+			// kprintffos(0, "val0: %d val1: %d\n", esc_value0, esc_value1);
+			if (esc_value1 >= 30 && esc_value1 <= 37) {
+				framebuff.tex_color = ansi_colours[esc_value1 - 30];
+			}
+			if (esc_value1 >= 40 && esc_value1 <= 47) {
+				framebuff.bg_color = ansi_colours[esc_value1 - 40];
+			}
+			break;
+		case 'J':
+			uint64_t old_x = framebuff.tex_x;
+			uint64_t old_y = framebuff.tex_y;
+			switch (esc_value0) {
+				case 2:
+					framebuffer_clear(framebuff.bg_color);
+					framebuff.tex_x = old_x;
+					framebuff.tex_y = old_y;
+					break;
+				default:
+					break;
+			}
+			break;
+		default:
+			escape = 0;
+			framebuffer_putchar('?');
+			break;
+	}
+
+	esc_value = &esc_value0;
+	esc_value0 = 0;
+	esc_value1 = 0;
+	esc_default = &esc_default0;
+	esc_default0 = 1;
+	esc_default1 = 1;
+	escape = 0;
+
+	return;
+}
+
+void framebuffer_putchar(char c) {
+	if (escape)
+		return framebuffer_parse(c);
+
+	switch (c) {
+		case 0x1b:
+			escape = 1;
+			return;
 		case '\n':
 			framebuff.tex_x = 0;
 			framebuff.tex_y++;
@@ -492,7 +608,6 @@ void framebuffer_putchar(char c) {
 }
 
 void framebuffer_puts(char *string) {
-	while (*string != '\0') {
+	while (*string)
 		framebuffer_putchar(*string++);
-	}
 }

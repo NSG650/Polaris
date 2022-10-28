@@ -27,6 +27,7 @@ struct framebuffer {
 	size_t pitch, bpp;
 	uint16_t width, height;
 	size_t tex_x, tex_y;
+	uint16_t tex_width, tex_height;
 	uint32_t tex_color;
 	uint32_t bg_color;
 };

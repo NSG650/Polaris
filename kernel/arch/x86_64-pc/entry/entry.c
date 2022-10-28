@@ -76,10 +76,10 @@ void arch_entry(void) {
 	fb.bpp = framebuffer->bpp;
 	fb.width = framebuffer->width;
 	fb.height = framebuffer->height;
-	fb.tex_color = 0xffffff;
+	fb.tex_color = 0x00eee8d5;
 	fb.tex_x = 0;
 	fb.tex_y = 0;
-	fb.bg_color = 0x12456;
+	fb.bg_color = 0x0012456;
 	framebuffer_init(&fb);
 	kprintf("Hello x86_64!\n");
 	cli();

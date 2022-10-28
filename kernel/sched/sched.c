@@ -190,8 +190,6 @@ bool process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
 	if(!node || !elf_load(proc->process_pagemap, node->resource, 0, &auxv, &ld_path))
 		return false;
 
-	kprintf("ld_path: %s\n", ld_path);
-
 	struct vfs_node *ld_node = vfs_get_node(vfs_root, ld_path, true);
 
 	if(!ld_node || !elf_load(proc->process_pagemap, ld_node->resource, 0x40000000, &ld_aux, NULL))
@@ -221,8 +219,6 @@ bool process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
 
 	for (int i = 0; i < 3; i++)
 		fdnum_create_from_resource(proc, std_console_device, 0, i, true);
-
-	kprintf("Entry point at: 0x%p\n", (uintptr_t)entry);
 
 	thread_create((uintptr_t)entry, 0, 1, proc);
 	spinlock_drop(process_lock);
@@ -335,20 +331,16 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 
 		stack -= strlen(envp[0]) + 1;
 		memcpy((void *)stack, envp[0], strlen(envp[0]) + 1);
-		kprintf("%s\n", stack);
 		uint64_t address_difference =
 			(thrd->stack + STACK_SIZE) - (uint64_t)stack;
 		uint64_t addr_to_env =
 			(uint64_t)VIRTUAL_STACK_ADDR - address_difference;
-		kprintf("env located at: 0x%p\n", addr_to_env);
 
 		stack -= strlen(argv[0]) + 1;
 		memcpy((void *)stack, argv[0], strlen(argv[0]) + 1);
-		kprintf("%s\n", stack);
 		address_difference = (thrd->stack + STACK_SIZE) - (uint64_t)stack;
 		uint64_t addr_to_arg =
 			(uint64_t)VIRTUAL_STACK_ADDR - address_difference;
-		kprintf("arg located at: 0x%p\n", addr_to_arg);
 
 		*(--stack) = 0;
 		*(--stack) = 0;
@@ -374,10 +366,7 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 		*(--stack) = 1;
 
 		address_difference = (thrd->stack + STACK_SIZE) - (uint64_t)stack;
-		kprintf("Stack difference: 0x%p\n", address_difference);
 		thrd->reg.rsp -= address_difference;
-
-		kprintf("Thread RSP: 0x%p\n", thrd->reg.rsp);
 	}
 #endif
 	thrd->sleeping_till = 0;
