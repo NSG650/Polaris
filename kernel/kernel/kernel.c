@@ -51,9 +51,9 @@ void kernel_main(void *args) {
 
 	std_console_device = (vfs_get_node(vfs_root, "/dev/console", true))->resource;
 
-	kprintf("Running hello binary /bin/hello\n");
+	kprintf("Running init binary /bin/init.elf\n");
 
-	if(!process_create_elf("init", PROCESS_READY_TO_RUN, 2000, "/bin/hello",
+	if(!process_create_elf("init", PROCESS_READY_TO_RUN, 2000, "/bin/init.elf",
 					   prcb_return_current_cpu()->running_thread->mother_proc))
 			panic("Failed to run init binary!\n");
 

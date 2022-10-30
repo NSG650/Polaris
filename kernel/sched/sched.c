@@ -182,7 +182,6 @@ bool process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
 	proc->pid = pid++;
 	proc->state = PROCESS_READY_TO_RUN;
 	proc->process_pagemap = vmm_new_pagemap();
-
 	struct auxval auxv, ld_aux;
 	struct vfs_node *node = vfs_get_node(vfs_root, path, true);
 	const char *ld_path;
@@ -190,15 +189,16 @@ bool process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
 	if(!node || !elf_load(proc->process_pagemap, node->resource, 0, &auxv, &ld_path))
 		return false;
 
-	struct vfs_node *ld_node = vfs_get_node(vfs_root, ld_path, true);
+	if (ld_path) {
+		struct vfs_node *ld_node = vfs_get_node(vfs_root, ld_path, true);
 
-	if(!ld_node || !elf_load(proc->process_pagemap, ld_node->resource, 0x40000000, &ld_aux, NULL))
-		return false;
+		if(!ld_node || !elf_load(proc->process_pagemap, ld_node->resource, 0x40000000, &ld_aux, NULL))
+			return false;
+	}
 
 	uint64_t entry = ld_path == NULL ? auxv.at_entry : ld_aux.at_entry;
 
 	proc->auxv = auxv;
-
 	vec_init(&proc->child_processes);
 	vec_init(&proc->process_threads);
 	vec_push(&processes, proc);
@@ -225,7 +225,7 @@ bool process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
 	return true;
 }
 
-int process_fork(struct process *proc, struct thread *thrd) {
+int64_t process_fork(struct process *proc, struct thread *thrd) {
 	spinlock_acquire_or_wait(process_lock);
 	struct process *fproc = kmalloc(sizeof(struct process));
 	memcpy(fproc->name, proc->name, sizeof(proc->name));
@@ -407,43 +407,44 @@ bool process_execve(char *path, char **argv, char **envp) {
 	struct thread *thread = prcb_return_current_cpu()->running_thread;
 	struct process *proc = thread->mother_proc;
 
-	proc->state = PROCESS_BLOCKED;
-
 	struct pagemap *new_pagemap = vmm_new_pagemap();
 	struct auxval auxv, ld_auxv;
-	char *ld_path;
+	const char *ld_path;
 
-	proc->cwd = vfs_root;
-	struct vfs_node *node = vfs_get_node(proc->cwd, path, true);
+	// I mean we are literally killing a process but not also killing
+
+	int64_t old_pid = proc->pid;
+	struct process *parent_proc = proc->parent_process;
+	struct vfs_node *old_cwd = proc->cwd;
+
+	struct process *new_proc = kmalloc(sizeof(struct process));
+	new_proc->pid = old_pid;
+	new_proc->parent_process = parent_proc;
+	new_proc->cwd = old_cwd;
+
+	if (parent_proc)
+		vec_push(&parent_proc->child_processes, new_proc);
+
+	struct vfs_node *node = vfs_get_node(new_proc->cwd, path, true);
 	if (node == NULL || !elf_load(new_pagemap, node->resource, 0, &auxv, &ld_path))
 		return false;
 
-	// We will need this later
-	/*struct vfs_node *ld_node = vfs_get_node(proc->cwd, ld_path, true);
-	if (ld_node == NULL || !elf_load(new_pagemap, ld_node->resource, 0x40000000, &ld_auxv, NULL))
-		return false;*/
+	if (ld_path) {
+		struct vfs_node *ld_node = vfs_get_node(proc->cwd, ld_path, true);
+		if (ld_node == NULL || !elf_load(new_pagemap, ld_node->resource, 0x40000000, &ld_auxv, NULL))
+			return false;
+	}
 
-	struct pagemap *old_pagemap = proc->process_pagemap;
 
-	proc->process_pagemap = new_pagemap;
-	proc->mmap_anon_base = 0x80000000000;
+	new_proc->process_pagemap = new_pagemap;
+	new_proc->mmap_anon_base = 0x80000000000;
 
-	int stuff = proc->process_threads.length;
-	for (int i = 0; i < stuff; i++)
-		thread_kill(proc->process_threads.data[i], false);
-
-	// Child processes are now owned by the init
-	/*for (int i = 0; i < proc->child_processes.length; i++) {
-		struct process *child_process = proc->child_processes.data[i];
-		child_process->parent_process = processes.data[1];
-		vec_push(&processes.data[1]->child_processes, child_process);
-	}*/
 
 	uint64_t entry = ld_path == NULL ? auxv.at_entry : ld_auxv.at_entry;
 
-	vfs_pathname(node, proc->name, sizeof(proc->name) - 1);
+	vfs_pathname(node, new_proc->name, sizeof(new_proc->name) - 1);
 
-	// if(!thread_execve(proc, header->e_entry, argv, envp, &aux)) {
+	// if(!thread_execve(proc, header->e_entry, argv, envp)) {
 	//	spinlock_drop(process_lock);
 	//	return false;
 	// }
@@ -451,17 +452,19 @@ bool process_execve(char *path, char **argv, char **envp) {
 	for (int i = 0; i < 3; i++)
 		fdnum_create_from_resource(proc, std_console_device, 0, i, true);
 
-	thread_create(entry, 0, 1, proc);
-
-	proc->state = PROCESS_READY_TO_RUN;
 	vmm_switch_pagemap(kernel_pagemap);
+
+	thread_create(entry, 0, 1, new_proc);
+
+	new_proc->state = PROCESS_READY_TO_RUN;
 
 	spinlock_drop(process_lock);
 
-	//vmm_destroy_pagemap(old_pagemap);
-	sched_resched_now();
+	process_kill(proc); // this will reschedule while killing the old process
+
 	__builtin_unreachable();
-	return true;
+	for (;;)
+		;
 }
 
 void process_kill(struct process *proc) {
@@ -483,11 +486,10 @@ void process_kill(struct process *proc) {
 
 	vec_remove(&processes, proc);
 	spinlock_drop(process_lock);
-	sched_resched_now();
 }
 
 bool thread_execve(struct process *proc, uintptr_t pc_address, char **argv,
-				   char **envp, struct auxval *aux) {
+				   char **envp) {
 	spinlock_acquire_or_wait(thread_lock);
 
 	// the crazy execve stuff

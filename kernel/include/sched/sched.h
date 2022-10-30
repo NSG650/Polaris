@@ -29,7 +29,7 @@ void process_create(char *name, uint8_t state, uint64_t runtime,
 bool process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
 						struct process *parent_process);
 void process_kill(struct process *proc);
-int process_fork(struct process *proc, struct thread *thrd);
+int64_t process_fork(struct process *proc, struct thread *thrd);
 bool process_execve(char *path, char **argv, char **envp);
 void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 				   struct process *proc);

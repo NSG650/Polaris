@@ -176,6 +176,17 @@ void main(void) {
 
 	if (!fork()) {
 		puts_to_console("Hello I am the forked process!\n");
+		char *argv[] = {
+			"/bin/hello",
+			NULL
+		};
+		char *envp[] = {
+			"USER=root",
+			NULL
+		};
+		if(execve(argv[0], argv, envp) == -1) {
+			puts_to_console("Failed to execve :((\n");
+		}
 		for (;;)
 			;
 	}
