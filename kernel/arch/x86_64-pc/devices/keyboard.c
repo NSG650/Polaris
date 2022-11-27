@@ -1,10 +1,15 @@
+#include <klibc/resource.h>
 #include <asm/asm.h>
 #include <debug/debug.h>
 #include <devices/keyboard.h>
 #include <fb/fb.h>
 #include <io/ports.h>
+#include <fs/devtmpfs.h>
 #include <sys/apic.h>
+#include <errno.h>
 #include <sys/isr.h>
+
+struct resource *keyboard_resource;
 
 // Hello old friend
 
@@ -126,7 +131,38 @@ void keyboard_handle(registers_t *reg) {
 	apic_eoi();
 }
 
+int keyboard_resource_ioctl(struct resource *this,
+						   struct f_description *description, uint64_t request,
+						   uint64_t arg) {
+	(void)this;
+	(void)description;
+	(void)arg;
+	switch (request) {
+		case 0x1:
+			*(uint8_t*)arg = keyboard_read();
+			return 0;
+		case TCGETS:
+		case TCSETS:
+		case TIOCSCTTY:
+		case TIOCGWINSZ:
+			errno = ENOTTY;
+			return -1;
+	}
+
+	errno = EINVAL;
+	return -1;
+}
+
+
 void keyboard_init(void) {
+	keyboard_resource = resource_create(sizeof(struct resource));
+	keyboard_resource->stat.st_size = 0;
+	keyboard_resource->stat.st_blocks = 0;
+	keyboard_resource->stat.st_blksize = 4096;
+	keyboard_resource->stat.st_rdev = resource_create_dev_id();
+	keyboard_resource->stat.st_mode = 0644 | S_IFCHR;
+	keyboard_resource->ioctl = keyboard_resource_ioctl;
+
 	// Disable primary and secondary PS/2 ports
 	keyboard_write(0x64, 0xad);
 	keyboard_write(0x64, 0xa7);
@@ -146,4 +182,6 @@ void keyboard_init(void) {
 	isr_register_handler(49, keyboard_handle);
 	ioapic_redirect_irq(1, 49);
 	inb(0x60);
+
+	devtmpfs_add_device(keyboard_resource, "keyboard");
 }

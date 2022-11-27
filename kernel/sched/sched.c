@@ -105,10 +105,9 @@ void syscall_execve(struct syscall_arguments *args) {
 	}
 	for (int i = 0; envp[i] != NULL; i++) {
 		kprintf("envp[%d] = %s\n", i, envp[i]);
-	}
-	args->ret = -1;*/
-	if (!process_execve((char *)args->args0, (char **)args->args1,
-						(char **)args->args2))
+	}*/
+	// if (!process_execve((char *)args->args0, (char **)args->args1,
+	//					(char **)args->args2))
 		args->ret = -1;
 }
 

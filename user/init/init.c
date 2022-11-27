@@ -79,6 +79,10 @@ ssize_t write(int fd, const void *data, size_t count) {
 	return syscall3(0x1, fd, (uint64_t)data, count);
 }
 
+int ioctl(int fd, unsigned long request, void *arg) {
+	return syscall3(0x10, fd, request, (uint64_t)arg);
+}
+
 int open(const char *path, int flags, mode_t mode) {
 	return syscall3(0x2, (uint64_t)path, flags, mode);
 }
@@ -176,7 +180,7 @@ void main(void) {
 
 	if (!fork()) {
 		puts_to_console("Hello I am the forked process!\n");
-		char *argv[] = {
+		/*char *argv[] = {
 			"/bin/hello",
 			NULL
 		};
@@ -186,7 +190,7 @@ void main(void) {
 		};
 		if(execve(argv[0], argv, envp) == -1) {
 			puts_to_console("Failed to execve :((\n");
-		}
+		}*/
 		for (;;)
 			;
 	}
@@ -202,4 +206,16 @@ void main(void) {
 	munmap(p, 512);
 
 	puts_to_console("Ayy we did not die!\n");
+
+	int keyboard_fd = open("/dev/keyboard", O_RDONLY, 0);
+
+	for (;;) {
+		uint8_t data = 0;
+		// puts();
+		ioctl(keyboard_fd, 0x1, &data);
+		if (data == 0x2D)
+			puts_to_console("X was pressed\n");
+		if (data == 0xAD)
+			puts_to_console("X was released\n");
+	}
 }

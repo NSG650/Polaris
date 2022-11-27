@@ -14,6 +14,7 @@ extern void resched_context_switch(registers_t *reg);
 uint64_t tick = 0;
 
 void sched_resched_now(void) {
+	sti();
 	asm volatile("int 0x30");
 }
 
