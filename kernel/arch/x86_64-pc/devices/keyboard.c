@@ -141,14 +141,9 @@ int keyboard_resource_ioctl(struct resource *this,
 		case 0x1:
 			*(uint8_t*)arg = keyboard_read();
 			return 0;
-		case TCGETS:
-		case TCSETS:
-		case TIOCSCTTY:
-		case TIOCGWINSZ:
-			errno = ENOTTY;
-			return -1;
+		default:
+			return resource_default_ioctl(this, description, request, arg);
 	}
-
 	errno = EINVAL;
 	return -1;
 }

@@ -3,6 +3,11 @@
 int stdin = 0;
 int stdout = 1;
 
+struct fbdev_info {
+	size_t pitch, bpp;
+	uint16_t width, height;
+};
+
 #define PROT_NONE 0x00
 #define PROT_READ 0x01
 #define PROT_WRITE 0x02
@@ -207,15 +212,4 @@ void main(void) {
 
 	puts_to_console("Ayy we did not die!\n");
 
-	int keyboard_fd = open("/dev/keyboard", O_RDONLY, 0);
-
-	for (;;) {
-		uint8_t data = 0;
-		// puts();
-		ioctl(keyboard_fd, 0x1, &data);
-		if (data == 0x2D)
-			puts_to_console("X was pressed\n");
-		if (data == 0xAD)
-			puts_to_console("X was released\n");
-	}
 }

@@ -20,6 +20,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <fs/devtmpfs.h>
 
 struct framebuffer {
 	uint32_t *address;
