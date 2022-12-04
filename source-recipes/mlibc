@@ -1,8 +1,8 @@
 name=mlibc
-version=1fb22da626c865dd4d3c6231f56cf5a683b6940d
+version=6ae40485e530a9382b04a2123b014728e2b36a69
 source_method=tarball
 tarball_url="https://github.com/Sebastian-byte/mlibc/archive/${version}.tar.gz"
-tarball_blake2b="701a3a0230a532f978cfc92ccf354834d63d4e8d4bda93b52aecdcf19814bbf70501d374fa1f467ded48b472ef891eddfb9d44b41bc819695f3ad0ba7a5a06cb"
+tarball_blake2b="43e1547acb02f98f601624429a7797c7d536fe153d68d0efa5441f15c3579e5c64a256bf712bbad1e41e7cb74be6d104c456dbfdecc48c61636859dad65660a7"
 
 regenerate() {
     true
