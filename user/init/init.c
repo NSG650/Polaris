@@ -211,5 +211,4 @@ void main(void) {
 	munmap(p, 512);
 
 	puts_to_console("Ayy we did not die!\n");
-
 }

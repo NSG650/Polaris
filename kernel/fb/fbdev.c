@@ -1,6 +1,6 @@
+#include <errno.h>
 #include <fb/fb.h>
 #include <klibc/mem.h>
-#include <errno.h>
 #include <mm/mmap.h>
 
 struct fbdev_info {
@@ -12,10 +12,10 @@ static struct fbdev_info info;
 static struct resource *framebuff_res;
 
 static ssize_t fbdev_write(struct resource *this,
-							 struct f_description *description, const void *buf,
-							 off_t offset, size_t count) {
+						   struct f_description *description, const void *buf,
+						   off_t offset, size_t count) {
 	spinlock_acquire_or_wait(this->lock);
-	kprintf("%x", ((uint8_t*)buf)[0]);
+	kprintf("%x", ((uint8_t *)buf)[0]);
 	memcpy(framebuff.address + offset, buf, count);
 	spinlock_drop(this->lock);
 	return 0;
@@ -35,7 +35,7 @@ static void *fbdev_mmap(struct resource *this, size_t file_page, int flags) {
 }
 
 static int fbdev_ioctl(struct resource *this, struct f_description *description,
-						 uint64_t request, uint64_t arg) {
+					   uint64_t request, uint64_t arg) {
 	switch (request) {
 		case 0x1:
 			memcpy((void *)arg, &info, sizeof(struct fbdev_info));

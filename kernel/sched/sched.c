@@ -108,7 +108,7 @@ void syscall_execve(struct syscall_arguments *args) {
 	}*/
 	// if (!process_execve((char *)args->args0, (char **)args->args1,
 	//					(char **)args->args2))
-		args->ret = -1;
+	args->ret = -1;
 }
 
 void sched_init(uint64_t args) {
@@ -185,15 +185,24 @@ bool process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
 	struct vfs_node *node = vfs_get_node(vfs_root, path, true);
 	const char *ld_path;
 
-	if(!node || !elf_load(proc->process_pagemap, node->resource, 0, &auxv, &ld_path))
+	kprintf("da hell\n");
+
+	if (!node ||
+		!elf_load(proc->process_pagemap, node->resource, 0, &auxv, &ld_path))
 		return false;
 
+	kprintf("da hell\n");
+
 	if (ld_path) {
+		kprintf(ld_path);
 		struct vfs_node *ld_node = vfs_get_node(vfs_root, ld_path, true);
 
-		if(!ld_node || !elf_load(proc->process_pagemap, ld_node->resource, 0x40000000, &ld_aux, NULL))
+		if (!ld_node || !elf_load(proc->process_pagemap, ld_node->resource,
+								  0x40000000, &ld_aux, NULL))
 			return false;
 	}
+
+	kprintf("da hell\n");
 
 	uint64_t entry = ld_path == NULL ? auxv.at_entry : ld_aux.at_entry;
 
@@ -425,19 +434,19 @@ bool process_execve(char *path, char **argv, char **envp) {
 		vec_push(&parent_proc->child_processes, new_proc);
 
 	struct vfs_node *node = vfs_get_node(new_proc->cwd, path, true);
-	if (node == NULL || !elf_load(new_pagemap, node->resource, 0, &auxv, &ld_path))
+	if (node == NULL ||
+		!elf_load(new_pagemap, node->resource, 0, &auxv, &ld_path))
 		return false;
 
 	if (ld_path) {
 		struct vfs_node *ld_node = vfs_get_node(proc->cwd, ld_path, true);
-		if (ld_node == NULL || !elf_load(new_pagemap, ld_node->resource, 0x40000000, &ld_auxv, NULL))
+		if (ld_node == NULL || !elf_load(new_pagemap, ld_node->resource,
+										 0x40000000, &ld_auxv, NULL))
 			return false;
 	}
 
-
 	new_proc->process_pagemap = new_pagemap;
 	new_proc->mmap_anon_base = 0x80000000000;
-
 
 	uint64_t entry = ld_path == NULL ? auxv.at_entry : ld_auxv.at_entry;
 

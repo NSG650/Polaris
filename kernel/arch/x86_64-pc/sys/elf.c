@@ -1,8 +1,8 @@
+#include <debug/debug.h>
 #include <klibc/misc.h>
 #include <mm/mmap.h>
 #include <mm/pmm.h>
 #include <sys/elf.h>
-#include <debug/debug.h>
 
 bool elf_load(struct pagemap *pagemap, struct resource *res, uint64_t load_base,
 			  struct auxval *auxv, const char **ld_path) {
@@ -15,7 +15,6 @@ bool elf_load(struct pagemap *pagemap, struct resource *res, uint64_t load_base,
 	if (memcmp(header.e_ident, ELFMAG, SELFMAG)) {
 		return false;
 	}
-
 
 	if (header.e_ident[EI_CLASS] != ELFCLASS64 ||
 		header.e_ident[EI_DATA] != ELFDATA2LSB ||
@@ -48,19 +47,19 @@ bool elf_load(struct pagemap *pagemap, struct resource *res, uint64_t load_base,
 				if (phys == NULL) {
 					goto fail;
 				}
-				
+
 				if (!mmap_range(pagemap, phdr.p_vaddr + load_base,
 								(uintptr_t)phys, page_count * PAGE_SIZE, prot,
 								MAP_ANONYMOUS)) {
 					pmm_free(phys, page_count);
 					goto fail;
 				}
-				
+
 				if (res->read(res, NULL, phys + misalign + MEM_PHYS_OFFSET,
 							  phdr.p_offset, phdr.p_filesz) < 0) {
 					goto fail;
 				}
-				
+
 				break;
 			}
 			case PT_PHDR:
@@ -68,17 +67,17 @@ bool elf_load(struct pagemap *pagemap, struct resource *res, uint64_t load_base,
 				break;
 			case PT_INTERP: {
 				void *path = kmalloc(phdr.p_filesz + 1);
-				
+
 				if (path == NULL) {
 					goto fail;
 				}
-                
+
 				if (res->read(res, NULL, path, phdr.p_offset, phdr.p_filesz) <
 					0) {
 					kfree(path);
 					goto fail;
 				}
-                
+
 				if (ld_path != NULL) {
 					*ld_path = path;
 				}

@@ -73,7 +73,7 @@ static ssize_t console_write(struct resource *_this,
 	for (size_t i = 0; i < count; i++) {
 		framebuffer_putchar(r[i]);
 	}
-	return 0;
+	return count;
 }
 
 void console_init(void) {

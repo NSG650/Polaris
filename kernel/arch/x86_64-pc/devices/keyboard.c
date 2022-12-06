@@ -1,12 +1,12 @@
-#include <klibc/resource.h>
 #include <asm/asm.h>
 #include <debug/debug.h>
 #include <devices/keyboard.h>
-#include <fb/fb.h>
-#include <io/ports.h>
-#include <fs/devtmpfs.h>
-#include <sys/apic.h>
 #include <errno.h>
+#include <fb/fb.h>
+#include <fs/devtmpfs.h>
+#include <io/ports.h>
+#include <klibc/resource.h>
+#include <sys/apic.h>
 #include <sys/isr.h>
 
 struct resource *keyboard_resource;
@@ -132,14 +132,14 @@ void keyboard_handle(registers_t *reg) {
 }
 
 int keyboard_resource_ioctl(struct resource *this,
-						   struct f_description *description, uint64_t request,
-						   uint64_t arg) {
+							struct f_description *description, uint64_t request,
+							uint64_t arg) {
 	(void)this;
 	(void)description;
 	(void)arg;
 	switch (request) {
 		case 0x1:
-			*(uint8_t*)arg = keyboard_read();
+			*(uint8_t *)arg = keyboard_read();
 			return 0;
 		default:
 			return resource_default_ioctl(this, description, request, arg);
@@ -147,7 +147,6 @@ int keyboard_resource_ioctl(struct resource *this,
 	errno = EINVAL;
 	return -1;
 }
-
 
 void keyboard_init(void) {
 	keyboard_resource = resource_create(sizeof(struct resource));
