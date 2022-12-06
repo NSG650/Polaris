@@ -185,13 +185,9 @@ bool process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
 	struct vfs_node *node = vfs_get_node(vfs_root, path, true);
 	const char *ld_path;
 
-	kprintf("da hell\n");
-
 	if (!node ||
 		!elf_load(proc->process_pagemap, node->resource, 0, &auxv, &ld_path))
 		return false;
-
-	kprintf("da hell\n");
 
 	if (ld_path) {
 		kprintf(ld_path);
@@ -201,8 +197,6 @@ bool process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
 								  0x40000000, &ld_aux, NULL))
 			return false;
 	}
-
-	kprintf("da hell\n");
 
 	uint64_t entry = ld_path == NULL ? auxv.at_entry : ld_aux.at_entry;
 
