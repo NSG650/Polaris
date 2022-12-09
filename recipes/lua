@@ -1,0 +1,25 @@
+name=lua
+from_source=lua
+revision=5
+hostdeps="gcc automake pkg-config"
+deps="mlibc"
+
+configure() {
+	x86_64-polaris-gcc --version
+	pwd
+}
+
+build() {
+	cd ${source_dir}
+	sed -i "8s/.*/CC= x86_64-polaris-gcc -std=gnu99/" src/Makefile
+	sed -i "13s/.*/AR= x86_64-polaris-ar rcu/" src/Makefile
+	sed -i "14s/.*/RANLIB= x86_64-polaris-ranlib/" src/Makefile
+	
+	make generic -j${parallelism}
+}
+
+install() {
+	cd ${source_dir}/src
+	mkdir -p "${dest_dir}/usr/bin"
+	cp ./lua "${dest_dir}/usr/bin"
+}
