@@ -10,6 +10,7 @@
 #include <sched/sched.h>
 #include <sys/prcb.h>
 #include <sys/timer.h>
+#include <fb/fb.h>
 
 void kernel_main(void *args) {
 	vfs_init();
@@ -48,6 +49,7 @@ void kernel_main(void *args) {
 	syscall_register_handler(0x10c, syscall_fchmodat);
 	syscall_register_handler(0x124, syscall_dup3);
 	console_init();
+	fbdev_init();
 
 	std_console_device =
 		(vfs_get_node(vfs_root, "/dev/console", true))->resource;
@@ -55,7 +57,7 @@ void kernel_main(void *args) {
 	kprintf("Running init binary /bin/init.elf\n");
 
 	if (!process_create_elf(
-			"init", PROCESS_READY_TO_RUN, 2000, "/bin/hello",
+			"init", PROCESS_READY_TO_RUN, 2000, "/bin/init.elf",
 			prcb_return_current_cpu()->running_thread->mother_proc))
 		panic("Failed to run init binary!\n");
 

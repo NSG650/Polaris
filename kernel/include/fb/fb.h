@@ -40,4 +40,6 @@ void framebuffer_clear(uint32_t color);
 void framebuffer_putchar(char c);
 void framebuffer_puts(char *string);
 
+void fbdev_init(void);
+
 #endif

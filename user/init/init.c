@@ -84,6 +84,11 @@ ssize_t write(int fd, const void *data, size_t count) {
 	return syscall3(0x1, fd, (uint64_t)data, count);
 }
 
+int fstatat(int dirfd, const char *pathname, struct stat *buf,
+			int flags) {
+	return syscall4(0x106, dirfd, (uint64_t)pathname, (uint64_t)buf, flags);
+}
+
 int ioctl(int fd, unsigned long request, void *arg) {
 	return syscall3(0x10, fd, request, (uint64_t)arg);
 }
@@ -203,12 +208,22 @@ void main(void) {
 	puts_to_console("Hello from init!\n");
 
 	puts_to_console("mmap/munmap tests\n");
-	char *p = mmap(0, 512, PROT_READ | PROT_WRITE | PROT_EXEC,
-				   MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-	memcpy(p, "Hello this is in mmaped memory\n",
-		   strlen("Hello this is in mmaped memory\n"));
-	puts_to_console(p);
-	munmap(p, 512);
 
-	puts_to_console("Ayy we did not die!\n");
+	int fbdev_fd = open("/dev/fbdev", O_RDWR, 0);
+	if (fbdev_fd == -1) {
+		puts_to_console("Failed to get fbdev\n");
+		for (;;)
+			;
+	}
+
+	struct fbdev_info info = {0};
+
+	ioctl(fbdev_fd, 0x1, &info);
+
+	char *framebuffer = mmap(0, info.height * info.pitch, PROT_READ | PROT_WRITE | PROT_EXEC,
+				   MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+
+	memset(framebuffer, 0xff, info.height * info.pitch);
+
+	write(fbdev_fd, framebuffer, info.height * info.pitch);
 }

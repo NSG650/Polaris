@@ -12,6 +12,7 @@
 #include <sys/elf.h>
 #include <sys/prcb.h>
 #include <sys/timer.h>
+#include <fb/fb.h>
 
 #define VIRTUAL_STACK_ADDR 0x70000000000
 
