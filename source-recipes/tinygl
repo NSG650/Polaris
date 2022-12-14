@@ -1,0 +1,10 @@
+name=tinygl
+version=4.0
+source_method=git
+clone_url="https://github.com/NSG650/tinygl-polaris"
+tag=master
+commit="808018930979b996792b3dc30b9ac93bc121bd84"
+
+regenerate() {
+    true
+}

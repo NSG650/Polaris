@@ -1,0 +1,27 @@
+name=tinygl
+from_source=tinygl
+revision=1
+hostdeps="gcc automake pkg-config"
+deps="mlibc"
+
+configure() {
+	echo "configure!!!"
+	x86_64-polaris-gcc --version
+	pwd
+}
+
+build() {
+	cd ${source_dir}/src
+	make clean
+	make -j${parallelism}
+	cd ${source_dir}/gears
+	make clean
+	make -j${parallelism}
+}
+
+install() {
+	cd ${source_dir}/gears
+	echo "baller"
+	mkdir -p "${dest_dir}/usr/bin"
+	cp ./gears "${dest_dir}/usr/bin"
+}
