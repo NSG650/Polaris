@@ -1,3 +1,4 @@
+#include "debug/debug.h"
 #include <errno.h>
 #include <fb/fb.h>
 #include <klibc/mem.h>
@@ -29,7 +30,8 @@ static void *fbdev_mmap(struct resource *this, size_t file_page, int flags) {
 	}
 
 	spinlock_drop(this->lock);
-	return (void*)((void*)(framebuff.address + offset) - MEM_PHYS_OFFSET);
+	void *ret = (void*)((void*)(framebuff.address + offset) - MEM_PHYS_OFFSET);
+	return ret;
 }
 
 static int fbdev_ioctl(struct resource *this, struct f_description *description,

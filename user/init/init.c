@@ -220,10 +220,15 @@ void main(void) {
 
 	ioctl(fbdev_fd, 0x1, &info);
 
-	char *framebuffer = mmap(0, info.height * info.pitch, PROT_READ | PROT_WRITE | PROT_EXEC,
-				   MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+	char *framebuffer = mmap(0, info.height * info.width * info.bpp / 8, PROT_READ | PROT_WRITE,
+				   MAP_SHARED, fbdev_fd, 0);
 
-	memset(framebuffer, 0xff, info.height * info.pitch);
+	if (framebuffer == (void*)-1) {
+		puts_to_console("Failed :(\n");
+		for(;;)
+			;
+	}
 
-	write(fbdev_fd, framebuffer, info.height * info.pitch);
+	memset(framebuffer, 0xff, info.height * info.width * info.bpp / 8);
+	// write(fbdev_fd, framebuffer, info.height * info.pitch);
 }
