@@ -131,9 +131,9 @@ static void kprintf_(char *fmt, va_list args) {
 }
 
 void kprintffos(bool fos, char *fmt, ...) {
+	spinlock_acquire_or_wait(write_lock);
 	if (!fos)
 		put_to_fb = 0;
-	spinlock_acquire_or_wait(write_lock);
 	va_list args;
 	va_start(args, fmt);
 	kprintf_(fmt, args);

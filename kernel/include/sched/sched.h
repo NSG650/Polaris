@@ -33,6 +33,8 @@ int64_t process_fork(struct process *proc, struct thread *thrd);
 bool process_execve(char *path, char **argv, char **envp);
 void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 				   struct process *proc);
+void thread_execve(struct process *proc, uintptr_t pc_address, char **argv,
+				   char **envp);
 void thread_kill(struct thread *thrd, bool r);
 void thread_sleep(struct thread *thrd, uint64_t ns);
 void thread_fork(struct thread *pthrd, struct process *fproc);

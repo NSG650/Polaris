@@ -97,10 +97,10 @@ void syscall_fork(struct syscall_arguments *args) {
 }
 
 void syscall_execve(struct syscall_arguments *args) {
-	char *path = (char *)(args->args0);
-	char **argv = (char **)(args->args1);
-	char **envp = (char**)(args->args2);
-	kprintf("path = %s\n", path);
+	char *path = (char *)syscall_helper_user_to_kernel_address(args->args0);
+	char **argv = (char **)syscall_helper_user_to_kernel_address(args->args1);
+	char **envp = (char**)syscall_helper_user_to_kernel_address(args->args2);
+	kprintf("path = %p\n", path);
 	for (int i = 0; argv[i] != NULL; i++) {
 		kprintf("argv[%d] = %s\n", i, argv[i]);
 	}
@@ -304,15 +304,15 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 		fpu_save(thrd->fpu_storage);
 		thrd->fs_base = 0;
 		thrd->gs_base = 0;
+		if (!proc->process_threads.length) {
+			const char *argv[] = {proc->name, NULL};
+			const char *envp[] = {"USER=root", NULL};
+			struct auxval auxv = proc->auxv;
 
-		const char *argv[] = {proc->name, NULL};
-		const char *envp[] = {"USER=root", NULL};
-		struct auxval auxv = proc->auxv;
+			uint64_t *stack = (uint64_t *)(thrd->stack + STACK_SIZE);
 
-		uint64_t *stack = (uint64_t *)(thrd->stack + STACK_SIZE);
-
-		// the stack structure address values are not accurate
-		/*
+			// the stack structure address values are not accurate
+			/*
 		 * 	0x70000000000 - "USER=root\0" 	// envp[0][9]
 		 * 	0x6fffffffff6 - proc->name 		// argv[0][255]
 		 *	0x6fffffffef6 - 0x0, 0x0		// zeros
@@ -329,46 +329,47 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 		 *	0x6fffffffe96 - 0x0				// START OF ARGV
 		 *	0x6fffffffe8e - 0x6fffffffef6	// pointer to argv[0][0] aka argv[0]
 		 *	0x6fffffffe86 - 1				// argc
-		 */
+			 */
 
-		stack -= strlen(envp[0]) + 1;
-		memcpy((void *)stack, envp[0], strlen(envp[0]) + 1);
-		uint64_t address_difference =
-			(thrd->stack + STACK_SIZE) - (uint64_t)stack;
-		uint64_t addr_to_env =
-			(uint64_t)VIRTUAL_STACK_ADDR - address_difference;
+			stack -= strlen(envp[0]) + 1;
+			memcpy((void *)stack, envp[0], strlen(envp[0]) + 1);
+			uint64_t address_difference =
+				(thrd->stack + STACK_SIZE) - (uint64_t)stack;
+			uint64_t addr_to_env =
+				(uint64_t)VIRTUAL_STACK_ADDR - address_difference;
 
-		stack -= strlen(argv[0]) + 1;
-		memcpy((void *)stack, argv[0], strlen(argv[0]) + 1);
-		address_difference = (thrd->stack + STACK_SIZE) - (uint64_t)stack;
-		uint64_t addr_to_arg =
-			(uint64_t)VIRTUAL_STACK_ADDR - address_difference;
+			stack -= strlen(argv[0]) + 1;
+			memcpy((void *)stack, argv[0], strlen(argv[0]) + 1);
+			address_difference = (thrd->stack + STACK_SIZE) - (uint64_t)stack;
+			uint64_t addr_to_arg =
+				(uint64_t)VIRTUAL_STACK_ADDR - address_difference;
 
-		*(--stack) = 0;
-		*(--stack) = 0;
-		stack -= 2;
-		stack[0] = 9;
-		stack[1] = auxv.at_entry;
-		stack -= 2;
-		stack[0] = 3;
-		stack[1] = auxv.at_phdr;
-		stack -= 2;
-		stack[0] = 4;
-		stack[1] = auxv.at_phent;
-		stack -= 2;
-		stack[0] = 5;
-		stack[1] = auxv.at_phnum;
+			*(--stack) = 0;
+			*(--stack) = 0;
+			stack -= 2;
+			stack[0] = 9;
+			stack[1] = auxv.at_entry;
+			stack -= 2;
+			stack[0] = 3;
+			stack[1] = auxv.at_phdr;
+			stack -= 2;
+			stack[0] = 4;
+			stack[1] = auxv.at_phent;
+			stack -= 2;
+			stack[0] = 5;
+			stack[1] = auxv.at_phnum;
 
-		*(--stack) = 0;
-		*(--stack) = addr_to_env;
+			*(--stack) = 0;
+			*(--stack) = addr_to_env;
 
-		*(--stack) = 0;
-		*(--stack) = addr_to_arg;
+			*(--stack) = 0;
+			*(--stack) = addr_to_arg;
 
-		*(--stack) = 1;
+			*(--stack) = 1;
 
-		address_difference = (thrd->stack + STACK_SIZE) - (uint64_t)stack;
-		thrd->reg.rsp -= address_difference;
+			address_difference = (thrd->stack + STACK_SIZE) - (uint64_t)stack;
+			thrd->reg.rsp -= address_difference;
+		}
 	}
 #endif
 	thrd->sleeping_till = 0;
@@ -439,7 +440,7 @@ bool process_execve(char *path, char **argv, char **envp) {
 
 	uint64_t entry = auxv.at_entry;
 
-	if (ld_path[0] == '/') {
+	if (ld_path && ld_path[0] == '/') {
 		struct vfs_node *ld_node = vfs_get_node(vfs_root, ld_path, true);
 
 		if (!ld_node || !elf_load(proc->process_pagemap, ld_node->resource,
@@ -452,12 +453,11 @@ bool process_execve(char *path, char **argv, char **envp) {
 	}
 
 	// We no longer exist. There is no point in saving anything now.
-
 	prcb_return_current_cpu()->running_thread = NULL;
+
 	vmm_switch_pagemap(kernel_pagemap);
 
 	thread_create(entry, 0, 1, proc);
-
 
 	spinlock_drop(process_lock);
 	sched_resched_now();
@@ -484,9 +484,104 @@ void process_kill(struct process *proc) {
 	spinlock_drop(process_lock);
 }
 
-bool thread_execve(struct process *proc, uintptr_t pc_address, char **argv,
+void thread_execve(struct process *proc, uintptr_t pc_address, char **argv,
 				   char **envp) {
-	return false;
+	spinlock_acquire_or_wait(thread_lock);
+	struct thread *thrd = kmalloc(sizeof(struct thread));
+	thrd->tid = tid++;
+	thrd->state = THREAD_READY_TO_RUN;
+	thrd->runtime = proc->runtime;
+	thrd->lock = 0;
+	thrd->mother_proc = proc;
+
+#if defined(__x86_64__)
+	thrd->reg.rip = pc_address;
+	thrd->reg.rsp = (uint64_t)pmm_allocz(STACK_SIZE / PAGE_SIZE);
+	thrd->stack = thrd->reg.rsp;
+	thrd->reg.cs = 0x23;
+	thrd->reg.ss = 0x1b;
+
+	mmap_range(proc->process_pagemap, VIRTUAL_STACK_ADDR - STACK_SIZE,
+			   (uintptr_t)thrd->reg.rsp, STACK_SIZE, PROT_READ | PROT_WRITE,
+			   MAP_ANONYMOUS);
+
+	thrd->reg.rsp = VIRTUAL_STACK_ADDR;
+	thrd->kernel_stack = (uint64_t)kmalloc(STACK_SIZE);
+	thrd->kernel_stack += STACK_SIZE;
+
+	thrd->reg.rflags = 0x202;
+
+	thrd->fpu_storage =
+		pmm_allocz(DIV_ROUNDUP(fpu_storage_size, PAGE_SIZE)) + MEM_PHYS_OFFSET;
+
+	fpu_restore(thrd->fpu_storage);
+	uint16_t default_fcw = 0b1100111111;
+	asm volatile("fldcw %0" ::"m"(default_fcw) : "memory");
+	uint32_t default_mxcsr = 0b1111110000000;
+	asm volatile("ldmxcsr %0" ::"m"(default_mxcsr) : "memory");
+	fpu_save(thrd->fpu_storage);
+
+	thrd->fs_base = 0;
+	thrd->gs_base = 0;
+
+	struct auxval auxv = proc->auxv;
+
+	uint64_t *stack = (uint64_t *)(thrd->stack + STACK_SIZE);
+
+	int envp_len = 0;
+	uint64_t address_difference = 0;
+
+	for (envp_len = 0; envp[envp_len] != NULL; envp_len++) {
+		stack -= strlen(envp[envp_len]) + 1;
+		memcpy((void *)stack, envp[envp_len], strlen(envp[envp_len]) + 1);
+	}
+
+	address_difference =
+		(thrd->stack + STACK_SIZE) - (uint64_t)stack;
+
+	uint64_t addr_to_env =
+		(uint64_t)VIRTUAL_STACK_ADDR - address_difference;
+
+	int argv_len;
+	for (argv_len = 0; argv[argv_len] != NULL; argv_len++) {
+		stack -= strlen(argv[argv_len]) + 1;
+		memcpy((void *)stack, argv[argv_len], strlen(argv[argv_len]) + 1);
+	}
+	address_difference = (thrd->stack + STACK_SIZE) - (uint64_t)stack;
+	uint64_t addr_to_arg =
+		(uint64_t)VIRTUAL_STACK_ADDR - address_difference;
+
+	*(--stack) = 0;
+	*(--stack) = 0;
+	stack -= 2;
+	stack[0] = 9;
+	stack[1] = auxv.at_entry;
+	stack -= 2;
+	stack[0] = 3;
+	stack[1] = auxv.at_phdr;
+	stack -= 2;
+	stack[0] = 4;
+	stack[1] = auxv.at_phent;
+	stack -= 2;
+	stack[0] = 5;
+	stack[1] = auxv.at_phnum;
+
+	*(--stack) = 0;
+	*(--stack) = addr_to_env;
+
+	*(--stack) = 0;
+	*(--stack) = addr_to_arg;
+
+	*(--stack) = argv_len;
+
+	address_difference = (thrd->stack + STACK_SIZE) - (uint64_t)stack;
+	thrd->reg.rsp -= address_difference;
+	kprintf("RSP: 0x%p", thrd->reg.rsp);
+#endif
+	vec_push(&threads, thrd);
+	vec_push(&proc->process_threads, thrd);
+
+	spinlock_drop(thread_lock);
 }
 
 void thread_kill(struct thread *thrd, bool r) {
