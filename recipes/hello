@@ -5,22 +5,17 @@ hostdeps="gcc automake pkg-config"
 deps="mlibc"
 
 configure() {
-	echo "configure!!!"
-	x86_64-polaris-gcc --version
-	pwd
+	true
 }
 
 build() {
-	echo ${source_dir}
 	cd ${source_dir}
-	make clean
 	sed -i "1s/.*/CC = x86_64-polaris-gcc/" Makefile
 	make -j${parallelism}
 }
 
 install() {
 	cd ${source_dir}
-	echo "baller"
 	mkdir -p "${dest_dir}/usr/bin"
 	cp ./hello "${dest_dir}/usr/bin"
 }

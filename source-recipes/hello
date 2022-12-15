@@ -6,5 +6,5 @@ tag=v1.2
 commit="7af30271e9c22de981e95326cb7bad514b3bd1bf"
 
 regenerate() {
-    true
+	true
 }

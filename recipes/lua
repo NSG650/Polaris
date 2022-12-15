@@ -5,8 +5,7 @@ hostdeps="gcc automake pkg-config"
 deps="mlibc"
 
 configure() {
-	x86_64-polaris-gcc --version
-	pwd
+	true
 }
 
 build() {
@@ -14,7 +13,6 @@ build() {
 	sed -i "8s/.*/CC= x86_64-polaris-gcc -std=gnu99/" src/Makefile
 	sed -i "13s/.*/AR= x86_64-polaris-ar rcu/" src/Makefile
 	sed -i "14s/.*/RANLIB= x86_64-polaris-ranlib/" src/Makefile
-	
 	make generic -j${parallelism}
 }
 
