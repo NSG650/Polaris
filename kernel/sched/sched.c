@@ -25,7 +25,7 @@ thread_vec_t threads;
 thread_vec_t sleeping_threads;
 process_vec_t processes;
 
-int64_t pid = -1;
+int64_t pid = 0;
 lock_t process_lock = 0;
 
 lock_t thread_lock = 0;
@@ -97,19 +97,19 @@ void syscall_fork(struct syscall_arguments *args) {
 }
 
 void syscall_execve(struct syscall_arguments *args) {
-	/*char *path = (char *)args->args0;
-	char **argv = (char **)args->args1;
-	char **envp = (char**)args->args2;
+	char *path = (char *)(args->args0);
+	char **argv = (char **)(args->args1);
+	char **envp = (char**)(args->args2);
 	kprintf("path = %s\n", path);
 	for (int i = 0; argv[i] != NULL; i++) {
 		kprintf("argv[%d] = %s\n", i, argv[i]);
 	}
 	for (int i = 0; envp[i] != NULL; i++) {
 		kprintf("envp[%d] = %s\n", i, envp[i]);
-	}*/
-	// if (!process_execve((char *)args->args0, (char **)args->args1,
-	//					(char **)args->args2))
-	args->ret = -1;
+	}
+	if (!process_execve((char *)args->args0, (char **)args->args1,
+						(char **)args->args2))
+		args->ret = -1;
 }
 
 void sched_init(uint64_t args) {
@@ -191,7 +191,6 @@ bool process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
 		return false;
 
 	if (ld_path) {
-		kprintf(ld_path);
 		struct vfs_node *ld_node = vfs_get_node(vfs_root, ld_path, true);
 
 		if (!ld_node || !elf_load(proc->process_pagemap, ld_node->resource,
@@ -373,6 +372,7 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 	}
 #endif
 	thrd->sleeping_till = 0;
+
 	vec_push(&threads, thrd);
 	vec_push(&proc->process_threads, thrd);
 	spinlock_drop(thread_lock);
@@ -410,64 +410,57 @@ bool process_execve(char *path, char **argv, char **envp) {
 	struct thread *thread = prcb_return_current_cpu()->running_thread;
 	struct process *proc = thread->mother_proc;
 
-	struct pagemap *new_pagemap = vmm_new_pagemap();
-	struct auxval auxv, ld_auxv;
+	struct auxval auxv, ld_aux;
+	struct vfs_node *node = vfs_get_node(proc->cwd, path, true);
 	const char *ld_path;
 
-	// I mean we are literally killing a process but not also killing
+	strncpy(proc->name, path, 256);
 
-	int64_t old_pid = proc->pid;
-	struct process *parent_proc = proc->parent_process;
-	struct vfs_node *old_cwd = proc->cwd;
-
-	struct process *new_proc = kmalloc(sizeof(struct process));
-	new_proc->pid = old_pid;
-	new_proc->parent_process = parent_proc;
-	new_proc->cwd = old_cwd;
-
-	if (parent_proc)
-		vec_push(&parent_proc->child_processes, new_proc);
-
-	struct vfs_node *node = vfs_get_node(new_proc->cwd, path, true);
-	if (node == NULL ||
-		!elf_load(new_pagemap, node->resource, 0, &auxv, &ld_path))
+	if (!node) {
 		return false;
-
-	if (ld_path) {
-		struct vfs_node *ld_node = vfs_get_node(proc->cwd, ld_path, true);
-		if (ld_node == NULL || !elf_load(new_pagemap, ld_node->resource,
-										 0x40000000, &ld_auxv, NULL))
-			return false;
 	}
 
-	new_proc->process_pagemap = new_pagemap;
-	new_proc->mmap_anon_base = 0x80000000000;
+	proc->process_pagemap = vmm_new_pagemap();
 
-	uint64_t entry = ld_path == NULL ? auxv.at_entry : ld_auxv.at_entry;
+	for (int i = 0; i < proc->process_threads.length; i++)
+		thread_kill(proc->process_threads.data[i], 0);
 
-	vfs_pathname(node, new_proc->name, sizeof(new_proc->name) - 1);
+	proc->mmap_anon_base = 0x80000000000;
+	proc->state = PROCESS_READY_TO_RUN;
 
-	// if(!thread_execve(proc, header->e_entry, argv, envp)) {
-	//	spinlock_drop(process_lock);
-	//	return false;
-	// }
+	if (!elf_load(proc->process_pagemap, node->resource, 0, &auxv, &ld_path)) {
+		process_kill(proc);
+		sched_resched_now();
+		__builtin_unreachable();
+	}
 
-	for (int i = 0; i < 3; i++)
-		fdnum_create_from_resource(proc, std_console_device, 0, i, true);
+	// HACK: ld_path for processes that dont depend on ld.so points to kmalloced memory which is not null
+	// checking the first letter is '/' or not to know if a program needs ld
 
+	uint64_t entry = auxv.at_entry;
+
+	if (ld_path[0] == '/') {
+		struct vfs_node *ld_node = vfs_get_node(vfs_root, ld_path, true);
+
+		if (!ld_node || !elf_load(proc->process_pagemap, ld_node->resource,
+								  0x40000000, &ld_aux, NULL)) {
+			process_kill(proc);
+			sched_resched_now();
+			__builtin_unreachable();
+		}
+		entry = ld_aux.at_entry;
+	}
+
+	// We no longer exist. There is no point in saving anything now.
+
+	prcb_return_current_cpu()->running_thread = NULL;
 	vmm_switch_pagemap(kernel_pagemap);
 
-	thread_create(entry, 0, 1, new_proc);
+	thread_create(entry, 0, 1, proc);
 
-	new_proc->state = PROCESS_READY_TO_RUN;
 
 	spinlock_drop(process_lock);
-
-	process_kill(proc); // this will reschedule while killing the old process
-
-	__builtin_unreachable();
-	for (;;)
-		;
+	sched_resched_now();
 }
 
 void process_kill(struct process *proc) {
@@ -493,84 +486,12 @@ void process_kill(struct process *proc) {
 
 bool thread_execve(struct process *proc, uintptr_t pc_address, char **argv,
 				   char **envp) {
-	spinlock_acquire_or_wait(thread_lock);
-
-	// the crazy execve stuff
-
-	// first get the length of the envp and argv
-	size_t argc = 0;
-	size_t envc = 0;
-
-	char did_we_find_null = 0;
-
-	for (size_t i = 0; i < 128; i++) {
-		if (!argv[i]) {
-			did_we_find_null++;
-			break;
-		}
-		argc++;
-	}
-
-	for (size_t i = 0; i < 128; i++) {
-		if (!envp[i]) {
-			did_we_find_null++;
-			break;
-		}
-		envc++;
-	}
-
-	// its not a valid argv or envp
-	if (did_we_find_null < 2) {
-		spinlock_drop(thread_lock);
-		return false;
-	}
-
-	struct thread *thrd = kmalloc(sizeof(struct thread));
-	thrd->tid = tid++;
-	thrd->state = THREAD_READY_TO_RUN;
-	thrd->runtime = proc->runtime;
-	thrd->lock = 0;
-	thrd->mother_proc = proc;
-#if defined(__x86_64__)
-	thrd->reg.rip = pc_address;
-	thrd->reg.rsp = (uint64_t)pmm_allocz(STACK_SIZE / PAGE_SIZE);
-	thrd->stack = thrd->reg.rsp;
-	thrd->reg.cs = 0x23;
-	thrd->reg.ss = 0x1b;
-	mmap_range(proc->process_pagemap, VIRTUAL_STACK_ADDR - STACK_SIZE,
-			   (uintptr_t)thrd->reg.rsp, STACK_SIZE, PROT_READ | PROT_WRITE,
-			   MAP_ANONYMOUS);
-	thrd->reg.rsp = VIRTUAL_STACK_ADDR;
-	thrd->kernel_stack = (uint64_t)kmalloc(STACK_SIZE);
-	thrd->kernel_stack += STACK_SIZE;
-	thrd->reg.rflags = 0x202;
-
-	// :woozy_face:
-
-	kprintf("rsp: %p\n", thrd->reg.rsp);
-
-	thrd->fpu_storage =
-		pmm_allocz(DIV_ROUNDUP(fpu_storage_size, PAGE_SIZE)) + MEM_PHYS_OFFSET;
-	fpu_restore(thrd->fpu_storage);
-	uint16_t default_fcw = 0b1100111111;
-	asm volatile("fldcw %0" ::"m"(default_fcw) : "memory");
-	uint32_t default_mxcsr = 0b1111110000000;
-	asm volatile("ldmxcsr %0" ::"m"(default_mxcsr) : "memory");
-	fpu_save(thrd->fpu_storage);
-	thrd->fs_base = 0;
-	thrd->gs_base = 0;
-#endif
-	thrd->state = THREAD_READY_TO_RUN;
-	thrd->sleeping_till = 0;
-	vec_push(&threads, thrd);
-	vec_push(&proc->process_threads, thrd);
-	spinlock_drop(thread_lock);
-	return true;
+	return false;
 }
 
 void thread_kill(struct thread *thrd, bool r) {
 	spinlock_acquire_or_wait(thread_lock);
-	if (thrd->mother_proc->pid < 1) {
+	if (thrd->mother_proc->pid <= 1) {
 		if (thrd->mother_proc->process_threads.data[0] == thrd)
 			panic("Attempted to kill init!\n");
 	}

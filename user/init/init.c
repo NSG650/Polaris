@@ -148,50 +148,10 @@ void puts_to_console(char *string) {
 void *memset(void *d, int c, size_t n);
 
 void main(void) {
-	puts("Hello I am supposed to be the init\n");
-
-	// Change directory to /fun so we can use relative paths
-	chdir("/fun");
-
-	// Hard link /fun/hi.txt to /fun/hello.txt
-	linkat(AT_FDCWD, "./hi.txt", AT_FDCWD, "./hello.txt", 0);
-	int fd = open("./hello.txt", O_RDONLY, 0);
-
-	// Remove /fun/hello.txt hard link
-	unlinkat(AT_FDCWD, "./hello.txt", 0);
-
-	// Read the hard link
-	char fun[128] = {0};
-	puts("Reading /fun/hello.txt:\n");
-	read(fd, fun, 128);
-
-	// Close /fun/hi.txt, thus it's deleted since the hard link got removed
-	close(fd);
-	puts(fun);
-
-	// dirfd = AT_FDCWD (works the same as open with this argument)
-	// Open file as read and write, create if neccessary
-	fd = openat(AT_FDCWD, "/file_from_user.txt", O_RDWR | O_CREAT, 0);
-
-	// Write to the file
-	char data[] = "This file was created from user\n";
-	write(fd, data, sizeof(data));
-
-	// Move file offset back to the beginning, since write moved it to the end
-	lseek(fd, 0, SEEK_SET);
-
-	// Read what we just wrote and close the file
-	read(fd, fun, 128);
-	close(fd);
-	puts("Reading /file_from_user.txt:\n");
-	puts(fun);
-
-	chdir("/");
-
 	if (!fork()) {
 		puts_to_console("Hello I am the forked process!\n");
-		/*char *argv[] = {
-			"/bin/hello",
+		char *argv[] = {
+			"/bin/test.elf",
 			NULL
 		};
 		char *envp[] = {
@@ -200,35 +160,9 @@ void main(void) {
 		};
 		if(execve(argv[0], argv, envp) == -1) {
 			puts_to_console("Failed to execve :((\n");
-		}*/
+		}
 		for (;;)
 			;
 	}
-
 	puts_to_console("Hello from init!\n");
-
-	puts_to_console("mmap/munmap tests\n");
-
-	int fbdev_fd = open("/dev/fbdev", O_RDWR, 0);
-	if (fbdev_fd == -1) {
-		puts_to_console("Failed to get fbdev\n");
-		for (;;)
-			;
-	}
-
-	struct fbdev_info info = {0};
-
-	ioctl(fbdev_fd, 0x1, &info);
-
-	char *framebuffer = mmap(0, info.height * info.width * info.bpp / 8, PROT_READ | PROT_WRITE,
-				   MAP_SHARED, fbdev_fd, 0);
-
-	if (framebuffer == (void*)-1) {
-		puts_to_console("Failed :(\n");
-		for(;;)
-			;
-	}
-
-	memset(framebuffer, 0xff, info.height * info.width * info.bpp / 8);
-	// write(fbdev_fd, framebuffer, info.height * info.pitch);
 }

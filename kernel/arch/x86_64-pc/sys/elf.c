@@ -67,7 +67,6 @@ bool elf_load(struct pagemap *pagemap, struct resource *res, uint64_t load_base,
 				break;
 			case PT_INTERP: {
 				void *path = kmalloc(phdr.p_filesz + 1);
-
 				if (path == NULL) {
 					goto fail;
 				}
@@ -80,6 +79,10 @@ bool elf_load(struct pagemap *pagemap, struct resource *res, uint64_t load_base,
 
 				if (ld_path != NULL) {
 					*ld_path = path;
+				}
+				else {
+					kfree(path);
+					path = NULL;
 				}
 				break;
 			}

@@ -30,8 +30,8 @@ static void *fbdev_mmap(struct resource *this, size_t file_page, int flags) {
 	}
 
 	spinlock_drop(this->lock);
-	void *ret = (void*)(((void*)(framebuff.address) - MEM_PHYS_OFFSET) + offset);
-	return ret;
+
+	return (void*)(((uint64_t)(framebuff.address) - MEM_PHYS_OFFSET) + offset);
 }
 
 static int fbdev_ioctl(struct resource *this, struct f_description *description,

@@ -22,7 +22,6 @@ void laihost_log(int level, const char *msg) {
 			kprintf("LAI: Warning: %s\n", msg);
 			break;
 		default:
-			kprintf("LAI: %s\n", msg);
 			break;
 	}
 }

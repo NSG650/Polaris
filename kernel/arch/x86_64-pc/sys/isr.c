@@ -319,6 +319,7 @@ void isr_handle(registers_t *r) {
 					thrd->tid, thrd->mother_proc->name,
 					isr_exception_messages[r->isrNumber]);
 			kprintf("User thread crashed at address: 0x%p\n", r->rip);
+			kprintf("User backtrace: \n");
 			backtrace((void *)r->rbp);
 			thread_kill(thrd, 1);
 		} else
