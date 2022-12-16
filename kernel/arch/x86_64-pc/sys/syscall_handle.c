@@ -1,4 +1,5 @@
 #include <cpu/smp.h>
+#include <debug/debug.h>
 #include <mm/vmm.h>
 #include <sched/sched.h>
 #include <sched/syscall.h>
@@ -20,7 +21,9 @@ void syscall_handler(registers_t *reg) {
 									 .args4 = reg->r8,
 									 .args5 = reg->r9,
 									 .ret = reg->rax};
+
 	syscall_handle(&args);
+
 	reg->rax = args.ret;
 }
 

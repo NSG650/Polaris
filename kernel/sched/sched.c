@@ -369,6 +369,7 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 
 			address_difference = (thrd->stack + STACK_SIZE) - (uint64_t)stack;
 			thrd->reg.rsp -= address_difference;
+			kprintf("RSP: 0x%p\n", thrd->reg.rsp);
 		}
 	}
 #endif
@@ -421,6 +422,11 @@ bool process_execve(char *path, char **argv, char **envp) {
 		return false;
 	}
 
+	char **kargv = syscall_helper_user_to_kernel_address(argv);
+	char **kenvp = syscall_helper_user_to_kernel_address(envp);
+
+	kprintf("kargv: 0x%p, kenvp: 0x%p\n", kargv, kenvp);
+
 	proc->process_pagemap = vmm_new_pagemap();
 
 	for (int i = 0; i < proc->process_threads.length; i++)
@@ -428,6 +434,9 @@ bool process_execve(char *path, char **argv, char **envp) {
 
 	proc->mmap_anon_base = 0x80000000000;
 	proc->state = PROCESS_READY_TO_RUN;
+
+	// We no longer exist. There is no point in saving anything now.
+	prcb_return_current_cpu()->running_thread = NULL;
 
 	if (!elf_load(proc->process_pagemap, node->resource, 0, &auxv, &ld_path)) {
 		process_kill(proc);
@@ -452,10 +461,9 @@ bool process_execve(char *path, char **argv, char **envp) {
 		entry = ld_aux.at_entry;
 	}
 
-	// We no longer exist. There is no point in saving anything now.
-	prcb_return_current_cpu()->running_thread = NULL;
-
 	vmm_switch_pagemap(kernel_pagemap);
+
+	// thread_execve(proc, entry, kargv, kenvp);
 
 	thread_create(entry, 0, 1, proc);
 
@@ -576,7 +584,8 @@ void thread_execve(struct process *proc, uintptr_t pc_address, char **argv,
 
 	address_difference = (thrd->stack + STACK_SIZE) - (uint64_t)stack;
 	thrd->reg.rsp -= address_difference;
-	kprintf("RSP: 0x%p", thrd->reg.rsp);
+
+	kprintf("RSP: 0x%p\n", thrd->reg.rsp);
 #endif
 	vec_push(&threads, thrd);
 	vec_push(&proc->process_threads, thrd);
