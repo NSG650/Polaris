@@ -173,7 +173,7 @@ void process_create(char *name, uint8_t state, uint64_t runtime,
 }
 
 bool process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
-						struct process *parent_process) {
+						struct process *parent_process, char **argv, char **envp) {
 	spinlock_acquire_or_wait(process_lock);
 	struct process *proc = kmalloc(sizeof(struct process));
 	strncpy(proc->name, name, 256);
@@ -222,7 +222,10 @@ bool process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
 	for (int i = 0; i < 3; i++)
 		fdnum_create_from_resource(proc, std_console_device, 0, i, true);
 
-	thread_create((uintptr_t)entry, 0, 1, proc);
+	// thread_create((uintptr_t)entry, 0, 1, proc);
+
+	thread_execve(proc, (uintptr_t)entry, argv, envp);
+
 	spinlock_drop(process_lock);
 	return true;
 }
