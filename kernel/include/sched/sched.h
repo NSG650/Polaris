@@ -27,14 +27,14 @@ void process_create(char *name, uint8_t state, uint64_t runtime,
 					uintptr_t pc_address, uint64_t arguments, bool user,
 					struct process *parent_process);
 bool process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
-						struct process *parent_process, char **argv, char **envp);
+						struct process *parent_process);
 void process_kill(struct process *proc);
 int64_t process_fork(struct process *proc, struct thread *thrd);
 bool process_execve(char *path, char **argv, char **envp);
 void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 				   struct process *proc);
-void thread_execve(struct process *proc, uintptr_t pc_address, char **argv,
-				   char **envp);
+void thread_execve(struct process *proc, struct thread *thrd,
+				   uintptr_t pc_address, char **argv, char **envp);
 void thread_kill(struct thread *thrd, bool r);
 void thread_sleep(struct thread *thrd, uint64_t ns);
 void thread_fork(struct thread *pthrd, struct process *fproc);

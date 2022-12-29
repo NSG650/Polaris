@@ -68,7 +68,7 @@ void kernel_main(void *args) {
 
 	if (!process_create_elf(
 			"init", PROCESS_READY_TO_RUN, 2000, argv[0],
-			prcb_return_current_cpu()->running_thread->mother_proc, argv, envp))
+			prcb_return_current_cpu()->running_thread->mother_proc))
 		panic("Failed to run init binary!\n");
 
 	for (;;)

@@ -173,7 +173,7 @@ void process_create(char *name, uint8_t state, uint64_t runtime,
 }
 
 bool process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
-						struct process *parent_process, char **argv, char **envp) {
+						struct process *parent_process) {
 	spinlock_acquire_or_wait(process_lock);
 	struct process *proc = kmalloc(sizeof(struct process));
 	strncpy(proc->name, name, 256);
@@ -222,9 +222,7 @@ bool process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
 	for (int i = 0; i < 3; i++)
 		fdnum_create_from_resource(proc, std_console_device, 0, i, true);
 
-	// thread_create((uintptr_t)entry, 0, 1, proc);
-
-	thread_execve(proc, (uintptr_t)entry, argv, envp);
+	thread_create((uintptr_t)entry, 0, 1, proc);
 
 	spinlock_drop(process_lock);
 	return true;
@@ -432,8 +430,11 @@ bool process_execve(char *path, char **argv, char **envp) {
 
 	proc->process_pagemap = vmm_new_pagemap();
 
-	for (int i = 0; i < proc->process_threads.length; i++)
-		thread_kill(proc->process_threads.data[i], 0);
+	for (int i = 0; i < proc->process_threads.length; i++) {
+		if (proc->process_threads.data[i] != thread) {
+			thread_kill(proc->process_threads.data[i], 0);
+		}
+	}
 
 	proc->mmap_anon_base = 0x80000000000;
 	proc->state = PROCESS_READY_TO_RUN;
@@ -495,10 +496,9 @@ void process_kill(struct process *proc) {
 	spinlock_drop(process_lock);
 }
 
-void thread_execve(struct process *proc, uintptr_t pc_address, char **argv,
-				   char **envp) {
+void thread_execve(struct process *proc, struct thread *thrd,
+				   uintptr_t pc_address, char **argv, char **envp) {
 	spinlock_acquire_or_wait(thread_lock);
-	struct thread *thrd = kmalloc(sizeof(struct thread));
 	thrd->tid = tid++;
 	thrd->state = THREAD_READY_TO_RUN;
 	thrd->runtime = proc->runtime;
@@ -590,8 +590,6 @@ void thread_execve(struct process *proc, uintptr_t pc_address, char **argv,
 
 	kprintf("RSP: 0x%p\n", thrd->reg.rsp);
 #endif
-	vec_push(&threads, thrd);
-	vec_push(&proc->process_threads, thrd);
 
 	spinlock_drop(thread_lock);
 }
