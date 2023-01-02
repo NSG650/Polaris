@@ -24,6 +24,7 @@ enum thread_states {
 enum process_states {
 	PROCESS_NORMAL = 0,
 	PROCESS_READY_TO_RUN,
+	PROCESS_WAITING_ON_ANOTHER_PROCESS,
 	PROCESS_BLOCKED
 };
 
@@ -71,6 +72,7 @@ struct process {
 	struct f_descriptor *fds[MAX_FDS];
 	struct process *parent_process;
 	process_vec_t child_processes;
+	process_vec_t waiter_processes;
 	struct auxval auxv;
 	char name[256];
 };

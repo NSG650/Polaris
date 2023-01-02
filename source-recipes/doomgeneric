@@ -1,0 +1,10 @@
+name=doomgeneric
+version=4.0
+source_method=git
+clone_url="https://github.com/NSG650/doomgeneric-polaris"
+tag=master
+commit="799fc98d6170104ca2de8a84221cfa764b506061"
+
+regenerate() {
+    true
+}

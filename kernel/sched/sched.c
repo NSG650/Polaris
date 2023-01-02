@@ -53,7 +53,7 @@ int sched_get_next_thread(int index) {
 		}
 		struct thread *thread = threads.data[index];
 
-		if (thread->state != THREAD_READY_TO_RUN)
+		if (thread->state != THREAD_READY_TO_RUN || thread->mother_proc->state != PROCESS_READY_TO_RUN)
 			index++;
 
 		if (spinlock_acquire(thread->lock))
@@ -150,6 +150,7 @@ void process_create(char *name, uint8_t state, uint64_t runtime,
 #endif
 	vec_init(&proc->process_threads);
 	vec_init(&proc->child_processes);
+	vec_init(&proc->waiter_processes);
 	vec_push(&processes, proc);
 
 	if (parent_process) {
@@ -203,6 +204,7 @@ bool process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
 	proc->auxv = auxv;
 	vec_init(&proc->child_processes);
 	vec_init(&proc->process_threads);
+	vec_init(&proc->waiter_processes);
 	vec_push(&processes, proc);
 	if (parent_process) {
 		vec_push(&parent_process->child_processes, proc);
@@ -467,9 +469,9 @@ bool process_execve(char *path, char **argv, char **envp) {
 
 	vmm_switch_pagemap(kernel_pagemap);
 
-	// thread_execve(proc, entry, kargv, kenvp);
+	thread_execve(proc, thread, entry, kargv, kenvp);
 
-	thread_create(entry, 0, 1, proc);
+	// thread_create(entry, 0, 1, proc);
 
 	spinlock_drop(process_lock);
 	sched_resched_now();
@@ -490,7 +492,20 @@ void process_kill(struct process *proc) {
 			processes.data[1]; // the init proc is the second process
 							   // first one is the kernel
 		vec_push(&processes.data[1]->child_processes, child_process);
+		vec_remove(&proc->child_processes, child_process);
 	}
+
+	vec_deinit(&proc->child_processes);
+
+	// processes waiting on this process can now stop waiting
+	for (int i = 0; i < proc->waiter_processes.length; i++) {
+		struct process *waiter_process = proc->waiter_processes.data[i];
+		waiter_process->state = PROCESS_READY_TO_RUN;
+
+		vec_remove(&proc->waiter_processes, waiter_process);
+	}
+
+	vec_deinit(&proc->waiter_processes);
 
 	vec_remove(&processes, proc);
 	spinlock_drop(process_lock);
@@ -602,16 +617,17 @@ void thread_kill(struct thread *thrd, bool r) {
 	}
 #if defined(__x86_64__)
 	pmm_free((void *)thrd->stack, STACK_SIZE / PAGE_SIZE);
-	// pmm_free((void *)thrd->fpu_storage, DIV_ROUNDUP(fpu_storage_size,
-	// PAGE_SIZE));
+	pmm_free((void *)thrd->fpu_storage, DIV_ROUNDUP(fpu_storage_size, PAGE_SIZE));
 	kfree((void *)thrd->kernel_stack);
 #endif
 	vec_remove(&thrd->mother_proc->process_threads, thrd);
 	vec_remove(&threads, thrd);
 	kfree(thrd);
 	spinlock_drop(thread_lock);
-	if (r)
+	if (r) {
+		prcb_return_current_cpu()->running_thread = NULL;
 		sched_resched_now();
+	}
 }
 
 void thread_sleep(struct thread *thrd, uint64_t ns) {
@@ -621,6 +637,16 @@ void thread_sleep(struct thread *thrd, uint64_t ns) {
 	thrd->sleeping_till = timer_get_sleep_ns(ns);
 	spinlock_drop(thread_lock);
 	sti();
-	if (prcb_return_current_cpu()->running_thread == thrd)
+
+	if (prcb_return_current_cpu()->running_thread == thrd) {
+		prcb_return_current_cpu()->running_thread = NULL;
 		sched_resched_now();
+	}
+}
+
+void process_wait_on_another_process(struct process *waiter, struct process *waitee) {
+	waiter->state = PROCESS_WAITING_ON_ANOTHER_PROCESS;
+	vec_push(&waitee->waiter_processes, waiter);
+	prcb_return_current_cpu()->running_thread = NULL;
+	sched_resched_now();
 }

@@ -1,0 +1,23 @@
+name=doomgeneric
+from_source=doomgeneric
+revision=1
+hostdeps="gcc automake pkg-config"
+deps="mlibc"
+
+configure() {
+	echo "configure!!!"
+	x86_64-polaris-gcc --version
+	pwd
+}
+
+build() {
+	cd ${source_dir}/doomgeneric
+	make clean
+	make -j${parallelism}
+}
+
+install() {
+	cd ${source_dir}/doomgeneric
+	echo "baller"
+	cp ./doomgeneric "${dest_dir}/usr/bin"
+}

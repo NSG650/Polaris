@@ -14,6 +14,5 @@ void puts(char *string) {
 
 void main(void) {
 	puts("Hello I am a test program\n");
-	for (;;)
-		;
+	syscall1(0x3c, 0);
 }

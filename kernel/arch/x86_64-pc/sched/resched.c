@@ -41,6 +41,7 @@ void resched(registers_t *reg) {
 		running_thrd->stack = prcb_return_current_cpu()->user_stack;
 		fpu_save(running_thrd->fpu_storage);
 		running_thrd->state = THREAD_READY_TO_RUN;
+		running_thrd->mother_proc->state = PROCESS_READY_TO_RUN;
 		spinlock_drop(running_thrd->lock);
 	}
 	int nex_index =
@@ -72,6 +73,7 @@ void resched(registers_t *reg) {
 	prcb_return_current_cpu()->user_stack = running_thrd->stack;
 	prcb_return_current_cpu()->kernel_stack = running_thrd->kernel_stack;
 	prcb_return_current_cpu()->running_thread->state = THREAD_NORMAL;
+	prcb_return_current_cpu()->running_thread->mother_proc->state = PROCESS_NORMAL;
 
 	apic_eoi();
 	timer_sched_oneshot(32, running_thrd->runtime);
