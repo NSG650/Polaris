@@ -27,11 +27,12 @@ void resched(registers_t *reg) {
 	timer_handler();
 	spinlock_acquire_or_wait(resched_lock);
 
-	for (int i = 0; i < threads.length; i++) {
-		struct thread *th = threads.data[i];
-		if (th->sleeping_till > timer_get_abs_count()) {
+	for (int i = 0; i < sleeping_threads.length; i++) {
+		struct thread *th = sleeping_threads.data[i];
+		if (th->sleeping_till < timer_get_abs_count()) {
 			th->sleeping_till = 0;
 			th->state = THREAD_READY_TO_RUN;
+			vec_remove(&sleeping_threads, th);
 		}
 	}
 

@@ -137,6 +137,10 @@ int fork(void) {
 	return syscall0(0x39);
 }
 
+int nanosleep(const struct timespec *req, struct timespec *rem) {
+	return syscall2(0x23, (uint64_t)req, (uint64_t)rem);
+}
+
 int execve(char *path, char **argv, char **envp) {
 	return syscall3(0x3b, (uint64_t)path, (uint64_t)argv, (uint64_t)envp);
 }
@@ -148,23 +152,14 @@ void puts_to_console(char *string) {
 void *memset(void *d, int c, size_t n);
 
 void main(void) {
-	if (!fork()) {
-		puts_to_console("Hello I am the forked process!\n");
-		char *argv[] = {
-			"/bin/test.elf",
-			NULL
-		};
-		char *envp[] = {
-			"USER=root",
-			NULL
-		};
-		if(execve(argv[0], argv, envp) == -1) {
-			puts_to_console("Failed to execve :((\n");
-		}
-		for (;;)
-			;
-	}
 	puts_to_console("Hello from init!\n");
+
+	puts_to_console("Sleeping for 5 seconds\n");
+
+	struct timespec remaining, request = { 5, 100 };
+	nanosleep(&request, &remaining);
+
+	puts_to_console("Sleep worked!\n");
 	for (;;)
 		;
 }

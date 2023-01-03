@@ -78,8 +78,11 @@ void syscall_getpid(struct syscall_arguments *args) {
 }
 
 void syscall_getppid(struct syscall_arguments *args) {
-	args->ret = prcb_return_current_cpu()
-					->running_thread->mother_proc->parent_process->pid;
+	if (prcb_return_current_cpu()
+			->running_thread->mother_proc) {
+		args->ret = prcb_return_current_cpu()
+						->running_thread->mother_proc->parent_process->pid;
+	}
 }
 
 void syscall_nanosleep(struct syscall_arguments *args) {
@@ -87,7 +90,12 @@ void syscall_nanosleep(struct syscall_arguments *args) {
 		(struct __kernel_timespec *)args->args0;
 	uint64_t seconds_to_ns = from_user->tv_sec * 1000000000;
 	uint64_t total_sleep = seconds_to_ns + from_user->tv_nsec;
+	kprintf("nanosleep: total_sleep: 0x%p\n", total_sleep);
+
 	thread_sleep(prcb_return_current_cpu()->running_thread, total_sleep);
+
+	while (prcb_return_current_cpu()->running_thread->sleeping_till > timer_get_abs_count())
+		;
 }
 
 void syscall_fork(struct syscall_arguments *args) {
@@ -116,7 +124,7 @@ void sched_init(uint64_t args) {
 	kprintf("SCHED: Creating kernel thread\n");
 	vec_init(&threads);
 	vec_init(&processes);
-	vec_init(&threads);
+	vec_init(&sleeping_threads);
 	syscall_register_handler(0x27, syscall_getpid);
 	syscall_register_handler(0x67, syscall_puts);
 	syscall_register_handler(0x6e, syscall_getppid);
@@ -211,7 +219,8 @@ bool process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
 		if (parent_process->cwd != NULL) {
 			proc->cwd = parent_process->cwd;
 		} else {
-			proc->cwd = vfs_root;
+			// proc->cwd = vfs_root; kill me
+			proc->cwd = vfs_get_node(vfs_root, "/bin", 1);
 		}
 		proc->umask = parent_process->umask;
 		proc->mmap_anon_base = parent_process->mmap_anon_base;
@@ -308,7 +317,7 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 		thrd->fs_base = 0;
 		thrd->gs_base = 0;
 		if (!proc->process_threads.length) {
-			const char *argv[] = {proc->name, NULL};
+			const char *argv[] = {proc->name,NULL};
 			const char *envp[] = {"USER=root", NULL};
 			struct auxval auxv = proc->auxv;
 
@@ -343,6 +352,7 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 
 			stack -= strlen(argv[0]) + 1;
 			memcpy((void *)stack, argv[0], strlen(argv[0]) + 1);
+
 			address_difference = (thrd->stack + STACK_SIZE) - (uint64_t)stack;
 			uint64_t addr_to_arg =
 				(uint64_t)VIRTUAL_STACK_ADDR - address_difference;
@@ -635,13 +645,11 @@ void thread_sleep(struct thread *thrd, uint64_t ns) {
 	spinlock_acquire_or_wait(thread_lock);
 	thrd->state = THREAD_SLEEPING;
 	thrd->sleeping_till = timer_get_sleep_ns(ns);
+	vec_push(&sleeping_threads, thrd);
 	spinlock_drop(thread_lock);
 	sti();
 
-	if (prcb_return_current_cpu()->running_thread == thrd) {
-		prcb_return_current_cpu()->running_thread = NULL;
-		sched_resched_now();
-	}
+	sched_resched_now();
 }
 
 void process_wait_on_another_process(struct process *waiter, struct process *waitee) {

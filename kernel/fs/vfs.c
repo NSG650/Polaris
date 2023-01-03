@@ -475,6 +475,7 @@ void syscall_openat(struct syscall_arguments *args) {
 	int mode = args->args3;
 
 	struct vfs_node *parent = NULL;
+
 	if (!vfs_fdnum_path_to_node(dir_fdnum, path, false, false, &parent, NULL,
 								NULL)) {
 		args->ret = -1;
