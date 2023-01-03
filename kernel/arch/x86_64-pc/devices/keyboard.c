@@ -131,12 +131,27 @@ void keyboard_handle(registers_t *reg) {
 	apic_eoi();
 }
 
+static ssize_t keyboard_resource_read(struct resource *this,
+						 struct f_description *description, void *buf,
+						 off_t offset, size_t count) {
+	char *a = (char *)buf;
+	while (count) {
+		a[count--] = keyboard_read();
+	}
+	return count;
+}
+
 int keyboard_resource_ioctl(struct resource *this,
 							struct f_description *description, uint64_t request,
 							uint64_t arg) {
 	(void)this;
 	(void)description;
 	(void)arg;
+
+	if (!keyboard_typed)
+		return -1;
+
+	keyboard_typed = 0;
 	switch (request) {
 		case 0x1:
 			*(uint8_t *)arg = keyboard_read();
@@ -156,6 +171,7 @@ void keyboard_init(void) {
 	keyboard_resource->stat.st_rdev = resource_create_dev_id();
 	keyboard_resource->stat.st_mode = 0644 | S_IFCHR;
 	keyboard_resource->ioctl = keyboard_resource_ioctl;
+	keyboard_resource->read = keyboard_resource_read;
 
 	// Disable primary and secondary PS/2 ports
 	keyboard_write(0x64, 0xad);
