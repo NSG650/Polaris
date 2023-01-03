@@ -3,7 +3,7 @@ version=4.0
 source_method=git
 clone_url="https://github.com/NSG650/doomgeneric-polaris"
 tag=master
-commit="799fc98d6170104ca2de8a84221cfa764b506061"
+commit="4886e6c4c9842bba0d94e66721bcc76b170aadc6"
 
 regenerate() {
     true
