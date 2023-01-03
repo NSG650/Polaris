@@ -90,12 +90,13 @@ void syscall_nanosleep(struct syscall_arguments *args) {
 		(struct __kernel_timespec *)args->args0;
 	uint64_t seconds_to_ns = from_user->tv_sec * 1000000000;
 	uint64_t total_sleep = seconds_to_ns + from_user->tv_nsec;
-	kprintf("nanosleep: total_sleep: 0x%p\n", total_sleep);
 
 	thread_sleep(prcb_return_current_cpu()->running_thread, total_sleep);
 
 	while (prcb_return_current_cpu()->running_thread->sleeping_till > timer_get_abs_count())
 		;
+
+	args->ret = 0;
 }
 
 void syscall_fork(struct syscall_arguments *args) {
