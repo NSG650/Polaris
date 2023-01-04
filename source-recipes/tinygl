@@ -3,7 +3,7 @@ version=4.0
 source_method=git
 clone_url="https://github.com/NSG650/tinygl-polaris"
 tag=master
-commit="808018930979b996792b3dc30b9ac93bc121bd84"
+commit="d5b7e5b2dcf5e94cf2e210ba755762b6a7097520"
 
 regenerate() {
     true
