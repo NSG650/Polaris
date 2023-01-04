@@ -12,7 +12,13 @@ void puts(char *string) {
 	syscall1(0x67, (uint64_t)string);
 }
 
+size_t write(int fd, const void *data, size_t count) {
+        return syscall3(0x1, fd, (uint64_t)data, count);
+}
+
+
 void main(void) {
-	puts("Hello I am a test program\n");
+	char message[] = "Hello I am test program\n";
+	write(1, message, sizeof(message));
 	syscall1(0x3c, 0);
 }
