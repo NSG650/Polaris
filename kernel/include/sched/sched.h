@@ -40,6 +40,7 @@ void thread_sleep(struct thread *thrd, uint64_t ns);
 void thread_fork(struct thread *pthrd, struct process *fproc);
 void syscall_prctl(struct syscall_arguments *args);
 
-void process_wait_on_another_process(struct process *waiter, struct process *waitee);
+void process_wait_on_another_process(struct process *waiter,
+									 struct process *waitee);
 
 #endif

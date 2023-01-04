@@ -16,7 +16,7 @@ static ssize_t fbdev_write(struct resource *this,
 						   struct f_description *description, const void *buf,
 						   off_t offset, size_t count) {
 	spinlock_acquire_or_wait(this->lock);
-	memcpy((void*)(framebuff.address + offset), buf, count);
+	memcpy((void *)(framebuff.address + offset), buf, count);
 	spinlock_drop(this->lock);
 	return 0;
 }
@@ -31,7 +31,7 @@ static void *fbdev_mmap(struct resource *this, size_t file_page, int flags) {
 
 	spinlock_drop(this->lock);
 
-	return (void*)(((uint64_t)(framebuff.address) - MEM_PHYS_OFFSET) + offset);
+	return (void *)(((uint64_t)(framebuff.address) - MEM_PHYS_OFFSET) + offset);
 }
 
 static int fbdev_ioctl(struct resource *this, struct f_description *description,

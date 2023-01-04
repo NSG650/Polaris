@@ -132,8 +132,8 @@ void keyboard_handle(registers_t *reg) {
 }
 
 static ssize_t keyboard_resource_read(struct resource *this,
-						 struct f_description *description, void *buf,
-						 off_t offset, size_t count) {
+									  struct f_description *description,
+									  void *buf, off_t offset, size_t count) {
 	char *a = (char *)buf;
 	while (count) {
 		a[count--] = keyboard_read();

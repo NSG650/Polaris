@@ -84,8 +84,7 @@ ssize_t write(int fd, const void *data, size_t count) {
 	return syscall3(0x1, fd, (uint64_t)data, count);
 }
 
-int fstatat(int dirfd, const char *pathname, struct stat *buf,
-			int flags) {
+int fstatat(int dirfd, const char *pathname, struct stat *buf, int flags) {
 	return syscall4(0x106, dirfd, (uint64_t)pathname, (uint64_t)buf, flags);
 }
 

@@ -1,5 +1,6 @@
 #include <debug/debug.h>
 #include <devices/console.h>
+#include <fb/fb.h>
 #include <fs/devtmpfs.h>
 #include <fs/ramdisk.h>
 #include <fs/streams.h>
@@ -10,7 +11,6 @@
 #include <sched/sched.h>
 #include <sys/prcb.h>
 #include <sys/timer.h>
-#include <fb/fb.h>
 
 void kernel_main(void *args) {
 	vfs_init();
@@ -54,14 +54,8 @@ void kernel_main(void *args) {
 	std_console_device =
 		(vfs_get_node(vfs_root, "/dev/console", true))->resource;
 
-	char *argv[] = {
-		"/bin/init.elf",
-		NULL
-	};
-	char *envp[] = {
-		"USER=root",
-		NULL
-	};
+	char *argv[] = {"/bin/init.elf", NULL};
+	char *envp[] = {"USER=root", NULL};
 
 	kprintf("Running init binary %s\n", argv[0]);
 

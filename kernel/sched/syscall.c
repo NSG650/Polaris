@@ -1,7 +1,7 @@
+#include <debug/debug.h>
 #include <errno.h>
 #include <sched/syscall.h>
 #include <sys/prcb.h>
-#include <debug/debug.h>
 
 syscall_handler_t syscalls[512] = {NULL};
 

@@ -79,8 +79,7 @@ bool elf_load(struct pagemap *pagemap, struct resource *res, uint64_t load_base,
 
 				if (ld_path != NULL) {
 					*ld_path = path;
-				}
-				else {
+				} else {
 					kfree(path);
 					path = NULL;
 				}

@@ -2,6 +2,7 @@
 #include <cpu/smp.h>
 #include <debug/debug.h>
 #include <errno.h>
+#include <fb/fb.h>
 #include <kernel.h>
 #include <klibc/elf.h>
 #include <klibc/misc.h>
@@ -12,7 +13,6 @@
 #include <sys/elf.h>
 #include <sys/prcb.h>
 #include <sys/timer.h>
-#include <fb/fb.h>
 
 #define VIRTUAL_STACK_ADDR 0x70000000000
 
@@ -53,7 +53,8 @@ int sched_get_next_thread(int index) {
 		}
 		struct thread *thread = threads.data[index];
 
-		if (thread->state != THREAD_READY_TO_RUN || thread->mother_proc->state != PROCESS_READY_TO_RUN)
+		if (thread->state != THREAD_READY_TO_RUN ||
+			thread->mother_proc->state != PROCESS_READY_TO_RUN)
 			index++;
 
 		if (spinlock_acquire(thread->lock))
@@ -78,8 +79,7 @@ void syscall_getpid(struct syscall_arguments *args) {
 }
 
 void syscall_getppid(struct syscall_arguments *args) {
-	if (prcb_return_current_cpu()
-			->running_thread->mother_proc) {
+	if (prcb_return_current_cpu()->running_thread->mother_proc) {
 		args->ret = prcb_return_current_cpu()
 						->running_thread->mother_proc->parent_process->pid;
 	}
@@ -105,7 +105,7 @@ void syscall_fork(struct syscall_arguments *args) {
 void syscall_execve(struct syscall_arguments *args) {
 	char *path = (char *)syscall_helper_user_to_kernel_address(args->args0);
 	char **argv = (char **)syscall_helper_user_to_kernel_address(args->args1);
-	char **envp = (char**)syscall_helper_user_to_kernel_address(args->args2);
+	char **envp = (char **)syscall_helper_user_to_kernel_address(args->args2);
 	kprintf("path = %p\n", path);
 	for (int i = 0; argv[i] != NULL; i++) {
 		kprintf("argv[%d] = %s\n", i, argv[i]);
@@ -315,7 +315,7 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 		thrd->fs_base = 0;
 		thrd->gs_base = 0;
 		if (!proc->process_threads.length) {
-			const char *argv[] = {proc->name,NULL};
+			const char *argv[] = {proc->name, NULL};
 			const char *envp[] = {"USER=root", NULL};
 			struct auxval auxv = proc->auxv;
 
@@ -323,22 +323,22 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 
 			// the stack structure address values are not accurate
 			/*
-		 * 	0x70000000000 - "USER=root\0" 	// envp[0][9]
-		 * 	0x6fffffffff6 - proc->name 		// argv[0][255]
-		 *	0x6fffffffef6 - 0x0, 0x0		// zeros
-		 *	0x6fffffffee6 - AT_ENTRY
-		 *	0x6fffffffede - 0x400789		// example values
-		 *	0x6fffffffed6 - AT_PHDR
-		 *	0x6fffffffece - 2
-		 *	0x6fffffffec6 - AT_PHENT
-		 *	0x6fffffffebe - 7
-		 *	0x6fffffffeb6 - AT_PHNUM
-		 *	0x6fffffffeae - 5
-		 *	0x6fffffffea6 - 0x0 			// START OF ENVP
-		 *	0x6fffffffe9e - 0x6fffffffff6	// pointer to envp[0][9] aka envp[0]
-		 *	0x6fffffffe96 - 0x0				// START OF ARGV
-		 *	0x6fffffffe8e - 0x6fffffffef6	// pointer to argv[0][0] aka argv[0]
-		 *	0x6fffffffe86 - 1				// argc
+			 * 	0x70000000000 - "USER=root\0" 	// envp[0][9]
+			 * 	0x6fffffffff6 - proc->name 		// argv[0][255]
+			 *	0x6fffffffef6 - 0x0, 0x0		// zeros
+			 *	0x6fffffffee6 - AT_ENTRY
+			 *	0x6fffffffede - 0x400789		// example values
+			 *	0x6fffffffed6 - AT_PHDR
+			 *	0x6fffffffece - 2
+			 *	0x6fffffffec6 - AT_PHENT
+			 *	0x6fffffffebe - 7
+			 *	0x6fffffffeb6 - AT_PHNUM
+			 *	0x6fffffffeae - 5
+			 *	0x6fffffffea6 - 0x0 			// START OF ENVP
+			 *	0x6fffffffe9e - 0x6fffffffff6	// pointer to envp[0][9] aka
+			 *envp[0] 0x6fffffffe96 - 0x0				// START OF ARGV
+			 *	0x6fffffffe8e - 0x6fffffffef6	// pointer to argv[0][0] aka
+			 *argv[0] 0x6fffffffe86 - 1				// argc
 			 */
 
 			stack -= strlen(envp[0]) + 1;
@@ -458,8 +458,9 @@ bool process_execve(char *path, char **argv, char **envp) {
 		__builtin_unreachable();
 	}
 
-	// HACK: ld_path for processes that dont depend on ld.so points to kmalloced memory which is not null
-	// checking the first letter is '/' or not to know if a program needs ld
+	// HACK: ld_path for processes that dont depend on ld.so points to kmalloced
+	// memory which is not null checking the first letter is '/' or not to know
+	// if a program needs ld
 
 	uint64_t entry = auxv.at_entry;
 
@@ -570,11 +571,9 @@ void thread_execve(struct process *proc, struct thread *thrd,
 		memcpy((void *)stack, envp[envp_len], strlen(envp[envp_len]) + 1);
 	}
 
-	address_difference =
-		(thrd->stack + STACK_SIZE) - (uint64_t)stack;
+	address_difference = (thrd->stack + STACK_SIZE) - (uint64_t)stack;
 
-	uint64_t addr_to_env =
-		(uint64_t)VIRTUAL_STACK_ADDR - address_difference;
+	uint64_t addr_to_env = (uint64_t)VIRTUAL_STACK_ADDR - address_difference;
 
 	int argv_len;
 	for (argv_len = 0; argv[argv_len] != NULL; argv_len++) {
@@ -582,8 +581,7 @@ void thread_execve(struct process *proc, struct thread *thrd,
 		memcpy((void *)stack, argv[argv_len], strlen(argv[argv_len]) + 1);
 	}
 	address_difference = (thrd->stack + STACK_SIZE) - (uint64_t)stack;
-	uint64_t addr_to_arg =
-		(uint64_t)VIRTUAL_STACK_ADDR - address_difference;
+	uint64_t addr_to_arg = (uint64_t)VIRTUAL_STACK_ADDR - address_difference;
 
 	*(--stack) = 0;
 	*(--stack) = 0;
@@ -625,7 +623,8 @@ void thread_kill(struct thread *thrd, bool r) {
 	}
 #if defined(__x86_64__)
 	pmm_free((void *)thrd->stack, STACK_SIZE / PAGE_SIZE);
-	pmm_free((void *)thrd->fpu_storage, DIV_ROUNDUP(fpu_storage_size, PAGE_SIZE));
+	pmm_free((void *)thrd->fpu_storage,
+			 DIV_ROUNDUP(fpu_storage_size, PAGE_SIZE));
 	kfree((void *)thrd->kernel_stack);
 #endif
 	vec_remove(&thrd->mother_proc->process_threads, thrd);
@@ -653,7 +652,8 @@ void thread_sleep(struct thread *thrd, uint64_t ns) {
 		;
 }
 
-void process_wait_on_another_process(struct process *waiter, struct process *waitee) {
+void process_wait_on_another_process(struct process *waiter,
+									 struct process *waitee) {
 	waiter->state = PROCESS_WAITING_ON_ANOTHER_PROCESS;
 	vec_push(&waitee->waiter_processes, waiter);
 	prcb_return_current_cpu()->running_thread = NULL;

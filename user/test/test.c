@@ -13,9 +13,8 @@ void puts(char *string) {
 }
 
 size_t write(int fd, const void *data, size_t count) {
-        return syscall3(0x1, fd, (uint64_t)data, count);
+	return syscall3(0x1, fd, (uint64_t)data, count);
 }
-
 
 void main(void) {
 	char message[] = "Hello I am test program\n";
