@@ -5,9 +5,7 @@ hostdeps="gcc automake pkg-config"
 deps="mlibc"
 
 configure() {
-	echo "configure!!!"
-	x86_64-polaris-gcc --version
-	pwd
+	true
 }
 
 build() {
@@ -21,7 +19,6 @@ build() {
 
 install() {
 	cd ${source_dir}/gears
-	echo "baller"
 	mkdir -p "${dest_dir}/usr/bin"
 	cp ./gears "${dest_dir}/usr/bin"
 }

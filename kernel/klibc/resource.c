@@ -378,7 +378,7 @@ void syscall_seek(struct syscall_arguments *args) {
 			new_offset = curr_offset + offset;
 			break;
 		case SEEK_END:
-			new_offset = curr_offset + description->res->stat.st_size;
+			new_offset = offset + description->res->stat.st_size;
 			break;
 		case SEEK_SET:
 			new_offset = offset;

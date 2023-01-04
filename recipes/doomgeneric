@@ -5,9 +5,7 @@ hostdeps="gcc automake pkg-config"
 deps="mlibc"
 
 configure() {
-	echo "configure!!!"
-	x86_64-polaris-gcc --version
-	pwd
+	true
 }
 
 build() {
@@ -18,6 +16,5 @@ build() {
 
 install() {
 	cd ${source_dir}/doomgeneric
-	echo "baller"
 	cp ./doomgeneric "${dest_dir}/usr/bin"
 }
