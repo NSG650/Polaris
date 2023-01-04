@@ -93,9 +93,6 @@ void syscall_nanosleep(struct syscall_arguments *args) {
 
 	thread_sleep(prcb_return_current_cpu()->running_thread, total_sleep);
 
-	while (prcb_return_current_cpu()->running_thread->sleeping_till > timer_get_abs_count())
-		;
-
 	args->ret = 0;
 }
 
@@ -643,6 +640,7 @@ void thread_kill(struct thread *thrd, bool r) {
 
 void thread_sleep(struct thread *thrd, uint64_t ns) {
 	cli();
+
 	spinlock_acquire_or_wait(thread_lock);
 	thrd->state = THREAD_SLEEPING;
 	thrd->sleeping_till = timer_get_sleep_ns(ns);
@@ -650,7 +648,9 @@ void thread_sleep(struct thread *thrd, uint64_t ns) {
 	spinlock_drop(thread_lock);
 	sti();
 
-	sched_resched_now();
+	while (prcb_return_current_cpu()->running_thread->sleeping_till >
+		   timer_get_abs_count())
+		;
 }
 
 void process_wait_on_another_process(struct process *waiter, struct process *waitee) {
