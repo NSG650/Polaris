@@ -1,7 +1,7 @@
 name=frigg
 from_source=frigg
 revision=1
-imagedeps="meson ninja git base-devel"
+imagedeps="meson ninja git build-base"
 
 configure() {
     meson \
