@@ -66,5 +66,5 @@ SOFTWARE.
 
 ### Screenshots
 
-![glxgears](https://cdn.discordapp.com/attachments/743660463287697448/1060487073984954431/Screenshot_2023-01-05_at_2.45.54_PM.png)
+![glxgears](https://cdn.discordapp.com/attachments/743660463287697448/1060565042111713340/image.png)
 ![doomgeneric](https://cdn.discordapp.com/attachments/743660463287697448/1060486178907893760/Screenshot_2023-01-05_at_2.41.03_PM.png)
