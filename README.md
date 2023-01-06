@@ -1,3 +1,7 @@
+# Polaris
+Polaris is another unix like kernel.
+
+
 ### Credits
 - [Lyre](https://github.com/lyre-os/lyre): Heavy inspiration for VFS and some other bits of code
 ```
@@ -34,7 +38,7 @@ CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
-- [Zydis](https://github.com/zyantific/zydis): For x86_64 disassembly. Precompiled library is included in `/kernel/arch/x86_64-pc/debug`
+- [Zydis](https://github.com/zyantific/zydis): For x86_64 disassembly. Precompiled library is included in `kernel/arch/x86_64-pc/debug`
 ```
 The MIT License (MIT)
 
@@ -59,3 +63,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+### Screenshots
+
+![glxgears](https://cdn.discordapp.com/attachments/743660463287697448/1060565042111713340/image.png)
+![doomgeneric](https://cdn.discordapp.com/attachments/743660463287697448/1060486178907893760/Screenshot_2023-01-05_at_2.41.03_PM.png)
