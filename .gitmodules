@@ -7,3 +7,7 @@
 	path = kernel/arch/x86_64-pc/fw/lai
 	url = https://github.com/managarm/lai
 	shallow = true
+[submodule "kernel/fb/terminal"]
+	path = kernel/fb/terminal
+	url = https://github.com/limine-bootloader/terminal.git
+	shallow = true

@@ -380,7 +380,6 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 
 			address_difference = (thrd->stack + STACK_SIZE) - (uint64_t)stack;
 			thrd->reg.rsp -= address_difference;
-			kprintf("RSP: 0x%p\n", thrd->reg.rsp);
 		}
 	}
 #endif
@@ -484,6 +483,7 @@ bool process_execve(char *path, char **argv, char **envp) {
 
 	spinlock_drop(process_lock);
 	sched_resched_now();
+	return false;
 }
 
 void process_kill(struct process *proc) {
@@ -608,8 +608,6 @@ void thread_execve(struct process *proc, struct thread *thrd,
 
 	address_difference = (thrd->stack + STACK_SIZE) - (uint64_t)stack;
 	thrd->reg.rsp -= address_difference;
-
-	kprintf("RSP: 0x%p\n", thrd->reg.rsp);
 #endif
 
 	spinlock_drop(thread_lock);

@@ -79,7 +79,7 @@ void arch_entry(void) {
 	fb.tex_color = 0x00eee8d5;
 	fb.tex_x = 0;
 	fb.tex_y = 0;
-	fb.bg_color = 0x0012456;
+	fb.bg_color = 0x00124560;
 	framebuffer_init(&fb);
 	kprintf("Hello x86_64!\n");
 	cli();

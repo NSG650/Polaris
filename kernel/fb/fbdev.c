@@ -15,6 +15,7 @@ static struct resource *framebuff_res;
 static ssize_t fbdev_write(struct resource *this,
 						   struct f_description *description, const void *buf,
 						   off_t offset, size_t count) {
+	(void)description;
 	spinlock_acquire_or_wait(this->lock);
 	memcpy((void *)(framebuff.address + offset), buf, count);
 	spinlock_drop(this->lock);
@@ -22,6 +23,7 @@ static ssize_t fbdev_write(struct resource *this,
 }
 
 static void *fbdev_mmap(struct resource *this, size_t file_page, int flags) {
+	(void)flags;
 	spinlock_acquire_or_wait(this->lock);
 	size_t offset = file_page * PAGE_SIZE;
 

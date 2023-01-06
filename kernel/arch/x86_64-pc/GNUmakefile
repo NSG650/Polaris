@@ -44,7 +44,7 @@ override INTERNALASFLAGS := \
 CFILES := $(shell find ../../ -path . -prune -type f -o -name '*.c')
 ASMFILES := $(shell find ../../ -type f -name '*.asm')
 OBJ := $(CFILES:.c=.o) $(ASMFILES:.asm=.o)
-HEADER_DEPS :=  $(CFILES:.c=.d) $(ASMFILES:.asm=.d)
+HEADER_DEPS := $(CFILES:.c=.d) $(ASMFILES:.asm=.d)
 
 CROSS_TOOLCHAIN ?= x86_64-elf
 

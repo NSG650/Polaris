@@ -52,4 +52,5 @@ format:
 		-not -ipath "*./kernel/arch/x86_64-pc/include/debug/zydis/*" \
 		-not -ipath "*./kernel/arch/x86_64-pc/include/debug/Zycore/*" \
 		-not -ipath "*./sources*" -not -ipath "*./host-pkgs*" \
-		-not -ipath "*./pkgs*" -not -ipath "*./builds*" -not -ipath "*./host-builds*")
+		-not -ipath "*./pkgs*" -not -ipath "*./builds*" -not -ipath "*./host-builds*" \
+		-not -ipath "*./kernel/fb/terminal*")

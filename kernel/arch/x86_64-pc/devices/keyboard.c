@@ -89,9 +89,7 @@ void keyboard_gets(char *string, size_t count) {
 		key = keyboard_read();
 		if (key == 0xE && c) {
 			string[c--] = '\0';
-			framebuff.tex_x--;
-			framebuffer_putchar(' ');
-			framebuff.tex_x--;
+			framebuffer_puts("\b \b");
 			continue;
 		}
 		if (key == 0x2A) {
@@ -103,9 +101,7 @@ void keyboard_gets(char *string, size_t count) {
 					break;
 				if (key == 0xE && c) {
 					string[c--] = '\0';
-					framebuff.tex_x--;
-					framebuffer_putchar(' ');
-					framebuff.tex_x--;
+					framebuffer_puts("\b \b");
 					continue;
 				}
 				if (ktocSHIFT(key) == 0) {

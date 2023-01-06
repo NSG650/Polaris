@@ -36,7 +36,7 @@ struct framebuffer {
 extern struct framebuffer framebuff;
 
 void framebuffer_init(struct framebuffer *fb);
-void framebuffer_clear(uint32_t color);
+void framebuffer_clear(uint32_t foreground, uint32_t background);
 void framebuffer_putchar(char c);
 void framebuffer_puts(char *string);
 
