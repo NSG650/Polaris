@@ -10,10 +10,8 @@ configure() {
 
 build() {
 	cd ${source_dir}/src
-	make clean
 	make -j${parallelism}
 	cd ${source_dir}/gears
-	make clean
 	make -j${parallelism}
 }
 

@@ -1,10 +1,11 @@
 name=pkg-config
-version=1.8.0
+version=1.9.3
 source_method=tarball
 tarball_url="https://github.com/pkgconf/pkgconf/archive/refs/tags/pkgconf-${version}.tar.gz"
-tarball_blake2b="41c3496b53ba97f74afd306af872c3c5e5728f9bbf78582f17cf814fd5f92ee502b315f086c8699801b267b09dec4bb9c74adb82dd5674683fb2bafee29d852f"
+tarball_blake2b="209c61ed2b9e86bb85aee089dca3715e6183b914728656d868f1c6f14999644df1ff48aa31d8deccb336d8cba872dcabaac239aae3b7dbdc312be82d2ada14ed"
 hostdeps="autoconf automake libtool"
 
 regenerate() {
+    sed -i 's/2.71/2.69/g' ${source_dir}/configure.ac
     autoreconf -fvi
 }

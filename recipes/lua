@@ -10,9 +10,9 @@ configure() {
 
 build() {
 	cd ${source_dir}
-	sed -i "8s/.*/CC= x86_64-polaris-gcc -std=gnu99/" src/Makefile
-	sed -i "13s/.*/AR= x86_64-polaris-ar rcu/" src/Makefile
-	sed -i "14s/.*/RANLIB= x86_64-polaris-ranlib/" src/Makefile
+	sed -i "9s/.*/CC= x86_64-polaris-gcc -std=gnu99/" src/Makefile
+	sed -i "14s/.*/AR= x86_64-polaris-ar rcu/" src/Makefile
+	sed -i "15s/.*/RANLIB= x86_64-polaris-ranlib/" src/Makefile
 	make generic -j${parallelism}
 }
 
