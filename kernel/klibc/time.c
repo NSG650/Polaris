@@ -21,6 +21,9 @@ struct timer *timer_new(struct timespec when) {
 	}
 
 	timer->when = when;
+	timer->fired = false;
+	timer->index = -1;
+
 	timer_arm(timer);
 	return timer;
 }

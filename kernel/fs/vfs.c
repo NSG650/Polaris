@@ -103,7 +103,7 @@ static struct path2node_res path2node(struct vfs_node *parent,
 		while (path[index] == '/') {
 			if (index == path_len - 1) {
 				return (struct path2node_res){current_node, current_node,
-											  strdup("")};
+											  strdup("/")};
 			}
 			index++;
 		}
@@ -172,7 +172,9 @@ static struct vfs_node *get_parent_dir(int dir_fdnum, const char *path) {
 
 	if (path != NULL && *path == '/') {
 		return vfs_root;
-	} else if (dir_fdnum == AT_FDCWD) {
+	}
+
+	if (dir_fdnum == AT_FDCWD) {
 		return proc->cwd;
 	}
 
@@ -428,8 +430,12 @@ size_t vfs_pathname(struct vfs_node *node, char *buffer, size_t len) {
 		}
 	}
 
-	strncpy(buffer + offset, node->name, len - offset);
-	return strlen(node->name) + offset;
+	if (strcmp(node->name, "/") != 0) {
+		strncpy(buffer + offset, node->name, len - offset);
+		return strlen(node->name) + offset;
+	} else {
+		return offset;
+	}
 }
 
 bool vfs_fdnum_path_to_node(int dir_fdnum, const char *path, bool empty_path,
@@ -460,6 +466,10 @@ bool vfs_fdnum_path_to_node(int dir_fdnum, const char *path, bool empty_path,
 
 	if (basename != NULL) {
 		*basename = res.basename;
+	} else {
+		if (res.basename != NULL) {
+			kfree(res.basename);
+		}
 	}
 
 	return true;
@@ -475,9 +485,9 @@ void syscall_openat(struct syscall_arguments *args) {
 	int mode = args->args3;
 
 	struct vfs_node *parent = NULL;
-
+	char *basename = NULL;
 	if (!vfs_fdnum_path_to_node(dir_fdnum, path, false, false, &parent, NULL,
-								NULL)) {
+								&basename)) {
 		args->ret = -1;
 		return;
 	}
@@ -491,10 +501,11 @@ void syscall_openat(struct syscall_arguments *args) {
 	int create_flags = flags & FILE_CREATION_FLAGS_MASK;
 	int follow_links = (flags & O_NOFOLLOW) == 0;
 
-	struct vfs_node *node = vfs_get_node(parent, path, follow_links);
+	struct vfs_node *node = vfs_get_node(parent, basename, follow_links);
 	if (node == NULL) {
 		if ((create_flags & O_CREAT) != 0) {
-			node = vfs_create(parent, path, (mode & ~proc->umask) | S_IFREG);
+			node =
+				vfs_create(parent, basename, (mode & ~proc->umask) | S_IFREG);
 		} else {
 			errno = ENOENT;
 			args->ret = -1;
@@ -542,6 +553,10 @@ void syscall_openat(struct syscall_arguments *args) {
 	}
 
 	fd->description->node = node;
+
+	if (basename != NULL) {
+		kfree(basename);
+	}
 	args->ret = fdnum_create_from_fd(proc, fd, 0, false);
 }
 
@@ -758,11 +773,12 @@ void syscall_readlinkat(struct syscall_arguments *args) {
 	int dir_fdnum = args->args0;
 	const char *path = (char *)args->args1;
 	char *buffer = (char *)args->args2;
-	size_t length = args->args3;
+	size_t limit = args->args3;
 
 	struct vfs_node *parent = NULL;
+	char *basename = NULL;
 	if (!vfs_fdnum_path_to_node(dir_fdnum, path, false, false, &parent, NULL,
-								NULL)) {
+								&basename)) {
 		args->ret = -1;
 		return;
 	}
@@ -773,7 +789,7 @@ void syscall_readlinkat(struct syscall_arguments *args) {
 		return;
 	}
 
-	struct vfs_node *node = vfs_get_node(parent, path, false);
+	struct vfs_node *node = vfs_get_node(parent, basename, false);
 	if (node == NULL) {
 		args->ret = -1;
 		return;
@@ -785,22 +801,17 @@ void syscall_readlinkat(struct syscall_arguments *args) {
 		return;
 	}
 
-	node = reduce_node(node, true);
-	if (node == NULL) {
-		args->ret = -1;
-		return;
+	size_t to_copy = strlen(node->symlink_target) + 1;
+	if (to_copy > limit) {
+		to_copy = limit;
 	}
 
-	char path_buffer[PATH_MAX] = {0};
-	if (vfs_pathname(node, path_buffer, PATH_MAX) >= length) {
-		errno = ENAMETOOLONG;
-		args->ret = -1;
-		return;
-	}
+	memcpy(buffer, node->symlink_target, to_copy);
 
-	size_t actual_length = strlen(path_buffer);
-	strncpy(buffer, path_buffer, actual_length);
-	args->ret = actual_length;
+	if (basename != NULL) {
+		kfree(basename);
+	}
+	args->ret = to_copy;
 }
 
 void syscall_linkat(struct syscall_arguments *args) {
@@ -877,6 +888,11 @@ void syscall_unlinkat(struct syscall_arguments *args) {
 	}
 
 	vfs_unlink(parent, basename);
+
+	if (basename != NULL) {
+		kfree(basename);
+	}
+
 	args->ret = 0;
 }
 
@@ -913,6 +929,10 @@ void syscall_mkdirat(struct syscall_arguments *args) {
 	if (node == NULL) {
 		args->ret = -1;
 		return;
+	}
+
+	if (basename != NULL) {
+		kfree(basename);
 	}
 
 	args->ret = 0;
