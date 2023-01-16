@@ -31,7 +31,7 @@ static ssize_t console_read(struct resource *_this,
 	(void)offset;
 	char *a = (char *)_buf;
 	keyboard_gets(a, count);
-	return 0;
+	return count;
 }
 
 int console_ioctl(struct resource *this, struct f_description *description,
