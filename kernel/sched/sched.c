@@ -629,8 +629,7 @@ void thread_kill(struct thread *thrd, bool r) {
 	}
 #if defined(__x86_64__)
 	pmm_free((void *)thrd->stack, STACK_SIZE / PAGE_SIZE);
-	pmm_free((void *)thrd->fpu_storage,
-			 DIV_ROUNDUP(fpu_storage_size, PAGE_SIZE));
+	pmm_free((void *)thrd->fpu_storage, fpu_storage_size / PAGE_SIZE);
 	kfree((void *)thrd->kernel_stack);
 #endif
 	vec_remove(&thrd->mother_proc->process_threads, thrd);
