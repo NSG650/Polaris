@@ -156,12 +156,12 @@ void main(void) {
 	if (!fork()) {
 		puts_to_console("Hello I am the forked process!\n");
 
-		char **argv[] = {
-			"/bin/test.elf",
+		char *argv[] = {
+			"/bin/hello",
 			NULL
 		};
 
-		char **envp[] = {
+		char *envp[] = {
 			"USER=root",
 			NULL
 		};

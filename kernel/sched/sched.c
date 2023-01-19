@@ -483,11 +483,7 @@ bool process_execve(char *path, char **argv, char **envp) {
 		entry = ld_aux.at_entry;
 	}
 
-	vmm_switch_pagemap(kernel_pagemap);
-
 	thread_execve(proc, thread, entry, kargv, kenvp);
-
-	// thread_create(entry, 0, 1, proc);
 
 	spinlock_drop(process_lock);
 	sched_resched_now();
@@ -537,6 +533,13 @@ void thread_execve(struct process *proc, struct thread *thrd,
 	thrd->lock = 0;
 	thrd->mother_proc = proc;
 
+	for (int i = 0; argv[i] != NULL; i++) {
+		kprintf("kargv[%d] = %s\n", i, argv[i]);
+	}
+	for (int i = 0; envp[i] != NULL; i++) {
+		kprintf("kenvp[%d] = %s\n", i, envp[i]);
+	}
+
 #if defined(__x86_64__)
 	thrd->reg.rip = pc_address;
 	thrd->reg.rsp = (uint64_t)pmm_allocz(STACK_SIZE / PAGE_SIZE);
@@ -576,20 +579,26 @@ void thread_execve(struct process *proc, struct thread *thrd,
 
 	for (envp_len = 0; envp[envp_len] != NULL; envp_len++) {
 		stack -= strlen(envp[envp_len]) + 1;
-		memcpy((void *)stack, envp[envp_len], strlen(envp[envp_len]) + 1);
+		memcpy((void *)stack + MEM_PHYS_OFFSET, envp[envp_len], strlen(envp[envp_len]) + 1);
 	}
 
 	address_difference = (thrd->stack + STACK_SIZE) - (uint64_t)stack;
-
 	uint64_t addr_to_env = (uint64_t)VIRTUAL_STACK_ADDR - address_difference;
 
 	int argv_len;
 	for (argv_len = 0; argv[argv_len] != NULL; argv_len++) {
 		stack -= strlen(argv[argv_len]) + 1;
-		memcpy((void *)stack, argv[argv_len], strlen(argv[argv_len]) + 1);
+		memcpy((void *)stack + MEM_PHYS_OFFSET, argv[argv_len], strlen(argv[argv_len]) + 1);
 	}
 	address_difference = (thrd->stack + STACK_SIZE) - (uint64_t)stack;
 	uint64_t addr_to_arg = (uint64_t)VIRTUAL_STACK_ADDR - address_difference;
+
+	// alignments
+	stack = (uintptr_t *)((uintptr_t)stack & ~(0b1111));
+	if (((argv_len + envp_len + 1) & 1) != 0) stack--;
+
+	// switching to the kernel pagemap in between sure is a great idea
+	vmm_switch_pagemap(kernel_pagemap);
 
 	*(--stack) = 0;
 	*(--stack) = 0;
