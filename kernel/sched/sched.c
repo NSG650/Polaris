@@ -54,13 +54,18 @@ int sched_get_next_thread(int index) {
 		struct thread *thread = threads.data[index];
 
 		if (thread->state != THREAD_READY_TO_RUN ||
-			thread->mother_proc->state != PROCESS_READY_TO_RUN)
+			thread->mother_proc->state != PROCESS_READY_TO_RUN) {
 			index++;
+			continue;
+		}
 
-		if (spinlock_acquire(thread->lock))
+		if (spinlock_acquire(thread->lock)) {
 			return index;
+		}
+
 		index++;
 	}
+
 	return -1;
 }
 
@@ -267,7 +272,9 @@ int64_t process_fork(struct process *proc, struct thread *thrd) {
 	}
 
 	thread_fork(thrd, fproc);
-	proc->state = PROCESS_READY_TO_RUN;
+
+	fproc->state = PROCESS_READY_TO_RUN;
+
 	spinlock_drop(process_lock);
 	return fproc->pid;
 }
@@ -398,7 +405,7 @@ void thread_fork(struct thread *pthrd, struct process *fproc) {
 	thrd->runtime = pthrd->runtime;
 	thrd->lock = 0;
 	thrd->mother_proc = fproc;
-	thrd->reg = pthrd->reg;
+	memcpy(&thrd->reg, &pthrd->reg, sizeof(registers_t));
 	thrd->kernel_stack = (uint64_t)kmalloc(STACK_SIZE);
 	thrd->kernel_stack += STACK_SIZE;
 #if defined(__x86_64__)
@@ -408,6 +415,7 @@ void thread_fork(struct thread *pthrd, struct process *fproc) {
 	thrd->gs_base = read_kernel_gs();
 	thrd->fpu_storage =
 		pmm_allocz(DIV_ROUNDUP(fpu_storage_size, PAGE_SIZE)) + MEM_PHYS_OFFSET;
+
 	memcpy(thrd->fpu_storage, pthrd->fpu_storage, fpu_storage_size);
 #endif
 	thrd->sleeping_till = 0;

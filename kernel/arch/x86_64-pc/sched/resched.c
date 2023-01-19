@@ -23,6 +23,8 @@ uint64_t timer_sched_tick(void) {
 }
 
 void resched(registers_t *reg) {
+	vmm_switch_pagemap(kernel_pagemap);
+
 	tick++;
 	timer_handler();
 	spinlock_acquire_or_wait(resched_lock);
@@ -59,6 +61,7 @@ void resched(registers_t *reg) {
 			halt();
 	}
 	running_thrd = threads.data[nex_index];
+
 	fpu_restore(running_thrd->fpu_storage);
 
 	// Don't fuck with the kernel gs

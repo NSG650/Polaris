@@ -153,12 +153,12 @@ void *memset(void *d, int c, size_t n);
 void main(void) {
 	puts_to_console("Hello from init!\n");
 
-	puts("Sleeping for 50000ns\n");
+	if (!fork()) {
+		puts_to_console("Hello I am the forked process!\n");
+		for (;;)
+			;
+	}
 
-	struct timespec remaining, request = {0, 50000};
-	nanosleep(&request, &remaining);
-
-	puts("Sleep worked\n");
 	for (;;)
 		;
 }
