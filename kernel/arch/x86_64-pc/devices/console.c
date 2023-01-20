@@ -30,7 +30,11 @@ static ssize_t console_read(struct resource *_this,
 	(void)description;
 	(void)offset;
 	char *a = (char *)_buf;
-	keyboard_gets(a, count);
+	if (count == 1) { // for micropython AAAAAAAAA
+		keyboard_gets(a, count, 0);
+		return count;
+	}
+	keyboard_gets(a, count, 1);
 	return count;
 }
 

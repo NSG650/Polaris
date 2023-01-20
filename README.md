@@ -69,3 +69,4 @@ SOFTWARE.
 ![glxgears](https://cdn.discordapp.com/attachments/743660463287697448/1060565042111713340/image.png)
 ![doomgeneric](https://cdn.discordapp.com/attachments/743660463287697448/1060486178907893760/Screenshot_2023-01-05_at_2.41.03_PM.png)
 ![lua](https://cdn.discordapp.com/attachments/1019696634256429096/1064549607171956806/Screenshot_2023-01-16_at_7.49.25_PM.png)
+![micropython](https://cdn.discordapp.com/attachments/841656206657716234/1065890859977035786/image.png)

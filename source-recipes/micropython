@@ -1,0 +1,10 @@
+name=micropython
+version=1.19.1
+source_method=git
+clone_url="https://github.com/NSG650/micropython-polaris"
+tag=master
+commit="6756f3974cf8c004844a53318a9d204c0aaeef73"
+
+regenerate() {
+	true
+}
