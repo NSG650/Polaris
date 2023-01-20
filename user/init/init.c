@@ -148,21 +148,43 @@ void puts_to_console(char *string) {
 	write(stdout, string, strlen(string));
 }
 
+void puts_to_console_with_length(char *string, size_t length) {
+	write(stdout, string, length);
+}
+
 void *memset(void *d, int c, size_t n);
 
 void main(void) {
-	puts_to_console("Hello from init!\n");
+	int motd_fd = open("/etc/motd", O_RDONLY, 0);
+	if (motd_fd != -1) {
+		struct stat motd_stat = {0};
+		fstatat(motd_fd, "", &motd_stat, AT_EMPTY_PATH);
+		char *motd_string = mmap(0, motd_stat.st_size, PROT_READ, MAP_SHARED, motd_fd, 0);
+		if (motd_string == (void*)-1) {
+			puts_to_console("mmap failed.\n");
+		}
+		else {
+			read(motd_fd, motd_string, motd_stat.st_size);
+			puts_to_console_with_length(motd_string, motd_stat.st_size);
+			munmap(motd_string, motd_stat.st_size); 
+		}
+	}
 
+	else {
+		puts_to_console("Whoops can't find /etc/motd\n");
+	}
+	
 	if (!fork()) {
-		puts_to_console("Hello I am the forked process!\n");
+		puts_to_console("Dropping you into a micropython shell\n");
 
 		char *argv[] = {
-			"/bin/hello",
+			"/bin/micropython",
 			NULL
 		};
 
 		char *envp[] = {
 			"USER=root",
+			"NO=YES",
 			NULL
 		};
 

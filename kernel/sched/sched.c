@@ -111,13 +111,6 @@ void syscall_execve(struct syscall_arguments *args) {
 	char *path = (char *)syscall_helper_user_to_kernel_address(args->args0);
 	char **argv = (char **)syscall_helper_user_to_kernel_address(args->args1);
 	char **envp = (char **)syscall_helper_user_to_kernel_address(args->args2);
-	kprintf("path = %p\n", path);
-	for (int i = 0; argv[i] != NULL; i++) {
-		kprintf("argv[%d] = %s\n", i, argv[i]);
-	}
-	for (int i = 0; envp[i] != NULL; i++) {
-		kprintf("envp[%d] = %s\n", i, envp[i]);
-	}
 	if (!process_execve((char *)args->args0, (char **)args->args1,
 						(char **)args->args2))
 		args->ret = -1;
@@ -440,11 +433,6 @@ bool process_execve(char *path, char **argv, char **envp) {
 		return false;
 	}
 
-	char **kargv = syscall_helper_user_to_kernel_address(argv);
-	char **kenvp = syscall_helper_user_to_kernel_address(envp);
-
-	kprintf("kargv: 0x%p, kenvp: 0x%p\n", kargv, kenvp);
-
 	proc->process_pagemap = vmm_new_pagemap();
 
 	for (int i = 0; i < proc->process_threads.length; i++) {
@@ -483,9 +471,14 @@ bool process_execve(char *path, char **argv, char **envp) {
 		entry = ld_aux.at_entry;
 	}
 
-	thread_execve(proc, thread, entry, kargv, kenvp);
+	proc->auxv = auxv;
+
+	thread_execve(proc, thread, entry, argv, envp);
 
 	spinlock_drop(process_lock);
+
+	vmm_switch_pagemap(kernel_pagemap);
+
 	sched_resched_now();
 	return false;
 }
@@ -524,6 +517,8 @@ void process_kill(struct process *proc) {
 	spinlock_drop(process_lock);
 }
 
+// TODO: This can be optimized way moreeeee
+
 void thread_execve(struct process *proc, struct thread *thrd,
 				   uintptr_t pc_address, char **argv, char **envp) {
 	spinlock_acquire_or_wait(thread_lock);
@@ -533,13 +528,6 @@ void thread_execve(struct process *proc, struct thread *thrd,
 	thrd->lock = 0;
 	thrd->mother_proc = proc;
 
-	for (int i = 0; argv[i] != NULL; i++) {
-		kprintf("kargv[%d] = %s\n", i, argv[i]);
-	}
-	for (int i = 0; envp[i] != NULL; i++) {
-		kprintf("kenvp[%d] = %s\n", i, envp[i]);
-	}
-
 #if defined(__x86_64__)
 	thrd->reg.rip = pc_address;
 	thrd->reg.rsp = (uint64_t)pmm_allocz(STACK_SIZE / PAGE_SIZE);
@@ -548,7 +536,7 @@ void thread_execve(struct process *proc, struct thread *thrd,
 	thrd->reg.ss = 0x1b;
 
 	mmap_range(proc->process_pagemap, VIRTUAL_STACK_ADDR - STACK_SIZE,
-			   (uintptr_t)thrd->reg.rsp, STACK_SIZE, PROT_READ | PROT_WRITE,
+			   (uintptr_t)thrd->reg.rsp, STACK_SIZE + 1, PROT_READ | PROT_WRITE,
 			   MAP_ANONYMOUS);
 
 	thrd->reg.rsp = VIRTUAL_STACK_ADDR;
@@ -577,28 +565,33 @@ void thread_execve(struct process *proc, struct thread *thrd,
 	int envp_len = 0;
 	uint64_t address_difference = 0;
 
+	uint8_t *stack_but_in_bytes = (uint8_t *)stack;
+
 	for (envp_len = 0; envp[envp_len] != NULL; envp_len++) {
-		stack -= strlen(envp[envp_len]) + 1;
-		memcpy((void *)stack + MEM_PHYS_OFFSET, envp[envp_len], strlen(envp[envp_len]) + 1);
+		stack_but_in_bytes -= (strlen(envp[envp_len]) + 1);
+		memcpy((void *)stack_but_in_bytes + MEM_PHYS_OFFSET, envp[envp_len], strlen(envp[envp_len]) + 1);
 	}
 
+	stack = (uint64_t *)stack_but_in_bytes;
 	address_difference = (thrd->stack + STACK_SIZE) - (uint64_t)stack;
 	uint64_t addr_to_env = (uint64_t)VIRTUAL_STACK_ADDR - address_difference;
 
 	int argv_len;
 	for (argv_len = 0; argv[argv_len] != NULL; argv_len++) {
-		stack -= strlen(argv[argv_len]) + 1;
-		memcpy((void *)stack + MEM_PHYS_OFFSET, argv[argv_len], strlen(argv[argv_len]) + 1);
+		stack_but_in_bytes -= (strlen(argv[argv_len]) + 1);
+		memcpy((void *)stack_but_in_bytes + MEM_PHYS_OFFSET, argv[argv_len], strlen(argv[argv_len]) + 1);
 	}
+
+	stack = (uint64_t *)stack_but_in_bytes;
 	address_difference = (thrd->stack + STACK_SIZE) - (uint64_t)stack;
 	uint64_t addr_to_arg = (uint64_t)VIRTUAL_STACK_ADDR - address_difference;
 
 	// alignments
+	
 	stack = (uintptr_t *)((uintptr_t)stack & ~(0b1111));
 	if (((argv_len + envp_len + 1) & 1) != 0) stack--;
 
-	// switching to the kernel pagemap in between sure is a great idea
-	vmm_switch_pagemap(kernel_pagemap);
+	stack = (uintptr_t*)((uintptr_t)stack + MEM_PHYS_OFFSET);
 
 	*(--stack) = 0;
 	*(--stack) = 0;
@@ -616,12 +609,32 @@ void thread_execve(struct process *proc, struct thread *thrd,
 	stack[1] = auxv.at_phnum;
 
 	*(--stack) = 0;
-	*(--stack) = addr_to_env;
+
+	stack -= envp_len;
+
+	uint64_t offset = 0;
+	for (int i = envp_len - 1; i >= 0; i--) {
+		if (i != envp_len - 1) {
+			offset += strlen(envp[i + 1]) + 1;
+		}
+		stack[i] = addr_to_env + offset;
+	}
 
 	*(--stack) = 0;
-	*(--stack) = addr_to_arg;
+	
+	stack -= argv_len;
+	
+	offset = 0;
+	for (int i = argv_len - 1; i >= 0; i--) {
+		if (i != argv_len - 1) {
+			offset += strlen(argv[i + 1]) + 1;
+		}
+		stack[i] = addr_to_arg + offset;
+	}
 
 	*(--stack) = argv_len;
+
+	stack = (uintptr_t*)((uintptr_t)stack - MEM_PHYS_OFFSET);
 
 	address_difference = (thrd->stack + STACK_SIZE) - (uint64_t)stack;
 	thrd->reg.rsp -= address_difference;
