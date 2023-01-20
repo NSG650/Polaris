@@ -124,3 +124,6 @@ GitHub.sublime-settings
 /host-pkgs
 /pkgs
 /sources
+
+root/bin 
+root/usr
