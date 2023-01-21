@@ -82,6 +82,9 @@ void arch_entry(void) {
 	fb.bg_color = 0x00124560;
 	framebuffer_init(&fb);
 	kprintf("Hello x86_64!\n");
+#ifdef GIT_VERSION
+	kprintf("Version: %s\n", GIT_VERSION);
+#endif
 	cli();
 	isr_register_handler(0xff, halt_current_cpu);
 	isr_register_handler(48, resched);

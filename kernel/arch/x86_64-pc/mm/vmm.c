@@ -363,7 +363,10 @@ void vmm_page_fault_handler(registers_t *reg) {
 				user_supervisor ? "U" : "S", reserved ? "R" : "NR",
 				execute ? "X" : "NX");
 		sched_display_crash_message(reg->rip, thrd->mother_proc, "Page fault");
-		thread_kill(thrd, 1);
+		if (thrd == thrd->mother_proc->process_threads.data[0])
+			process_kill(thrd->mother_proc);
+		else
+			thread_kill(thrd, 1);
 	}
 	panic_((void *)reg->rip, (void *)reg->rbp,
 		   "Page fault at 0x%p present: %s, read/write: %s, "

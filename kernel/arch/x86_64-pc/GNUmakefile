@@ -5,7 +5,8 @@ CONFIG_TARGET ?= pc
 override KERNEL := polaris.elf
 
 # User controllable CFLAGS.
-CFLAGS ?= -Wall -Wextra -Wvla -Wshadow -g -Og -pipe
+GIT_VERSION := $(shell git --no-pager describe --tags --always --dirty)
+CFLAGS ?= -Wall -Wextra -Wvla -Wshadow -g -Og -pipe -DGIT_VERSION=\"$(GIT_VERSION)\"
 
 # User controllable linker flags. We set none by default.
 LDFLAGS ?=

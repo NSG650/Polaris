@@ -73,6 +73,8 @@ struct process {
 	struct process *parent_process;
 	process_vec_t child_processes;
 	process_vec_t waiter_processes;
+	uint8_t exit_code_of_waitee_process;
+	bool was_the_waitee_process_killed;
 	struct auxval auxv;
 	char name[256];
 };

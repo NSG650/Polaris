@@ -76,6 +76,9 @@ void syscall_kill(struct syscall_arguments *args) {
 
 void syscall_exit(struct syscall_arguments *args) {
 	(void)args;
+	prcb_return_current_cpu()
+		->running_thread->mother_proc->exit_code_of_waitee_process =
+		(uint8_t)args->args0;
 	process_kill(prcb_return_current_cpu()->running_thread->mother_proc);
 }
 
@@ -116,6 +119,49 @@ void syscall_execve(struct syscall_arguments *args) {
 		args->ret = -1;
 }
 
+void syscall_uname(struct syscall_arguments *args) {
+	struct utsname {
+		char *sysname;
+		char *nodename;
+		char *release;
+		char *version;
+		char *machine;
+	};
+
+	struct utsname *from_user = (struct utsname *)args->args0;
+
+	strcpy(from_user->sysname, "Polaris");
+	strcpy(from_user->nodename, "localhost");
+	strcpy(from_user->release, "0.0.0");
+
+#ifndef GIT_VERSION
+	strcpy(from_user->version, "unknown");
+#else
+	strcpy(from_user->version, GIT_VERSION);
+#endif
+
+#if defined(__x86_64__)
+	strcpy(from_user->machine, "x86_64");
+#else
+	strcpy(from_user->machine, "unknown");
+#endif
+}
+
+void syscall_waitpid(struct syscall_arguments *args) {
+	struct process *waiter_process =
+		prcb_return_current_cpu()->running_thread->mother_proc;
+	struct process *waitee_process = sched_pid_to_process(args->args0);
+
+	if (waitee_process == NULL) {
+		args->ret = -1;
+		return;
+	}
+
+	process_wait_on_another_process(waiter_process, waitee_process);
+
+	args->ret = 0;
+}
+
 void sched_init(uint64_t args) {
 	kprintf("SCHED: Creating kernel thread\n");
 	vec_init(&threads);
@@ -130,6 +176,8 @@ void sched_init(uint64_t args) {
 	syscall_register_handler(0x23, syscall_nanosleep);
 	syscall_register_handler(0x39, syscall_fork);
 	syscall_register_handler(0x3b, syscall_execve);
+	syscall_register_handler(0x3f, syscall_uname);
+	syscall_register_handler(0x72, syscall_waitpid);
 	process_create("kernel_tasks", 0, 5000, (uintptr_t)kernel_main, args, 0,
 				   NULL);
 }
@@ -247,9 +295,10 @@ int64_t process_fork(struct process *proc, struct thread *thrd) {
 	fproc->umask = proc->umask;
 	fproc->pid = pid++;
 
-	vec_init(&proc->child_processes);
-	vec_init(&proc->process_threads);
-	vec_push(&processes, proc);
+	vec_init(&fproc->child_processes);
+	vec_init(&fproc->process_threads);
+	vec_init(&fproc->waiter_processes);
+	vec_push(&processes, fproc);
 
 	vec_push(&proc->child_processes, fproc);
 
@@ -485,6 +534,11 @@ bool process_execve(char *path, char **argv, char **envp) {
 
 void process_kill(struct process *proc) {
 	spinlock_acquire_or_wait(process_lock);
+
+	bool are_we_killing_ourselves = 0;
+	if (prcb_return_current_cpu()->running_thread->mother_proc == proc)
+		are_we_killing_ourselves = 1;
+
 	for (int i = 0; i < proc->process_threads.length; i++)
 		thread_kill(proc->process_threads.data[i], false);
 
@@ -507,14 +561,25 @@ void process_kill(struct process *proc) {
 	for (int i = 0; i < proc->waiter_processes.length; i++) {
 		struct process *waiter_process = proc->waiter_processes.data[i];
 		waiter_process->state = PROCESS_READY_TO_RUN;
-
+		kprintf("waiter_process: %s\n", waiter_process->name);
+		if (are_we_killing_ourselves) {
+			waiter_process->exit_code_of_waitee_process =
+				proc->exit_code_of_waitee_process;
+			waiter_process->was_the_waitee_process_killed = 0;
+		} else {
+			waiter_process->exit_code_of_waitee_process = -1;
+			waiter_process->was_the_waitee_process_killed = 1;
+		}
 		vec_remove(&proc->waiter_processes, waiter_process);
 	}
 
 	vec_deinit(&proc->waiter_processes);
-
 	vec_remove(&processes, proc);
+
 	spinlock_drop(process_lock);
+
+	if (are_we_killing_ourselves)
+		sched_resched_now();
 }
 
 // TODO: This can be optimized way moreeeee
@@ -662,6 +727,7 @@ void thread_kill(struct thread *thrd, bool r) {
 	vec_remove(&thrd->mother_proc->process_threads, thrd);
 	vec_remove(&threads, thrd);
 	kfree(thrd);
+
 	spinlock_drop(thread_lock);
 	if (r) {
 		prcb_return_current_cpu()->running_thread = NULL;
@@ -687,6 +753,6 @@ void process_wait_on_another_process(struct process *waiter,
 									 struct process *waitee) {
 	waiter->state = PROCESS_WAITING_ON_ANOTHER_PROCESS;
 	vec_push(&waitee->waiter_processes, waiter);
-	prcb_return_current_cpu()->running_thread = NULL;
+	// prcb_return_current_cpu()->running_thread = NULL;
 	sched_resched_now();
 }

@@ -144,6 +144,10 @@ int execve(char *path, char **argv, char **envp) {
 	return syscall3(0x3b, (uint64_t)path, (uint64_t)argv, (uint64_t)envp);
 }
 
+int waitpid(int pid_to_wait_on) {
+	return syscall1(0x72, pid_to_wait_on);
+}
+
 void puts_to_console(char *string) {
 	write(stdout, string, strlen(string));
 }
@@ -173,8 +177,10 @@ void main(void) {
 	else {
 		puts_to_console("Whoops can't find /etc/motd\n");
 	}
-	
-	if (!fork()) {
+
+	int pid = fork();
+
+	if (pid == 0) {
 		puts_to_console("Dropping you into a MicroPython shell\n");
 
 		char *argv[] = {
@@ -191,8 +197,13 @@ void main(void) {
 		if (execve(argv[0], argv, envp) == -1)
 			puts_to_console("Failed to execve :((\n");
 
-		for (;;)
-			;
+		syscall1(60, 1);
+	}
+
+	if (waitpid(pid) == -1) {
+		puts_to_console("Whoops waitpid failed\n");
+	} else {
+		puts_to_console("Whoops seems like the shell crashed or has exited\n");
 	}
 
 	for (;;)

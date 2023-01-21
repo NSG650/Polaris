@@ -323,7 +323,10 @@ void isr_handle(registers_t *r) {
 			kprintf("User backtrace: \n");
 			backtrace((void *)r->rbp);
 			sched_display_crash_message(r->rip, thrd->mother_proc, isr_exception_messages[r->isrNumber]);
-			thread_kill(thrd, 1);
+			if (thrd == thrd->mother_proc->process_threads.data[0])
+				process_kill(thrd->mother_proc);
+			else
+				thread_kill(thrd, 1);
 		} else
 			panic_((void *)r->rip, (void *)r->rbp, "Unhandled Exception: %s\n",
 				   isr_exception_messages[r->isrNumber]);
