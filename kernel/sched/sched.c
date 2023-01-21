@@ -71,7 +71,7 @@ int sched_get_next_thread(int index) {
 
 void syscall_kill(struct syscall_arguments *args) {
 	struct process *proc = sched_pid_to_process(args->args0);
-	process_kill(proc);
+	process_kill(proc, 0);
 }
 
 void syscall_exit(struct syscall_arguments *args) {
@@ -79,7 +79,7 @@ void syscall_exit(struct syscall_arguments *args) {
 	prcb_return_current_cpu()
 		->running_thread->mother_proc->exit_code_of_waitee_process =
 		(uint8_t)args->args0;
-	process_kill(prcb_return_current_cpu()->running_thread->mother_proc);
+	process_kill(prcb_return_current_cpu()->running_thread->mother_proc, 0);
 }
 
 void syscall_getpid(struct syscall_arguments *args) {
@@ -111,9 +111,6 @@ void syscall_fork(struct syscall_arguments *args) {
 }
 
 void syscall_execve(struct syscall_arguments *args) {
-	char *path = (char *)syscall_helper_user_to_kernel_address(args->args0);
-	char **argv = (char **)syscall_helper_user_to_kernel_address(args->args1);
-	char **envp = (char **)syscall_helper_user_to_kernel_address(args->args2);
 	if (!process_execve((char *)args->args0, (char **)args->args1,
 						(char **)args->args2))
 		args->ret = -1;
@@ -497,7 +494,7 @@ bool process_execve(char *path, char **argv, char **envp) {
 	prcb_return_current_cpu()->running_thread = NULL;
 
 	if (!elf_load(proc->process_pagemap, node->resource, 0, &auxv, &ld_path)) {
-		process_kill(proc);
+		process_kill(proc, 0);
 		sched_resched_now();
 		__builtin_unreachable();
 	}
@@ -513,7 +510,7 @@ bool process_execve(char *path, char **argv, char **envp) {
 
 		if (!ld_node || !elf_load(proc->process_pagemap, ld_node->resource,
 								  0x40000000, &ld_aux, NULL)) {
-			process_kill(proc);
+			process_kill(proc, 0);
 			sched_resched_now();
 			__builtin_unreachable();
 		}
@@ -532,7 +529,7 @@ bool process_execve(char *path, char **argv, char **envp) {
 	return false;
 }
 
-void process_kill(struct process *proc) {
+void process_kill(struct process *proc, bool crash) {
 	spinlock_acquire_or_wait(process_lock);
 
 	bool are_we_killing_ourselves = 0;
@@ -561,8 +558,7 @@ void process_kill(struct process *proc) {
 	for (int i = 0; i < proc->waiter_processes.length; i++) {
 		struct process *waiter_process = proc->waiter_processes.data[i];
 		waiter_process->state = PROCESS_READY_TO_RUN;
-		kprintf("waiter_process: %s\n", waiter_process->name);
-		if (are_we_killing_ourselves) {
+		if (are_we_killing_ourselves && !crash) {
 			waiter_process->exit_code_of_waitee_process =
 				proc->exit_code_of_waitee_process;
 			waiter_process->was_the_waitee_process_killed = 0;

@@ -364,7 +364,7 @@ void vmm_page_fault_handler(registers_t *reg) {
 				execute ? "X" : "NX");
 		sched_display_crash_message(reg->rip, thrd->mother_proc, "Page fault");
 		if (thrd == thrd->mother_proc->process_threads.data[0])
-			process_kill(thrd->mother_proc);
+			process_kill(thrd->mother_proc, 1);
 		else
 			thread_kill(thrd, 1);
 	}

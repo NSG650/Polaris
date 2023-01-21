@@ -324,7 +324,7 @@ void isr_handle(registers_t *r) {
 			backtrace((void *)r->rbp);
 			sched_display_crash_message(r->rip, thrd->mother_proc, isr_exception_messages[r->isrNumber]);
 			if (thrd == thrd->mother_proc->process_threads.data[0])
-				process_kill(thrd->mother_proc);
+				process_kill(thrd->mother_proc, 1);
 			else
 				thread_kill(thrd, 1);
 		} else
