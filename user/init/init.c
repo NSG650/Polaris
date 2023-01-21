@@ -178,34 +178,38 @@ void main(void) {
 		puts_to_console("Whoops can't find /etc/motd\n");
 	}
 
-	int pid = fork();
 
-	if (pid == 0) {
-		puts_to_console("Dropping you into a MicroPython shell\n");
+	for (;;) {
+		int pid = fork();
 
-		char *argv[] = {
-			"/bin/micropython",
-			NULL
-		};
+		if (pid == 0) {
+			puts_to_console("Dropping you into a MicroPython shell\n");
 
-		char *envp[] = {
-			"USER=root",
-			"NO=YES",
-			NULL
-		};
+			char *argv[] = {
+				"/bin/micropython",
+				NULL
+			};
 
-		if (execve(argv[0], argv, envp) == -1)
-			puts_to_console("Failed to execve :((\n");
+			char *envp[] = {
+				"USER=root",
+				"NO=YES",
+				NULL
+			};
 
-		syscall1(60, 1);
+			if (execve(argv[0], argv, envp) == -1)
+				puts_to_console("Failed to execve :((\n");
+
+			syscall1(60, 1);
+		}
+
+		if (waitpid(pid) == -1) {
+			puts_to_console("Whoops waitpid failed\n");
+		} else {
+			puts_to_console("Whoops seems like the shell crashed or has exited\n");
+		}
 	}
 
-	if (waitpid(pid) == -1) {
-		puts_to_console("Whoops waitpid failed\n");
-	} else {
-		puts_to_console("Whoops seems like the shell crashed or has exited\n");
-	}
-
+	
 	for (;;)
 		;
 }
