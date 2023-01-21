@@ -117,30 +117,32 @@ void syscall_execve(struct syscall_arguments *args) {
 }
 
 void syscall_uname(struct syscall_arguments *args) {
+	
 	struct utsname {
-		char *sysname;
-		char *nodename;
-		char *release;
-		char *version;
-		char *machine;
+		char sysname[65];
+		char nodename[65];
+		char release[65];
+		char version[65];
+		char machine[65];
+		char domainname[65];
 	};
 
 	struct utsname *from_user = (struct utsname *)args->args0;
 
-	strcpy(from_user->sysname, "Polaris");
-	strcpy(from_user->nodename, "localhost");
-	strcpy(from_user->release, "0.0.0");
+	strncpy(from_user->sysname, "Polaris", sizeof(from_user->sysname));
+	strncpy(from_user->nodename, "localhost", sizeof(from_user->nodename));
+	strncpy(from_user->release, "0.0.0", sizeof(from_user->release));
 
 #ifndef GIT_VERSION
-	strcpy(from_user->version, "unknown");
+	strncpy(from_user->version, "unknown", sizeof(from_user->version));
 #else
-	strcpy(from_user->version, GIT_VERSION);
+	strncpy(from_user->version, GIT_VERSION, sizeof(from_user->version));
 #endif
 
 #if defined(__x86_64__)
-	strcpy(from_user->machine, "x86_64");
+	strncpy(from_user->machine, "x86_64", sizeof(from_user->machine));
 #else
-	strcpy(from_user->machine, "unknown");
+	strncpy(from_user->machine, "unknown", sizeof(from_user->machine));
 #endif
 }
 

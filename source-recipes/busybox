@@ -1,0 +1,9 @@
+ name=busybox
+ version=1.35.0
+ source_method=tarball
+ tarball_url="https://www.busybox.net/downloads/busybox-1.35.0.tar.bz2"
+ tarball_blake2b="c08656bc863cd3fa8f7269032e808a30832215c36414c12f8233ab00503636ed1979541b7df42df654f1dfdfdd46fc00c8fe790bf0bed629a915b4c806c643b9"
+
+regenerate() {
+	true
+}

@@ -1,0 +1,23 @@
+name=busybox
+from_source=busybox
+revision=1
+hostdeps="gcc automake"
+deps="mlibc"
+imagedeps="wget gcc"
+allow_network="yes" 
+
+configure() {
+	cd ${source_dir}
+	wget "https://cdn.discordapp.com/attachments/841656206657716234/1065924153699483678/config_for_busybox_polaris.txt" -O .config
+}
+
+build() {
+	cd ${source_dir}
+	make CC=x86_64-polaris-gcc -j${parallelism}
+}
+
+install() {
+	mkdir -p "${dest_dir}/usr/bin"
+	cp ${source_dir}/busybox "${dest_dir}/usr/bin"
+}
+

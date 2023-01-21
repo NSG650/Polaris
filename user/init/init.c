@@ -179,20 +179,25 @@ void main(void) {
 	}
 
 
-	for (;;) {
+	// for (;;) {
 		int pid = fork();
 
 		if (pid == 0) {
-			puts_to_console("Dropping you into a MicroPython shell\n");
+			// puts_to_console("Dropping you into a MicroPython shell\n");
+			puts_to_console("running busybox' uname\n");
 
 			char *argv[] = {
-				"/bin/micropython",
+				"/bin/busybox",
+				"uname",
+				"-a",
 				NULL
 			};
 
 			char *envp[] = {
 				"USER=root",
-				"NO=YES",
+				"HOME=/root",
+				"PATH=/bin:/usr/bin:/usr/local/bin",
+				"TERM=linux",
 				NULL
 			};
 
@@ -203,9 +208,9 @@ void main(void) {
 		}
 
 		if (waitpid(pid) == -1) {
-			puts_to_console("Whoops waitpid failed\n");
+			puts_to_console("\nWhoops waitpid failed\n");
 		} else {
-			puts_to_console("Whoops seems like the shell crashed or has exited\n");
+			puts_to_console("\nWhoops seems like the shell crashed or has exited\n");
 		}
-	}
+	// }
 }
