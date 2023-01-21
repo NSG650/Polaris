@@ -144,8 +144,8 @@ int execve(char *path, char **argv, char **envp) {
 	return syscall3(0x3b, (uint64_t)path, (uint64_t)argv, (uint64_t)envp);
 }
 
-int waitpid(int pid_to_wait_on) {
-	return syscall1(0x72, pid_to_wait_on);
+int waitpid(int pid_to_wait_on, int *status, int mode) {
+	return syscall3(0x72, pid_to_wait_on, status, mode);
 }
 
 void puts_to_console(char *string) {
@@ -178,19 +178,14 @@ void main(void) {
 		puts_to_console("Whoops can't find /etc/motd\n");
 	}
 
+	int status = 0;
 
-	// for (;;) {
+	for (;;) {
 		int pid = fork();
 
 		if (pid == 0) {
-			// puts_to_console("Dropping you into a MicroPython shell\n");
-			puts_to_console("Dropping you into a busybox shell\n");
-
-			char *argv[] = {
-				"/bin/busybox",
-				"ash",
-				NULL
-			};
+			puts_to_console("Dropping you into a MicroPython shell\n");
+			char *argv[] = {"/bin/micropython", NULL};
 
 			char *envp[] = {
 				"USER=root",
@@ -206,10 +201,16 @@ void main(void) {
 			syscall1(60, 1);
 		}
 
-		if (waitpid(pid) == -1) {
-			puts_to_console("\nWhoops waitpid failed\n");
-		} else {
-			puts_to_console("\nWhoops seems like the shell crashed or has exited\n");
+		int waitpid_return = waitpid(pid, &status, 1);
+
+		if (waitpid_return == -1) {
+			puts_to_console("Whoops waitpid failed\n");
+			for (;;)
+				;
 		}
-	// }
+
+		while (waitpid_return == 0)
+			waitpid_return = waitpid(pid, &status, 1);
+		puts_to_console("Whoops the shell crashed\n");
+	}
 }

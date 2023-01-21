@@ -54,6 +54,14 @@ struct thread {
 #endif
 };
 
+struct dead_process {
+	int64_t pid;
+	uint8_t exit_code;
+	bool was_it_killed;
+	struct process *parent_process;
+};
+
+typedef vec_t(struct dead_process *) dead_process_vec_t;
 typedef vec_t(struct thread *) thread_vec_t;
 typedef vec_t(struct process *) process_vec_t;
 
@@ -73,8 +81,7 @@ struct process {
 	struct process *parent_process;
 	process_vec_t child_processes;
 	process_vec_t waiter_processes;
-	uint8_t exit_code_of_waitee_process;
-	bool was_the_waitee_process_killed;
+	struct dead_process waitee;
 	struct auxval auxv;
 	char name[256];
 };
