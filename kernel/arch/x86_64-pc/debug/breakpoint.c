@@ -1,4 +1,5 @@
 #include <Zydis/Zydis.h>
+#include <cpu/smp.h>
 #include <debug/debug.h>
 #include <klibc/mem.h>
 #include <sys/isr.h>
@@ -26,6 +27,8 @@ void breakpoint_handler(registers_t *reg) {
 	kprintffos(0, "R14: 0x%p R15: 0x%p\n", reg->r14, reg->r15);
 	kprintffos(0, "CS : 0x%p SS : 0x%p RFLAGS: 0x%p\n", reg->cs, reg->ss,
 			   reg->rflags);
+	kprintffos(0, "FS: 0x%p UGS: 0x%p KGS: 0x%p\n", read_fs_base(),
+			   read_user_gs(), read_kernel_gs());
 	kprintffos(0, "============ Code dump ===========\n");
 	// dump the code present at rip
 	uint8_t *code = (uint8_t *)reg->rip;
