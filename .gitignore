@@ -127,3 +127,4 @@ GitHub.sublime-settings
 
 root/bin 
 root/usr
+*/.vscode/

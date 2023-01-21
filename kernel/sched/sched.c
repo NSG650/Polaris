@@ -650,9 +650,14 @@ void thread_kill(struct thread *thrd, bool r) {
 			panic("Attempted to kill init!\n");
 	}
 #if defined(__x86_64__)
-	pmm_free((void *)thrd->stack, STACK_SIZE / PAGE_SIZE);
-	pmm_free((void *)thrd->fpu_storage, fpu_storage_size / PAGE_SIZE);
-	kfree((void *)thrd->kernel_stack);
+	if (thrd->mother_proc != processes.data[0]) {
+		pmm_free((void *)thrd->stack, STACK_SIZE / PAGE_SIZE);
+		pmm_free((void *)thrd->fpu_storage, fpu_storage_size / PAGE_SIZE);
+		kfree((void *)thrd->kernel_stack);
+	}
+	else {
+		pmm_free((void *)thrd->stack, STACK_SIZE / PAGE_SIZE);
+	}
 #endif
 	vec_remove(&thrd->mother_proc->process_threads, thrd);
 	vec_remove(&threads, thrd);
@@ -666,7 +671,6 @@ void thread_kill(struct thread *thrd, bool r) {
 
 void thread_sleep(struct thread *thrd, uint64_t ns) {
 	cli();
-
 	spinlock_acquire_or_wait(thread_lock);
 	thrd->state = THREAD_SLEEPING;
 	thrd->sleeping_till = timer_get_sleep_ns(ns);

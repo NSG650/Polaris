@@ -1,6 +1,7 @@
 #include <cpu/smp.h>
 #include <debug/debug.h>
 #include <sched/sched.h>
+#include <sched/crash.h>
 #include <sys/apic.h>
 #include <sys/idt.h>
 #include <sys/isr.h>
@@ -321,6 +322,7 @@ void isr_handle(registers_t *r) {
 			kprintf("User thread crashed at address: 0x%p\n", r->rip);
 			kprintf("User backtrace: \n");
 			backtrace((void *)r->rbp);
+			sched_display_crash_message(r->rip, thrd->mother_proc, isr_exception_messages[r->isrNumber]);
 			thread_kill(thrd, 1);
 		} else
 			panic_((void *)r->rip, (void *)r->rbp, "Unhandled Exception: %s\n",

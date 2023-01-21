@@ -175,7 +175,7 @@ void main(void) {
 	}
 	
 	if (!fork()) {
-		puts_to_console("Dropping you into a micropython shell\n");
+		puts_to_console("Dropping you into a MicroPython shell\n");
 
 		char *argv[] = {
 			"/bin/micropython",
