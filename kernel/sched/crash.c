@@ -11,7 +11,7 @@ void sched_display_crash_message(uintptr_t crash_address, struct process *proc,
 		return;
 
 	char *crash_message = kmalloc(4096);
-    strcpy(crash_message, "\nAn user thread crashed under the process ");
+    strcpy(crash_message, "\n\nAn user thread crashed under the process ");
 	strcat(crash_message, proc->name);
 	strcat(crash_message, " because of a ");
 	strcat(crash_message, reason);
@@ -21,7 +21,7 @@ void sched_display_crash_message(uintptr_t crash_address, struct process *proc,
 	strcat(crash_message, convert_me_to_hex);
     strcat(crash_message, ".\n");
     framebuffer_puts(crash_message);
-    framebuffer_puts("You can check the kernel logs for more information about the crash.\n");
+    framebuffer_puts("You can check the kernel logs for more information about the crash.\n\n");
 
     kfree(crash_message);
 	kfree(convert_me_to_hex);
