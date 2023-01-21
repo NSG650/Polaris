@@ -208,8 +208,4 @@ void main(void) {
 			puts_to_console("Whoops seems like the shell crashed or has exited\n");
 		}
 	}
-
-	
-	for (;;)
-		;
 }
