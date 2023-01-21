@@ -87,7 +87,8 @@ void syscall_getpid(struct syscall_arguments *args) {
 }
 
 void syscall_getppid(struct syscall_arguments *args) {
-	if (prcb_return_current_cpu()->running_thread->mother_proc) {
+	args->ret = -1;
+	if (prcb_return_current_cpu()->running_thread->mother_proc->parent_process) {
 		args->ret = prcb_return_current_cpu()
 						->running_thread->mother_proc->parent_process->pid;
 	}

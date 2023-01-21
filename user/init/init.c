@@ -184,12 +184,11 @@ void main(void) {
 
 		if (pid == 0) {
 			// puts_to_console("Dropping you into a MicroPython shell\n");
-			puts_to_console("running busybox' uname\n");
+			puts_to_console("Dropping you into a busybox shell\n");
 
 			char *argv[] = {
 				"/bin/busybox",
-				"uname",
-				"-a",
+				"ash",
 				NULL
 			};
 
