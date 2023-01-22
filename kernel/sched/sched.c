@@ -120,12 +120,12 @@ void syscall_execve(struct syscall_arguments *args) {
 
 void syscall_uname(struct syscall_arguments *args) {
 	struct utsname {
-		char sysname[257];
-		char nodename[257];
-		char release[257];
-		char version[257];
-		char machine[257];
-		char domainname[257];
+		char sysname[65];
+		char nodename[65];
+		char release[65];
+		char version[65];
+		char machine[65];
+		char domainname[65];
 	};
 
 	struct utsname *from_user = (struct utsname *)args->args0;
