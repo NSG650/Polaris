@@ -80,7 +80,7 @@ char keyboard_getchar(void) {
 	return ktoc(c);
 }
 
-void keyboard_gets(char *string, size_t count, bool put_to_fb) {
+size_t keyboard_gets(char *string, size_t count, bool put_to_fb) {
 	uint8_t key = 0;
 	size_t c = 0;
 	while (key != 0x1c && c != count) {
@@ -92,6 +92,7 @@ void keyboard_gets(char *string, size_t count, bool put_to_fb) {
 			framebuffer_puts("\b \b");
 			continue;
 		}
+        if (key == 0x1c) break;
 		if (key == 0x2A) {
 			for (;;) {
 				while (!keyboard_typed)
@@ -119,6 +120,7 @@ void keyboard_gets(char *string, size_t count, bool put_to_fb) {
 	}
 	if (put_to_fb) framebuffer_putchar('\n');
 	string[c] = '\0';
+    return c;
 }
 
 void keyboard_handle(registers_t *reg) {

@@ -30,12 +30,14 @@ static ssize_t console_read(struct resource *_this,
 	(void)description;
 	(void)offset;
 	char *a = (char *)_buf;
+
 	if (count == 1) { // for micropython AAAAAAAAA
 		keyboard_gets(a, count, 0);
 		return count;
 	}
-	keyboard_gets(a, count, 1);
-	return count;
+	size_t c = keyboard_gets(a, count, 1);
+
+	return (ssize_t)c;
 }
 
 int console_ioctl(struct resource *this, struct f_description *description,

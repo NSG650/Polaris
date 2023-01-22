@@ -180,12 +180,11 @@ void main(void) {
 
 	int status = 0;
 
-	for (;;) {
+	 for (;;) {
 		int pid = fork();
 
 		if (pid == 0) {
-			puts_to_console("Dropping you into a MicroPython shell\n");
-			char *argv[] = {"/bin/micropython", NULL};
+			char *argv[] = {"/bin/busybox", "ash", NULL};
 
 			char *envp[] = {
 				"USER=root",
@@ -211,6 +210,6 @@ void main(void) {
 
 		while (waitpid_return == 0)
 			waitpid_return = waitpid(pid, &status, 1);
-		puts_to_console("Whoops the shell crashed\n");
+		puts_to_console("Whoops the shell exited\n");
 	}
 }
