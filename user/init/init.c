@@ -163,14 +163,14 @@ void main(void) {
 	if (motd_fd != -1) {
 		struct stat motd_stat = {0};
 		fstatat(motd_fd, "", &motd_stat, AT_EMPTY_PATH);
-		char *motd_string = mmap(0, motd_stat.st_size, PROT_READ, MAP_SHARED, motd_fd, 0);
-		if (motd_string == (void*)-1) {
+		char *motd_string =
+			mmap(0, motd_stat.st_size, PROT_READ, MAP_SHARED, motd_fd, 0);
+		if (motd_string == (void *)-1) {
 			puts_to_console("mmap failed.\n");
-		}
-		else {
+		} else {
 			read(motd_fd, motd_string, motd_stat.st_size);
 			puts_to_console_with_length(motd_string, motd_stat.st_size);
-			munmap(motd_string, motd_stat.st_size); 
+			munmap(motd_string, motd_stat.st_size);
 		}
 	}
 
@@ -187,13 +187,9 @@ void main(void) {
 			puts_to_console("Dropping you into a MicroPython shell\n");
 			char *argv[] = {"/bin/micropython", NULL};
 
-			char *envp[] = {
-				"USER=root",
-				"HOME=/root",
-				"PATH=/bin:/usr/bin:/usr/local/bin",
-				"TERM=linux",
-				NULL
-			};
+			char *envp[] = {"USER=root", "HOME=/root",
+							"PATH=/bin:/usr/bin:/usr/local/bin", "TERM=linux",
+							NULL};
 
 			if (execve(argv[0], argv, envp) == -1)
 				puts_to_console("Failed to execve :((\n");

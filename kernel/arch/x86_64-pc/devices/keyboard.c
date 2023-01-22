@@ -108,16 +108,19 @@ void keyboard_gets(char *string, size_t count, bool put_to_fb) {
 					continue;
 				}
 				char a = string[c++] = ktocSHIFT(key);
-				if (put_to_fb) framebuffer_putchar(a);
+				if (put_to_fb)
+					framebuffer_putchar(a);
 			}
 		}
 		if (ktoc(key) == 0) {
 			continue;
 		}
 		char a = string[c++] = ktoc(key);
-		if (put_to_fb) framebuffer_putchar(a);
+		if (put_to_fb)
+			framebuffer_putchar(a);
 	}
-	if (put_to_fb) framebuffer_putchar('\n');
+	if (put_to_fb)
+		framebuffer_putchar('\n');
 	string[c] = '\0';
 }
 
