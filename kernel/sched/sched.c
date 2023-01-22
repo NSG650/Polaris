@@ -88,7 +88,8 @@ void syscall_getpid(struct syscall_arguments *args) {
 
 void syscall_getppid(struct syscall_arguments *args) {
 	args->ret = -1;
-	if (prcb_return_current_cpu()->running_thread->mother_proc->parent_process) {
+	if (prcb_return_current_cpu()
+			->running_thread->mother_proc->parent_process) {
 		args->ret = prcb_return_current_cpu()
 						->running_thread->mother_proc->parent_process->pid;
 	}
@@ -118,14 +119,13 @@ void syscall_execve(struct syscall_arguments *args) {
 }
 
 void syscall_uname(struct syscall_arguments *args) {
-	
 	struct utsname {
-		char sysname[65];
-		char nodename[65];
-		char release[65];
-		char version[65];
-		char machine[65];
-		char domainname[65];
+		char sysname[257];
+		char nodename[257];
+		char release[257];
+		char version[257];
+		char machine[257];
+		char domainname[257];
 	};
 
 	struct utsname *from_user = (struct utsname *)args->args0;
@@ -707,7 +707,8 @@ void thread_execve(struct process *proc, struct thread *thrd,
 
 	for (envp_len = 0; envp[envp_len] != NULL; envp_len++) {
 		stack_but_in_bytes -= (strlen(envp[envp_len]) + 1);
-		memcpy((void *)stack_but_in_bytes + MEM_PHYS_OFFSET, envp[envp_len], strlen(envp[envp_len]) + 1);
+		memcpy((void *)stack_but_in_bytes + MEM_PHYS_OFFSET, envp[envp_len],
+			   strlen(envp[envp_len]) + 1);
 	}
 
 	stack = (uint64_t *)stack_but_in_bytes;
@@ -717,7 +718,8 @@ void thread_execve(struct process *proc, struct thread *thrd,
 	int argv_len;
 	for (argv_len = 0; argv[argv_len] != NULL; argv_len++) {
 		stack_but_in_bytes -= (strlen(argv[argv_len]) + 1);
-		memcpy((void *)stack_but_in_bytes + MEM_PHYS_OFFSET, argv[argv_len], strlen(argv[argv_len]) + 1);
+		memcpy((void *)stack_but_in_bytes + MEM_PHYS_OFFSET, argv[argv_len],
+			   strlen(argv[argv_len]) + 1);
 	}
 
 	stack = (uint64_t *)stack_but_in_bytes;
@@ -725,11 +727,12 @@ void thread_execve(struct process *proc, struct thread *thrd,
 	uint64_t addr_to_arg = (uint64_t)VIRTUAL_STACK_ADDR - address_difference;
 
 	// alignments
-	
-	stack = (uintptr_t *)((uintptr_t)stack & ~(0b1111));
-	if (((argv_len + envp_len + 1) & 1) != 0) stack--;
 
-	stack = (uintptr_t*)((uintptr_t)stack + MEM_PHYS_OFFSET);
+	stack = (uintptr_t *)((uintptr_t)stack & ~(0b1111));
+	if (((argv_len + envp_len + 1) & 1) != 0)
+		stack--;
+
+	stack = (uintptr_t *)((uintptr_t)stack + MEM_PHYS_OFFSET);
 
 	*(--stack) = 0;
 	*(--stack) = 0;
@@ -759,9 +762,9 @@ void thread_execve(struct process *proc, struct thread *thrd,
 	}
 
 	*(--stack) = 0;
-	
+
 	stack -= argv_len;
-	
+
 	offset = 0;
 	for (int i = argv_len - 1; i >= 0; i--) {
 		if (i != argv_len - 1) {
@@ -772,7 +775,7 @@ void thread_execve(struct process *proc, struct thread *thrd,
 
 	*(--stack) = argv_len;
 
-	stack = (uintptr_t*)((uintptr_t)stack - MEM_PHYS_OFFSET);
+	stack = (uintptr_t *)((uintptr_t)stack - MEM_PHYS_OFFSET);
 
 	address_difference = (thrd->stack + STACK_SIZE) - (uint64_t)stack;
 	thrd->reg.rsp -= address_difference;
@@ -792,8 +795,7 @@ void thread_kill(struct thread *thrd, bool r) {
 		pmm_free((void *)thrd->stack, STACK_SIZE / PAGE_SIZE);
 		pmm_free((void *)thrd->fpu_storage, fpu_storage_size / PAGE_SIZE);
 		kfree((void *)thrd->kernel_stack);
-	}
-	else {
+	} else {
 		pmm_free((void *)thrd->stack, STACK_SIZE / PAGE_SIZE);
 	}
 #endif
