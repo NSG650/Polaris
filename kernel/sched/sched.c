@@ -520,8 +520,8 @@ void thread_fork(struct thread *pthrd, struct process *fproc) {
 #if defined(__x86_64__)
 	thrd->reg.rax = 0;
 	thrd->reg.rbx = 0;
-	thrd->fs_base = read_fs_base();
-	thrd->gs_base = read_kernel_gs();
+	thrd->fs_base = pthrd->fs_base;
+	thrd->gs_base = pthrd->gs_base;
 	thrd->fpu_storage =
 		pmm_allocz(DIV_ROUNDUP(fpu_storage_size, PAGE_SIZE)) + MEM_PHYS_OFFSET;
 
