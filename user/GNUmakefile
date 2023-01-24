@@ -1,10 +1,10 @@
 CONFIG_ARCH ?= x86_64
 
 CINITFILES := $(wildcard init/*.c)
-CTESTFILES := $(wildcard test/*.c)
+CKILLFILES := $(wildcard kill/*.c)
 ASMFILES := $(wildcard $(CONFIG_ARCH)/*.asm)
 INITOBJ := $(CINITFILES:.c=.o) $(ASMFILES:.asm=.o)
-TESTOBJ := $(CTESTFILES:.c=.o) $(ASMFILES:.asm=.o)
+KILLOBJ := $(CKILLFILES:.c=.o) $(ASMFILES:.asm=.o)
 
 ifeq ($(CONFIG_ARCH),x86_64)
 	AS := nasm
@@ -16,13 +16,13 @@ ifeq ($(CONFIG_ARCH),x86_64)
 endif
 
 .PHONY: all
-all: init test
+all: init kill
 
 init: $(INITOBJ)
 	$(LD) $(LDFLAGS) $^ -o init.elf
 
-test: $(TESTOBJ)
-	$(LD) $(LDFLAGS) $^ -o test.elf
+kill: $(KILLOBJ)
+	$(LD) $(LDFLAGS) $^ -o kill.elf
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@

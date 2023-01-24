@@ -1,0 +1,2 @@
+/bin/gears &
+/bin/doomgeneric

@@ -72,7 +72,11 @@ int sched_get_next_thread(int index) {
 
 void syscall_kill(struct syscall_arguments *args) {
 	struct process *proc = sched_pid_to_process(args->args0);
-	process_kill(proc, 0);
+	args->ret = 0;
+	if (!proc)
+		args->ret = -1;
+	else
+		process_kill(proc, 0);
 }
 
 void syscall_exit(struct syscall_arguments *args) {
