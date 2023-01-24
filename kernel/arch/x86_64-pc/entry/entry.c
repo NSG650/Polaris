@@ -94,7 +94,6 @@ void arch_entry(void) {
 	pic_init();
 	smp_init(smp_request.response);
 	time_init();
-	ioapic_redirect_irq(0, 48);
 	syscall_install_handler();
 	if (module_request.response->module_count < 1)
 		panic("No init found\n");

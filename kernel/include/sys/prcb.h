@@ -13,7 +13,6 @@ struct prcb {
 	uint64_t cpu_number;
 	uint64_t kernel_stack;
 	uint64_t user_stack;
-	char name[3];
 	struct thread *running_thread;
 	uint64_t thread_index;
 #if defined(__x86_64__)

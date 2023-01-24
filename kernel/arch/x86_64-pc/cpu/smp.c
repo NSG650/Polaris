@@ -27,10 +27,6 @@ static size_t initialized_cores = 0;
 bool is_smp = false;
 lock_t smp_lock = 0;
 
-char prcb_names[21][3] = {"Aa", "Ab", "E",	"H",  "Ua", "Ub", "Z",
-						  "F",	"Ga", "Gb", "Gc", "Gd", "Ja", "Jb",
-						  "Na", "Nb", "Ra", "Rb", "T",	"V",  "Y"};
-
 extern void amd_syscall_entry(void);
 
 static void smp_init_core(struct limine_smp_info *smp_info) {
@@ -42,12 +38,6 @@ static void smp_init_core(struct limine_smp_info *smp_info) {
 	vmm_switch_pagemap(kernel_pagemap);
 
 	struct prcb *ap = kmalloc(sizeof(struct prcb));
-
-	if (cpu_count > 21) {
-		ltoa(smp_info->lapic_id, ap->name, 16);
-	} else {
-		strcpy(ap->name, prcb_names[smp_info->lapic_id]);
-	}
 
 	ap->cpu_number = smp_info->lapic_id;
 	ap->running_thread = NULL;
@@ -145,8 +135,7 @@ static void smp_init_core(struct limine_smp_info *smp_info) {
 
 	lapic_init(smp_info->lapic_id);
 
-	kprintf("CPU%u: %s online!\n", prcb_return_current_cpu()->cpu_number,
-			prcb_return_current_cpu()->name);
+	kprintf("CPU%u: I am alive!\n", prcb_return_current_cpu()->cpu_number);
 
 	initialized_cores++;
 	spinlock_drop(smp_lock);
@@ -161,6 +150,7 @@ static void smp_init_core(struct limine_smp_info *smp_info) {
 
 void smp_init(struct limine_smp_response *smp_info) {
 	vec_init(&prcbs);
+    ioapic_redirect_irq(0, 48);
 	bsp_lapic_core = smp_info->bsp_lapic_id;
 	cpu_count = smp_info->cpu_count;
 	kprintf("SMP: Bringing up the AP cores\n");

@@ -87,9 +87,7 @@ void lapic_init(uint8_t cpu_id) {
 	__get_cpuid(1, &a, &b, &c, &d);
 	if (c & CPUID_X2APIC) {
 		x2apic = true;
-		if (cpu_id == 0) {
-			kprintf("LAPIC: Using x2APIC\n");
-		}
+        kprintf("LAPIC: Using x2APIC\n");
 		// Set x2APIC flag
 		apic_msr |= 1 << 10;
 	}

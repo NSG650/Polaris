@@ -43,6 +43,9 @@ static ssize_t console_read(struct resource *_this,
 int console_ioctl(struct resource *this, struct f_description *description,
 				  uint64_t request, uint64_t arg) {
 
+	if (!arg)
+		return -1;
+
 	switch (request) {
 		case TCGETS: {
 			struct termios *t = (void *)arg;
