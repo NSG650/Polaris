@@ -92,7 +92,8 @@ size_t keyboard_gets(char *string, size_t count, bool fb) {
 			framebuffer_puts("\b \b");
 			continue;
 		}
-        if (key == 0x1c) break;
+		if (key == 0x1c)
+			break;
 		if (key == 0x2A) {
 			for (;;) {
 				while (!keyboard_typed)
@@ -123,7 +124,7 @@ size_t keyboard_gets(char *string, size_t count, bool fb) {
 	if (fb)
 		framebuffer_putchar('\n');
 	string[c] = '\0';
-    return c;
+	return c;
 }
 
 void keyboard_handle(registers_t *reg) {

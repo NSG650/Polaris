@@ -150,7 +150,7 @@ static void smp_init_core(struct limine_smp_info *smp_info) {
 
 void smp_init(struct limine_smp_response *smp_info) {
 	vec_init(&prcbs);
-    ioapic_redirect_irq(0, 48);
+	ioapic_redirect_irq(0, 48);
 	bsp_lapic_core = smp_info->bsp_lapic_id;
 	cpu_count = smp_info->cpu_count;
 	kprintf("SMP: Bringing up the AP cores\n");

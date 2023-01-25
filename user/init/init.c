@@ -180,11 +180,11 @@ void main(void) {
 
 	int status = 0;
 
-	 for (;;) {
+	for (;;) {
 		int pid = fork();
 
 		if (pid == 0) {
-			char *argv[] = {"/bin/busybox", "ash", NULL};
+			char *argv[] = {"/bin/busybox", "ash", "/root/demo.sh", NULL};
 
 			char *envp[] = {"USER=root", "HOME=/root",
 							"PATH=/bin:/usr/bin:/usr/local/bin", "TERM=linux",

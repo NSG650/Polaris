@@ -55,7 +55,7 @@ void kernel_main(void *args) {
 		(vfs_get_node(vfs_root, "/dev/console", true))->resource;
 
 	char *argv[] = {"/bin/init.elf", NULL};
-	
+
 	kprintf("Running init binary %s\n", argv[0]);
 
 	if (!process_create_elf(
