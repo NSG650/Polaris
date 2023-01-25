@@ -109,7 +109,7 @@ size_t keyboard_gets(char *string, size_t count, bool fb) {
 					continue;
 				}
 				char a = string[c++] = ktocSHIFT(key);
-				if (put_to_fb)
+				if (fb)
 					framebuffer_putchar(a);
 			}
 		}
@@ -117,10 +117,10 @@ size_t keyboard_gets(char *string, size_t count, bool fb) {
 			continue;
 		}
 		char a = string[c++] = ktoc(key);
-		if (put_to_fb)
+		if (fb)
 			framebuffer_putchar(a);
 	}
-	if (put_to_fb)
+	if (fb)
 		framebuffer_putchar('\n');
 	string[c] = '\0';
     return c;
