@@ -80,7 +80,7 @@ char keyboard_getchar(void) {
 	return ktoc(c);
 }
 
-size_t keyboard_gets(char *string, size_t count, bool put_to_fb) {
+size_t keyboard_gets(char *string, size_t count, bool fb) {
 	uint8_t key = 0;
 	size_t c = 0;
 	while (key != 0x1c && c != count) {
