@@ -55,8 +55,8 @@ static inline uint32_t hash(const void *data, size_t length) {
 				uint8_t key_data[HASHMAP_KEY_DATA_MAX]; \
 				size_t key_length;                      \
 				TYPE item;                              \
-			} *items;                                   \
-		} *buckets;                                     \
+			} * items;                                  \
+		} * buckets;                                    \
 	}
 
 #define HASHMAP_GET(HASHMAP, RET, KEY_DATA, KEY_LENGTH)                     \
