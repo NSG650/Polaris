@@ -20,9 +20,7 @@ struct prcb {
 #endif
 };
 
-typedef vec_t(struct prcb *) prcb_vec_t;
-
-extern prcb_vec_t prcbs;
+extern struct prcb *prcbs;
 
 #if defined(__x86_64__)
 
@@ -33,7 +31,7 @@ extern prcb_vec_t prcbs;
 					 : "=r"(cpu_number)         \
 					 :                          \
 					 : "memory");               \
-		prcbs.data[cpu_number];                 \
+		&prcbs[cpu_number];                     \
 	})
 
 #endif

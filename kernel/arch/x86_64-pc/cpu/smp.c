@@ -20,7 +20,7 @@ size_t fpu_storage_size = 0;
 void (*fpu_save)(void *ctx) = NULL;
 void (*fpu_restore)(void *ctx) = NULL;
 
-prcb_vec_t prcbs;
+struct prcb *prcbs;
 static uint8_t bsp_lapic_core = 0;
 static size_t cpu_count = 0;
 static size_t initialized_cores = 0;
@@ -39,7 +39,7 @@ static void smp_init_core(struct limine_smp_info *smp_info) {
 
 	struct prcb *ap = kmalloc(sizeof(struct prcb));
 
-	ap->cpu_number = smp_info->lapic_id;
+	ap->cpu_number = smp_info->processor_id;
 	ap->running_thread = NULL;
 	ap->thread_index = 0;
 
@@ -49,9 +49,10 @@ static void smp_init_core(struct limine_smp_info *smp_info) {
 	ap->cpu_tss.ist1 = (uint64_t)pmm_allocz(STACK_SIZE / PAGE_SIZE);
 	ap->cpu_tss.ist1 += MEM_PHYS_OFFSET + STACK_SIZE;
 
-	vec_push(&prcbs, ap);
-	set_kernel_gs((uint64_t)prcbs.data[ap->cpu_number]);
-	set_user_gs((uint64_t)prcbs.data[ap->cpu_number]);
+	prcbs[ap->cpu_number] = *ap;
+
+	set_kernel_gs((uint64_t)&prcbs[ap->cpu_number]);
+	set_user_gs((uint64_t)&prcbs[ap->cpu_number]);
 	gdt_load_tss((size_t)&prcb_return_current_cpu()->cpu_tss);
 
 	// SSE/SSE2
@@ -134,25 +135,22 @@ static void smp_init_core(struct limine_smp_info *smp_info) {
 	}
 
 	lapic_init(smp_info->lapic_id);
-
 	kprintf("CPU%u: I am alive!\n", prcb_return_current_cpu()->cpu_number);
 
 	initialized_cores++;
 	spinlock_drop(smp_lock);
 	if (prcb_return_current_cpu()->cpu_number != bsp_lapic_core) {
-		timer_sched_oneshot(32, 20000);
 		sti();
 		for (;;)
-			halt();
-		__builtin_unreachable();
+			;
 	}
 }
 
 void smp_init(struct limine_smp_response *smp_info) {
-	vec_init(&prcbs);
 	ioapic_redirect_irq(0, 48);
 	bsp_lapic_core = smp_info->bsp_lapic_id;
 	cpu_count = smp_info->cpu_count;
+	prcbs = kmalloc(cpu_count * sizeof(struct prcb));
 	kprintf("SMP: Bringing up the AP cores\n");
 	for (size_t i = 0; i < smp_info->cpu_count; i++) {
 		if (smp_info->cpus[i]->lapic_id == bsp_lapic_core) {
@@ -160,7 +158,6 @@ void smp_init(struct limine_smp_response *smp_info) {
 			smp_init_core((void *)smp_info->cpus[i]);
 			continue;
 		}
-		spinlock_acquire_or_wait(smp_lock);
 		smp_info->cpus[i]->goto_address = smp_init_core;
 		spinlock_drop(smp_lock);
 		timer_sleep(100);

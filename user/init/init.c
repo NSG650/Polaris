@@ -193,7 +193,8 @@ void main(void) {
 			if (execve(argv[0], argv, envp) == -1)
 				puts_to_console("Failed to execve :((\n");
 
-			syscall1(60, 1);
+			for (;;)
+				;
 		}
 
 		int waitpid_return = waitpid(pid, &status, 1);

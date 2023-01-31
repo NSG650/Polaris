@@ -110,6 +110,9 @@ void lapic_init(uint8_t cpu_id) {
 		lapic_write(0x320, 0x10000);
 		tick_in_10ms = 0xFFFFFFFF - lapic_read(0x390);
 	}
+	lapic_write(0x320, 32 | 0x20000);
+	lapic_write(0x3E0, 3);
+	lapic_write(0x380, tick_in_10ms / 10);
 }
 
 uint8_t lapic_get_id(void) {
