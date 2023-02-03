@@ -6,7 +6,7 @@
 syscall_handler_t syscalls[512] = {NULL};
 
 void syscall_handle(struct syscall_arguments *args) {
-	if (syscalls[args->syscall_nr] == NULL) {
+	if (args->syscall_nr > 512 || syscalls[args->syscall_nr] == NULL) {
 		errno = -ENOSYS;
 		return;
 	}
