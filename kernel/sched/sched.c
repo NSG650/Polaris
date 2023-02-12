@@ -549,24 +549,12 @@ bool process_execve(char *path, char **argv, char **envp) {
 		return false;
 	}
 
+	struct pagemap *old_pagemap = proc->process_pagemap;
 	proc->process_pagemap = vmm_new_pagemap();
 
-	for (int i = 0; i < proc->process_threads.length; i++) {
-		if (proc->process_threads.data[i] != thread) {
-			thread_kill(proc->process_threads.data[i], 0);
-		}
-	}
-
-	proc->mmap_anon_base = 0x80000000000;
-	proc->state = PROCESS_READY_TO_RUN;
-
-	// We no longer exist. There is no point in saving anything now.
-	prcb_return_current_cpu()->running_thread = NULL;
-
 	if (!elf_load(proc->process_pagemap, node->resource, 0, &auxv, &ld_path)) {
-		process_kill(proc, 0);
-		sched_resched_now();
-		__builtin_unreachable();
+		proc->process_pagemap = old_pagemap;
+		return false;
 	}
 
 	// HACK: ld_path for processes that dont depend on ld.so points to kmalloced
@@ -580,12 +568,23 @@ bool process_execve(char *path, char **argv, char **envp) {
 
 		if (!ld_node || !elf_load(proc->process_pagemap, ld_node->resource,
 								  0x40000000, &ld_aux, NULL)) {
-			process_kill(proc, 0);
-			sched_resched_now();
-			__builtin_unreachable();
+			proc->process_pagemap = old_pagemap;
+			return false;
 		}
 		entry = ld_aux.at_entry;
 	}
+
+	for (int i = 0; i < proc->process_threads.length; i++) {
+		if (proc->process_threads.data[i] != thread) {
+			thread_kill(proc->process_threads.data[i], 0);
+		}
+	}
+
+	proc->mmap_anon_base = 0x80000000000;
+	proc->state = PROCESS_READY_TO_RUN;
+
+	// We no longer exist. There is no point in saving anything now.
+	prcb_return_current_cpu()->running_thread = NULL;
 
 	proc->auxv = auxv;
 
