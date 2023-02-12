@@ -59,5 +59,6 @@ void pci_write(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t function,
 			   uint16_t offset, uint32_t value, uint8_t access_size);
 uint32_t pci_read(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t function,
 				  uint16_t offset, uint8_t access_size);
+struct pci_device *pci_get_pci_device(uint16_t vendor_id, uint16_t device_id);
 
 #endif

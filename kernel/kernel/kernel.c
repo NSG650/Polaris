@@ -51,6 +51,11 @@ void kernel_main(void *args) {
 	console_init();
 	fbdev_init();
 
+#if defined(__x86_64__)
+#include <devices/rtl8139.h>
+	rtl8139_init();
+#endif
+
 	std_console_device =
 		(vfs_get_node(vfs_root, "/dev/console", true))->resource;
 

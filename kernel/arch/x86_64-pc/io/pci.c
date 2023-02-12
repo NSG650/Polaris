@@ -233,6 +233,17 @@ struct pci_device *pci_get_device_info(uint8_t bus, uint8_t device) {
 	return device_struct;
 }
 
+struct pci_device *pci_get_pci_device(uint16_t vendor_id, uint16_t device_id) {
+	for (int i = 0; i < 256; i++) {
+		struct pci_device *dev = pci_devices[i];
+		if (dev != NULL) {
+			if (dev->device_id == device_id && dev->vendor_id == vendor_id)
+				return dev;
+		}
+	}
+	return NULL;
+}
+
 static void pci_check_bus(uint8_t bus) {
 	uint8_t device;
 	for (device = 0; device < 32; device++) {
