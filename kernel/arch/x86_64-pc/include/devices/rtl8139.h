@@ -15,6 +15,8 @@
 #define RTL8139_REG_IMR 0x3c
 #define RTL8139_REG_ISR 0x3e
 
+#define RX_BUFFER_SIZE 8192
+
 bool rtl8139_init(void);
 
 #endif
