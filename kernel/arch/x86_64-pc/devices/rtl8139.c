@@ -15,6 +15,7 @@ struct rtl8139_device {
 	uint8_t mac_addr[6];
 	uint8_t *rx_buffer;
 	uint32_t packet_ptr_off;
+	uint32_t tx_ptr_off;
 };
 
 struct rtl8139_device rtl8139_dev = {0};
@@ -84,6 +85,45 @@ static void rtl8139_get_mac_addr(struct rtl8139_device *rtl8139_dev) {
 			rtl8139_dev->mac_addr[0], rtl8139_dev->mac_addr[1],
 			rtl8139_dev->mac_addr[2], rtl8139_dev->mac_addr[3],
 			rtl8139_dev->mac_addr[4], rtl8139_dev->mac_addr[5]);
+}
+
+void rtl8139_send_data(uint8_t *data, uint32_t length) {
+	uint8_t *t_data = pmm_allocz(length / PAGE_SIZE);
+	memcpy(t_data + MEM_PHYS_OFFSET, data, length);
+
+	outd(rtl8139_dev.io_base + 0x20 + (rtl8139_dev.tx_ptr_off * 4),
+		 (uint32_t)t_data);
+	outd(rtl8139_dev.io_base + 0x10 + (rtl8139_dev.tx_ptr_off++ * 4),
+		 (uint32_t)length);
+
+	if (rtl8139_dev.tx_ptr_off >= 3)
+		rtl8139_dev.tx_ptr_off = 0;
+
+	pmm_free(t_data, length / PAGE_SIZE);
+}
+
+uint8_t *net_get_mac_addr(void) {
+	return rtl8139_dev.mac_addr;
+}
+
+void net_send_packet(uint8_t *dest, uint8_t *packet, uint32_t packet_length,
+					 uint16_t protocol) {
+	struct network_packet *data =
+		kmalloc(sizeof(struct network_packet) + packet_length);
+	uint32_t data_length = sizeof(struct network_packet) + packet_length;
+
+	uint8_t *actual_data =
+		(uint8_t *)((uintptr_t)data + sizeof(struct network_packet));
+
+	memcpy(data->destination_mac, dest, 6);
+	memcpy(data->source_mac, net_get_mac_addr(), 6);
+	memcpy(actual_data, packet, packet_length);
+
+	data->type = BSWAP16(protocol);
+
+	rtl8139_send_data((uint8_t *)data, data_length);
+
+	kfree(data);
 }
 
 bool rtl8139_init(void) {

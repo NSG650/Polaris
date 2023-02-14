@@ -8,6 +8,7 @@
 #include <fs/vfs.h>
 #include <kernel.h>
 #include <mm/mmap.h>
+#include <net/net.h>
 #include <sched/sched.h>
 #include <sys/prcb.h>
 #include <sys/timer.h>
@@ -55,6 +56,8 @@ void kernel_main(void *args) {
 #include <devices/rtl8139.h>
 	rtl8139_init();
 #endif
+
+	net_init();
 
 	std_console_device =
 		(vfs_get_node(vfs_root, "/dev/console", true))->resource;

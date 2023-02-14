@@ -20,6 +20,10 @@ struct network_packet {
 	uint8_t data[];
 } __attribute__((packed));
 
+uint8_t *net_get_mac_addr(void);
+void net_send_packet(uint8_t *dest, uint8_t *packet, uint32_t packet_length,
+					 uint16_t protocol);
 void net_handle_packet(uint8_t *packet, uint16_t packet_length);
+void net_init(void);
 
 #endif
