@@ -32,12 +32,10 @@ static void rtl8139_rx_handler(registers_t *reg) {
 	uint16_t packet_length = *(packet + 1);
 	packet += 2; // skip the header
 
-	kprintf("Packet ptr: 0x%p Packet Length: %d\n", packet, packet_length);
-
 	uint8_t *packet_pass = kmalloc(packet_length);
 	memcpy(packet_pass, packet, packet_length);
 
-	// net_handle_packet(packet_pass, packet_length);
+	net_handle_packet(packet_pass, packet_length);
 
 	kfree(packet_pass);
 
@@ -98,6 +96,12 @@ bool rtl8139_init(void) {
 									 rtl8139_pci_device->device, 0, 0x10, 4);
 
 	rtl8139_dev.io_base = pci_read_ret & (~0x3);
+
+    // Enable PCI bus mastering otherwise it won't be able to access the allocated buffer for RX
+	uint16_t pci_cmd_ret = pci_read(0, rtl8139_pci_device->bus,
+									rtl8139_pci_device->device, 0, 0x04, 2);
+	pci_write(0, rtl8139_pci_device->bus, rtl8139_pci_device->device, 0, 0x04,
+			  pci_cmd_ret | (1 << 2), 2);
 
 	if (rtl8139_dev.io_base == 0)
 		return false;
