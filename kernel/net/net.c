@@ -25,4 +25,7 @@ void net_handle_packet(uint8_t *packet, uint16_t packet_length) {
 
 void net_init(void) {
 	arp_init();
+	uint8_t ip[4] = {192, 168, 1, 29};
+	kprintf("NET: Going to look the host up\n");
+	arp_lookup(ip);
 }

@@ -8,6 +8,7 @@
 #include <fs/vfs.h>
 #include <kernel.h>
 #include <mm/mmap.h>
+#include <net/arp.h>
 #include <net/net.h>
 #include <sched/sched.h>
 #include <sys/prcb.h>

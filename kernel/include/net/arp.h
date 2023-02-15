@@ -27,5 +27,7 @@ typedef vec_t(struct arp_table_entry *) arp_table_vec_t;
 void arp_init(void);
 struct arp_table_entry *arp_get_table_entry(uint8_t *ip_address);
 void arp_handle(struct arp_packet *packet, uint32_t length);
+void arp_send(struct arp_packet *packet, uint32_t length);
+void arp_lookup(uint8_t *ip);
 
 #endif

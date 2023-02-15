@@ -1,3 +1,4 @@
+#include <asm/asm.h>
 #include <debug/debug.h>
 #include <net/arp.h>
 #include <net/net.h>
@@ -50,7 +51,47 @@ void arp_handle(struct arp_packet *packet, uint32_t length) {
 
 		packet->protocol = BSWAP16(REQ_TYPE_IP);
 
-		net_send_packet(dest_mac, packet, sizeof(struct arp_packet),
-						REQ_TYPE_ARP);
+		net_send_packet(packet->destination_mac, packet,
+						sizeof(struct arp_packet), REQ_TYPE_ARP);
 	}
+
+	else if (BSWAP16(packet->opcode) == 2) {
+		kprintf("ARP: We got a reply\n");
+		kprintf("ARP: Got Mac Addr %x:%x:%x:%x:%x:%x\n", dest_mac[0],
+				dest_mac[1], dest_mac[2], dest_mac[3], dest_mac[4],
+				dest_mac[5]);
+		struct arp_table_entry *entry = kmalloc(sizeof(struct arp_table_entry));
+		memcpy(entry->ip_addr, dest_protocol_addr, 4);
+		memcpy(entry->mac_addr, dest_mac, 6);
+
+		vec_push(&arp_table, entry);
+	}
+}
+
+void arp_send(struct arp_packet *packet, uint32_t length) {
+	memcpy(packet->source_mac, net_get_mac_addr(), 6);
+
+	// Hard code the IP :))
+	packet->source_protocol_addr[0] = 192;
+	packet->source_protocol_addr[1] = 168;
+	packet->source_protocol_addr[2] = 1;
+	packet->source_protocol_addr[3] = 35;
+
+	packet->opcode = BSWAP16(1);
+
+	packet->hw_addr_len = 6;
+	packet->protocol_addr_len = 4;
+
+	packet->hw_type = BSWAP16(1); // HW_TYPE_ETHERNET
+
+	packet->protocol = BSWAP16(REQ_TYPE_IP);
+
+	net_send_packet(packet->destination_mac, packet, length, REQ_TYPE_ARP);
+}
+
+void arp_lookup(uint8_t *ip) {
+	struct arp_packet *lookup_packet = kmalloc(sizeof(struct arp_packet));
+	memcpy(lookup_packet->destination_protocol_addr, ip, 4);
+	memset(lookup_packet->destination_mac, 0xff, 6);
+	arp_send(lookup_packet, sizeof(struct arp_packet));
 }
