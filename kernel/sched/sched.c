@@ -808,7 +808,6 @@ void thread_kill(struct thread *thrd, bool r) {
 
 	spinlock_drop(thread_lock);
 	if (r) {
-		prcb_return_current_cpu()->running_thread = NULL;
 		sched_resched_now();
 	}
 }

@@ -1,5 +1,6 @@
 #include <debug/debug.h>
 #include <net/arp.h>
+#include <net/ip.h>
 #include <net/net.h>
 
 void net_handle_packet(uint8_t *packet, uint16_t packet_length) {
@@ -15,7 +16,9 @@ void net_handle_packet(uint8_t *packet, uint16_t packet_length) {
 	}
 
 	else if (BSWAP16(net_pack->type) == REQ_TYPE_IP) {
+		struct ip_packet *ip_pack = (struct ip_packet *)data;
 		kprintf("NET: Got an IP packet\n");
+		ip_handle(ip_pack, data_length, net_pack->source_mac);
 	}
 
 	else {
@@ -25,7 +28,8 @@ void net_handle_packet(uint8_t *packet, uint16_t packet_length) {
 
 void net_init(void) {
 	arp_init();
-	uint8_t ip[4] = {192, 168, 1, 29};
-	kprintf("NET: Going to look the host up\n");
-	arp_lookup(ip);
+#if defined(__x86_64__)
+#include <devices/rtl8139.h>
+	rtl8139_init();
+#endif
 }

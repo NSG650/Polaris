@@ -50,8 +50,10 @@ void kputs(char *string) {
 }
 
 void syscall_puts(struct syscall_arguments *args) {
+	spinlock_acquire_or_wait(write_lock);
 	if (args->args0)
 		kputs((char *)args->args0);
+	spinlock_drop(write_lock);
 }
 
 static void kprintf_(char *fmt, va_list args) {

@@ -53,11 +53,6 @@ void kernel_main(void *args) {
 	console_init();
 	fbdev_init();
 
-#if defined(__x86_64__)
-#include <devices/rtl8139.h>
-	rtl8139_init();
-#endif
-
 	net_init();
 
 	std_console_device =

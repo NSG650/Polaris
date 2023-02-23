@@ -8,6 +8,8 @@ arp_table_vec_t arp_table;
 uint8_t broadcast_ip[4] = {0xff, 0xff, 0xff, 0xff};
 uint8_t broadcast_mac[6] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 
+uint8_t last_ip[4] = {0x00, 0x00, 0x00, 0x00};
+
 void arp_init(void) {
 	vec_init(&arp_table);
 }
@@ -60,11 +62,14 @@ void arp_handle(struct arp_packet *packet, uint32_t length) {
 		kprintf("ARP: Got Mac Addr %x:%x:%x:%x:%x:%x\n", dest_mac[0],
 				dest_mac[1], dest_mac[2], dest_mac[3], dest_mac[4],
 				dest_mac[5]);
+		uint8_t our_ip[4] = {192, 168, 1, 35};
+		if (memcmp(dest_protocol_addr, our_ip, 4))
+			return;
 		struct arp_table_entry *entry = kmalloc(sizeof(struct arp_table_entry));
-		memcpy(entry->ip_addr, dest_protocol_addr, 4);
+		memcpy(entry->ip_addr, last_ip, 4);
 		memcpy(entry->mac_addr, dest_mac, 6);
-
 		vec_push(&arp_table, entry);
+		memset(last_ip, 0, 4);
 	}
 }
 
@@ -91,6 +96,7 @@ void arp_send(struct arp_packet *packet, uint32_t length) {
 
 void arp_lookup(uint8_t *ip) {
 	struct arp_packet *lookup_packet = kmalloc(sizeof(struct arp_packet));
+	memcpy(last_ip, ip, 4);
 	memcpy(lookup_packet->destination_protocol_addr, ip, 4);
 	memset(lookup_packet->destination_mac, 0xff, 6);
 	arp_send(lookup_packet, sizeof(struct arp_packet));

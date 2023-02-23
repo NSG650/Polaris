@@ -93,10 +93,11 @@ void rtl8139_send_data(uint8_t *data, uint32_t length) {
 
 	outd(rtl8139_dev.io_base + 0x20 + (rtl8139_dev.tx_ptr_off * 4),
 		 (uint32_t)t_data);
-	outd(rtl8139_dev.io_base + 0x10 + (rtl8139_dev.tx_ptr_off++ * 4),
+	outd(rtl8139_dev.io_base + 0x10 + (rtl8139_dev.tx_ptr_off * 4),
 		 (uint32_t)length);
 
-	if (rtl8139_dev.tx_ptr_off >= 3)
+	rtl8139_dev.tx_ptr_off++;
+	if (rtl8139_dev.tx_ptr_off > 3)
 		rtl8139_dev.tx_ptr_off = 0;
 
 	pmm_free(t_data, length / PAGE_SIZE);
@@ -112,8 +113,7 @@ void net_send_packet(uint8_t *dest, uint8_t *packet, uint32_t packet_length,
 		kmalloc(sizeof(struct network_packet) + packet_length);
 	uint32_t data_length = sizeof(struct network_packet) + packet_length;
 
-	uint8_t *actual_data =
-		(uint8_t *)((uintptr_t)data + sizeof(struct network_packet));
+	uint8_t *actual_data = (uint8_t *)((uintptr_t)data->data);
 
 	memcpy(data->destination_mac, dest, 6);
 	memcpy(data->source_mac, net_get_mac_addr(), 6);
@@ -141,7 +141,8 @@ bool rtl8139_init(void) {
 	uint16_t pci_cmd_ret = pci_read(0, rtl8139_pci_device->bus,
 									rtl8139_pci_device->device, 0, 0x04, 2);
 	pci_write(0, rtl8139_pci_device->bus, rtl8139_pci_device->device, 0, 0x04,
-			  pci_cmd_ret | (1 << 2), 2);
+			  (pci_cmd_ret | (1 << 2)) & (~(1 << 10)),
+			  2); // This enables interrupts as well
 
 	if (rtl8139_dev.io_base == 0)
 		return false;
@@ -159,7 +160,8 @@ bool rtl8139_init(void) {
 	while ((inb(rtl8139_dev.io_base + 0x37) & 0x10) != 0)
 		pause();
 
-	rtl8139_dev.rx_buffer = pmm_allocz((RX_BUFFER_SIZE + 16) / PAGE_SIZE);
+	rtl8139_dev.rx_buffer =
+		pmm_allocz((RX_BUFFER_SIZE + 1500 + 16) / PAGE_SIZE);
 
 	// set the rx buffer to be used
 	// we need a physical address which is why we use pmm_allocz
@@ -170,7 +172,7 @@ bool rtl8139_init(void) {
 	outw(rtl8139_dev.io_base + 0x3C, 0x0005);
 
 	// (1 << 7) is the WRAP bit, 0xf is AB+AM+APM+AAP
-	outd(rtl8139_dev.io_base + 0x44, 0xf | (1 << 7));
+	outd(rtl8139_dev.io_base + 0x44, 0xf);
 
 	// Sets the RE and TE bits high
 	outb(rtl8139_dev.io_base + 0x37, 0x0C);
