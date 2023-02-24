@@ -4,13 +4,9 @@
 #include <net/icmp.h>
 #include <net/ip.h>
 #include <net/net.h>
-#include <sched/sched.h>
-#include <sys/prcb.h>
 
-void icmp_echo_reply(uint64_t *handover) {
-	struct ip_packet *ip_pack = (struct ip_packet *)handover[0];
-	uint32_t length = (uint32_t)handover[1];
-	uint8_t *dest_mac = (uint8_t *)handover[2];
+void icmp_echo_reply(struct ip_packet *ip_pack, uint32_t length,
+					 uint8_t *dest_mac) {
 	uint8_t source_protocol_addr[4] = {0};
 	memcpy(source_protocol_addr, ip_pack->source_protocol_addr, 4);
 
@@ -19,10 +15,7 @@ void icmp_echo_reply(uint64_t *handover) {
 	kprintf("ICMP: Got type: %d\n", icmp_pack->type);
 
 	if (icmp_pack->type != 8) {
-		kfree(ip_pack);
-		kfree(dest_mac);
-		kfree(handover);
-		thread_kill(prcb_return_current_cpu()->running_thread, true);
+		return;
 	}
 
 	icmp_pack->type = 0;
@@ -30,10 +23,4 @@ void icmp_echo_reply(uint64_t *handover) {
 	icmp_pack->checksum =
 		ip_calculate_checksum(icmp_pack, length - sizeof(struct ip_packet));
 	ip_send(ip_pack, length, source_protocol_addr, dest_mac);
-
-	kfree(ip_pack);
-	kfree(dest_mac);
-	kfree(handover);
-
-	thread_kill(prcb_return_current_cpu()->running_thread, true);
 }

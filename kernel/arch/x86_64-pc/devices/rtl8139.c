@@ -34,11 +34,14 @@ static void rtl8139_rx_handler(registers_t *reg) {
 	packet += 2; // skip the header
 
 	uint8_t *packet_pass = kmalloc(packet_length);
+	uint64_t *handover = kmalloc(sizeof(uint64_t) * 2);
 	memcpy(packet_pass, packet, packet_length);
 
-	net_handle_packet(packet_pass, packet_length);
+	handover[0] = (uint64_t)packet_pass;
+	handover[1] = packet_length;
 
-	kfree(packet_pass);
+	thread_create((uintptr_t)net_handle_packet_thread, (uint64_t)handover, 0,
+				  processes.data[0]);
 
 	rtl8139_dev.packet_ptr_off =
 		(rtl8139_dev.packet_ptr_off + packet_length + 4 + 3) & (~3);

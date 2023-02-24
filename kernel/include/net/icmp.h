@@ -13,6 +13,7 @@ struct icmp_header {
 	uint8_t data[];
 } __attribute__((packed));
 
-void icmp_echo_reply(uint64_t *handover);
+void icmp_echo_reply(struct ip_packet *ip_pack, uint32_t length,
+					 uint8_t *dest_mac);
 
 #endif

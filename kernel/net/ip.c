@@ -54,16 +54,10 @@ void ip_handle(struct ip_packet *packet, uint32_t length, uint8_t *dest_mac) {
 	if (packet->protocol == 1) {
 		void *clone = kmalloc(length);
 		memcpy(clone, packet, length);
-		uint64_t *handover = kmalloc(sizeof(uint64_t) * 3);
 		uint8_t *clone_mac = kmalloc(6);
 		memcpy(clone_mac, dest_mac, 6);
 
-		handover[0] = (uint64_t)clone;
-		handover[1] = (uint64_t)length;
-		handover[2] = (uint64_t)clone_mac;
-
-		thread_create((uintptr_t)icmp_echo_reply, (uint64_t)handover, 0,
-					  processes.data[0]);
+		icmp_echo_reply(clone, length, dest_mac);
 	} else {
 		kprintf("IP: Unknown protocol %d\n", packet->protocol);
 	}

@@ -2,6 +2,17 @@
 #include <net/arp.h>
 #include <net/ip.h>
 #include <net/net.h>
+#include <sched/sched.h>
+#include <sys/prcb.h>
+
+void net_handle_packet_thread(uint64_t *handover) {
+	uint8_t *packet = (uint8_t *)handover[0];
+	uint16_t length = (uint16_t)handover[1];
+	net_handle_packet(packet, length);
+	kfree(packet);
+	kfree(handover);
+	thread_kill(prcb_return_current_cpu()->running_thread, true);
+}
 
 void net_handle_packet(uint8_t *packet, uint16_t packet_length) {
 	struct network_packet *net_pack = (struct network_packet *)packet;
