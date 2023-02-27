@@ -9,6 +9,7 @@ uint8_t broadcast_ip[4] = {0xff, 0xff, 0xff, 0xff};
 uint8_t broadcast_mac[6] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 
 uint8_t last_ip[4] = {0x00, 0x00, 0x00, 0x00};
+uint8_t my_ip[4] = {192, 168, 10, 10};
 
 void arp_init(void) {
 	vec_init(&arp_table);
@@ -27,7 +28,7 @@ void arp_handle(struct arp_packet *packet, uint32_t length) {
 	uint8_t dest_protocol_addr[4];
 
 	memcpy(dest_mac, packet->source_mac, 6);
-	memcpy(dest_protocol_addr, packet->destination_protocol_addr, 4);
+	memcpy(dest_protocol_addr, packet->source_protocol_addr, 4);
 
 	if (BSWAP16(packet->opcode) == 1) { // ARP_REQUEST
 		kprintf("ARP: Got an ARP_REQUEST from %d.%d.%d.%d\n",
@@ -36,10 +37,7 @@ void arp_handle(struct arp_packet *packet, uint32_t length) {
 		memcpy(packet->source_mac, net_get_mac_addr(), 6);
 
 		// Hard code the IP :))
-		packet->source_protocol_addr[0] = 192;
-		packet->source_protocol_addr[1] = 168;
-		packet->source_protocol_addr[2] = 1;
-		packet->source_protocol_addr[3] = 35;
+		memcpy(packet->source_protocol_addr, my_ip, 4);
 
 		memcpy(packet->destination_protocol_addr, dest_protocol_addr, 4);
 		memcpy(packet->destination_mac, dest_mac, 6);
@@ -53,8 +51,8 @@ void arp_handle(struct arp_packet *packet, uint32_t length) {
 
 		packet->protocol = BSWAP16(REQ_TYPE_IP);
 
-		net_send_packet(packet->destination_mac, packet,
-						sizeof(struct arp_packet), REQ_TYPE_ARP);
+		net_send_packet(dest_mac, packet, sizeof(struct arp_packet),
+						REQ_TYPE_ARP);
 	}
 
 	else if (BSWAP16(packet->opcode) == 2) {

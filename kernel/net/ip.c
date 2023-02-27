@@ -6,6 +6,8 @@
 #include <net/net.h>
 #include <sched/sched.h>
 
+extern uint8_t my_ip[];
+
 uint16_t ip_calculate_checksum(void *addr, int count) {
 	// Taken from https://tools.ietf.org/html/rfc1071
 
@@ -36,10 +38,7 @@ void ip_send(struct ip_packet *packet, uint32_t length,
 	memcpy(packet->destination_protocol_addr, destination_protocol_addr, 4);
 	// hard coding the ip yet again
 
-	packet->source_protocol_addr[0] = 192;
-	packet->source_protocol_addr[1] = 168;
-	packet->source_protocol_addr[2] = 1;
-	packet->source_protocol_addr[3] = 35;
+	memcpy(packet->source_protocol_addr, my_ip, 4);
 
 	packet->checksum = ip_calculate_checksum(packet, sizeof(struct ip_packet));
 

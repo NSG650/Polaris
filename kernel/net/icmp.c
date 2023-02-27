@@ -20,7 +20,7 @@ void icmp_echo_reply(struct ip_packet *ip_pack, uint32_t length,
 
 	icmp_pack->type = 0;
 	icmp_pack->checksum = 0;
-	icmp_pack->checksum =
-		ip_calculate_checksum(icmp_pack, length - sizeof(struct ip_packet));
+	icmp_pack->checksum = ip_calculate_checksum(
+		icmp_pack, length - ((uintptr_t)icmp_pack - (uintptr_t)ip_pack));
 	ip_send(ip_pack, length, source_protocol_addr, dest_mac);
 }
