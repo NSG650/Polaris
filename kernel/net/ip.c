@@ -33,6 +33,14 @@ uint16_t ip_calculate_checksum(void *addr, int count) {
 
 void ip_send(struct ip_packet *packet, uint32_t length,
 			 uint8_t *destination_protocol_addr, uint8_t *dest_mac) {
+
+	packet->version = 4;
+	packet->internet_header_length = 5;
+	packet->length = BSWAP16(length);
+	packet->id = BSWAP16(packet->id);
+	packet->fragment_offset = BSWAP16(0x4000);
+	packet->time_to_live = 64;
+
 	packet->checksum = 0;
 
 	memcpy(packet->destination_protocol_addr, destination_protocol_addr, 4);

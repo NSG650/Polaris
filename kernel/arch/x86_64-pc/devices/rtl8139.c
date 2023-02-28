@@ -22,34 +22,33 @@ struct rtl8139_device rtl8139_dev = {0};
 struct pci_device *rtl8139_pci_device = NULL;
 
 static void rtl8139_rx_handler(registers_t *reg) {
-	if (inb(rtl8139_dev.io_base + RTL8139_REG_CMD) & 1) // the buffer is empty
-		return;
-
 	vmm_switch_pagemap(kernel_pagemap);
 
-	uint16_t *packet =
-		(uint16_t *)((rtl8139_dev.rx_buffer + rtl8139_dev.packet_ptr_off));
+	while ((inb(rtl8139_dev.io_base + RTL8139_REG_CMD) & 1) == 0) {
+		uint16_t *packet =
+			(uint16_t *)((rtl8139_dev.rx_buffer + rtl8139_dev.packet_ptr_off));
 
-	uint16_t packet_length = *(packet + 1);
-	packet += 2; // skip the header
+		uint16_t packet_length = *(packet + 1);
+		packet += 2; // skip the header
 
-	uint8_t *packet_pass = kmalloc(packet_length);
-	uint64_t *handover = kmalloc(sizeof(uint64_t) * 2);
-	memcpy(packet_pass, packet, packet_length);
+		uint8_t *packet_pass = kmalloc(packet_length);
+		uint64_t *handover = kmalloc(sizeof(uint64_t) * 2);
+		memcpy(packet_pass, packet, packet_length);
 
-	handover[0] = (uint64_t)packet_pass;
-	handover[1] = packet_length;
+		handover[0] = (uint64_t)packet_pass;
+		handover[1] = packet_length;
 
-	thread_create((uintptr_t)net_handle_packet_thread, (uint64_t)handover, 0,
-				  processes.data[0]);
+		thread_create((uintptr_t)net_handle_packet_thread, (uint64_t)handover,
+					  0, processes.data[0]);
 
-	rtl8139_dev.packet_ptr_off =
-		(rtl8139_dev.packet_ptr_off + packet_length + 4 + 3) & (~3);
+		rtl8139_dev.packet_ptr_off =
+			(rtl8139_dev.packet_ptr_off + packet_length + 4 + 3) & (~3);
 
-	if (rtl8139_dev.packet_ptr_off > RX_BUFFER_SIZE)
-		rtl8139_dev.packet_ptr_off -= RX_BUFFER_SIZE;
+		if (rtl8139_dev.packet_ptr_off > RX_BUFFER_SIZE)
+			rtl8139_dev.packet_ptr_off -= RX_BUFFER_SIZE;
 
-	outw(rtl8139_dev.io_base + 0x38, rtl8139_dev.packet_ptr_off - 0x10);
+		outw(rtl8139_dev.io_base + 0x38, rtl8139_dev.packet_ptr_off - 0x10);
+	}
 
 	vmm_switch_pagemap(prcb_return_current_cpu()
 						   ->running_thread->mother_proc->process_pagemap);
@@ -175,7 +174,7 @@ bool rtl8139_init(void) {
 	outw(rtl8139_dev.io_base + 0x3C, 0x0005);
 
 	// (1 << 7) is the WRAP bit, 0xf is AB+AM+APM+AAP
-	outd(rtl8139_dev.io_base + 0x44, 0xf);
+	outd(rtl8139_dev.io_base + 0x44, 0xf | (1 << 7));
 
 	// Sets the RE and TE bits high
 	outb(rtl8139_dev.io_base + 0x37, 0x0C);

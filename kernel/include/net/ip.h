@@ -4,14 +4,14 @@
 #include <stddef.h>
 #include <stdint.h>
 
+// I hate big endian :D
 struct ip_packet {
-	uint8_t version : 4;
 	uint8_t internet_header_length : 4;
+	uint8_t version : 4;
 	uint8_t type_of_service;
 	uint16_t length;
 	uint16_t id;
-	uint16_t flags : 3;
-	uint16_t fragment_offset : 13;
+	uint16_t fragment_offset;
 	uint8_t time_to_live;
 	uint8_t protocol;
 	uint16_t checksum;
