@@ -12,8 +12,6 @@ void icmp_echo_reply(struct ip_packet *ip_pack, uint32_t length,
 
 	struct icmp_header *icmp_pack = (struct icmp_header *)ip_pack->data;
 
-	kprintf("ICMP: Got type: %d\n", icmp_pack->type);
-
 	if (icmp_pack->type != 8) {
 		return;
 	}

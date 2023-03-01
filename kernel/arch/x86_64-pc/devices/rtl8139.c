@@ -58,7 +58,7 @@ void rtl8139_handler(registers_t *reg) {
 	uint16_t status = inw(rtl8139_dev.io_base + RTL8139_REG_ISR);
 
 	if (status & (1 << 2)) { // TX
-		kprintf("RTL8139: Packet sent\n");
+							 // kprintf("RTL8139: Packet sent\n");
 	}
 
 	if (status & (1 << 0)) { // RX

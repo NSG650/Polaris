@@ -21,14 +21,12 @@ void net_handle_packet(uint8_t *packet, uint16_t packet_length) {
 	size_t data_length = packet_length - sizeof(struct network_packet);
 
 	if (BSWAP16(net_pack->type) == REQ_TYPE_ARP) {
-		kprintf("NET: Got an ARP packet\n");
 		struct arp_packet *arp_pack = (struct arp_packet *)data;
 		arp_handle(arp_pack, data_length);
 	}
 
 	else if (BSWAP16(net_pack->type) == REQ_TYPE_IP) {
 		struct ip_packet *ip_pack = (struct ip_packet *)data;
-		kprintf("NET: Got an IP packet\n");
 		ip_handle(ip_pack, data_length, net_pack->source_mac);
 	}
 

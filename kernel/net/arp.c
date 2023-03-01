@@ -31,9 +31,6 @@ void arp_handle(struct arp_packet *packet, uint32_t length) {
 	memcpy(dest_protocol_addr, packet->source_protocol_addr, 4);
 
 	if (BSWAP16(packet->opcode) == 1) { // ARP_REQUEST
-		kprintf("ARP: Got an ARP_REQUEST from %d.%d.%d.%d\n",
-				dest_protocol_addr[0], dest_protocol_addr[1],
-				dest_protocol_addr[2], dest_protocol_addr[3]);
 		memcpy(packet->source_mac, net_get_mac_addr(), 6);
 
 		// Hard code the IP :))
@@ -56,10 +53,6 @@ void arp_handle(struct arp_packet *packet, uint32_t length) {
 	}
 
 	else if (BSWAP16(packet->opcode) == 2) {
-		kprintf("ARP: We got a reply\n");
-		kprintf("ARP: Got Mac Addr %x:%x:%x:%x:%x:%x\n", dest_mac[0],
-				dest_mac[1], dest_mac[2], dest_mac[3], dest_mac[4],
-				dest_mac[5]);
 		uint8_t our_ip[4] = {192, 168, 1, 35};
 		if (memcmp(dest_protocol_addr, our_ip, 4))
 			return;

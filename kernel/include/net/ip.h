@@ -21,7 +21,7 @@ struct ip_packet {
 } __attribute__((packed));
 
 uint16_t ip_calculate_checksum(void *addr, int count);
-void ip_send(struct ip_packet *packet, uint32_t length,
+void ip_send(struct ip_packet *packet, uint16_t length,
 			 uint8_t *destination_protocol_addr, uint8_t *dest_mac);
 void ip_handle(struct ip_packet *packet, uint32_t length, uint8_t *dest_mac);
 
