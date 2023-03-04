@@ -136,17 +136,19 @@ void keyboard_handle(registers_t *reg) {
 static ssize_t keyboard_resource_read(struct resource *this,
 									  struct f_description *description,
 									  void *buf, off_t offset, size_t count) {
+	spinlock_acquire_or_wait(this->lock);
 	char *a = (char *)buf;
 	while (count) {
 		a[count--] = keyboard_read();
 	}
+	spinlock_drop(this->lock);
 	return count;
 }
 
 int keyboard_resource_ioctl(struct resource *this,
 							struct f_description *description, uint64_t request,
 							uint64_t arg) {
-	(void)this;
+	spinlock_acquire_or_wait(this->lock);
 	(void)description;
 	(void)arg;
 
@@ -156,9 +158,11 @@ int keyboard_resource_ioctl(struct resource *this,
 	keyboard_typed = 0;
 	switch (request) {
 		case 0x1:
+			spinlock_drop(this->lock);
 			*(uint8_t *)arg = keyboard_read();
 			return 0;
 		default:
+			spinlock_drop(this->lock);
 			return resource_default_ioctl(this, description, request, arg);
 	}
 	errno = EINVAL;

@@ -26,7 +26,7 @@ struct console *console_device;
 static ssize_t console_read(struct resource *_this,
 							struct f_description *description, void *_buf,
 							off_t offset, size_t count) {
-	(void)_this;
+	spinlock_acquire_or_wait(_this->lock);
 	(void)description;
 	(void)offset;
 	char *a = (char *)_buf;
@@ -36,12 +36,13 @@ static ssize_t console_read(struct resource *_this,
 		return count;
 	}
 	size_t c = keyboard_gets(a, count, 1);
-
+	spinlock_drop(_this->lock);
 	return (ssize_t)c;
 }
 
 int console_ioctl(struct resource *this, struct f_description *description,
 				  uint64_t request, uint64_t arg) {
+	spinlock_acquire_or_wait(this->lock);
 
 	if (!arg)
 		return -1;
@@ -50,6 +51,7 @@ int console_ioctl(struct resource *this, struct f_description *description,
 		case TCGETS: {
 			struct termios *t = (void *)arg;
 			*t = console_device->info.termios_info;
+			spinlock_drop(this->lock);
 			return 0;
 		}
 		case TCSETS:
@@ -57,6 +59,7 @@ int console_ioctl(struct resource *this, struct f_description *description,
 		case TCSETSF: {
 			struct termios *t = (void *)arg;
 			console_device->info.termios_info = *t;
+			spinlock_drop(this->lock);
 			return 0;
 		}
 		case TIOCGWINSZ: {
@@ -65,9 +68,11 @@ int console_ioctl(struct resource *this, struct f_description *description,
 			w->ws_col = console_device->info.height;
 			w->ws_xpixel = framebuff.width;
 			w->ws_ypixel = framebuff.height;
+			spinlock_drop(this->lock);
 			return 0;
 		}
 		default:
+			spinlock_drop(this->lock);
 			return resource_default_ioctl(this, description, request, arg);
 	}
 }
@@ -75,13 +80,14 @@ int console_ioctl(struct resource *this, struct f_description *description,
 static ssize_t console_write(struct resource *_this,
 							 struct f_description *description, const void *buf,
 							 off_t offset, size_t count) {
-	(void)_this;
 	(void)description;
 	(void)offset;
+	spinlock_acquire_or_wait(_this->lock);
 	char *r = (char *)buf;
 	for (size_t i = 0; i < count; i++) {
 		framebuffer_putchar(r[i]);
 	}
+	spinlock_drop(_this->lock);
 	return count;
 }
 
@@ -110,4 +116,5 @@ void console_init(void) {
 
 	devtmpfs_add_device((struct resource *)console_device, "console");
 	keyboard_init();
+	mouse_init();
 }

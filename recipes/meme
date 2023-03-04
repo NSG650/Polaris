@@ -1,0 +1,20 @@
+name=meme
+from_source=meme
+revision=1
+hostdeps="gcc automake pkg-config"
+deps="mlibc"
+
+configure() {
+	true
+}
+
+build() {
+	cd ${source_dir}/polaris
+	make -j${parallelism}
+}
+
+install() {
+	cd ${source_dir}/polaris
+	mkdir -p "${dest_dir}/usr/bin"
+	cp ./meme "${dest_dir}/usr/bin"
+}

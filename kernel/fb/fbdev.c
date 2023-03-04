@@ -38,13 +38,17 @@ static void *fbdev_mmap(struct resource *this, size_t file_page, int flags) {
 
 static int fbdev_ioctl(struct resource *this, struct f_description *description,
 					   uint64_t request, uint64_t arg) {
+	spinlock_acquire_or_wait(this->lock);
 	switch (request) {
 		case 0x1:
 			memcpy((void *)arg, &info, sizeof(struct fbdev_info));
+			spinlock_drop(this->lock);
 			return 0;
 		default:
+			spinlock_drop(this->lock);
 			return resource_default_ioctl(this, description, request, arg);
 	}
+	spinlock_drop(this->lock);
 	errno = EINVAL;
 	return -1;
 }

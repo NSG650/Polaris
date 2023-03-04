@@ -1,0 +1,10 @@
+name=meme
+version=4.0
+source_method=git
+clone_url="https://github.com/nsg650/MeME-polaris"
+tag=master
+commit="f62206c7e2306538ca131b7a02008332fa0345d0"
+
+regenerate() {
+    true
+}
