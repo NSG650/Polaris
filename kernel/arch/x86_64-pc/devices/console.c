@@ -116,5 +116,4 @@ void console_init(void) {
 
 	devtmpfs_add_device((struct resource *)console_device, "console");
 	keyboard_init();
-	mouse_init();
 }

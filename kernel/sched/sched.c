@@ -244,7 +244,7 @@ void sched_init(uint64_t args) {
 	syscall_register_handler(0x3b, syscall_execve);
 	syscall_register_handler(0x3f, syscall_uname);
 	syscall_register_handler(0x72, syscall_waitpid);
-	process_create("kernel_tasks", 0, 5000, (uintptr_t)kernel_main, args, 0,
+	process_create("kernel_tasks", 0, 2000, (uintptr_t)kernel_main, args, 0,
 				   NULL);
 }
 

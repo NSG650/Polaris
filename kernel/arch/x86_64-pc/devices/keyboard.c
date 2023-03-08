@@ -1,6 +1,7 @@
 #include <asm/asm.h>
 #include <debug/debug.h>
 #include <devices/keyboard.h>
+#include <devices/mouse.h>
 #include <errno.h>
 #include <fb/fb.h>
 #include <fs/devtmpfs.h>
@@ -200,4 +201,5 @@ void keyboard_init(void) {
 	inb(0x60);
 
 	devtmpfs_add_device(keyboard_resource, "keyboard");
+	mouse_init();
 }

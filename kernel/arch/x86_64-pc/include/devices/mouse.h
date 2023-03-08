@@ -14,6 +14,7 @@ struct mouse_packet {
 struct mouse_device {
 	struct resource res;
 	struct mouse_packet *pack;
+	bool available;
 };
 
 void mouse_init(void);

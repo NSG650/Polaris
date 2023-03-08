@@ -66,19 +66,16 @@ void mouse_handle(struct regs *reg) {
 			break;
 		}
 
-		case 2:
+		case 2: {
 			curr_pack.y_mov = inb(0x60);
 			if (discard_pack) {
 				discard_pack = 0;
 			}
 			mouse_cycle = 0;
-			/*if (old_pack.x_mov != curr_pack.x_mov && old_pack.y_mov !=
-			curr_pack.y_mov && old_pack.flags != curr_pack.flags) { old_pack =
-			curr_pack;
-			}
-			else {
-			  discard_pack = 1;
-			}*/
+			mouse_dev->available = true;
+			break;
+		}
+		default: // this should never happen
 			break;
 	}
 	apic_eoi();
@@ -102,7 +99,7 @@ int mouse_resource_ioctl(struct resource *this,
 		case 0x1:
 			spinlock_drop(this->lock);
 			memcpy((void *)arg, dev->pack, sizeof(struct mouse_packet));
-			memzero(dev->pack, sizeof(struct mouse_packet));
+			dev->available = false;
 			return 0;
 		default:
 			spinlock_drop(this->lock);
@@ -111,6 +108,29 @@ int mouse_resource_ioctl(struct resource *this,
 	errno = EINVAL;
 	spinlock_drop(this->lock);
 	return -1;
+}
+
+static ssize_t mouse_resource_read(struct resource *this,
+								   struct f_description *description, void *buf,
+								   off_t offset, size_t count) {
+	spinlock_acquire_or_wait(this->lock);
+
+	struct mouse_device *dev = (struct mouse_device *)this;
+
+	(void)description;
+
+	if (count != sizeof(struct mouse_packet) || !dev->available) {
+		spinlock_drop(this->lock);
+		return -1;
+	}
+
+	memcpy(buf, dev->pack, count);
+	dev->available = false;
+
+	// dev->res.status &= ~POLLIN;
+
+	spinlock_drop(this->lock);
+	return count;
 }
 
 void mouse_init(void) {
@@ -122,6 +142,7 @@ void mouse_init(void) {
 
 	mouse_dev = resource_create(sizeof(struct mouse_device));
 	mouse_dev->pack = &curr_pack;
+	mouse_dev->available = false;
 
 	mouse_dev->res.stat.st_size = 0;
 	mouse_dev->res.stat.st_blocks = 0;
@@ -129,6 +150,9 @@ void mouse_init(void) {
 	mouse_dev->res.stat.st_rdev = resource_create_dev_id();
 	mouse_dev->res.stat.st_mode = 0644 | S_IFCHR;
 	mouse_dev->res.ioctl = mouse_resource_ioctl;
+	mouse_dev->res.read = mouse_resource_read;
+
+	// mouse_dev->res.status |= POLLOUT;
 
 	isr_register_handler(60, mouse_handle);
 	ioapic_redirect_irq(12, 60);
