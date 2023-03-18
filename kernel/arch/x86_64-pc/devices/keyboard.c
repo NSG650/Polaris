@@ -179,6 +179,7 @@ void keyboard_init(void) {
 	keyboard_resource->stat.st_mode = 0644 | S_IFCHR;
 	keyboard_resource->ioctl = keyboard_resource_ioctl;
 	keyboard_resource->read = keyboard_resource_read;
+	devtmpfs_add_device(keyboard_resource, "keyboard");
 
 	// Disable primary and secondary PS/2 ports
 	keyboard_write(0x64, 0xad);
@@ -196,10 +197,14 @@ void keyboard_init(void) {
 	// Enable keyboard port
 	keyboard_write(0x64, 0xae);
 
+	// Enable mouse port
+	if ((keyboard_config & (1 << 5)) != 0) {
+		keyboard_write(0x64, 0xa8);
+	}
+
 	isr_register_handler(49, keyboard_handle);
 	ioapic_redirect_irq(1, 49);
 	inb(0x60);
 
-	devtmpfs_add_device(keyboard_resource, "keyboard");
 	mouse_init();
 }

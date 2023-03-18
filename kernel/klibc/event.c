@@ -92,7 +92,7 @@ ssize_t event_await(struct event **events, size_t num_events, bool block) {
 	}
 
 	attach_listeners(events, num_events, thread);
-	thread->state = THREAD_SLEEPING;
+	thread->state = THREAD_WAITING_FOR_EVENT;
 	// sched_dequeue_thread(thread);
 	unlock_events(events, num_events);
 	sched_resched_now();
