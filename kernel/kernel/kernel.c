@@ -6,6 +6,7 @@
 #include <fs/streams.h>
 #include <fs/tmpfs.h>
 #include <fs/vfs.h>
+#include <ipc/pipe.h>
 #include <kernel.h>
 #include <klibc/event.h>
 #include <mm/mmap.h>
@@ -51,8 +52,9 @@ void kernel_main(void *args) {
 	syscall_register_handler(0x10b, syscall_readlinkat);
 	syscall_register_handler(0x10c, syscall_fchmodat);
 	syscall_register_handler(0x124, syscall_dup3);
+	syscall_register_handler(0x125, syscall_pipe);
 
-	/*console_init();
+	console_init();
 	fbdev_init();
 
 	net_init();
@@ -67,7 +69,7 @@ void kernel_main(void *args) {
 	if (!process_create_elf(
 			"init", PROCESS_READY_TO_RUN, 2000, argv[0],
 			prcb_return_current_cpu()->running_thread->mother_proc))
-		panic("Failed to run init binary!\n");*/
+		panic("Failed to run init binary!\n");
 
 	for (;;)
 		;

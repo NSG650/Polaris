@@ -148,6 +148,10 @@ int waitpid(int pid_to_wait_on, int *status, int mode) {
 	return syscall3(0x72, pid_to_wait_on, status, mode);
 }
 
+int pipe(int *pipe_fds, int flags) {
+	return syscall2(0x125, pipe_fds, flags);
+}
+
 void puts_to_console(char *string) {
 	write(stdout, string, strlen(string));
 }
