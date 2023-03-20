@@ -329,8 +329,7 @@ bool process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
 		if (parent_process->cwd != NULL) {
 			proc->cwd = parent_process->cwd;
 		} else {
-			// proc->cwd = vfs_root; kill me
-			proc->cwd = vfs_get_node(vfs_root, "/bin", 1);
+			proc->cwd = vfs_root;
 		}
 		proc->umask = parent_process->umask;
 		proc->mmap_anon_base = parent_process->mmap_anon_base;

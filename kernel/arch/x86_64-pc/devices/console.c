@@ -33,9 +33,11 @@ static ssize_t console_read(struct resource *_this,
 
 	if (count == 1) { // for micropython AAAAAAAAA
 		keyboard_gets(a, count, 0);
+		spinlock_drop(_this->lock);
 		return count;
 	}
 	size_t c = keyboard_gets(a, count, 1);
+
 	spinlock_drop(_this->lock);
 	return (ssize_t)c;
 }

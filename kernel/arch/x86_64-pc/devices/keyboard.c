@@ -74,8 +74,8 @@ void keyboard_write_config(uint8_t value) {
 }
 
 char keyboard_getchar(void) {
-	while (!keyboard_typed)
-		;
+	struct event *events = {&keyboard_resource->event};
+	event_await(&events, 1, true);
 	char c = keyboard_read();
 	keyboard_typed = 0;
 	return ktoc(c);
@@ -85,8 +85,8 @@ size_t keyboard_gets(char *string, size_t count, bool fb) {
 	uint8_t key = 0;
 	size_t c = 0;
 	while (key != 0x1c && c != count) {
-		while (!keyboard_typed)
-			;
+		struct event *events = {&keyboard_resource->event};
+		event_await(&events, 1, true);
 		key = keyboard_read();
 		if (key == 0xE && c) {
 			string[c--] = '\0';
@@ -121,6 +121,8 @@ size_t keyboard_gets(char *string, size_t count, bool fb) {
 		char a = string[c++] = ktoc(key);
 		if (fb)
 			framebuffer_putchar(a);
+
+		event_trigger(&keyboard_resource->event, false);
 	}
 	if (fb)
 		framebuffer_putchar('\n');
@@ -131,6 +133,7 @@ size_t keyboard_gets(char *string, size_t count, bool fb) {
 void keyboard_handle(registers_t *reg) {
 	(void)reg;
 	keyboard_typed = 1;
+	event_trigger(&keyboard_resource->event, false);
 	apic_eoi();
 }
 
@@ -140,7 +143,12 @@ static ssize_t keyboard_resource_read(struct resource *this,
 	spinlock_acquire_or_wait(this->lock);
 	char *a = (char *)buf;
 	while (count) {
+		struct event *events = {&this->event};
+		event_await(&events, 1, true);
+
 		a[count--] = keyboard_read();
+
+		event_trigger(&this->event, false);
 	}
 	spinlock_drop(this->lock);
 	return count;

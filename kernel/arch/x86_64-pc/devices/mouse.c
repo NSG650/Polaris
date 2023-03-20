@@ -78,6 +78,8 @@ void mouse_handle(struct regs *reg) {
 		default: // this should never happen
 			break;
 	}
+	event_trigger(&mouse_dev->res.event, false);
+
 	apic_eoi();
 }
 
@@ -119,6 +121,10 @@ static ssize_t mouse_resource_read(struct resource *this,
 
 	(void)description;
 
+	struct event *events = {&this->event};
+
+	event_await(&events, 1, true);
+
 	if (count != sizeof(struct mouse_packet) || !dev->available) {
 		spinlock_drop(this->lock);
 		return -1;
@@ -126,6 +132,8 @@ static ssize_t mouse_resource_read(struct resource *this,
 
 	memcpy(buf, dev->pack, count);
 	dev->available = false;
+
+	event_trigger(&this->event, false);
 
 	// dev->res.status &= ~POLLIN;
 
