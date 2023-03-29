@@ -30,6 +30,7 @@
 lock_t write_lock;
 bool in_panic = false;
 bool put_to_fb = true;
+bool print_now = false;
 
 void kputchar(char c) {
 	spinlock_acquire_or_wait(write_lock);
@@ -57,6 +58,9 @@ void syscall_puts(struct syscall_arguments *args) {
 }
 
 static void kprintf_(char *fmt, va_list args) {
+	if (!print_now)
+		return;
+
 	if (in_panic) {
 		kputs("*** PANIC:\t");
 	} else {

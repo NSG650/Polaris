@@ -1,6 +1,7 @@
 #include <asm/asm.h>
 #include <cpu/smp.h>
 #include <debug/debug.h>
+#include <fw/madt.h>
 #include <klibc/mem.h>
 #include <klibc/time.h>
 #include <mm/vmm.h>
@@ -67,11 +68,9 @@ void resched(registers_t *reg) {
 	running_thrd = threads.data[nex_index];
 
 	fpu_restore(running_thrd->fpu_storage);
-	// Don't fuck with the kernel gs
 
-	if (running_thrd->mother_proc !=
-		processes.data[0]) { // TODO: sysretting fucking sets the cs to 0x8
-							 // which is why we use this check
+	// Don't fuck with the kernel gs
+	if (running_thrd->mother_proc != processes.data[0]) { // :))))
 		set_fs_base(running_thrd->fs_base);
 	}
 

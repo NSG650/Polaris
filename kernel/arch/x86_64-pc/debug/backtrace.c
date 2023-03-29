@@ -1,18 +1,24 @@
 #include <debug/debug.h>
 
-void backtrace(size_t *bp) {
-	if (!bp)
+void backtrace(uintptr_t *bp) {
+	uintptr_t *rbp = (uintptr_t *)bp;
+
+	if (rbp == NULL)
+		asm volatile("mov %%rbp, %0" : "=g"(rbp)::"memory");
+
+	if (rbp == NULL)
 		return;
-	size_t old_rbp = bp[0];
-	size_t ret_address = bp[1];
+
 	for (;;) {
-		old_rbp = bp[0];
-		ret_address = bp[1];
-		if (!ret_address)
+		uintptr_t *old_rbp = (uintptr_t *)rbp[0];
+		uintptr_t *rip = (uintptr_t *)rbp[1];
+
+		if (rip == NULL || old_rbp == NULL ||
+			((uintptr_t)rip) < 0xffffffff80000000)
 			break;
-		kprintf("0x%p\n", ret_address);
-		if (!old_rbp)
-			break;
-		bp = (void *)old_rbp;
+
+		kprintf("0x%p\n", rip);
+
+		rbp = old_rbp;
 	}
 }

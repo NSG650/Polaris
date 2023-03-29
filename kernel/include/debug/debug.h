@@ -32,8 +32,9 @@ void kputs(char *string);
 void kprintffos(bool fos, char *fmt, ...);
 void panic_(size_t *ip, size_t *bp, char *fmt, ...);
 void syscall_puts(struct syscall_arguments *args);
-void backtrace(size_t *bp);
+void backtrace(uintptr_t *bp);
 extern bool put_to_fb;
+extern bool print_now;
 
 #define panic(...) \
 	panic_(__builtin_return_address(0), __builtin_frame_address(0), __VA_ARGS__)

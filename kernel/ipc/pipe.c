@@ -22,7 +22,7 @@ static ssize_t pipe_read(struct resource *this,
 	struct pipe *p = (struct pipe *)this;
 	size_t size_to_read = count;
 
-	if ((p->data_length) <= (p->read_ptr)) {
+	if ((p->data + p->data_length) <= (p->data + p->read_ptr)) {
 		p->read_ptr -= p->data_length;
 	}
 
@@ -31,7 +31,15 @@ static ssize_t pipe_read(struct resource *this,
 		p->read_ptr = 0;
 	}
 
+	if (p->capacity_used <= 0) {
+		spinlock_drop(this->lock);
+		return 0;
+	}
+
 	memcpy(buf, (void *)(p->data + p->read_ptr), size_to_read);
+
+	p->read_ptr += size_to_read;
+	p->capacity_used -= size_to_read;
 
 	event_trigger(&this->event, false);
 
@@ -51,7 +59,7 @@ static ssize_t pipe_write(struct resource *this,
 
 	size_t size_to_copy = count;
 
-	if ((p->data_length) <= (p->write_ptr)) {
+	if ((p->data + p->data_length) <= (p->data + p->write_ptr)) {
 		p->write_ptr -= p->data_length;
 	}
 
@@ -63,6 +71,7 @@ static ssize_t pipe_write(struct resource *this,
 	memcpy((void *)(p->data + p->write_ptr), buf, size_to_copy);
 
 	p->write_ptr += size_to_copy;
+	p->capacity_used += size_to_copy;
 
 	event_trigger(&this->event, false);
 
@@ -74,12 +83,16 @@ static ssize_t pipe_write(struct resource *this,
 struct pipe *pipe_create(void) {
 	struct pipe *p = resource_create(sizeof(struct pipe));
 	p->data = kmalloc(4096);
+	memzero(p->data, 0);
 	p->data_length = 4096;
+	p->capacity_used = 0;
+
+	p->read_ptr = 0;
+	p->write_ptr = 0;
 
 	p->res.stat.st_mode = S_IFIFO;
 	p->res.write = pipe_write;
 	p->res.read = pipe_read;
-
 	return p;
 }
 

@@ -630,6 +630,10 @@ void process_kill(struct process *proc, bool crash) {
 	// processes waiting on this process can now stop waiting
 	for (int i = 0; i < proc->waiter_processes.length; i++) {
 		struct process *waiter_process = proc->waiter_processes.data[i];
+
+		if (waiter_process == NULL)
+			continue;
+
 		waiter_process->state = PROCESS_READY_TO_RUN;
 		if (are_we_killing_ourselves && !crash) {
 			waiter_process->waitee.exit_code = proc->waitee.exit_code;

@@ -81,6 +81,7 @@ void arch_entry(void) {
 	fb.tex_y = 0;
 	fb.bg_color = 0x00124560;
 	framebuffer_init(&fb);
+	print_now = true;
 	kprintf("Hello x86_64!\n");
 #ifdef GIT_VERSION
 	kprintf("Version: %s\n", GIT_VERSION);

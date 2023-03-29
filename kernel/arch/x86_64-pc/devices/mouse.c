@@ -72,12 +72,13 @@ void mouse_handle(struct regs *reg) {
 				discard_pack = 0;
 			}
 			mouse_cycle = 0;
-			mouse_dev->available = true;
 			break;
 		}
 		default: // this should never happen
 			break;
 	}
+
+	mouse_dev->available = true;
 	event_trigger(&mouse_dev->res.event, false);
 
 	apic_eoi();
