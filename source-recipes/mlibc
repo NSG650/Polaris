@@ -1,7 +1,7 @@
 name=mlibc
 version=28373b7a0763415d2a2429105c05ac531277c386
 source_method=tarball
-tarball_url="https://github.com/Sebastian-byte/mlibc/archive/${version}.tar.gz"
+tarball_url="https://github.com/Neptune650/mlibc/archive/${version}.tar.gz"
 tarball_blake2b="5345d5045854eb6b77176ecff396b2e71f99cd77abe8224d888f760aaf437bf696dbba6cbb318c3fec6fa0ca2f8b853651731eb58d167ed807710ba17b5e5dc0"
 
 regenerate() {

@@ -1,14 +1,14 @@
+#include "terminal/backends/fb.h"
 #include "debug/debug.h"
-#include "terminal/backends/framebuffer.h"
-#include "terminal/term.h"
+#include "terminal/flanterm.h"
 #include <fb/fb.h>
 #include <klibc/mem.h>
 #include <locks/spinlock.h>
 #include <mm/slab.h>
 
 /*
- * Copyright 2021, 2022 NSG650
- * Copyright 2021, 2022 Sebastian
+ * Copyright 2021 - 2023 NSG650
+ * Copyright 2021 - 2023 Neptune
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@
 uint8_t framebuffer_initialised = 0;
 
 struct framebuffer framebuff;
-static struct term_context *ctx;
+static struct flanterm_context *ctx;
 
 void framebuffer_init(struct framebuffer *fb) {
 	framebuff.address = fb->address;
@@ -42,9 +42,9 @@ void framebuffer_init(struct framebuffer *fb) {
 	framebuff.back_address = kmalloc(framebuff.pitch * framebuff.height);
 	framebuff.bg_color = fb->bg_color;
 
-	ctx = fbterm_init(kmalloc, (void *)fb->address, fb->width, fb->height,
-					  fb->pitch, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-					  0, 0, 0, 1, 1, 0);
+	ctx = flanterm_fb_init(kmalloc, (void *)fb->address, fb->width, fb->height,
+						   fb->pitch, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+						   NULL, 0, 0, 0, 1, 1, 0);
 
 	framebuffer_clear(fb->tex_color, fb->bg_color);
 
@@ -83,15 +83,15 @@ void framebuffer_clear(uint32_t foreground, uint32_t background) {
 
 	strcat(result, "m");
 
-	term_write(ctx, result, strlen(result));
-	term_write(ctx, "\033[2J", 5);
-	term_write(ctx, "\033[H", 4);
+	flanterm_write(ctx, result, strlen(result));
+	flanterm_write(ctx, "\033[2J", 5);
+	flanterm_write(ctx, "\033[H", 4);
 }
 
 void framebuffer_putchar(char c) {
-	term_write(ctx, &c, 1);
+	flanterm_write(ctx, &c, 1);
 }
 
 void framebuffer_puts(char *string) {
-	term_write(ctx, string, strlen(string));
+	flanterm_write(ctx, string, strlen(string));
 }

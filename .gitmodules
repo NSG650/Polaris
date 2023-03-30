@@ -9,5 +9,5 @@
 	shallow = true
 [submodule "kernel/fb/terminal"]
 	path = kernel/fb/terminal
-	url = https://github.com/limine-bootloader/terminal.git
+	url = https://github.com/mintsuki/flanterm.git
 	shallow = true
