@@ -139,7 +139,8 @@ bool rtl8139_init(void) {
 
 	rtl8139_dev.io_base = pci_read_ret & (~0x3);
 
-    // Enable PCI bus mastering otherwise it won't be able to access the allocated buffer for RX
+	// Enable PCI bus mastering otherwise it won't be able to access the
+	// allocated buffer for RX
 	uint16_t pci_cmd_ret = pci_read(0, rtl8139_pci_device->bus,
 									rtl8139_pci_device->device, 0, 0x04, 2);
 	pci_write(0, rtl8139_pci_device->bus, rtl8139_pci_device->device, 0, 0x04,
