@@ -1,9 +1,8 @@
 # Polaris
-Polaris is another unix like kernel.
-
+Polaris is another UNIX-like kernel.
 
 ### Credits
-- [Lyre](https://github.com/lyre-os/lyre): Heavy inspiration for VFS and some other bits of code
+- [Lyre](https://github.com/lyre-os/lyre): Heavy inspiration for VFS and some other bits of code.
 ```
 Copyright 2022 mintsuki and contributors.
 
@@ -15,7 +14,7 @@ Redistribution and use in source and binary forms, with or without modification,
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
-- [Musl](https://musl.libc.org): Various libc functions used in the codebase
+- [Musl](https://musl.libc.org): Various libc functions used in the codebase.
 ```
 Copyright © 2005-2020 Rich Felker, et al.
 
@@ -38,7 +37,7 @@ CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
-- [Zydis](https://github.com/zyantific/zydis): For x86_64 disassembly. Precompiled library is included in `kernel/arch/x86_64-pc/debug`
+- [Zydis](https://github.com/zyantific/zydis): For x86_64 disassembly. Precompiled library is included in `kernel/arch/x86_64-pc/debug`.
 ```
 The MIT License (MIT)
 
@@ -65,9 +64,4 @@ SOFTWARE.
 ```
 
 ### Demo
-
-
 https://user-images.githubusercontent.com/51860844/221930175-4f7fedad-e020-470f-96cf-06a506d6f4a8.mp4
-
-
-
