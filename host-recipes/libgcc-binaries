@@ -1,0 +1,16 @@
+name=libgcc-binaries
+from_source=libgcc-binaries
+revision=1
+
+configure() {
+    true
+}
+
+build() {
+    true
+}
+
+install() {
+    mkdir -p ${dest_dir}${prefix}/libgcc-binaries
+    cp -rv ${source_dir}/. ${dest_dir}${prefix}/libgcc-binaries/
+}

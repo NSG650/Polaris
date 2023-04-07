@@ -2,11 +2,12 @@ name=mlibc-base
 from_source=mlibc
 revision=1
 imagedeps="meson ninja"
-hostdeps="gcc-compiler pkg-config"
-deps="mlibc-headers cxxshim frigg"
+hostdeps="gcc pkg-config libgcc-binaries"
+deps="linux-headers mlibc-headers cxxshim frigg"
 
 configure() {
-    meson \
+        LDFLAGS="-Wl,/usr/local/libgcc-binaries/libgcc-x86_64.a" \
+    meson setup \
         --cross-file ${base_dir}/build-support/cross_file.txt \
         --prefix=${prefix} \
         --libdir=lib \
@@ -15,6 +16,8 @@ configure() {
         -Ddisable_crypt_option=true \
         -Ddisable_iconv_option=true \
         -Ddisable_intl_option=true \
+        -Dlinux_kernel_headers=${sysroot_dir}${prefix}/include \
+        -Ddisable_libgcc_dependency=true \
         ${source_dir}
 }
 

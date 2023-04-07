@@ -1,7 +1,7 @@
 name=micropython
 from_source=micropython
 revision=1
-imagedeps="git python3 gcc g++"
+imagedeps="git python gcc"
 hostdeps="gcc automake pkg-config"
 deps="mlibc"
 
@@ -10,13 +10,14 @@ configure() {
 }
 
 build() {
-	cd ${source_dir}/ports/minimal
+	cp -rp "${source_dir}"/. ./
+	cd ./ports/minimal
 	make clean
 	make CC=x86_64-polaris-gcc -j${parallelism}
 }
 
 install() {
-	cd ${source_dir}/ports/minimal/build
+	cd ./ports/minimal/build
 	mkdir -p "${dest_dir}/usr/bin"
 	mv ./firmware.elf ./micropython
 	cp ./micropython "${dest_dir}/usr/bin"

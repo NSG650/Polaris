@@ -1,0 +1,20 @@
+name=linux-headers
+from_source=linux
+revision=1
+imagedeps="gcc rsync"
+
+configure() {
+    cp -rp "${source_dir}"/. ./
+}
+
+build() {
+    make ARCH=x86_64 headers_install
+    find usr/include -type f ! -name *.h -delete
+    # remove this file, as mlibc will override this file with one suited to mlibc
+    rm usr/include/linux/libc-compat.h
+}
+
+install() {
+    mkdir -p "${dest_dir}${prefix}"
+    cp -r usr/include "${dest_dir}${prefix}"/
+}

@@ -1,0 +1,33 @@
+name=libstdc++
+from_source=gcc-host
+revision=1
+hostdeps="autoconf automake libtool pkg-config"
+imagedeps="gcc"
+hostdeps="gcc binutils"
+deps="mlibc-base libgcc"
+
+configure() {
+    # Hack to continue gcc build
+    cp -rp "${base_dir}"/host-builds/gcc/. ./
+}
+
+build() {
+    make -j${parallelism} all-target-libstdc++-v3
+}
+
+install() {
+    mkdir tmp_libstdc++_dir
+
+    DESTDIR="$(realpath tmp_libstdc++_dir)" make install-strip-target-libstdc++-v3
+
+    mkdir -p "${dest_dir}${prefix}"
+
+    cp -r tmp_libstdc++_dir/usr/local/share "${dest_dir}${prefix}"/
+    cp -r tmp_libstdc++_dir/usr/local/x86_64-polaris/* "${dest_dir}${prefix}"/
+    # Remove static libraries
+    rm -rf "${dest_dir}${prefix}"/lib/*.a
+
+    # Copy libstdc++ and headers into GCC's tree else it will complain.
+    mkdir -p "${base_dir}"/host-pkgs/gcc/usr/local/x86_64-polaris
+    cp -r tmp_libstdc++_dir/usr/local/x86_64-polaris/* "${base_dir}"/host-pkgs/gcc/usr/local/x86_64-polaris/
+}

@@ -1,9 +1,7 @@
 name=meme
 version=4.0
-source_method=git
-clone_url="https://github.com/nsg650/MeME-polaris"
-tag=master
-commit="f62206c7e2306538ca131b7a02008332fa0345d0"
+tarball_url="https://github.com/NSG650/MeME-polaris/archive/f62206c7e2306538ca131b7a02008332fa0345d0.tar.gz"
+tarball_blake2b="da024d6c6288d4af1003c9f01b4fa5ba2e520b053000a26a9a7032fbb06be2afb79317af884e45e7947c76ea7513ffa362e92335e969562e6d389b117ba1458a"
 
 regenerate() {
     true

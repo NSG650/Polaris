@@ -1,6 +1,5 @@
 name=lua
 version=5.4.4
-source_method=tarball
 tarball_url="https://www.lua.org/ftp/lua-5.4.4.tar.gz"
 tarball_blake2b="8747ef5c83bd4c54b73eeaad6991ab5fccc54ee000973afd9cf3367b8945f03c54e843ec88c48043003cd9d3b42281c593cb485b7165add2744cfea06d8b7668"
 

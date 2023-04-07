@@ -9,7 +9,7 @@ configure() {
 }
 
 build() {
-	cd ${source_dir}
+	cp -rp "${source_dir}"/. ./
 	sed -i "9s/.*/CC= x86_64-polaris-gcc -std=gnu99/" src/Makefile
 	sed -i "14s/.*/AR= x86_64-polaris-ar rcu/" src/Makefile
 	sed -i "15s/.*/RANLIB= x86_64-polaris-ranlib/" src/Makefile
@@ -17,7 +17,7 @@ build() {
 }
 
 install() {
-	cd ${source_dir}/src
+	cd ./src
 	mkdir -p "${dest_dir}/usr/bin"
 	cp ./lua "${dest_dir}/usr/bin"
 }

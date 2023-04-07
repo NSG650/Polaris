@@ -9,12 +9,13 @@ configure() {
 }
 
 build() {
-	cd ${source_dir}/doomgeneric
+	cp -rp "${source_dir}"/doomgeneric ./
+	cd doomgeneric
 	make clean
 	make -j${parallelism}
 }
 
 install() {
-	cd ${source_dir}/doomgeneric
+	cd doomgeneric
 	cp ./doomgeneric "${dest_dir}/usr/bin"
 }

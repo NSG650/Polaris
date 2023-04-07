@@ -2,7 +2,7 @@ name=libxcrypt
 from_source=libxcrypt
 revision=1
 hostdeps="gcc automake autoconf libtool pkg-config"
-deps="mlibc-base"
+deps="mlibc-base libgcc libstdc++"
 
 configure() {
     ${source_dir}/configure \

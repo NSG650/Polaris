@@ -9,14 +9,15 @@ configure() {
 }
 
 build() {
-	cd ${source_dir}/src
+	cp -rp "${source_dir}"/. ./
+	cd ./src
 	make -j${parallelism}
-	cd ${source_dir}/gears
+	cd ../gears
 	make -j${parallelism}
 }
 
 install() {
-	cd ${source_dir}/gears
+	cd ./gears
 	mkdir -p "${dest_dir}/usr/bin"
 	cp ./gears "${dest_dir}/usr/bin"
 }

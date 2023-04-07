@@ -9,13 +9,12 @@ configure() {
 }
 
 build() {
-	cd ${source_dir}
+	cp -rp "${source_dir}"/. ./
 	sed -i "1s/.*/CC = x86_64-polaris-gcc/" Makefile
 	make -j${parallelism}
 }
 
 install() {
-	cd ${source_dir}
 	mkdir -p "${dest_dir}/usr/bin"
 	cp ./hello "${dest_dir}/usr/bin"
 }

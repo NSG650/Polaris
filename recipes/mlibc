@@ -1,7 +1,7 @@
 name=mlibc
 from_source=mlibc
 revision=1
-deps="mlibc-base libintl libiconv libxcrypt"
+deps="mlibc-base libgcc libstdc++ libintl libiconv libxcrypt"
 
 configure() {
     true

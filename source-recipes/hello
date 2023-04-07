@@ -1,9 +1,7 @@
 name=hello
 version=1.2
-source_method=git
-clone_url="https://github.com/lowlevelmemes/hello"
-tag=v1.2
-commit="7af30271e9c22de981e95326cb7bad514b3bd1bf"
+tarball_url="https://github.com/lowlevelmemes/hello/archive/refs/tags/v${version}.tar.gz"
+tarball_blake2b="54597f43a04eda7518943c258c5e10b2519d121fdea69f622f2c468973bc267360cbe7b394c5ca1f13bc7e21a3a2a205514e97fd1a1c78717ac419ba2fb04204"
 
 regenerate() {
 	true

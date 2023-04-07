@@ -1,9 +1,7 @@
 name=micropython
 version=1.19.1
-source_method=git
-clone_url="https://github.com/NSG650/micropython-polaris"
-tag=master
-commit="6756f3974cf8c004844a53318a9d204c0aaeef73"
+tarball_url="https://github.com/NSG650/micropython-polaris/archive/6756f3974cf8c004844a53318a9d204c0aaeef73.tar.gz"
+tarball_blake2b="85758510d1ce654a5bf63234968889ff382a5d5236de6da7b4822db2010eacfacc780b9ca109ad3d4dbfb71f6440ccaf945d96e7f05d3cab20c92ca1cbd54ed5"
 
 regenerate() {
 	true

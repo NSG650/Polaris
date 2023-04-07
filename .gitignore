@@ -112,7 +112,7 @@ GitHub.sublime-settings
 
 *.iso
 *.tar.gz
-
+*.tar
 
 # MacOS .DS_Store
 *.DS_Store
@@ -124,6 +124,7 @@ GitHub.sublime-settings
 /host-pkgs
 /pkgs
 /sources
+/.jinx-cache
 
 root/bin 
 root/usr

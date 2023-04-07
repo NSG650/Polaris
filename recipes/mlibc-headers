@@ -3,16 +3,17 @@ from_source=mlibc
 revision=1
 hostdeps="pkg-config"
 imagedeps="meson ninja"
-deps="cxxshim frigg"
+deps="linux-headers cxxshim frigg"
 
 configure() {
-    meson \
+    meson setup \
         --cross-file ${base_dir}/build-support/cross_file.txt \
         --prefix=${prefix} \
         -Dheaders_only=true \
         -Ddisable_crypt_option=true \
         -Ddisable_iconv_option=true \
         -Ddisable_intl_option=true \
+        -Dlinux_kernel_headers=${sysroot_dir}${prefix}/include \
         ${source_dir}
 }
 

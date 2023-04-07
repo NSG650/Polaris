@@ -1,3 +1,3 @@
 .PHONY: all
-all: 
-	tar -zcf ../ramdisk.tar.gz root bin usr etc
+all:
+	tar -cf ../ramdisk.tar root bin usr etc

@@ -9,12 +9,13 @@ configure() {
 }
 
 build() {
-	cd ${source_dir}/polaris
+	cp -rp "${source_dir}"/. ./
+	cd polaris
 	make -j${parallelism}
 }
 
 install() {
-	cd ${source_dir}/polaris
+	cd polaris
 	mkdir -p "${dest_dir}/usr/bin"
 	cp ./meme "${dest_dir}/usr/bin"
 }

@@ -1,11 +1,10 @@
 name=pkg-config
 version=1.9.3
-source_method=tarball
 tarball_url="https://github.com/pkgconf/pkgconf/archive/refs/tags/pkgconf-${version}.tar.gz"
 tarball_blake2b="209c61ed2b9e86bb85aee089dca3715e6183b914728656d868f1c6f14999644df1ff48aa31d8deccb336d8cba872dcabaac239aae3b7dbdc312be82d2ada14ed"
 hostdeps="autoconf automake libtool"
 
 regenerate() {
     sed -i 's/2.71/2.69/g' ${source_dir}/configure.ac
-    autoreconf -fvi
+    libtoolize -cfvi && autoreconf -fvi
 }

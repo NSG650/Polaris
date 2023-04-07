@@ -1,21 +1,24 @@
 name=binutils
-version=2.39
-source_method=tarball
+version=2.40
 tarball_url="https://ftp.gnu.org/gnu/binutils/binutils-${version}.tar.xz"
-tarball_blake2b="ac6a5296c6586d53eaadcbffc5c399a6d79edf72450b9bb8b3525ce525129cef3d2eb90c85ef3bb3270b5a03b0e1ffb8f0b705f028158726f9777ebb8685066f"
+tarball_blake2b="8d799f7c595f878b9af5b17a490021dd8b8300ac2fe0ed8574c012929d22d2d0493e003a3e631a9436e8e712da801779b777c566167fe42b0bde119ffa5ad1c2"
 hostdeps="autoconf automake libtool pkg-config"
 
 regenerate() {
-    autoreconf -fvi -I./config && libtoolize -cfvi
-    ( cd libiberty && autoreconf -fvi -I./config -I../config && libtoolize -cfvi )
-    ( cd intl && autoreconf -fvi -I../config && libtoolize -cfvi )
-    ( cd zlib && autoreconf -fvi -I../config && libtoolize -cfvi )
-    ( cd bfd && autoreconf -fvi -I../config && libtoolize -cfvi )
-    ( cd opcodes && autoreconf -fvi -I../config && libtoolize -cfvi )
-    ( cd gas && autoreconf -fvi -I../config && libtoolize -cfvi )
-    ( cd gold && autoreconf -fvi -I../config && libtoolize -cfvi )
-    ( cd libctf && autoreconf -fvi -I../config && libtoolize -cfvi )
-    ( cd binutils && autoreconf -fvi -I../config && libtoolize -cfvi )
-    ( cd gprof && autoreconf -fvi -I../config && libtoolize -cfvi )
-    ( cd ld && autoreconf -fvi -I../config && libtoolize -cfvi )
+    ( cd libiberty && libtoolize -cfvi && autoreconf -fvi -I$(realpath ./config) -I$(realpath ../config) )
+    ( cd intl && libtoolize -cfvi && autoreconf -fvi -I$(realpath ../config) )
+    ( cd zlib/contrib/minizip && libtoolize -cfvi && autoreconf -fvi -I$(realpath ../../../config) )
+    ( cd zlib && libtoolize -cfvi && autoreconf -fvi -I$(realpath ../config) )
+    ( cd bfd && libtoolize -cfvi && autoreconf -fvi -I$(realpath ../config) )
+    ( cd opcodes && libtoolize -cfvi && autoreconf -fvi -I$(realpath ../config) )
+    ( cd gas && libtoolize -cfvi && autoreconf -fvi -I$(realpath ../config) )
+    ( cd gold && libtoolize -cfvi && autoreconf -fvi -I$(realpath ../config) )
+    ( cd libctf && libtoolize -cfvi && autoreconf -fvi -I$(realpath ../config) )
+    ( cd binutils && libtoolize -cfvi && autoreconf -fvi -I$(realpath ../config) )
+    ( cd libsframe && libtoolize -cfvi && autoreconf -fvi -I$(realpath ../config) )
+    ( cd gprof && libtoolize -cfvi && autoreconf -fvi -I$(realpath ../config) )
+    ( cd gprofng/libcollector && libtoolize -cfvi && autoreconf -fvi -I$(realpath ../../config) )
+    ( cd gprofng && libtoolize -cfvi && autoreconf -fvi -I$(realpath ../config) )
+    ( cd ld && libtoolize -cfvi && autoreconf -fvi -I$(realpath ../config) )
+    libtoolize -cfvi && autoreconf -fvi -I$(realpath ./config)
 }
