@@ -1,7 +1,7 @@
 name=mlibc
-version=57faa38f545c5828597dc5210143295bee95f24e
+version=0c5bf857c4025e31086b1c6eb5c287d5f14d00a9
 tarball_url="https://github.com/Neptune650/mlibc/archive/${version}.tar.gz"
-tarball_blake2b="6f24cd13cc81a0d83cb07a30f92fc558c54e2eaa99bf338aa563bcde6cc2117dfa584b6c261c710f187bb0c4a4b7b588e70199b96b0641cb79c60c7531b9d453"
+tarball_blake2b="bcb1a44da913938b4614e640cdd1be085ef64880d573fce044a0efd7a3c7fc7bbb8d487d30d8b0b1039d9eef728c7046950fd7245bbb7f685da5a3ea3884dcfa"
 
 regenerate() {
     true
