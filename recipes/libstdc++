@@ -1,21 +1,24 @@
 name=libstdc++
 from_source=gcc-host
 revision=1
-hostdeps="autoconf automake libtool pkg-config"
+hostdeps="gcc autoconf automake libtool pkg-config"
 imagedeps="gcc"
-hostdeps="gcc binutils"
 deps="mlibc-base libgcc"
 
 configure() {
-    # Hack to continue gcc build
-    cp -rp "${base_dir}"/host-builds/gcc/. ./
+    true
 }
 
 build() {
+    cd "${base_dir}"/host-builds/gcc/build
+
     make -j${parallelism} all-target-libstdc++-v3
 }
 
 install() {
+    cd "${base_dir}"/host-builds/gcc/build
+
+    rm -rf tmp_libstdc++_dir
     mkdir tmp_libstdc++_dir
 
     DESTDIR="$(realpath tmp_libstdc++_dir)" make install-strip-target-libstdc++-v3

@@ -7,14 +7,18 @@ hostrundeps="binutils"
 deps="mlibc-headers"
 
 configure() {
+    cp -rp "${source_dir}"/. ./
+
+    mkdir build && cd build
+
         CXXFLAGS_FOR_TARGET="$CFLAGS" \
         CFLAGS_FOR_TARGET="$CFLAGS" \
-    "${source_dir}"/configure \
+    ../configure \
         --prefix="${prefix}" \
         --target=x86_64-polaris \
         --with-sysroot="${sysroot_dir}" \
         --disable-nls \
-        --enable-languages=c,c++ \
+        --enable-languages=c,c++,lto \
         --disable-multilib \
         --enable-initfini-array \
         --enable-shared \
@@ -22,9 +26,11 @@ configure() {
 }
 
 build() {
+    cd build
     make -j${parallelism} all-gcc
 }
 
 install() {
+    cd build
     DESTDIR="${dest_dir}" make install-gcc
 }

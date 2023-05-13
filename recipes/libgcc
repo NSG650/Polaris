@@ -1,21 +1,24 @@
 name=libgcc
 from_source=gcc-host
 revision=1
-hostdeps="autoconf automake libtool pkg-config"
+hostdeps="gcc autoconf automake libtool pkg-config"
 imagedeps="gcc"
-hostdeps="gcc binutils"
 deps="mlibc-base"
 
 configure() {
-    # Hack to continue gcc build
-    cp -rp "${base_dir}"/host-builds/gcc/. ./
+    true
 }
 
 build() {
+    cd "${base_dir}"/host-builds/gcc/build
+
     make -j${parallelism} all-target-libgcc
 }
 
 install() {
+    cd "${base_dir}"/host-builds/gcc/build
+
+    rm -rf tmp_libgcc_dir
     mkdir tmp_libgcc_dir
 
     DESTDIR="$(realpath tmp_libgcc_dir)" make install-strip-target-libgcc
@@ -25,13 +28,13 @@ install() {
     cp -r tmp_libgcc_dir/usr/local/lib "${dest_dir}${prefix}"/
     cp -r tmp_libgcc_dir/usr/local/x86_64-polaris/* "${dest_dir}${prefix}"/
 
-    rm "${dest_dir}${prefix}"/lib/gcc/x86_64-polaris/12.2.0/crti.o
-    rm "${dest_dir}${prefix}"/lib/gcc/x86_64-polaris/12.2.0/crtn.o
+    rm "${dest_dir}${prefix}"/lib/gcc/x86_64-polaris/13.1.0/crti.o
+    rm "${dest_dir}${prefix}"/lib/gcc/x86_64-polaris/13.1.0/crtn.o
 
     # Copy libgcc into GCC's tree else it will complain.
     mkdir -p "${base_dir}"/host-pkgs/gcc/usr/local/lib
     cp -r tmp_libgcc_dir/usr/local/lib/* "${base_dir}"/host-pkgs/gcc/usr/local/lib/
 
-    rm "${base_dir}"/host-pkgs/gcc/usr/local/lib/gcc/x86_64-polaris/12.2.0/crti.o
-    rm "${base_dir}"/host-pkgs/gcc/usr/local/lib/gcc/x86_64-polaris/12.2.0/crtn.o
+    rm "${base_dir}"/host-pkgs/gcc/usr/local/lib/gcc/x86_64-polaris/13.1.0/crti.o
+    rm "${base_dir}"/host-pkgs/gcc/usr/local/lib/gcc/x86_64-polaris/13.1.0/crtn.o
 }
