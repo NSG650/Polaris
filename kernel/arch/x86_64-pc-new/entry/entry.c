@@ -15,30 +15,19 @@
  * limitations under the License.
  */
 
-#include <asm/asm.h>
-#include <locks/spinlock.h>
+#include <debug/debug.h>
+#include <limine.h>
+#include <serial/serial.h>
 
-bool spinlock_acquire(lock_t spin) {
-	return !__atomic_test_and_set(&spin, __ATOMIC_ACQUIRE);
-}
+extern bool print_now;
 
-void spinlock_acquire_or_wait(lock_t spin) {
-	cli();
-retry_lock:
-	if (spinlock_acquire(spin)) {
-		return;
-	}
+void arch_entry(void) {
+	serial_init();
+	print_now = true;
+	kprintf("Hello x86_64 yet again!\n");
 
-	// Do a rough wait until the lock is free for cache-locality
 	for (;;) {
-		if (__atomic_load_n(&spin, __ATOMIC_RELAXED) == 0) {
-			goto retry_lock;
-		}
-		pause();
+		cli();
+		halt();
 	}
-	sti();
-}
-
-void spinlock_drop(lock_t spin) {
-	__atomic_clear(&spin, __ATOMIC_RELEASE);
 }

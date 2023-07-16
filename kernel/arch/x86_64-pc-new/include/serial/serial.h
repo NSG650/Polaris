@@ -1,3 +1,6 @@
+#ifndef SERIAL_H
+#define SERIAL_H
+
 /*
  * Copyright 2021 - 2023 NSG650
  * Copyright 2021 - 2023 Neptune
@@ -15,30 +18,10 @@
  * limitations under the License.
  */
 
-#include <asm/asm.h>
-#include <locks/spinlock.h>
+#define COM1 0x3F8
 
-bool spinlock_acquire(lock_t spin) {
-	return !__atomic_test_and_set(&spin, __ATOMIC_ACQUIRE);
-}
+void serial_init(void);
+void serial_putchar(char ch);
+void serial_puts(char *str);
 
-void spinlock_acquire_or_wait(lock_t spin) {
-	cli();
-retry_lock:
-	if (spinlock_acquire(spin)) {
-		return;
-	}
-
-	// Do a rough wait until the lock is free for cache-locality
-	for (;;) {
-		if (__atomic_load_n(&spin, __ATOMIC_RELAXED) == 0) {
-			goto retry_lock;
-		}
-		pause();
-	}
-	sti();
-}
-
-void spinlock_drop(lock_t spin) {
-	__atomic_clear(&spin, __ATOMIC_RELEASE);
-}
+#endif

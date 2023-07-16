@@ -1,5 +1,5 @@
 CONFIG_ARCH ?= x86_64
-CONFIG_TARGET ?= pc
+CONFIG_TARGET ?= pc-new
 
 NAME := polaris
 ISO_IMAGE := $(NAME).iso

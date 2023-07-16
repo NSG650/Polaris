@@ -17,15 +17,17 @@
 
 #include <asm/asm.h>
 #include <debug/debug.h>
-#include <fb/fb.h>
 #include <klibc/mem.h>
 #include <locks/spinlock.h>
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
+#ifdef SMP_READY
+#include <fb/fb.h>
 #include <sys/halt.h>
 #include <sys/prcb.h>
 #include <sys/timer.h>
+#endif
 
 lock_t write_lock;
 bool in_panic = false;
@@ -37,16 +39,20 @@ void kputchar(char c) {
 	if (c == '\n')
 		kputchar('\r');
 	kputchar_(c);
+#ifdef SMP_READY
 	if (put_to_fb)
 		framebuffer_putchar(c);
+#endif
 	spinlock_drop(write_lock);
 }
 
 void kputs(char *string) {
 	spinlock_acquire_or_wait(write_lock);
 	kputs_(string);
+#ifdef SMP_READY
 	if (put_to_fb)
 		framebuffer_puts(string);
+#endif
 	spinlock_drop(write_lock);
 }
 
@@ -60,7 +66,7 @@ void syscall_puts(struct syscall_arguments *args) {
 static void kprintf_(char *fmt, va_list args) {
 	if (!print_now)
 		return;
-
+#ifdef SMP_READY
 	if (in_panic) {
 		kputs("*** PANIC:\t");
 	} else {
@@ -74,6 +80,7 @@ static void kprintf_(char *fmt, va_list args) {
 		kputs(string);
 		kputs("] ");
 	}
+#endif
 	for (;;) {
 		while (*fmt && *fmt != '%')
 			kputchar(*fmt++);
@@ -150,16 +157,22 @@ void kprintffos(bool fos, char *fmt, ...) {
 void panic_(size_t *ip, size_t *bp, char *fmt, ...) {
 	cli();
 	put_to_fb = 1;
+#ifdef SMP_READY
 	extern bool is_smp;
+#endif
 	if (in_panic) {
+#ifdef SMP_READY
 		halt_other_cpus();
 		halt_current_cpu();
+#endif
 	}
 	in_panic = true;
+#ifdef SMP_READY
 	if (is_smp)
 		kprintf("Panic called on CPU%d\n",
 				prcb_return_current_cpu()->cpu_number);
 	halt_other_cpus();
+#endif
 	va_list args;
 	va_start(args, fmt);
 	kprintf_(fmt, args);
@@ -167,6 +180,8 @@ void panic_(size_t *ip, size_t *bp, char *fmt, ...) {
 	kprintf("Crashed at 0x%p\n", ip);
 	kprintf("Stack trace:\n");
 	backtrace(bp);
+#ifdef SMP_READY
 	halt_current_cpu();
+#endif
 	__builtin_unreachable();
 }
