@@ -180,8 +180,6 @@ void panic_(size_t *ip, size_t *bp, char *fmt, ...) {
 	kprintf("Crashed at 0x%p\n", ip);
 	kprintf("Stack trace:\n");
 	backtrace(bp);
-#ifdef SMP_READY
 	halt_current_cpu();
-#endif
 	__builtin_unreachable();
 }

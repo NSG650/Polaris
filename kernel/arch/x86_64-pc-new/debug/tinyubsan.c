@@ -1,3 +1,5 @@
+// Thanks Abb1x!
+
 #include <debug/debug.h>
 #include <stdint.h>
 

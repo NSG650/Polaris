@@ -19,6 +19,9 @@
 #include <debug/debug.h>
 #include <limine.h>
 #include <serial/serial.h>
+#include <sys/gdt.h>
+#include <sys/idt.h>
+#include <sys/isr.h>
 
 extern bool print_now;
 
@@ -41,7 +44,10 @@ void arch_entry(void) {
 
 	kprintf("Got command line arguments as %s\n", kernel_file->cmdline);
 
-	panic("End of kernel\n");
+	gdt_init();
+	isr_install();
+
+	asm volatile("int 3\n");
 
 	for (;;) {
 		cli();
