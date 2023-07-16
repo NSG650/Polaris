@@ -15,16 +15,33 @@
  * limitations under the License.
  */
 
+#include <asm/asm.h>
 #include <debug/debug.h>
 #include <limine.h>
 #include <serial/serial.h>
 
 extern bool print_now;
 
+volatile struct limine_stack_size_request stack_size_request = {
+	.id = LIMINE_STACK_SIZE_REQUEST,
+	.revision = 0,
+	.stack_size = 32768,
+};
+
+static volatile struct limine_kernel_file_request limine_kernel_file_request = {
+	.id = LIMINE_KERNEL_FILE_REQUEST, .revision = 0};
+
 void arch_entry(void) {
 	serial_init();
 	print_now = true;
 	kprintf("Hello x86_64 yet again!\n");
+
+	struct limine_file *kernel_file =
+		limine_kernel_file_request.response->kernel_file;
+
+	kprintf("Got command line arguments as %s\n", kernel_file->cmdline);
+
+	panic("End of kernel\n");
 
 	for (;;) {
 		cli();

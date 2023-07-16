@@ -228,6 +228,33 @@ char *ultoa(uint64_t value, char *str, int base) {
 	return rc;
 }
 
+int64_t atol(const char *string) {
+	long num = 0;
+	int i = 0, sign = 1;
+
+	// skip white space characters
+	while (string[i] == ' ' || string[i] == '\n' || string[i] == '\t') {
+		i++;
+	}
+
+	// note sign of the number
+	if (string[i] == '+' || string[i] == '-') {
+		if (string[i] == '-') {
+			sign = -1;
+		}
+		i++;
+	}
+
+	// run till the end of the string is reached, or the
+	// current character is non-numeric
+	while (string[i] && (string[i] >= '0' && string[i] <= '9')) {
+		num = num * 10 + (string[i] - '0');
+		i++;
+	}
+
+	return sign * num;
+}
+
 size_t lfind(const char *str, const char accept) {
 	size_t i = 0;
 	while (str[i] != accept) {

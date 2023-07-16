@@ -37,6 +37,7 @@ char *strcat(char *restrict dest, const char *restrict src);
 size_t strlen(const char *s);
 char *ltoa(int64_t value, char *str, int base);
 char *ultoa(uint64_t value, char *str, int base);
+int64_t atol(const char *string);
 char *strtok_r(char *restrict s, const char *restrict sep, char **restrict p);
 size_t strspn(const char *s, const char *c);
 char *strpbrk(const char *s, const char *b);
