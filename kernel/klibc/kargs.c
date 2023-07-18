@@ -1,4 +1,5 @@
 #include <klibc/kargs.h>
+#include <mm/slab.h>
 
 struct kernel_args kernel_arguments = {0};
 

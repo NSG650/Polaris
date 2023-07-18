@@ -2,22 +2,24 @@
 #define SLAB_H
 
 #include <stddef.h>
-#include <stdint.h>
 
-static void *kcalloc(size_t size, size_t size_of_datatype) {
-	(void)size;
-	(void)size_of_datatype;
-	return NULL;
+void slab_init(void);
+void *slab_alloc(size_t size);
+void *slab_realloc(void *addr, size_t size);
+void slab_free(void *addr);
+
+static inline void *kmalloc(size_t size) {
+	return slab_alloc(size);
 }
 
-static void *kmalloc(size_t size) {
-	(void)size;
-	return NULL;
+static inline void *krealloc(void *addr, size_t size) {
+	return slab_realloc(addr, size);
 }
 
-static void kfree(void *ptr) {
-	(void)ptr;
-	return;
+static inline void kfree(void *addr) {
+	return slab_free(addr);
 }
+
+#define kcalloc(A, B) kmalloc(A * sizeof(B))
 
 #endif

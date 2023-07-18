@@ -39,20 +39,20 @@ void kputchar(char c) {
 	if (c == '\n')
 		kputchar('\r');
 	kputchar_(c);
-#ifdef SMP_READY
+
 	if (put_to_fb)
 		framebuffer_putchar(c);
-#endif
+
 	spinlock_drop(write_lock);
 }
 
 void kputs(char *string) {
 	spinlock_acquire_or_wait(write_lock);
 	kputs_(string);
-#ifdef SMP_READY
+
 	if (put_to_fb)
 		framebuffer_puts(string);
-#endif
+
 	spinlock_drop(write_lock);
 }
 
