@@ -83,7 +83,7 @@ static ssize_t pipe_write(struct resource *this,
 struct pipe *pipe_create(void) {
 	struct pipe *p = resource_create(sizeof(struct pipe));
 	p->data = kmalloc(4096);
-	memzero(p->data, 0);
+	memzero(p->data, 4096);
 	p->data_length = 4096;
 	p->capacity_used = 0;
 
