@@ -1,9 +1,5 @@
-#ifndef SPINLOCK_H
-#define SPINLOCK_H
-
 /*
- * Copyright 2021 - 2023 NSG650
- * Copyright 2021 - 2023 Neptune
+ * Copyright 2021 - 2023 Sebastian
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +14,31 @@
  * limitations under the License.
  */
 
-#include <stdbool.h>
+#include <fw/madt.h>
+#include <io/ports.h>
+#include <sys/pic.h>
 
-typedef bool lock_t;
+static void pic_disable(void) {
+	outb(0xA1, 0xFF);
+	outb(0x21, 0xFF);
+}
 
-bool spinlock_acquire(lock_t spin);
-void spinlock_acquire_or_wait(lock_t spin);
-void spinlock_drop(lock_t spin);
+void pic_init(void) {
+	// There isn't any PIC
+	if (!(madt->flags & 1)) {
+		return;
+	}
+	// Remap the PIC
+	outb(0x20, 0x11);
+	outb(0xA0, 0x11);
+	outb(0x21, 0x20);
+	outb(0xA1, 0x28);
+	outb(0x21, 4);
+	outb(0xA1, 2);
+	outb(0x21, 1);
+	outb(0xA1, 1);
+	outb(0x21, 0);
+	outb(0xA1, 0);
 
-#endif
+	pic_disable();
+}

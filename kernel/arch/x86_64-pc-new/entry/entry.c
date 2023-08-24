@@ -16,13 +16,16 @@
  */
 
 #include <asm/asm.h>
+#include <cpu/smp.h>
 #include <debug/debug.h>
 #include <fb/fb.h>
+#include <fw/acpi.h>
 #include <klibc/kargs.h>
 #include <limine.h>
 #include <mm/pmm.h>
 #include <mm/slab.h>
 #include <serial/serial.h>
+#include <sys/apic.h>
 #include <sys/gdt.h>
 #include <sys/idt.h>
 #include <sys/isr.h>
@@ -53,7 +56,14 @@ static volatile struct limine_5_level_paging_request five_level_paging_request =
 static volatile struct limine_framebuffer_request framebuffer_request = {
 	.id = LIMINE_FRAMEBUFFER_REQUEST, .revision = 0};
 
+static volatile struct limine_rsdp_request rsdp_request = {
+	.id = LIMINE_RSDP_REQUEST, .revision = 0};
+
+static volatile struct limine_smp_request smp_request = {
+	.id = LIMINE_SMP_REQUEST, .revision = 0, .response = NULL, .flags = 1};
+
 void arch_entry(void) {
+	cli();
 	struct limine_memmap_entry **memmap = memmap_request.response->entries;
 	size_t memmap_entries = memmap_request.response->entry_count;
 	pmm_init(memmap, memmap_entries);
@@ -98,6 +108,10 @@ void arch_entry(void) {
 	gdt_init();
 	isr_install();
 
+	acpi_init(rsdp_request.response->address);
+	apic_init();
+
+	smp_init(smp_request.response);
 	for (;;) {
 		cli();
 		halt();

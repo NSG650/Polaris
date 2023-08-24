@@ -44,21 +44,13 @@ static inline void transmit_data(uint8_t value) {
 }
 
 void serial_putchar(char ch) {
-	spinlock_acquire_or_wait(serial_lock);
-
 	transmit_data(ch);
-
-	spinlock_drop(serial_lock);
 }
 
 void serial_puts(char *str) {
-	spinlock_acquire_or_wait(serial_lock);
-
 	while (*str) {
 		if (*str == '\n')
 			transmit_data('\r');
 		transmit_data(*str++);
 	}
-
-	spinlock_drop(serial_lock);
 }

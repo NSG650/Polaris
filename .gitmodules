@@ -11,3 +11,6 @@
 	path = kernel/fb/terminal
 	url = https://github.com/mintsuki/flanterm.git
 	shallow = true
+[submodule "kernel/arch/x86_64-pc-new/fw/lai"]
+	path = kernel/arch/x86_64-pc-new/fw/lai
+	url = https://github.com/managarm/lai

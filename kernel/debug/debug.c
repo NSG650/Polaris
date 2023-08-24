@@ -17,43 +17,37 @@
 
 #include <asm/asm.h>
 #include <debug/debug.h>
+#include <fb/fb.h>
 #include <klibc/mem.h>
 #include <locks/spinlock.h>
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
-#ifdef SMP_READY
-#include <fb/fb.h>
 #include <sys/halt.h>
+#ifdef SMP_READY
 #include <sys/prcb.h>
 #include <sys/timer.h>
 #endif
 
-lock_t write_lock;
+static lock_t write_lock = 0;
 bool in_panic = false;
 bool put_to_fb = true;
 bool print_now = false;
 
 void kputchar(char c) {
-	spinlock_acquire_or_wait(write_lock);
 	if (c == '\n')
 		kputchar('\r');
 	kputchar_(c);
 
 	if (put_to_fb)
 		framebuffer_putchar(c);
-
-	spinlock_drop(write_lock);
 }
 
 void kputs(char *string) {
-	spinlock_acquire_or_wait(write_lock);
 	kputs_(string);
 
 	if (put_to_fb)
 		framebuffer_puts(string);
-
-	spinlock_drop(write_lock);
 }
 
 void syscall_puts(struct syscall_arguments *args) {
@@ -64,6 +58,7 @@ void syscall_puts(struct syscall_arguments *args) {
 }
 
 static void kprintf_(char *fmt, va_list args) {
+	spinlock_acquire_or_wait(write_lock);
 	if (!print_now)
 		return;
 #ifdef SMP_READY
@@ -141,17 +136,16 @@ static void kprintf_(char *fmt, va_list args) {
 				break;
 		}
 	}
+	spinlock_drop(write_lock);
 }
 
 void kprintffos(bool fos, char *fmt, ...) {
-	spinlock_acquire_or_wait(write_lock);
 	if (!fos)
 		put_to_fb = 0;
 	va_list args;
 	va_start(args, fmt);
 	kprintf_(fmt, args);
 	va_end(args);
-	spinlock_drop(write_lock);
 }
 
 void panic_(size_t *ip, size_t *bp, char *fmt, ...) {

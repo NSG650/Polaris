@@ -1,9 +1,8 @@
-#ifndef SPINLOCK_H
-#define SPINLOCK_H
+#ifndef APIC_H
+#define APIC_H
 
 /*
- * Copyright 2021 - 2023 NSG650
- * Copyright 2021 - 2023 Neptune
+ * Copyright 2021 - 2023 Sebastian
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +17,12 @@
  * limitations under the License.
  */
 
-#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
-typedef bool lock_t;
-
-bool spinlock_acquire(lock_t spin);
-void spinlock_acquire_or_wait(lock_t spin);
-void spinlock_drop(lock_t spin);
+void apic_eoi(void);
+void apic_init(void);
+void ioapic_redirect_irq(uint32_t irq, uint8_t vect);
+void lapic_init(uint8_t processor_id);
 
 #endif

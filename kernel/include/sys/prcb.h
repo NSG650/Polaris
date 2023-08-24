@@ -17,6 +17,10 @@ struct prcb {
 	uint64_t thread_index;
 #if defined(__x86_64__)
 	struct tss cpu_tss;
+	uint32_t lapic_id;
+	size_t fpu_storage_size;
+	void (*fpu_save)(void *);
+	void (*fpu_restore)(void *);
 #endif
 };
 

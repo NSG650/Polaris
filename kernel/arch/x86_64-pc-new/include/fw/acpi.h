@@ -1,9 +1,10 @@
-#ifndef SPINLOCK_H
-#define SPINLOCK_H
+#ifndef ACPI_H
+#define ACPI_H
 
 /*
- * Copyright 2021 - 2023 NSG650
- * Copyright 2021 - 2023 Neptune
+ * Copyright 2021, 2022, 2023 Misha
+ * Copyright 2021, 2022, 2023 NSG650
+ * Copyright 2021, 2022 ,2023 Sebastian
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +19,16 @@
  * limitations under the License.
  */
 
-#include <stdbool.h>
+#include <acpispec/tables.h>
+#include <stddef.h>
+#include <stdint.h>
 
-typedef bool lock_t;
+struct rsdt {
+	acpi_header_t header;
+	char ptrs_start[];
+} __attribute__((packed));
 
-bool spinlock_acquire(lock_t spin);
-void spinlock_acquire_or_wait(lock_t spin);
-void spinlock_drop(lock_t spin);
+void acpi_init(acpi_xsdp_t *rsdp);
+void *acpi_find_sdt(const char *signature, int index);
 
 #endif

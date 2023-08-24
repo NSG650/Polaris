@@ -1,5 +1,5 @@
-#ifndef SPINLOCK_H
-#define SPINLOCK_H
+#ifndef CPU_FEATURES_H
+#define CPU_FEATURES_H
 
 /*
  * Copyright 2021 - 2023 NSG650
@@ -18,12 +18,12 @@
  * limitations under the License.
  */
 
-#include <stdbool.h>
-
-typedef bool lock_t;
-
-bool spinlock_acquire(lock_t spin);
-void spinlock_acquire_or_wait(lock_t spin);
-void spinlock_drop(lock_t spin);
+#define CPUID_INVARIANT_TSC (1 << 8)
+#define CPUID_TSC_DEADLINE (1 << 24)
+#define CPUID_SMEP (1 << 7)
+#define CPUID_SMAP (1 << 20)
+#define CPUID_UMIP (1 << 2)
+#define CPUID_X2APIC (1 << 21)
+#define CPUID_GBPAGE (1 << 26)
 
 #endif
