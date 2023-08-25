@@ -22,8 +22,11 @@
 #include <fw/madt.h>
 #include <io/mmio.h>
 #include <mm/vmm.h>
+#include <sys/apic.h>
+#include <sys/hpet.h>
 #include <sys/isr.h>
 #include <sys/pic.h>
+#include <sys/prcb.h>
 
 static uintptr_t lapic_addr = 0;
 static bool x2apic = false;
@@ -86,6 +89,10 @@ static void lapic_set_nmi(uint8_t vec, uint8_t current_processor_id,
 	} else if (lint == 1) {
 		lapic_write(0x360, nmi);
 	}
+}
+
+uint8_t lapic_get_id(void) {
+	return (uint8_t)(lapic_read(0x20) >> 24);
 }
 
 void lapic_init(uint8_t processor_id) {

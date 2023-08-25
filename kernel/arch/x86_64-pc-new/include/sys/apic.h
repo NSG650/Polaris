@@ -22,7 +22,9 @@
 
 void apic_eoi(void);
 void apic_init(void);
+void apic_send_ipi(uint32_t lapic_id, uint32_t flags);
 void ioapic_redirect_irq(uint32_t irq, uint8_t vect);
+uint8_t lapic_get_id(void);
 void lapic_init(uint8_t processor_id);
 
 #endif

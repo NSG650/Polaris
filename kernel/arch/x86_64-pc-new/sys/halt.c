@@ -1,5 +1,11 @@
 #include <asm/asm.h>
+#include <debug/debug.h>
+#include <fw/madt.h>
+#include <klibc/vec.h>
 #include <stdbool.h>
+#include <sys/apic.h>
+
+extern bool is_smp;
 
 /*
  * Copyright 2021 - 2023 NSG650
@@ -26,5 +32,12 @@ void halt_current_cpu(void) {
 }
 
 void halt_other_cpus(void) {
-	return;
+	if (!is_smp)
+		return;
+	for (int i = 0; i < madt_local_apics.length; i++) {
+		struct madt_lapic *lapic = madt_local_apics.data[i];
+		if (lapic_get_id() == lapic->apic_id)
+			continue;
+		apic_send_ipi(lapic->apic_id, 0xff);
+	}
 }

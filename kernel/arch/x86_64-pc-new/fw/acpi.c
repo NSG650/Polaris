@@ -3,6 +3,7 @@
 #include <fw/acpi.h>
 #include <fw/madt.h>
 #include <mm/vmm.h>
+#include <sys/hpet.h>
 
 bool use_xsdt;
 struct rsdt *rsdt = NULL;
@@ -22,6 +23,7 @@ void acpi_init(acpi_xsdp_t *rsdp) {
 	}
 
 	madt_init();
+	hpet_init();
 }
 
 // Following function based on

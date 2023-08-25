@@ -116,7 +116,7 @@ static void smp_cpu_init(struct limine_smp_info *smp_info) {
 
 	if (prcb_local->lapic_id != smp_bsp_lapic_id) {
 		lapic_init(smp_info->lapic_id);
-		kprintf("CPU%u: I am alive!\n", prcb_local->cpu_number);
+		kprintf("CPU%u: I am alive!\n", prcb_return_current_cpu()->cpu_number);
 		initialized_cpus++;
 		spinlock_drop(&smp_lock);
 		sti();
@@ -124,7 +124,8 @@ static void smp_cpu_init(struct limine_smp_info *smp_info) {
 			halt();
 		}
 	}
-	kprintf("CPU%u: I am alive and I am the BSP!\n", prcb_local->cpu_number);
+	kprintf("CPU%u: I am alive and I am the BSP!\n",
+			prcb_return_current_cpu()->cpu_number);
 	initialized_cpus++;
 	spinlock_drop(&smp_lock);
 }
@@ -134,8 +135,12 @@ void smp_init(struct limine_smp_response *smp_info) {
 			smp_info->cpu_count);
 	smp_bsp_lapic_id = smp_info->bsp_lapic_id;
 
-	if (kernel_arguments.cpu_count) {
+	if (kernel_arguments.kernel_args & KERNEL_ARGS_CPU_COUNT_GIVEN) {
 		cpu_count = kernel_arguments.cpu_count;
+		if (cpu_count > smp_info->cpu_count) {
+			cpu_count = smp_info->cpu_count;
+			kprintf("SMP: Download more CPU today!\n");
+		}
 		kprintf("SMP: Setting up only %u Processors\n", cpu_count);
 	} else {
 		cpu_count = smp_info->cpu_count;
@@ -166,10 +171,8 @@ void smp_init(struct limine_smp_response *smp_info) {
 		pause();
 	}
 
-	is_smp = true;
 	kprintf("SMP: %u CPUs installed in the system\n",
 			prcb_return_installed_cpus());
-
 	is_smp = true;
 }
 

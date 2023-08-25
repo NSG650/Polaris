@@ -27,8 +27,10 @@
 #include <serial/serial.h>
 #include <sys/apic.h>
 #include <sys/gdt.h>
+#include <sys/halt.h>
 #include <sys/idt.h>
 #include <sys/isr.h>
+#include <sys/prcb.h>
 
 extern bool print_now;
 
@@ -62,6 +64,13 @@ static volatile struct limine_rsdp_request rsdp_request = {
 static volatile struct limine_smp_request smp_request = {
 	.id = LIMINE_SMP_REQUEST, .revision = 0, .response = NULL, .flags = 1};
 
+void halt_vector(void) {
+	for (;;) {
+		cli();
+		halt();
+	}
+}
+
 void arch_entry(void) {
 	cli();
 
@@ -85,6 +94,8 @@ void arch_entry(void) {
 	framebuffer_init(&fb);
 	print_now = true;
 	serial_init();
+
+	isr_register_handler(0xff, halt_vector);
 
 	struct limine_file *kernel_file =
 		limine_kernel_file_request.response->kernel_file;
@@ -113,9 +124,9 @@ void arch_entry(void) {
 	apic_init();
 
 	smp_init(smp_request.response);
-	kprintf("Neptune we need the VMM man\n");
+	panic("Neptune we need the VMM man\n");
+
 	for (;;) {
-		cli();
 		halt();
 	}
 }
