@@ -71,12 +71,15 @@ extern "C" {
 #endif
 
 extern bool print_now;
+extern bool put_to_fb;
 
 static void tu_print_location(const char *message,
 							  struct tu_source_location loc) {
-	if (print_now)
-		kprintf("tinyubsan: %s at file %s, line %d, column %d\n", message,
-				loc.file, loc.line, loc.column);
+	if (print_now) {
+		kprintffos(0, "tinyubsan: %s at file %s, line %d, column %d\n", message,
+				   loc.file, loc.line, loc.column);
+		put_to_fb = 1;
+	}
 }
 
 void __ubsan_handle_add_overflow(struct tu_overflow_data *data) {

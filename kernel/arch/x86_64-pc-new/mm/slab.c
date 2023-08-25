@@ -62,7 +62,7 @@ static inline struct slab *slab_for(size_t size) {
 
 static void create_slab(struct slab *slab, size_t ent_size) {
 	slab->lock = 0;
-	slab->first_free = pmm_alloc(1) + MEM_PHYS_OFFSET;
+	slab->first_free = (void **)((uint64_t)pmm_alloc(1) + MEM_PHYS_OFFSET);
 	slab->ent_size = ent_size;
 
 	size_t header_offset = ALIGN_UP(sizeof(struct slab_header), ent_size);
@@ -133,7 +133,7 @@ void *slab_alloc(size_t size) {
 	}
 
 	size_t page_count = DIV_ROUNDUP(size, PAGE_SIZE);
-	void *ret = pmm_allocz(page_count + 1);
+	uint64_t ret = (uint64_t)pmm_allocz(page_count + 1);
 	if (ret == NULL) {
 		return NULL;
 	}

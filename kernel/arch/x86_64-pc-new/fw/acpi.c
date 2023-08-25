@@ -2,6 +2,8 @@
 #include <debug/debug.h>
 #include <fw/acpi.h>
 #include <fw/madt.h>
+#include <io/pci.h>
+#include <klibc/kargs.h>
 #include <mm/vmm.h>
 #include <sys/hpet.h>
 
@@ -21,9 +23,14 @@ void acpi_init(acpi_xsdp_t *rsdp) {
 		rsdt = (struct rsdt *)((uintptr_t)rsdp->rsdt + MEM_PHYS_OFFSET);
 		kprintf("ACPI: Using RSDT at 0x%p\n", (uintptr_t)rsdt);
 	}
-
+	pci_init();
 	madt_init();
 	hpet_init();
+	if (!(kernel_arguments.kernel_args & KERNEL_ARGS_NO_LAI)) {
+		lai_set_acpi_revision(revision);
+		lai_create_namespace();
+		lai_enable_acpi(1);
+	}
 }
 
 // Following function based on
@@ -48,7 +55,6 @@ void *acpi_find_sdt(const char *signature, int index) {
 		if (use_xsdt) {
 			ptr =
 				(acpi_header_t *)((uintptr_t)((uint64_t *)rsdt->ptrs_start)[i]);
-			kprintf("0x%p\n", ((uintptr_t)((uint64_t *)rsdt->ptrs_start)));
 		} else {
 			ptr =
 				(acpi_header_t *)((uintptr_t)((uint32_t *)rsdt->ptrs_start)[i]);

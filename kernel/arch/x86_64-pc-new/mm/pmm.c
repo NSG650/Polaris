@@ -114,7 +114,7 @@ void *pmm_allocz(size_t pages) {
 	void *ret = pmm_alloc(pages);
 
 	if (ret != NULL)
-		memset(ret + MEM_PHYS_OFFSET, 0, pages * PAGE_SIZE);
+		memset((void *)((uint64_t)ret + MEM_PHYS_OFFSET), 0, pages * PAGE_SIZE);
 
 	return ret;
 }
