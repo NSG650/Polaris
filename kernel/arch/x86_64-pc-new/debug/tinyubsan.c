@@ -69,10 +69,14 @@ struct tu_invalid_builtin_data {
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+extern bool print_now;
+
 static void tu_print_location(const char *message,
 							  struct tu_source_location loc) {
-	kprintf("tinyubsan: %s at file %s, line %d, column %d\n", message, loc.file,
-			loc.line, loc.column);
+	if (print_now)
+		kprintf("tinyubsan: %s at file %s, line %d, column %d\n", message,
+				loc.file, loc.line, loc.column);
 }
 
 void __ubsan_handle_add_overflow(struct tu_overflow_data *data) {

@@ -8,12 +8,13 @@
 #include <klibc/mem.h>
 #include <locks/spinlock.h>
 #include <mm/slab.h>
+#include <sys/apic.h>
 #include <sys/gdt.h>
 #include <sys/isr.h>
 #include <sys/prcb.h>
 
 bool is_smp = false;
-static lock_t smp_lock = {0};
+static lock_t smp_lock = 0;
 struct prcb *prcbs = NULL;
 static uint32_t smp_bsp_lapic_id = 0;
 static size_t cpu_count = 0;
@@ -23,10 +24,11 @@ extern void gdt_reload(void);
 extern void idt_reload(void);
 
 static void smp_cpu_init(struct limine_smp_info *smp_info) {
-	spinlock_acquire_or_wait(smp_lock);
 	struct prcb *prcb_local = (void *)smp_info->extra_argument;
 	gdt_reload();
 	idt_reload();
+
+	spinlock_acquire_or_wait(&smp_lock);
 
 	gdt_load_tss(&prcb_local->cpu_tss);
 
@@ -111,19 +113,20 @@ static void smp_cpu_init(struct limine_smp_info *smp_info) {
 		prcb_local->fpu_save = fxsave;
 		prcb_local->fpu_restore = fxrstor;
 	}
-	initialized_cpus++;
 
 	if (prcb_local->lapic_id != smp_bsp_lapic_id) {
 		lapic_init(smp_info->lapic_id);
 		kprintf("CPU%u: I am alive!\n", prcb_local->cpu_number);
-		spinlock_drop(smp_lock);
+		initialized_cpus++;
+		spinlock_drop(&smp_lock);
 		sti();
 		for (;;) {
 			halt();
 		}
 	}
 	kprintf("CPU%u: I am alive and I am the BSP!\n", prcb_local->cpu_number);
-	spinlock_drop(smp_lock);
+	initialized_cpus++;
+	spinlock_drop(&smp_lock);
 }
 
 void smp_init(struct limine_smp_response *smp_info) {
@@ -159,8 +162,9 @@ void smp_init(struct limine_smp_response *smp_info) {
 		}
 	}
 
-	while (initialized_cpus != cpu_count)
+	while (initialized_cpus != cpu_count) {
 		pause();
+	}
 
 	is_smp = true;
 	kprintf("SMP: %u CPUs installed in the system\n",

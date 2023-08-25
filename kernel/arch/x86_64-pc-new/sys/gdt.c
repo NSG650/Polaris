@@ -57,7 +57,7 @@ extern void gdt_reload(void);
 extern void tss_reload(void);
 
 void gdt_init(void) {
-	spinlock_acquire_or_wait(gdt_lock);
+	spinlock_acquire_or_wait(&gdt_lock);
 	// Kernel code
 	gdt.entries[1].access = 0b10011010;
 	gdt.entries[1].granularity = 0b00100000;
@@ -82,11 +82,11 @@ void gdt_init(void) {
 
 	gdt_reload();
 	tss_reload();
-	spinlock_drop(gdt_lock);
+	spinlock_drop(&gdt_lock);
 }
 
 void gdt_load_tss(size_t addr) {
-	spinlock_acquire_or_wait(gdt_lock);
+	spinlock_acquire_or_wait(&gdt_lock);
 	gdt.tss.base_low = (uint16_t)addr;
 	gdt.tss.base_mid = (uint8_t)(addr >> 16);
 	gdt.tss.flags1 = 0b10001001;
@@ -94,5 +94,5 @@ void gdt_load_tss(size_t addr) {
 	gdt.tss.base_upper32 = (uint32_t)(addr >> 32);
 
 	tss_reload();
-	spinlock_drop(gdt_lock);
+	spinlock_drop(&gdt_lock);
 }

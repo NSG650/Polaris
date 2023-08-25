@@ -64,6 +64,7 @@ static volatile struct limine_smp_request smp_request = {
 
 void arch_entry(void) {
 	cli();
+
 	struct limine_memmap_entry **memmap = memmap_request.response->entries;
 	size_t memmap_entries = memmap_request.response->entry_count;
 	pmm_init(memmap, memmap_entries);
@@ -112,6 +113,7 @@ void arch_entry(void) {
 	apic_init();
 
 	smp_init(smp_request.response);
+	kprintf("Neptune we need the VMM man\n");
 	for (;;) {
 		cli();
 		halt();

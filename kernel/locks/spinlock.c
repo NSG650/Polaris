@@ -18,27 +18,18 @@
 #include <asm/asm.h>
 #include <locks/spinlock.h>
 
-bool spinlock_acquire(lock_t spin) {
-	return !__atomic_test_and_set(&spin, __ATOMIC_ACQUIRE);
+bool spinlock_acquire(lock_t *spin) {
+	return __sync_bool_compare_and_swap(spin, 0, 1);
 }
 
-void spinlock_acquire_or_wait(lock_t spin) {
-	cli();
-retry_lock:
-	if (spinlock_acquire(spin)) {
-		return;
-	}
-
-	// Do a rough wait until the lock is free for cache-locality
+void spinlock_acquire_or_wait(lock_t *spin) {
 	for (;;) {
-		if (__atomic_load_n(&spin, __ATOMIC_RELAXED) == 0) {
-			goto retry_lock;
-		}
+		if (spinlock_acquire(spin))
+			break;
 		pause();
 	}
-	sti();
 }
 
-void spinlock_drop(lock_t spin) {
-	__atomic_clear(&spin, __ATOMIC_RELEASE);
+void spinlock_drop(lock_t *spin) {
+	__atomic_store_n(spin, 0, __ATOMIC_SEQ_CST);
 }

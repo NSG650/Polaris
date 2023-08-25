@@ -21,7 +21,7 @@
 #include <mm/pmm.h>
 #include <mm/vmm.h>
 
-static lock_t memory_lock = 0;
+static lock_t memory_lock = {0};
 static uint8_t *bitmap = NULL;
 static uint64_t total_page_count = 0;
 static uint64_t last_used_index = 0;
@@ -72,6 +72,7 @@ void pmm_init(struct limine_memmap_entry **memmap, size_t memmap_entries) {
 			free_pages++;
 		}
 	}
+	// spinlock_drop(&memory_lock);
 }
 
 static void *inner_alloc(size_t pages, size_t limit) {
@@ -95,7 +96,8 @@ static void *inner_alloc(size_t pages, size_t limit) {
 }
 
 void *pmm_alloc(size_t pages) {
-	spinlock_acquire_or_wait(memory_lock);
+	spinlock_acquire_or_wait(&memory_lock);
+
 	size_t last = last_used_index;
 	void *ret = inner_alloc(pages, total_page_count);
 	if (ret == NULL) {
@@ -103,7 +105,8 @@ void *pmm_alloc(size_t pages) {
 		ret = inner_alloc(pages, last);
 	}
 	free_pages -= pages;
-	spinlock_drop(memory_lock);
+	spinlock_drop(&memory_lock);
+
 	return ret;
 }
 
@@ -117,9 +120,9 @@ void *pmm_allocz(size_t pages) {
 }
 
 void pmm_free(void *addr, size_t pages) {
-	spinlock_acquire_or_wait(memory_lock);
+	spinlock_acquire_or_wait(&memory_lock);
 	size_t page = (size_t)addr / PAGE_SIZE;
 	for (size_t i = page; i < page + pages; i++)
 		bitmap_reset(bitmap, i);
-	spinlock_drop(memory_lock);
+	spinlock_drop(&memory_lock);
 }

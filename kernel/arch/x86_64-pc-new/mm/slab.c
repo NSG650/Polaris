@@ -48,7 +48,7 @@ struct alloc_metadata {
 	size_t size;
 };
 
-static struct slab slabs[10];
+static struct slab slabs[10] = {0};
 
 static inline struct slab *slab_for(size_t size) {
 	for (size_t i = 0; i < SIZEOF_ARRAY(slabs); i++) {
@@ -83,7 +83,7 @@ static void create_slab(struct slab *slab, size_t ent_size) {
 }
 
 static void *alloc_from_slab(struct slab *slab) {
-	spinlock_acquire_or_wait(slab->lock);
+	spinlock_acquire_or_wait(&slab->lock);
 
 	if (slab->first_free == NULL) {
 		create_slab(slab, slab->ent_size);
@@ -93,12 +93,12 @@ static void *alloc_from_slab(struct slab *slab) {
 	slab->first_free = *old_free;
 	memset(old_free, 0, slab->ent_size);
 
-	spinlock_drop(slab->lock);
+	spinlock_drop(&slab->lock);
 	return old_free;
 }
 
 static void free_in_slab(struct slab *slab, void *addr) {
-	spinlock_acquire_or_wait(slab->lock);
+	spinlock_acquire_or_wait(&slab->lock);
 
 	if (addr == NULL) {
 		goto cleanup;
@@ -109,10 +109,11 @@ static void free_in_slab(struct slab *slab, void *addr) {
 	slab->first_free = new_head;
 
 cleanup:
-	spinlock_drop(slab->lock);
+	spinlock_drop(&slab->lock);
 }
 
 void slab_init(void) {
+	memzero(slabs, sizeof(struct slab) * 10);
 	create_slab(&slabs[0], 8);
 	create_slab(&slabs[1], 16);
 	create_slab(&slabs[2], 24);
