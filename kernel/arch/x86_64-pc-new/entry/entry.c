@@ -24,6 +24,7 @@
 #include <limine.h>
 #include <mm/pmm.h>
 #include <mm/slab.h>
+#include <sched/sched.h>
 #include <serial/serial.h>
 #include <sys/apic.h>
 #include <sys/gdt.h>
@@ -64,11 +65,16 @@ static volatile struct limine_rsdp_request rsdp_request = {
 static volatile struct limine_smp_request smp_request = {
 	.id = LIMINE_SMP_REQUEST, .revision = 0, .response = NULL, .flags = 1};
 
-void halt_vector(void) {
-	for (;;) {
-		cli();
-		halt();
+extern bool is_halting;
+
+void nmi_vector(registers_t *reg) {
+	if (is_halting) {
+		for (;;) {
+			cli();
+			halt();
+		}
 	}
+	panic_(reg->rip, reg->rbp, "Unexpected NMI\n");
 }
 
 void arch_entry(void) {
@@ -95,8 +101,6 @@ void arch_entry(void) {
 	print_now = true;
 	serial_init();
 
-	isr_register_handler(0xff, halt_vector);
-
 	struct limine_file *kernel_file =
 		limine_kernel_file_request.response->kernel_file;
 
@@ -120,11 +124,16 @@ void arch_entry(void) {
 	gdt_init();
 	isr_install();
 
+	isr_register_handler(2, nmi_vector);
+	isr_register_handler(48, resched);
+
 	acpi_init(rsdp_request.response->address);
 	apic_init();
 
 	smp_init(smp_request.response);
-	panic("Neptune we need the VMM man\n");
+	sti();
+
+	kprintf("Neptune we need the VMM\n");
 
 	for (;;) {
 		halt();

@@ -60,7 +60,7 @@ int sched_get_next_thread(int index) {
 			continue;
 		}
 
-		if (spinlock_acquire(thread->lock)) {
+		if (spinlock_acquire(&thread->lock)) {
 			return index;
 		}
 
@@ -251,7 +251,7 @@ void sched_init(uint64_t args) {
 void process_create(char *name, uint8_t state, uint64_t runtime,
 					uintptr_t pc_address, uint64_t arguments, bool user,
 					struct process *parent_process) {
-	spinlock_acquire_or_wait(process_lock);
+	spinlock_acquire_or_wait(&process_lock);
 	struct process *proc = kmalloc(sizeof(struct process));
 	strncpy(proc->name, name, 256);
 	proc->runtime = runtime;
@@ -288,12 +288,12 @@ void process_create(char *name, uint8_t state, uint64_t runtime,
 		proc->mmap_anon_base = 0x80000000000;
 	}
 	thread_create(pc_address, arguments, user, proc);
-	spinlock_drop(process_lock);
+	spinlock_drop(&process_lock);
 }
 
 bool process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
 						struct process *parent_process) {
-	spinlock_acquire_or_wait(process_lock);
+	spinlock_acquire_or_wait(&process_lock);
 	struct process *proc = kmalloc(sizeof(struct process));
 	strncpy(proc->name, name, 256);
 	proc->runtime = runtime;
@@ -344,12 +344,12 @@ bool process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
 
 	thread_create((uintptr_t)entry, 0, 1, proc);
 
-	spinlock_drop(process_lock);
+	spinlock_drop(&process_lock);
 	return true;
 }
 
 int64_t process_fork(struct process *proc, struct thread *thrd) {
-	spinlock_acquire_or_wait(process_lock);
+	spinlock_acquire_or_wait(&process_lock);
 	struct process *fproc = kmalloc(sizeof(struct process));
 	memcpy(fproc->name, proc->name, sizeof(proc->name));
 
@@ -383,13 +383,13 @@ int64_t process_fork(struct process *proc, struct thread *thrd) {
 
 	fproc->state = PROCESS_READY_TO_RUN;
 
-	spinlock_drop(process_lock);
+	spinlock_drop(&process_lock);
 	return fproc->pid;
 }
 
 void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 				   struct process *proc) {
-	spinlock_acquire_or_wait(thread_lock);
+	spinlock_acquire_or_wait(&thread_lock);
 	struct thread *thrd = kmalloc(sizeof(struct thread));
 	thrd->tid = tid++;
 	thrd->state = THREAD_READY_TO_RUN;
@@ -502,11 +502,11 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 
 	vec_push(&threads, thrd);
 	vec_push(&proc->process_threads, thrd);
-	spinlock_drop(thread_lock);
+	spinlock_drop(&thread_lock);
 }
 
 void thread_fork(struct thread *pthrd, struct process *fproc) {
-	spinlock_acquire_or_wait(thread_lock);
+	spinlock_acquire_or_wait(&thread_lock);
 	struct thread *thrd = kmalloc(sizeof(struct thread));
 	thrd->tid = tid++;
 	thrd->state = THREAD_READY_TO_RUN;
@@ -529,11 +529,11 @@ void thread_fork(struct thread *pthrd, struct process *fproc) {
 	thrd->sleeping_till = 0;
 	vec_push(&threads, thrd);
 	vec_push(&fproc->process_threads, thrd);
-	spinlock_drop(thread_lock);
+	spinlock_drop(&thread_lock);
 }
 
 bool process_execve(char *path, char **argv, char **envp) {
-	spinlock_acquire_or_wait(process_lock);
+	spinlock_acquire_or_wait(&process_lock);
 
 	struct thread *thread = prcb_return_current_cpu()->running_thread;
 	struct process *proc = thread->mother_proc;
@@ -589,7 +589,7 @@ bool process_execve(char *path, char **argv, char **envp) {
 
 	thread_execve(proc, thread, entry, argv, envp);
 
-	spinlock_drop(process_lock);
+	spinlock_drop(&process_lock);
 
 	vmm_switch_pagemap(kernel_pagemap);
 
@@ -598,7 +598,7 @@ bool process_execve(char *path, char **argv, char **envp) {
 }
 
 void process_kill(struct process *proc, bool crash) {
-	spinlock_acquire_or_wait(process_lock);
+	spinlock_acquire_or_wait(&process_lock);
 
 	struct dead_process *dead_proc = kmalloc(sizeof(struct dead_process));
 	dead_proc->pid = proc->pid;
@@ -655,7 +655,7 @@ void process_kill(struct process *proc, bool crash) {
 
 	vec_push(&dead_processes, dead_proc);
 
-	spinlock_drop(process_lock);
+	spinlock_drop(&process_lock);
 
 	if (are_we_killing_ourselves)
 		sched_resched_now();
@@ -665,7 +665,7 @@ void process_kill(struct process *proc, bool crash) {
 
 void thread_execve(struct process *proc, struct thread *thrd,
 				   uintptr_t pc_address, char **argv, char **envp) {
-	spinlock_acquire_or_wait(thread_lock);
+	spinlock_acquire_or_wait(&thread_lock);
 	thrd->tid = tid++;
 	thrd->state = THREAD_READY_TO_RUN;
 	thrd->runtime = proc->runtime;
@@ -787,11 +787,11 @@ void thread_execve(struct process *proc, struct thread *thrd,
 	thrd->reg.rsp -= address_difference;
 #endif
 
-	spinlock_drop(thread_lock);
+	spinlock_drop(&thread_lock);
 }
 
 void thread_kill(struct thread *thrd, bool r) {
-	spinlock_acquire_or_wait(thread_lock);
+	spinlock_acquire_or_wait(&thread_lock);
 	if (thrd->mother_proc->pid <= 1) {
 		if (thrd->mother_proc->process_threads.data[0] == thrd)
 			panic("Attempted to kill init!\n");
@@ -809,7 +809,7 @@ void thread_kill(struct thread *thrd, bool r) {
 	vec_remove(&threads, thrd);
 	kfree(thrd);
 
-	spinlock_drop(thread_lock);
+	spinlock_drop(&thread_lock);
 	if (r) {
 		sched_resched_now();
 	}
@@ -817,11 +817,11 @@ void thread_kill(struct thread *thrd, bool r) {
 
 void thread_sleep(struct thread *thrd, uint64_t ns) {
 	cli();
-	spinlock_acquire_or_wait(thread_lock);
+	spinlock_acquire_or_wait(&thread_lock);
 	thrd->state = THREAD_SLEEPING;
 	thrd->sleeping_till = timer_get_sleep_ns(ns);
 	vec_push(&sleeping_threads, thrd);
-	spinlock_drop(thread_lock);
+	spinlock_drop(&thread_lock);
 	sti();
 
 	while (prcb_return_current_cpu()->running_thread->sleeping_till >

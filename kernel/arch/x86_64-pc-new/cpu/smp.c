@@ -12,11 +12,12 @@
 #include <sys/gdt.h>
 #include <sys/isr.h>
 #include <sys/prcb.h>
+#include <sys/timer.h>
 
 bool is_smp = false;
 static lock_t smp_lock = 0;
 struct prcb *prcbs = NULL;
-static uint32_t smp_bsp_lapic_id = 0;
+uint32_t smp_bsp_lapic_id = 0;
 static size_t cpu_count = 0;
 static size_t initialized_cpus = 0;
 
@@ -114,6 +115,8 @@ static void smp_cpu_init(struct limine_smp_info *smp_info) {
 		prcb_local->fpu_restore = fxrstor;
 	}
 
+	timer_sched_oneshot(32, 20000);
+
 	if (prcb_local->lapic_id != smp_bsp_lapic_id) {
 		lapic_init(smp_info->lapic_id);
 		kprintf("CPU%u: I am alive!\n", prcb_return_current_cpu()->cpu_number);
@@ -156,9 +159,9 @@ void smp_init(struct limine_smp_response *smp_info) {
 		prcbs[i].cpu_number = i;
 		prcbs[i].lapic_id = cpu->lapic_id;
 		prcbs[i].cpu_tss.rsp0 =
-			(uint64_t)(STACK_SIZE / PAGE_SIZE) + MEM_PHYS_OFFSET;
+			(uint64_t)pmm_allocz(STACK_SIZE / PAGE_SIZE) + MEM_PHYS_OFFSET;
 		prcbs[i].cpu_tss.ist1 =
-			(uint64_t)(STACK_SIZE / PAGE_SIZE) + MEM_PHYS_OFFSET;
+			(uint64_t)pmm_allocz(STACK_SIZE / PAGE_SIZE) + MEM_PHYS_OFFSET;
 
 		if (cpu->lapic_id != smp_bsp_lapic_id) {
 			cpu->goto_address = smp_cpu_init;

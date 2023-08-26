@@ -6,6 +6,7 @@
 #include <sys/apic.h>
 
 extern bool is_smp;
+bool is_halting = false;
 
 /*
  * Copyright 2021 - 2023 NSG650
@@ -34,10 +35,12 @@ void halt_current_cpu(void) {
 void halt_other_cpus(void) {
 	if (!is_smp)
 		return;
-	for (int i = 0; i < madt_local_apics.length; i++) {
-		struct madt_lapic *lapic = madt_local_apics.data[i];
-		if (lapic_get_id() == lapic->apic_id)
-			continue;
-		apic_send_ipi(lapic->apic_id, 0xff);
-	}
+
+	is_halting = true;
+
+	uint64_t icr = 0;
+	icr |= (0b100) << 8; // set delivery mode to nmi
+	icr |= (0b11) << 18; // set destination shorthand to all excluding self
+	lapic_write(0x300, icr);
+	lapic_write(0x310, icr >> 32);
 }

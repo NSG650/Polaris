@@ -12,9 +12,9 @@ bool futex_wait(uint32_t value, uint32_t *futex, struct thread *thrd) {
 	f->address = futex;
 	f->thrd = thrd;
 	f->value = value;
-	spinlock_acquire_or_wait(sched_lock);
+	spinlock_acquire_or_wait(&sched_lock);
 	thrd->state = THREAD_WAITING_FOR_FUTEX;
-	spinlock_drop(sched_lock);
+	spinlock_drop(&sched_lock);
 
 	// resched NOW!
 	sched_resched_now();
@@ -28,9 +28,9 @@ bool futex_wake(uint32_t *futex) {
 	for (int i = 0; i < futexes.length; i++) {
 		match = futexes.data[i];
 		if (match->address == futex) {
-			spinlock_acquire_or_wait(sched_lock);
+			spinlock_acquire_or_wait(&sched_lock);
 			match->thrd->state = THREAD_READY_TO_RUN;
-			spinlock_drop(sched_lock);
+			spinlock_drop(&sched_lock);
 			vec_remove(&futexes, match);
 			return true;
 		}

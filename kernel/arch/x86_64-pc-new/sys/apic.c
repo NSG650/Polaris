@@ -30,6 +30,7 @@
 
 static uintptr_t lapic_addr = 0;
 static bool x2apic = false;
+uint32_t tick_in_10ms = 0;
 
 // Converts xAPIC MMIO offset into x2APIC MSR
 static inline uint32_t reg_to_x2apic(uint32_t reg) {
@@ -46,14 +47,14 @@ static inline uint32_t reg_to_x2apic(uint32_t reg) {
 	return x2apic_reg + 0x800;
 }
 
-static uint32_t lapic_read(uint32_t reg) {
+uint32_t lapic_read(uint32_t reg) {
 	if (x2apic) {
 		return rdmsr(reg_to_x2apic(reg));
 	}
 	return mmind((void *)lapic_addr + MEM_PHYS_OFFSET + reg);
 }
 
-static void lapic_write(uint32_t reg, uint32_t value) {
+void lapic_write(uint32_t reg, uint32_t value) {
 	if (x2apic) {
 		wrmsr(reg_to_x2apic(reg), value);
 	} else {
@@ -122,6 +123,16 @@ void lapic_init(uint8_t processor_id) {
 		struct madt_nmi *nmi = madt_nmis.data[i];
 		lapic_set_nmi(2, processor_id, nmi->processor, nmi->flags, nmi->lint);
 	}
+
+	lapic_write(0x3E0, 3);			// Divide by 16
+	lapic_write(0x380, 0xFFFFFFFF); // Set value to -1
+	timer_sleep(10);
+	lapic_write(0x320, 0x10000);
+	tick_in_10ms = 0xFFFFFFFF - lapic_read(0x390);
+
+	lapic_write(0x320, 32 | 0x20000);
+	lapic_write(0x3E0, 3);
+	lapic_write(0x380, tick_in_10ms / 10);
 }
 
 static uint32_t ioapic_read(uintptr_t ioapic_address, size_t reg) {
@@ -223,9 +234,24 @@ void apic_eoi(void) {
 	lapic_write(0xB0, 0);
 }
 
+void timer_stop_sched(void) {
+	lapic_write(0x380, 0);
+	lapic_write(0x320, (1 << 16));
+}
+
+void timer_sched_oneshot(uint8_t isr, uint32_t us) {
+	cli();
+	timer_stop_sched();
+	lapic_write(0x320, isr | 0x20000);
+	lapic_write(0x3E0, 3);
+	lapic_write(0x380, ((tick_in_10ms * (us / 1000))) / 10);
+	sti();
+}
+
 void apic_init(void) {
 	pic_init();
 
 	lapic_addr = acpi_get_lapic();
 	lapic_init(madt_local_apics.data[0]->processor_id);
+	ioapic_redirect_irq(0, 48);
 }
