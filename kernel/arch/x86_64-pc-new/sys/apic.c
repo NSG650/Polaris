@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 - 2023 Sebastian
+ * Copyright 2021 - 2023 Neptune
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -123,6 +123,9 @@ void lapic_init(uint8_t processor_id) {
 		struct madt_nmi *nmi = madt_nmis.data[i];
 		lapic_set_nmi(2, processor_id, nmi->processor, nmi->flags, nmi->lint);
 	}
+
+	if (tick_in_10ms)
+		return;
 
 	lapic_write(0x3E0, 3);			// Divide by 16
 	lapic_write(0x380, 0xFFFFFFFF); // Set value to -1
