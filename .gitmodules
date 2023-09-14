@@ -1,7 +1,7 @@
 [submodule "limine"]
 	path = limine
 	url = https://github.com/limine-bootloader/limine.git
-	branch = v4.x-branch-binary
+	branch = v5.x-branch-binary
 [submodule "kernel/arch/x86_64-pc/fw/lai"]
 	path = kernel/arch/x86_64-pc/fw/lai
 	url = https://github.com/managarm/lai

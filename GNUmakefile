@@ -27,13 +27,16 @@ $(ISO_IMAGE): limine kernel #user
 	cp $(PROGRAM_ELF) root/bin
 	$(MAKE) -C root
 	cp kernel/arch/$(CONFIG_ARCH)-$(CONFIG_TARGET)/$(KERNEL_ELF) ramdisk.tar \
-		limine.cfg limine/limine.sys limine/limine-cd.bin limine/limine-cd-efi.bin build/
-	xorriso -as mkisofs -b limine-cd.bin \
+		limine.cfg limine/limine-bios.sys limine/limine-bios-cd.bin limine/limine-uefi-cd.bin build/
+	mkdir -p build/EFI/BOOT
+	cp -v limine/BOOTX64.EFI build/EFI/BOOT/
+	cp -v limine/BOOTIA32.EFI build/EFI/BOOT/
+	xorriso -as mkisofs -b limine-bios-cd.bin \
 		-no-emul-boot -boot-load-size 4 -boot-info-table \
-		--efi-boot limine-cd-efi.bin \
+		--efi-boot limine-uefi-cd.bin \
 		-efi-boot-part --efi-boot-image --protective-msdos-label \
 		build -o $(ISO_IMAGE)
-	limine/limine-deploy $(ISO_IMAGE)
+	limine/limine bios-install $(ISO_IMAGE)
 	rm -rf build
 
 .PHONY: clean
