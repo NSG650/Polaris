@@ -50,7 +50,7 @@ HEADER_DEPS := $(CFILES:.c=.d) $(ASMFILES:.asm=.d)
 
 CROSS_TOOLCHAIN ?= x86_64-elf
 
-CC := $(CROSS_TOOLCHAIN)-gcc
+CC := gcc
 AS := nasm
 
 override INTERNALCFLAGS += 				\

@@ -17,11 +17,11 @@ limine:
 kernel:
 	$(MAKE) -C kernel/arch/$(CONFIG_ARCH)-$(CONFIG_TARGET)
 
-.PHONY: user
-user:
-	$(MAKE) -C user
+#.PHONY: user
+#user:
+#	$(MAKE) -C user
 
-$(ISO_IMAGE): limine kernel user
+$(ISO_IMAGE): limine kernel #user
 	rm -rf build
 	mkdir -p build
 	cp $(PROGRAM_ELF) root/bin
