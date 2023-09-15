@@ -73,7 +73,7 @@ void *laihost_scan(const char *signature, size_t index) {
 			dsdt_addr = facp->dsdt;
 		}
 
-		return (void *)dsdt_addr;
+		return (void *)(dsdt_addr + MEM_PHYS_OFFSET);
 	} else {
 		return acpi_find_sdt(signature, index);
 	}

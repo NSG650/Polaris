@@ -47,19 +47,6 @@ static volatile struct limine_kernel_file_request limine_kernel_file_request = {
 static volatile struct limine_memmap_request memmap_request = {
 	.id = LIMINE_MEMMAP_REQUEST, .revision = 0};
 
-volatile struct limine_hhdm_request hhdm_request = {.id = LIMINE_HHDM_REQUEST,
-													.revision = 0};
-
-static volatile struct limine_kernel_address_request kernel_address_request = {
-	.id = LIMINE_KERNEL_ADDRESS_REQUEST, .revision = 0};
-
-static volatile struct limine_paging_mode_request paging_mode_request = {
-	.id = LIMINE_PAGING_MODE_REQUEST,
-	.revision = 0,
-	.response = NULL,
-	.mode = LIMINE_PAGING_MODE_X86_64_5LVL,
-	.flags = 0};
-
 static volatile struct limine_framebuffer_request framebuffer_request = {
 	.id = LIMINE_FRAMEBUFFER_REQUEST, .revision = 0};
 
@@ -88,6 +75,7 @@ void arch_entry(void) {
 	size_t memmap_entries = memmap_request.response->entry_count;
 	pmm_init(memmap, memmap_entries);
 	slab_init();
+	vmm_init(memmap, memmap_entries);
 
 	struct limine_framebuffer *framebuffer =
 		framebuffer_request.response->framebuffers[0];
