@@ -15,6 +15,7 @@ struct prcb {
 	uint64_t user_stack;
 	struct thread *running_thread;
 	uint64_t thread_index;
+	uint64_t sched_ticks;
 #if defined(__x86_64__)
 	struct tss cpu_tss;
 	uint32_t lapic_id;

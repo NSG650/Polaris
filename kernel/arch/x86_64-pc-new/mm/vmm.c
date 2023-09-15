@@ -114,7 +114,7 @@ void vmm_init(struct limine_memmap_entry **memmap, size_t memmap_entries) {
 void vmm_switch_pagemap(struct pagemap *pagemap) {
 	asm volatile("mov cr3, %0"
 				 :
-				 : "r"((void *)pagemap->top_level - MEM_PHYS_OFFSET)
+				 : "r"((void *)((uint64_t)pagemap->top_level - MEM_PHYS_OFFSET))
 				 : "memory");
 }
 

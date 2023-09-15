@@ -4,24 +4,31 @@
 #include <sched/sched.h>
 #include <sys/apic.h>
 #include <sys/prcb.h>
+#include <mm/vmm.h>
 
 lock_t resched_lock = {0};
+
 extern uint32_t smp_bsp_lapic_id;
+
+extern void resched_context_switch(registers_t *reg);
+
+void sched_resched_now(void) {
+	sti();
+	asm volatile("int 0x30");
+}
+
+uint64_t timer_sched_tick(void) {
+	return prcb_return_current_cpu()->sched_ticks;
+}
 
 void resched(registers_t *reg) {
 	spinlock_acquire_or_wait(&resched_lock);
 
-	// pretty ugly solution
-	if (lapic_get_id() == smp_bsp_lapic_id) {
-		for (int i = 0; i < madt_local_apics.length; i++) {
-			struct madt_lapic *lapic = madt_local_apics.data[i];
-			if (lapic_get_id() == lapic->apic_id)
-				continue;
-			apic_send_ipi(lapic->apic_id, 0x30);
-		}
-	}
+	vmm_switch_pagemap(kernel_pagemap);
+	prcb_return_current_cpu()->sched_ticks++;
 
 	(void)reg;
+
 	apic_eoi();
 
 	spinlock_drop(&resched_lock);

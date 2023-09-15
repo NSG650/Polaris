@@ -32,6 +32,7 @@
 #include <sys/idt.h>
 #include <sys/isr.h>
 #include <sys/prcb.h>
+#include <sched/sched.h>
 
 extern bool print_now;
 
@@ -123,9 +124,10 @@ void arch_entry(void) {
 	apic_init();
 
 	smp_init(smp_request.response);
+	timer_sched_oneshot(48, 20000);
 	sti();
 
-	kprintf("Neptune we need the VMM\n");
+//	sched_init(0);
 
 	for (;;) {
 		halt();

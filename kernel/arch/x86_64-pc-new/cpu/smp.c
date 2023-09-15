@@ -29,6 +29,8 @@ static void smp_cpu_init(struct limine_smp_info *smp_info) {
 	gdt_reload();
 	idt_reload();
 
+	prcb_local->sched_ticks = 0;
+
 	spinlock_acquire_or_wait(&smp_lock);
 
 	gdt_load_tss((size_t)(&prcb_local->cpu_tss));
@@ -115,10 +117,9 @@ static void smp_cpu_init(struct limine_smp_info *smp_info) {
 		prcb_local->fpu_restore = fxrstor;
 	}
 
-	timer_sched_oneshot(32, 20000);
-
 	if (prcb_local->lapic_id != smp_bsp_lapic_id) {
 		lapic_init(smp_info->lapic_id);
+		timer_sched_oneshot(48, 20000);
 		kprintf("CPU%u: I am alive!\n", prcb_return_current_cpu()->cpu_number);
 		initialized_cpus++;
 		spinlock_drop(&smp_lock);

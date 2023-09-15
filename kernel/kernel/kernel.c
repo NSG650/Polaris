@@ -25,12 +25,14 @@ void kernel_main(void *args) {
 	vfs_mount(vfs_root, NULL, "/dev", "devtmpfs");
 	streams_init();
 
-	uint64_t *module_info = (uint64_t *)args;
-	kprintf("Ramdisk located at 0x%p\n", module_info[0]);
+	if (args != NULL) {
+		uint64_t *module_info = (uint64_t *)args;
+		kprintf("Ramdisk located at 0x%p\n", module_info[0]);
+		ramdisk_install(module_info[0], module_info[1]);
+	}
 
 	kprintf("Hello I am %s\n",
 			prcb_return_current_cpu()->running_thread->mother_proc->name);
-	ramdisk_install(module_info[0], module_info[1]);
 
 	syscall_register_handler(0x0, syscall_read);
 	syscall_register_handler(0x1, syscall_write);
@@ -54,13 +56,14 @@ void kernel_main(void *args) {
 	syscall_register_handler(0x124, syscall_dup3);
 	syscall_register_handler(0x125, syscall_pipe);
 
-	console_init();
+	// console_init();
 	fbdev_init();
 
-	net_init();
+	// net_init();
 
-	std_console_device =
+/*	std_console_device =
 		(vfs_get_node(vfs_root, "/dev/console", true))->resource;
+*/
 
 	char *argv[] = {"/bin/init.elf", NULL};
 

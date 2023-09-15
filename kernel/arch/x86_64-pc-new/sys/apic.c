@@ -124,9 +124,6 @@ void lapic_init(uint8_t processor_id) {
 		lapic_set_nmi(2, processor_id, nmi->processor, nmi->flags, nmi->lint);
 	}
 
-	if (tick_in_10ms)
-		return;
-
 	lapic_write(0x3E0, 3);			// Divide by 16
 	lapic_write(0x380, 0xFFFFFFFF); // Set value to -1
 	timer_sleep(10);
@@ -136,6 +133,8 @@ void lapic_init(uint8_t processor_id) {
 	lapic_write(0x320, 32 | 0x20000);
 	lapic_write(0x3E0, 3);
 	lapic_write(0x380, tick_in_10ms / 10);
+
+
 }
 
 static uint32_t ioapic_read(uintptr_t ioapic_address, size_t reg) {
