@@ -6,7 +6,7 @@ override KERNEL := polaris.elf
 
 # User controllable CFLAGS.
 GIT_VERSION := $(shell git --no-pager describe --tags --always --dirty)
-CFLAGS ?= -Wall -Wextra -Wvla -Wshadow -g -Og -pipe -DGIT_VERSION=\"$(GIT_VERSION)\"
+CFLAGS ?= -Wvla -Wshadow -g -Og -pipe -DGIT_VERSION=\"$(GIT_VERSION)\"
 
 # User controllable linker flags. We set none by default.
 LDFLAGS ?=
@@ -56,7 +56,6 @@ AS := nasm
 override INTERNALCFLAGS += 				\
 	-m64                   				\
 	-march=x86-64          				\
-	-mabi=sysv             				\
 	-masm=intel            				\
 	-mgeneral-regs-only    				\
 	-I fw/lai/include      				\
@@ -64,10 +63,10 @@ override INTERNALCFLAGS += 				\
 	-fsanitize=undefined   				\
 	-Wall -Wextra 		   				\
 	-Wno-builtin-declaration-mismatch	\
-	-mno-red-zone						
+	-mno-red-zone
 
 override INTERNALLDFLAGS += \
-	-Wl,-m,elf_x86_64       \
+	-Wl,-m,elf_x86_64
 
 .PHONY: all
 all: $(KERNEL)

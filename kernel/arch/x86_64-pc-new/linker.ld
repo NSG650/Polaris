@@ -50,12 +50,12 @@ SECTIONS {
 	} :data
 
 	.dynamic : {
-		*(.dynamic .dynamic.*)
+		*(.dynamic)
 	} :data :dynamic
 
 	.bss : {
-		*(COMMON)
 		*(.bss .bss.*)
+		*(COMMON)
 	} :data
 
 	data_end_addr = .;

@@ -1,3 +1,4 @@
+#include <debug/debug.h>
 #include <sys/idt.h>
 #include <sys/isr.h>
 

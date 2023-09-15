@@ -53,8 +53,12 @@ volatile struct limine_hhdm_request hhdm_request = {.id = LIMINE_HHDM_REQUEST,
 static volatile struct limine_kernel_address_request kernel_address_request = {
 	.id = LIMINE_KERNEL_ADDRESS_REQUEST, .revision = 0};
 
-static volatile struct limine_5_level_paging_request five_level_paging_request =
-	{.id = LIMINE_5_LEVEL_PAGING_REQUEST, .revision = 0};
+static volatile struct limine_paging_mode_request paging_mode_request = {
+	.id = LIMINE_PAGING_MODE_REQUEST,
+	.revision = 0,
+	.response = NULL,
+	.mode = LIMINE_PAGING_MODE_X86_64_5LVL,
+	.flags = 0};
 
 static volatile struct limine_framebuffer_request framebuffer_request = {
 	.id = LIMINE_FRAMEBUFFER_REQUEST, .revision = 0};
@@ -74,7 +78,7 @@ void nmi_vector(registers_t *reg) {
 			halt();
 		}
 	}
-	panic_(reg->rip, reg->rbp, "Unexpected NMI\n");
+	panic_((void *)(reg->rip), (void *)(reg->rbp), "Unexpected NMI\n");
 }
 
 void arch_entry(void) {

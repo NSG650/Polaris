@@ -4,6 +4,8 @@
 #include <fw/madt.h>
 #include <io/pci.h>
 #include <klibc/kargs.h>
+#include <lai/core.h>
+#include <lai/helpers/sci.h>
 #include <mm/vmm.h>
 #include <sys/hpet.h>
 

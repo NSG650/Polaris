@@ -31,10 +31,10 @@ static void smp_cpu_init(struct limine_smp_info *smp_info) {
 
 	spinlock_acquire_or_wait(&smp_lock);
 
-	gdt_load_tss(&prcb_local->cpu_tss);
+	gdt_load_tss((size_t)(&prcb_local->cpu_tss));
 
-	set_kernel_gs(prcb_local);
-	set_user_gs(prcb_local);
+	set_kernel_gs((uint64_t)prcb_local);
+	set_user_gs((uint64_t)prcb_local);
 
 	// SSE/SSE2
 	uint64_t cr0 = 0;
@@ -153,7 +153,7 @@ void smp_init(struct limine_smp_response *smp_info) {
 
 	memzero(prcbs, sizeof(struct prcb) * cpu_count);
 
-	for (int i = 0; i < cpu_count; i++) {
+	for (size_t i = 0; i < cpu_count; i++) {
 		struct limine_smp_info *cpu = smp_info->cpus[i];
 		cpu->extra_argument = (uint64_t)&prcbs[i];
 		prcbs[i].cpu_number = i;

@@ -28,6 +28,11 @@ uint8_t framebuffer_initialised = 0;
 struct framebuffer framebuff;
 static struct flanterm_context *ctx;
 
+static void kffree(void *addr, size_t sz) {
+	(void)sz;
+	kfree(addr);
+}
+
 void framebuffer_init(struct framebuffer *fb) {
 	framebuff.address = fb->address;
 	framebuff.pitch = fb->pitch;
@@ -42,7 +47,7 @@ void framebuffer_init(struct framebuffer *fb) {
 	framebuff.back_address = kmalloc(framebuff.pitch * framebuff.height);
 	framebuff.bg_color = fb->bg_color;
 
-	ctx = flanterm_fb_init(kmalloc, kfree, (void *)fb->address, fb->width,
+	ctx = flanterm_fb_init(kmalloc, kffree, (void *)fb->address, fb->width,
 						   fb->height, fb->pitch, NULL, NULL, NULL, NULL, NULL,
 						   NULL, NULL, NULL, 0, 0, 0, 1, 1, 0);
 

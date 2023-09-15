@@ -134,7 +134,7 @@ void *slab_alloc(size_t size) {
 
 	size_t page_count = DIV_ROUNDUP(size, PAGE_SIZE);
 	uint64_t ret = (uint64_t)pmm_allocz(page_count + 1);
-	if (ret == NULL) {
+	if ((void *)ret == NULL) {
 		return NULL;
 	}
 
@@ -144,7 +144,7 @@ void *slab_alloc(size_t size) {
 	metadata->pages = page_count;
 	metadata->size = size;
 
-	return ret + PAGE_SIZE;
+	return (void *)(ret + PAGE_SIZE);
 }
 
 void *slab_realloc(void *addr, size_t new_size) {
