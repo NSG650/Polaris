@@ -231,3 +231,58 @@ level4:
 	spinlock_drop(&pagemap->lock);
 	return true;
 }
+
+uint64_t *vmm_virt_to_pte(struct pagemap *pagemap, uintptr_t virt_addr,
+						  bool allocate) {
+	// TODO: Should we spinlock here?
+	size_t pml5_entry = (virt_addr & ((uint64_t)0x1FF << 48)) >> 48;
+	size_t pml4_entry = (virt_addr & ((uint64_t)0x1FF << 39)) >> 39;
+	size_t pml3_entry = (virt_addr & ((uint64_t)0x1FF << 30)) >> 30;
+	size_t pml2_entry = (virt_addr & ((uint64_t)0x1FF << 21)) >> 21;
+	size_t pml1_entry = (virt_addr & ((uint64_t)0x1FF << 12)) >> 12;
+
+	uint64_t *pml5, *pml4, *pml3, *pml2, *pml1;
+
+	if (paging_mode_request.response->mode == LIMINE_PAGING_MODE_X86_64_5LVL) {
+		pml5 = pagemap->top_level;
+		goto level5;
+	} else {
+		pml4 = pagemap->top_level;
+		goto level4;
+	}
+
+level5:
+	pml4 = get_next_level(pml5, pml5_entry, allocate);
+	if (pml4 == NULL) {
+		return NULL;
+	}
+level4:
+	pml3 = get_next_level(pml4, pml4_entry, allocate);
+	if (pml3 == NULL) {
+		return NULL;
+	}
+	pml2 = get_next_level(pml3, pml3_entry, allocate);
+	if (pml2 == NULL) {
+		return NULL;
+	}
+	pml1 = get_next_level(pml2, pml2_entry, allocate);
+	if (pml1 == NULL) {
+		return NULL;
+	}
+
+	return &pml1[pml1_entry];
+}
+
+uint64_t vmm_virt_to_phys(struct pagemap *pagemap, uint64_t virt_addr) {
+	uint64_t *pte = vmm_virt_to_pte(pagemap, virt_addr, false);
+	if (pte == NULL || (((*pte) & ~0xffffffffff000) & 1) == 0)
+		return INVALID_PHYS;
+
+	return ((*pte) & 0xffffffffff000);
+}
+
+uint64_t vmm_virt_to_kernel(struct pagemap *pagemap, uint64_t virt_addr) {
+	uint64_t aligned_virtual_address = ALIGN_DOWN(virt_addr, PAGE_SIZE);
+	uint64_t phys_addr = vmm_virt_to_phys(pagemap, virt_addr);
+	return (phys_addr + MEM_PHYS_OFFSET + virt_addr - aligned_virtual_address);
+}

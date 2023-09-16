@@ -111,7 +111,7 @@ void arch_entry(void) {
 	kprintf("Got kernel cmdline as \"%s\"\n", kernel_file->cmdline);
 
 	if ((kernel_args_num & KERNEL_ARGS_CPU_COUNT_GIVEN))
-		kprintf("cpu count is %u\n", cpu_count);
+		kprintf("CPU count is %u\n", cpu_count);
 
 	gdt_init();
 	isr_install();
@@ -126,7 +126,7 @@ void arch_entry(void) {
 	timer_sched_oneshot(48, 20000);
 	sti();
 
-	//	sched_init(0);
+	// sched_init(0);
 
 	for (;;) {
 		halt();

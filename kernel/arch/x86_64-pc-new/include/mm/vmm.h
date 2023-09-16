@@ -43,5 +43,7 @@ struct pagemap *vmm_new_pagemap(void);
 bool vmm_map_page(struct pagemap *pagemap, uint64_t virt_addr,
 				  uint64_t phys_addr, uint64_t flags);
 bool vmm_unmap_page(struct pagemap *pagemap, uintptr_t virt);
+uint64_t vmm_virt_to_phys(struct pagemap *pagemap, uint64_t virt_addr);
+uint64_t vmm_virt_to_kernel(struct pagemap *pagemap, uint64_t virt_addr);
 
 #endif
