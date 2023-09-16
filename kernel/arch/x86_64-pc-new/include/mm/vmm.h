@@ -32,6 +32,10 @@ extern volatile struct limine_kernel_address_request kernel_address_request;
 #define KERNEL_BASE (kernel_address_request.response->virtual_base)
 #define INVALID_PHYS ((uint64_t)0xffffffffffffffff)
 
+#define PAGE_READ (0b1)
+#define PAGE_WRITE (0b10)
+#define PAGE_EXECUTE (1ull << 63ull)
+
 struct pagemap {
 	lock_t lock;
 	uint64_t *top_level;

@@ -21,4 +21,6 @@ void elf_init_function_table(uint8_t *binary);
 char *elf_get_name_from_function(uint64_t address);
 uint64_t elf_get_function_from_name(const char *string);
 
+bool elf_kernel_module_load(uint8_t *data);
+
 #endif
