@@ -54,3 +54,30 @@ void serial_puts(char *str) {
 		transmit_data(*str++);
 	}
 }
+
+int serial_received(void) {
+	return inb(COM1 + 5) & 1;
+}
+
+char serial_get_byte(void) {
+	while (serial_received() == 0)
+		;
+
+	return inb(COM1);
+}
+
+char serial_getchar(void) {
+	char c = '\0';
+	char last_c = c;
+	while (1) {
+		if (c != '\0')
+			serial_putchar('\b');
+		serial_putchar(c);
+		c = serial_get_byte();
+		if (c == '\r')
+			break;
+
+		last_c = c;
+	}
+	return last_c;
+}

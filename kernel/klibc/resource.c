@@ -96,9 +96,9 @@ void *resource_create(size_t size) {
 dev_t resource_create_dev_id(void) {
 	static dev_t dev_id_counter = 1;
 	static lock_t lock = 0;
-	spinlock_acquire_or_wait(lock);
+	spinlock_acquire_or_wait(&lock);
 	dev_t ret = dev_id_counter++;
-	spinlock_drop(lock);
+	spinlock_drop(&lock);
 	return ret;
 }
 
@@ -108,7 +108,7 @@ bool fdnum_close(struct process *proc, int fdnum) {
 	}
 
 	bool ok = false;
-	spinlock_acquire_or_wait(proc->fds_lock);
+	spinlock_acquire_or_wait(&proc->fds_lock);
 
 	if (fdnum < 0 || fdnum >= MAX_FDS) {
 		errno = EBADF;
@@ -133,7 +133,7 @@ bool fdnum_close(struct process *proc, int fdnum) {
 	proc->fds[fdnum] = NULL;
 
 cleanup:
-	spinlock_drop(proc->fds_lock);
+	spinlock_drop(&proc->fds_lock);
 	return ok;
 }
 

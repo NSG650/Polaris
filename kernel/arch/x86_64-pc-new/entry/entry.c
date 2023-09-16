@@ -57,6 +57,7 @@ static volatile struct limine_smp_request smp_request = {
 	.id = LIMINE_SMP_REQUEST, .revision = 0, .response = NULL, .flags = 1};
 
 extern bool is_halting;
+extern uint8_t is_pausing;
 
 void nmi_vector(registers_t *reg) {
 	if (is_halting) {
@@ -64,9 +65,16 @@ void nmi_vector(registers_t *reg) {
 			cli();
 			halt();
 		}
+	} else if (is_pausing) {
+		while (is_pausing & PAUSING) {
+			pause();
+		}
+	} else {
+		panic_((void *)(reg->rip), (void *)(reg->rbp), "Unexpected NMI\n");
 	}
-	panic_((void *)(reg->rip), (void *)(reg->rbp), "Unexpected NMI\n");
 }
+
+void breakpoint_handler(registers_t *reg);
 
 void arch_entry(void) {
 	cli();
@@ -126,6 +134,7 @@ void arch_entry(void) {
 	timer_sched_oneshot(48, 20000);
 	sti();
 
+	isr_register_handler(3, breakpoint_handler);
 	// sched_init(0);
 
 	for (;;) {

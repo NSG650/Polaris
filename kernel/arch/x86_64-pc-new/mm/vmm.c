@@ -234,7 +234,7 @@ level4:
 
 uint64_t *vmm_virt_to_pte(struct pagemap *pagemap, uintptr_t virt_addr,
 						  bool allocate) {
-	// TODO: Should we spinlock here?
+	spinlock_acquire_or_wait(&pagemap->lock);
 	size_t pml5_entry = (virt_addr & ((uint64_t)0x1FF << 48)) >> 48;
 	size_t pml4_entry = (virt_addr & ((uint64_t)0x1FF << 39)) >> 39;
 	size_t pml3_entry = (virt_addr & ((uint64_t)0x1FF << 30)) >> 30;
@@ -269,7 +269,7 @@ level4:
 	if (pml1 == NULL) {
 		return NULL;
 	}
-
+	spinlock_drop(&pagemap->lock);
 	return &pml1[pml1_entry];
 }
 

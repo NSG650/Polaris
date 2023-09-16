@@ -18,7 +18,12 @@
  * limitations under the License.
  */
 
+#define PAUSING (1 << 0)
+#define UNPAUSING (1 << 1)
+
 void halt_current_cpu(void);
 void halt_other_cpus(void);
+void pause_other_cpus(void);
+void unpause_other_cpus(void);
 
 #endif

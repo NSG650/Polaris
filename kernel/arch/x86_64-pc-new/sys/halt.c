@@ -4,9 +4,11 @@
 #include <klibc/vec.h>
 #include <stdbool.h>
 #include <sys/apic.h>
+#include <sys/halt.h>
 
 extern bool is_smp;
 bool is_halting = false;
+uint8_t is_pausing = false;
 
 /*
  * Copyright 2021 - 2023 NSG650
@@ -41,6 +43,34 @@ void halt_other_cpus(void) {
 	uint64_t icr = 0;
 	icr |= (0b100) << 8; // set delivery mode to nmi
 	icr |= (0b11) << 18; // set destination shorthand to all excluding self
+	lapic_write(0x300, icr);
+	lapic_write(0x310, icr >> 32);
+}
+
+void pause_other_cpus(void) {
+	if (!is_smp)
+		return;
+
+	is_pausing = 0;
+	is_pausing |= PAUSING;
+
+	uint64_t icr = 0;
+	icr |= (0b100) << 8;
+	icr |= (0b11) << 18;
+	lapic_write(0x300, icr);
+	lapic_write(0x310, icr >> 32);
+}
+
+void unpause_other_cpus(void) {
+	if (!is_smp)
+		return;
+
+	is_pausing = 0;
+	is_pausing |= UNPAUSING;
+
+	uint64_t icr = 0;
+	icr |= (0b100) << 8;
+	icr |= (0b11) << 18;
 	lapic_write(0x300, icr);
 	lapic_write(0x310, icr >> 32);
 }
