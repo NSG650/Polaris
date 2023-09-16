@@ -19,6 +19,7 @@
  */
 
 #include <limine.h>
+#include <locks/spinlock.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -30,6 +31,7 @@ extern volatile struct limine_hhdm_request hhdm_request;
 #define INVALID_PHYS ((uint64_t)0xffffffffffffffff)
 
 struct pagemap {
+	lock_t lock;
 	uint64_t *top_level;
 };
 
@@ -40,5 +42,6 @@ void vmm_switch_pagemap(struct pagemap *pagemap);
 struct pagemap *vmm_new_pagemap(void);
 bool vmm_map_page(struct pagemap *pagemap, uint64_t virt_addr,
 				  uint64_t phys_addr, uint64_t flags);
+bool vmm_unmap_page(struct pagemap *pagemap, uintptr_t virt);
 
 #endif

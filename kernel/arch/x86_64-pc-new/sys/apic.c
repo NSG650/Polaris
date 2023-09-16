@@ -133,8 +133,6 @@ void lapic_init(uint8_t processor_id) {
 	lapic_write(0x320, 32 | 0x20000);
 	lapic_write(0x3E0, 3);
 	lapic_write(0x380, tick_in_10ms / 10);
-
-
 }
 
 static uint32_t ioapic_read(uintptr_t ioapic_address, size_t reg) {

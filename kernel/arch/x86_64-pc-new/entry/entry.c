@@ -32,7 +32,6 @@
 #include <sys/idt.h>
 #include <sys/isr.h>
 #include <sys/prcb.h>
-#include <sched/sched.h>
 
 extern bool print_now;
 
@@ -127,7 +126,7 @@ void arch_entry(void) {
 	timer_sched_oneshot(48, 20000);
 	sti();
 
-//	sched_init(0);
+	//	sched_init(0);
 
 	for (;;) {
 		halt();

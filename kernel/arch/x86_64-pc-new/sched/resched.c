@@ -1,10 +1,10 @@
 #include <debug/debug.h>
 #include <fw/madt.h>
 #include <locks/spinlock.h>
+#include <mm/vmm.h>
 #include <sched/sched.h>
 #include <sys/apic.h>
 #include <sys/prcb.h>
-#include <mm/vmm.h>
 
 lock_t resched_lock = {0};
 

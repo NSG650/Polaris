@@ -61,9 +61,9 @@ void kernel_main(void *args) {
 
 	// net_init();
 
-/*	std_console_device =
-		(vfs_get_node(vfs_root, "/dev/console", true))->resource;
-*/
+	/*	std_console_device =
+			(vfs_get_node(vfs_root, "/dev/console", true))->resource;
+	*/
 
 	char *argv[] = {"/bin/init.elf", NULL};
 
