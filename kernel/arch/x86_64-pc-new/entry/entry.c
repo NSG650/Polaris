@@ -27,6 +27,7 @@
 #include <sched/sched.h>
 #include <serial/serial.h>
 #include <sys/apic.h>
+#include <sys/elf.h>
 #include <sys/gdt.h>
 #include <sys/halt.h>
 #include <sys/idt.h>
@@ -135,6 +136,8 @@ void arch_entry(void) {
 	sti();
 
 	isr_register_handler(3, breakpoint_handler);
+
+	elf_init_function_table(kernel_file->address);
 	// sched_init(0);
 
 	for (;;) {

@@ -27,6 +27,11 @@
 #include <sched/syscall.h>
 #include <stdbool.h>
 
+struct function_symbol {
+	uint64_t address;
+	char *name;
+};
+
 void kputchar(char c);
 void kputs(char *string);
 void kprintffos(bool fos, char *fmt, ...);

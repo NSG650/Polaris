@@ -25,9 +25,11 @@
 #include <stdint.h>
 
 extern volatile struct limine_hhdm_request hhdm_request;
+extern volatile struct limine_kernel_address_request kernel_address_request;
 
 #define PAGE_SIZE ((size_t)4096)
 #define MEM_PHYS_OFFSET (hhdm_request.response->offset)
+#define KERNEL_BASE (kernel_address_request.response->virtual_base)
 #define INVALID_PHYS ((uint64_t)0xffffffffffffffff)
 
 struct pagemap {

@@ -17,4 +17,8 @@ struct auxval {
 bool elf_load(struct pagemap *pagemap, struct resource *res, uint64_t load_base,
 			  struct auxval *auxv, const char **ld_path);
 
+void elf_init_function_table(uint8_t *binary);
+char *elf_get_name_from_function(uint64_t address);
+uint64_t elf_get_function_from_name(const char *string);
+
 #endif
