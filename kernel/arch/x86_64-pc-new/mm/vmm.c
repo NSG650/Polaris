@@ -47,16 +47,8 @@ void vmm_init(struct limine_memmap_entry **memmap, size_t memmap_entries) {
 	for (uint64_t p = 256; p < 512; p++)
 		get_next_level(kernel_pagemap->top_level, p, true);
 
-	for (uint64_t p = 0; p < 0x200000; p += PAGE_SIZE) {
-		vmm_map_page(kernel_pagemap, p + MEM_PHYS_OFFSET, p, 0b111);
-	}
-
-	for (uint64_t p = 0x200000; p < 0x40000000; p += PAGE_SIZE) {
-		vmm_map_page(kernel_pagemap, p + MEM_PHYS_OFFSET, p, 0b111);
-	}
-
-	for (uint64_t p = 0x40000000; p < 4096UL * 1024 * 1024; p += PAGE_SIZE) {
-		vmm_map_page(kernel_pagemap, p + MEM_PHYS_OFFSET, p, 0b111);
+	for (uint64_t p = 0; p < 4096UL * 1024 * 1024; p += 0x200000) {
+		vmm_map_page(kernel_pagemap, p + MEM_PHYS_OFFSET, p, 0b11, Size2MiB);
 	}
 
 	for (size_t i = 0; i < memmap_entries; i++) {
@@ -76,7 +68,8 @@ void vmm_init(struct limine_memmap_entry **memmap, size_t memmap_entries) {
 
 		for (uint64_t j = 0; j < aligned_length; j += PAGE_SIZE) {
 			uint64_t page = aligned_base + j;
-			vmm_map_page(kernel_pagemap, page + MEM_PHYS_OFFSET, page, 0b111);
+			vmm_map_page(kernel_pagemap, page + MEM_PHYS_OFFSET, page, 0b11,
+						 Size4KiB);
 		}
 	}
 
@@ -94,19 +87,21 @@ void vmm_init(struct limine_memmap_entry **memmap, size_t memmap_entries) {
 	for (uintptr_t text_addr = text_start; text_addr < text_end;
 		 text_addr += PAGE_SIZE) {
 		uintptr_t phys = text_addr - vaddr + paddr;
-		vmm_map_page(kernel_pagemap, text_addr, phys, 1);
+		vmm_map_page(kernel_pagemap, text_addr, phys, 1, Size4KiB);
 	}
 
 	for (uintptr_t rodata_addr = rodata_start; rodata_addr < rodata_end;
 		 rodata_addr += PAGE_SIZE) {
 		uintptr_t phys = rodata_addr - vaddr + paddr;
-		vmm_map_page(kernel_pagemap, rodata_addr, phys, 1 | 1ull << 63ull);
+		vmm_map_page(kernel_pagemap, rodata_addr, phys, 1 | 1ull << 63ull,
+					 Size4KiB);
 	}
 
 	for (uintptr_t data_addr = data_start; data_addr < data_end;
 		 data_addr += PAGE_SIZE) {
 		uintptr_t phys = data_addr - vaddr + paddr;
-		vmm_map_page(kernel_pagemap, data_addr, phys, 0b11 | 1ull << 63ull);
+		vmm_map_page(kernel_pagemap, data_addr, phys, 0b11 | 1ull << 63ull,
+					 Size4KiB);
 	}
 	// Switch to the new page map, dropping Limine's default one
 	vmm_switch_pagemap(kernel_pagemap);
@@ -130,7 +125,7 @@ struct pagemap *vmm_new_pagemap(void) {
 }
 
 bool vmm_map_page(struct pagemap *pagemap, uint64_t virt_addr,
-				  uint64_t phys_addr, uint64_t flags) {
+				  uint64_t phys_addr, uint64_t flags, enum page_size pg_size) {
 	spinlock_acquire_or_wait(&pagemap->lock);
 
 	// Calculate the indices in the various tables using the virtual address
@@ -164,6 +159,12 @@ level4:
 	pml2 = get_next_level(pml3, pml3_entry, true);
 	if (pml2 == NULL) {
 		goto die;
+	}
+
+	if (pg_size == Size2MiB) {
+		pml2[pml2_entry] = phys_addr | flags | (1 << 7);
+		spinlock_drop(&pagemap->lock);
+		return true;
 	}
 
 	pml1 = get_next_level(pml2, pml2_entry, true);
@@ -254,21 +255,26 @@ uint64_t *vmm_virt_to_pte(struct pagemap *pagemap, uintptr_t virt_addr,
 level5:
 	pml4 = get_next_level(pml5, pml5_entry, allocate);
 	if (pml4 == NULL) {
-		return NULL;
+		goto die;
 	}
 level4:
 	pml3 = get_next_level(pml4, pml4_entry, allocate);
 	if (pml3 == NULL) {
-		return NULL;
+		goto die;
 	}
+
 	pml2 = get_next_level(pml3, pml3_entry, allocate);
 	if (pml2 == NULL) {
-		return NULL;
+		goto die;
 	}
+
 	pml1 = get_next_level(pml2, pml2_entry, allocate);
 	if (pml1 == NULL) {
+	die:
+		spinlock_drop(&pagemap->lock);
 		return NULL;
 	}
+
 	spinlock_drop(&pagemap->lock);
 	return &pml1[pml1_entry];
 }

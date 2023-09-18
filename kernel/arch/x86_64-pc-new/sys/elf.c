@@ -227,7 +227,7 @@ bool elf_kernel_module_load(uint8_t *data) {
 			for (int i = 0; i < section->sh_size; i += PAGE_SIZE) {
 				vmm_map_page(kernel_pagemap, section->sh_addr,
 							 section->sh_addr - MEM_PHYS_OFFSET,
-							 PAGE_READ | PAGE_EXECUTE);
+							 PAGE_READ | PAGE_EXECUTE, Size4KiB);
 			}
 		}
 	}
