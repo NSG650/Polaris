@@ -1,19 +1,5 @@
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-
-static inline void outb(uint16_t port, uint8_t val) {
-	asm volatile("out %0, %1\n\t" : : "d"(port), "a"(val) : "memory");
-}
-
-static inline uint8_t inb(uint16_t port) {
-	uint8_t ret;
-	asm volatile("in %0, %1\n\t" : "=a"(ret) : "d"(port) : "memory");
-	return ret;
-}
-
-void kprintffos(bool fos, char *fmt, ...);
-#define kprintf(...) kprintffos(1, __VA_ARGS__)
+#include <debug/debug.h>
+#include <x86_64/io/ports.h>
 
 static void beep_play_sound(uint32_t freq) {
 	uint32_t div = 0;

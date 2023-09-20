@@ -30,6 +30,7 @@
 #include <sys/elf.h>
 #include <sys/gdt.h>
 #include <sys/halt.h>
+#include <sys/hpet.h>
 #include <sys/idt.h>
 #include <sys/isr.h>
 #include <sys/prcb.h>

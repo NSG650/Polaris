@@ -7,7 +7,7 @@ ifeq ($(CONFIG_ARCH),x86_64)
 	AS := nasm
 	CC := x86_64-elf-gcc
 	ASFLAGS := -felf64 -static
-	CFLAGS := -c -mcmodel=large -fno-asynchronous-unwind-tables -ffreestanding -masm=intel
+	CFLAGS := -c -mcmodel=large -fno-asynchronous-unwind-tables -ffreestanding -masm=intel -Isdk
 endif
 
 hello.ko: $(CHELLOFILES)
