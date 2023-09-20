@@ -63,7 +63,7 @@ static void kprintf_(char *fmt, va_list args) {
 	}
 	if (in_panic) {
 		kputs("*** PANIC:\t");
-	} else {
+	} else if (put_to_fb) {
 		uint64_t timer_tick = 0;
 		if (timer_installed()) {
 			timer_tick = timer_count();
@@ -146,6 +146,36 @@ void kprintffos(bool fos, char *fmt, ...) {
 	va_start(args, fmt);
 	kprintf_(fmt, args);
 	va_end(args);
+}
+
+void debug_hex_dump(const void *data, size_t size) {
+	char ascii[17];
+	size_t i, j;
+	ascii[16] = '\0';
+	for (i = 0; i < size; ++i) {
+		kprintffos(0, "%x ", ((unsigned char *)data)[i]);
+		if (((unsigned char *)data)[i] >= ' ' &&
+			((unsigned char *)data)[i] <= '~') {
+			ascii[i % 16] = ((unsigned char *)data)[i];
+		} else {
+			ascii[i % 16] = '.';
+		}
+		if ((i + 1) % 8 == 0 || i + 1 == size) {
+			kprintffos(0, " ");
+			if ((i + 1) % 16 == 0) {
+				kprintffos(0, "|  %s \n", ascii);
+			} else if (i + 1 == size) {
+				ascii[(i + 1) % 16] = '\0';
+				if ((i + 1) % 16 <= 8) {
+					kprintffos(0, " ");
+				}
+				for (j = (i + 1) % 16; j < 16; ++j) {
+					kprintffos(0, "   ");
+				}
+				kprintffos(0, "|  %s \n", ascii);
+			}
+		}
+	}
 }
 
 void panic_(size_t *ip, size_t *bp, char *fmt, ...) {

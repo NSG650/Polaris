@@ -127,6 +127,9 @@ void arch_entry(void) {
 
 	isr_register_handler(2, nmi_vector);
 	isr_register_handler(48, resched);
+	isr_register_handler(3, breakpoint_handler);
+
+	elf_init_function_table(kernel_file->address);
 
 	acpi_init(rsdp_request.response->address);
 	apic_init();
@@ -135,9 +138,6 @@ void arch_entry(void) {
 	timer_sched_oneshot(48, 20000);
 	sti();
 
-	isr_register_handler(3, breakpoint_handler);
-
-	elf_init_function_table(kernel_file->address);
 	// sched_init(0);
 
 	for (;;) {

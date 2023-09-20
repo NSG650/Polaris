@@ -91,7 +91,10 @@ void elf_init_function_table(uint8_t *binary) {
 	}
 }
 
-bool elf_kernel_module_load(uint8_t *data) {
+bool elf_kernel_module_load(const uint8_t *binary, size_t size) {
+	void *data = kmalloc(size);
+	memcpy(data, binary, size);
+
 	Elf64_Ehdr *ehdr = (Elf64_Ehdr *)data;
 
 	if (memcmp(ehdr->e_ident, ELFMAG, SELFMAG)) {
@@ -145,6 +148,7 @@ bool elf_kernel_module_load(uint8_t *data) {
 		if (section->sh_type == SHT_RELA) {
 			size_t entry_count = section->sh_size / section->sh_entsize;
 			if (section->sh_entsize != sizeof(Elf64_Rela)) {
+				kfree(data);
 				return false;
 			}
 
@@ -207,6 +211,7 @@ bool elf_kernel_module_load(uint8_t *data) {
 						*location = elf_get_function_from_name(symbol_name);
 					}
 				} else {
+					kfree(data);
 					return false;
 				}
 			}
@@ -226,8 +231,8 @@ bool elf_kernel_module_load(uint8_t *data) {
 
 			for (int i = 0; i < section->sh_size; i += PAGE_SIZE) {
 				vmm_map_page(kernel_pagemap, section->sh_addr,
-							 section->sh_addr - MEM_PHYS_OFFSET,
-							 PAGE_READ | PAGE_EXECUTE, Size4KiB);
+							 section->sh_addr - MEM_PHYS_OFFSET, prot,
+							 Size4KiB);
 			}
 		}
 	}
@@ -263,6 +268,7 @@ bool elf_kernel_module_load(uint8_t *data) {
 					// Calculate the symbol location
 					run_func =
 						(void_func_t)(run_section->sh_addr + symbol->st_value);
+
 					break;
 				}
 			}
@@ -273,9 +279,11 @@ bool elf_kernel_module_load(uint8_t *data) {
 	}
 
 	if (run_func != NULL) {
-		// run_func();
+		run_func();
+		kfree(data);
 		return true;
 	} else {
+		kfree(data);
 		return false;
 	}
 }
