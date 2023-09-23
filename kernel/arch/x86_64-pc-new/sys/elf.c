@@ -1,15 +1,16 @@
 #include <debug/debug.h>
 #include <klibc/hashmap.h>
+#include <klibc/module.h>
 #include <mm/pmm.h>
 #include <mm/vmm.h>
 #include <sys/elf.h>
-
-typedef void (*void_func_t)(void);
 
 static struct function_symbol *name_to_function = NULL;
 static struct function_symbol *function_to_name = NULL;
 static size_t function_table_size = 0;
 bool symbol_table_initialised = false;
+
+module_list_t modules_list = {0};
 
 static void simple_append_name(const char *string, uint64_t address) {
 	size_t index = hash(string, strlen(string)) % function_table_size;
@@ -17,7 +18,7 @@ static void simple_append_name(const char *string, uint64_t address) {
 	name_to_function[index].name = string;
 }
 
-char *elf_get_name_from_function(uint64_t address) {
+const char *elf_get_name_from_function(uint64_t address) {
 	if (!symbol_table_initialised)
 		return "";
 
@@ -36,7 +37,7 @@ char *elf_get_name_from_function(uint64_t address) {
 
 uint64_t elf_get_function_from_name(const char *string) {
 	if (!symbol_table_initialised)
-		return NULL;
+		return (uint64_t)NULL;
 
 	size_t index = hash(string, strlen(string)) % function_table_size;
 	uint64_t address = name_to_function[index].address;
@@ -48,6 +49,8 @@ uint64_t elf_get_function_from_name(const char *string) {
 }
 
 void elf_init_function_table(uint8_t *binary) {
+	vec_init(&modules_list);
+
 	Elf64_Ehdr *ehdr = (Elf64_Ehdr *)binary;
 
 	Elf64_Shdr *elf_section_headers = (Elf64_Shdr *)(binary + ehdr->e_shoff);
@@ -58,7 +61,8 @@ void elf_init_function_table(uint8_t *binary) {
 	for (int i = 0; i < ehdr->e_shnum; i++) {
 		if (elf_section_headers[i].sh_type == SHT_SYMTAB) {
 			symtab = &elf_section_headers[i];
-			strtab = binary + elf_section_headers[symtab->sh_link].sh_offset;
+			strtab = (char *)((uintptr_t)binary +
+							  elf_section_headers[symtab->sh_link].sh_offset);
 			break;
 		}
 	}
@@ -91,34 +95,34 @@ void elf_init_function_table(uint8_t *binary) {
 	}
 }
 
-bool elf_kernel_module_load(const uint8_t *binary, size_t size) {
-	void *data = kmalloc(size);
-	memcpy(data, binary, size);
+uint64_t module_load(const uint8_t *data) {
+	struct module *m = kmalloc(sizeof(struct module));
+	memzero(m, sizeof(struct module));
 
 	Elf64_Ehdr *ehdr = (Elf64_Ehdr *)data;
 
 	if (memcmp(ehdr->e_ident, ELFMAG, SELFMAG)) {
-		return false;
+		return 1;
 	}
 
 	if (ehdr->e_ident[EI_CLASS] != ELFCLASS64 ||
 		ehdr->e_ident[EI_DATA] != ELFDATA2LSB || ehdr->e_ident[EI_OSABI] != 0 ||
 		ehdr->e_machine != EM_X86_64) {
-		return;
+		return 1;
 	}
 
 	if (ehdr->e_type != 1) {
-		return false;
+		return 1;
 	}
 
 	if (ehdr->e_shentsize != sizeof(Elf64_Shdr)) {
-		return false;
+		return 1;
 	}
 
 	// Setup variable for the section headers
 	size_t section_count = ehdr->e_shnum;
-	size_t section_header_size = sizeof(Elf64_Shdr);
-	Elf64_Shdr *elf_section_headers = data + ehdr->e_shoff;
+	Elf64_Shdr *elf_section_headers =
+		(Elf64_Shdr *)((uintptr_t)data + ehdr->e_shoff);
 
 	for (size_t index = 0; index < section_count; index++) {
 		Elf64_Shdr *section = (elf_section_headers + index);
@@ -129,16 +133,20 @@ bool elf_kernel_module_load(const uint8_t *binary, size_t size) {
 			char *mem = (char *)((uint64_t)pmm_allocz(
 									 1 + (section->sh_size / PAGE_SIZE)) +
 								 MEM_PHYS_OFFSET);
+
+			m->mappings[m->mappings_count].addr = (uint64_t)(size_t)mem;
+			m->mappings[m->mappings_count++].size = section->sh_size;
+
 			if (section->sh_type == SHT_PROGBITS) {
 				// Read data from the file
 				memcpy(mem, data + section->sh_offset, section->sh_size);
 			}
-			section->sh_addr = (uint64_t)(size_t)mem;
+			section->sh_addr = (uintptr_t)mem;
 		}
 
 		// Load symbol and string tables from the file
 		if (section->sh_type == SHT_SYMTAB || section->sh_type == SHT_STRTAB) {
-			section->sh_addr = data + section->sh_offset;
+			section->sh_addr = (uintptr_t)data + section->sh_offset;
 		}
 	}
 
@@ -148,17 +156,17 @@ bool elf_kernel_module_load(const uint8_t *binary, size_t size) {
 		if (section->sh_type == SHT_RELA) {
 			size_t entry_count = section->sh_size / section->sh_entsize;
 			if (section->sh_entsize != sizeof(Elf64_Rela)) {
-				kfree(data);
-				return false;
+				return 1;
 			}
 
 			// Load relocation entries from the file
-			Elf64_Rela *entries = (uint64_t)(size_t)data + section->sh_offset;
+			Elf64_Rela *entries =
+				(Elf64_Rela *)((uintptr_t)data + section->sh_offset);
 			section->sh_addr = (uint64_t)(size_t)data + section->sh_offset;
 
 			// Locate the section we are relocating
 			Elf64_Shdr *relocation_section =
-				(elf_section_headers + section->sh_info);
+				(Elf64_Shdr *)(elf_section_headers + section->sh_info);
 			char *relocation_section_data = (char *)relocation_section->sh_addr;
 
 			// Locate the symbol table for this relocation table
@@ -188,14 +196,6 @@ bool elf_kernel_module_load(const uint8_t *binary, size_t size) {
 
 					// Check that the symbol is defined in this file
 					if (symbol->st_shndx > 0) {
-						// Print out which symbol is being relocated
-						if (symbol->st_name) {
-						} else {
-							Elf64_Shdr *shstrtab =
-								(elf_section_headers + ehdr->e_shstrndx);
-							Elf64_Shdr *section =
-								(elf_section_headers + symbol->st_shndx);
-						}
 						// Calculate the location of the symbol
 						Elf64_Shdr *symbol_section =
 							(elf_section_headers + symbol->st_shndx);
@@ -211,8 +211,7 @@ bool elf_kernel_module_load(const uint8_t *binary, size_t size) {
 						*location = elf_get_function_from_name(symbol_name);
 					}
 				} else {
-					kfree(data);
-					return false;
+					return 1;
 				}
 			}
 		}
@@ -229,7 +228,9 @@ bool elf_kernel_module_load(const uint8_t *binary, size_t size) {
 			if (section->sh_flags & SHF_EXECINSTR)
 				prot |= PAGE_EXECUTE;
 
-			for (int i = 0; i < section->sh_size; i += PAGE_SIZE) {
+			m->mappings[index].prot = prot;
+
+			for (size_t i = 0; i < section->sh_size; i += PAGE_SIZE) {
 				vmm_map_page(kernel_pagemap, section->sh_addr,
 							 section->sh_addr - MEM_PHYS_OFFSET, prot,
 							 Size4KiB);
@@ -237,10 +238,7 @@ bool elf_kernel_module_load(const uint8_t *binary, size_t size) {
 		}
 	}
 
-	// Dump the sections as a table
-	Elf64_Shdr *shstrtab = (elf_section_headers + ehdr->e_shstrndx);
-
-	void_func_t run_func;
+	module_entry_t run_func = NULL;
 	for (size_t index = 0; index < section_count; index++) {
 		Elf64_Shdr *section = (elf_section_headers + index);
 
@@ -266,8 +264,8 @@ bool elf_kernel_module_load(const uint8_t *binary, size_t size) {
 					((symbol->st_info >> 4) & 0xf) == 1 &&
 					(run_section->sh_flags & 4)) {
 					// Calculate the symbol location
-					run_func =
-						(void_func_t)(run_section->sh_addr + symbol->st_value);
+					run_func = (module_entry_t)(run_section->sh_addr +
+												symbol->st_value);
 
 					break;
 				}
@@ -279,11 +277,33 @@ bool elf_kernel_module_load(const uint8_t *binary, size_t size) {
 	}
 
 	if (run_func != NULL) {
-		run_func();
-		kfree(data);
-		return true;
+		vec_push(&modules_list, m);
+
+		return run_func(m);
 	} else {
-		kfree(data);
-		return false;
+		return 1;
 	}
+}
+
+bool module_unload(const char *name) {
+	for (int i = 0; i < modules_list.length; i++) {
+		if (!strcmp(name, modules_list.data[i]->name)) {
+			struct module *m = modules_list.data[i];
+			if (!m->exit)
+				return false;
+
+			m->exit();
+			for (size_t j = 0; j < m->mappings_count; j++) {
+				pmm_free((void *)(m->mappings[j].addr - MEM_PHYS_OFFSET),
+						 (m->mappings[j].size / PAGE_SIZE) + 1);
+				for (size_t k = 0; k < m->mappings[j].size; k += PAGE_SIZE) {
+					vmm_unmap_page(kernel_pagemap, m->mappings[j].addr);
+				}
+			}
+			vec_remove(&modules_list, m);
+			kfree(m);
+			return true;
+		}
+	}
+	return false;
 }

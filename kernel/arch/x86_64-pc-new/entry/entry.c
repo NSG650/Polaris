@@ -21,6 +21,7 @@
 #include <fb/fb.h>
 #include <fw/acpi.h>
 #include <klibc/kargs.h>
+#include <klibc/module.h>
 #include <limine.h>
 #include <mm/pmm.h>
 #include <mm/slab.h>

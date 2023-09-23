@@ -1,4 +1,6 @@
 #include <debug/debug.h>
+#include <klibc/mem.h>
+#include <klibc/module.h>
 #include <x86_64/io/ports.h>
 
 static void beep_play_sound(uint32_t freq) {
@@ -26,9 +28,20 @@ static void beep_no_sound(void) {
 
 void timer_sleep(uint64_t ms);
 
-void driver_entry(void) {
+void driver_exit(void) {
+	kprintf("Bye bye!\n");
+}
+
+uint64_t driver_entry(struct module *driver_module) {
+	strncpy(driver_module->name, "beep", 128);
+
+	driver_module->exit = driver_exit;
+
 	kprintf("Hello I am the beep driver!\n");
+
 	beep_play_sound(220);
 	timer_sleep(1000);
 	beep_no_sound();
+
+	return 0;
 }

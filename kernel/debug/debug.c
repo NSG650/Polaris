@@ -63,7 +63,7 @@ static void kprintf_(char *fmt, va_list args) {
 	}
 	if (in_panic) {
 		kputs("*** PANIC:\t");
-	} else if (put_to_fb) {
+	} else {
 		uint64_t timer_tick = 0;
 		if (timer_installed()) {
 			timer_tick = timer_count();

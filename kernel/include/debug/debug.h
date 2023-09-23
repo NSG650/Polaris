@@ -29,7 +29,7 @@
 
 struct function_symbol {
 	uint64_t address;
-	char *name;
+	const char *name;
 };
 
 void kputchar(char c);
