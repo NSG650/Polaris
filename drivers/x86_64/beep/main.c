@@ -33,8 +33,6 @@ void driver_exit(void) {
 }
 
 uint64_t driver_entry(struct module *driver_module) {
-	strncpy(driver_module->name, "beep", 128);
-
 	driver_module->exit = driver_exit;
 
 	kprintf("Hello I am the beep driver!\n");

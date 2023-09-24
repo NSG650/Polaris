@@ -416,7 +416,7 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 		thrd->reg.rsp += STACK_SIZE;
 		thrd->reg.rsp += MEM_PHYS_OFFSET;
 		thrd->kernel_stack = thrd->reg.rsp + MEM_PHYS_OFFSET + STACK_SIZE;
-		thrd->stack = thrd->kernel_stack;
+		// thrd->stack = thrd->kernel_stack;
 	}
 	thrd->reg.rflags = 0x202;
 
@@ -812,7 +812,7 @@ void thread_kill(struct thread *thrd, bool r) {
 				 prcb_return_current_cpu()->fpu_storage_size / PAGE_SIZE);
 		kfree((void *)thrd->kernel_stack);
 	} else {
-		pmm_free((void *)thrd->stack, STACK_SIZE / PAGE_SIZE);
+		pmm_free((void *)((uintptr_t)thrd->stack), STACK_SIZE / PAGE_SIZE);
 	}
 #endif
 	vec_remove(&thrd->mother_proc->process_threads, thrd);

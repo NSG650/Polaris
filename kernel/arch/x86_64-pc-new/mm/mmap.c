@@ -3,6 +3,8 @@
 #include <errno.h>
 #include <klibc/misc.h>
 #include <mm/mmap.h>
+#include <sched/sched.h>
+#include <sys/prcb.h>
 
 struct addr2range {
 	struct mmap_range_local *range;
@@ -32,7 +34,7 @@ struct addr2range addr2range(struct pagemap *pagemap, uintptr_t virt) {
 
 bool mmap_handle_pf(registers_t *reg) {
 	return false;
-	/*
+
 	if ((reg->errorCode & 0x1) != 0) {
 		return false;
 	}
@@ -71,7 +73,6 @@ bool mmap_handle_pf(registers_t *reg) {
 	return mmap_page_in_range(local_range->global,
 							  range.memory_page * PAGE_SIZE, (uintptr_t)page,
 							  local_range->prot);
-	*/
 }
 
 bool mmap_range(struct pagemap *pagemap, uintptr_t virt, uintptr_t phys,
@@ -175,6 +176,93 @@ bool mmap_page_in_range(struct mmap_range_global *global, uintptr_t virt,
 	return true;
 }
 
+void *mmap(struct pagemap *pagemap, uintptr_t addr, size_t length, int prot,
+		   int flags, struct resource *res, off_t offset) {
+	struct mmap_range_global *global_range = NULL;
+	struct mmap_range_local *local_range = NULL;
+
+	if (length == 0) {
+		errno = EINVAL;
+		goto cleanup;
+	}
+	length = ALIGN_UP(length, PAGE_SIZE);
+
+	if ((flags & MAP_ANONYMOUS) == 0 && res != NULL && !res->can_mmap) {
+		errno = ENODEV;
+		return MAP_FAILED;
+	}
+
+	struct thread *thread = prcb_return_current_cpu()->running_thread;
+	struct process *process = thread->mother_proc;
+
+	uint64_t base = 0;
+	if ((flags & MAP_FIXED) != 0) {
+		if (!munmap(pagemap, addr, length)) {
+			goto cleanup;
+		}
+		base = addr;
+	} else {
+		base = process->mmap_anon_base;
+		process->mmap_anon_base += length + PAGE_SIZE;
+	}
+
+	global_range = kmalloc(sizeof(struct mmap_range_global));
+	if (global_range == NULL) {
+		errno = ENOMEM;
+		goto cleanup;
+	}
+
+	global_range->shadow_pagemap = vmm_new_pagemap();
+	if (global_range->shadow_pagemap == NULL) {
+		goto cleanup;
+	}
+
+	global_range->base = base;
+	global_range->length = length;
+	global_range->res = res;
+	global_range->offset = offset;
+
+	local_range = kmalloc(sizeof(struct mmap_range_local));
+	if (local_range == NULL) {
+		goto cleanup;
+	}
+
+	local_range->pagemap = pagemap;
+	local_range->global = global_range;
+	local_range->base = base;
+	local_range->length = length;
+	local_range->prot = prot;
+	local_range->flags = flags;
+	local_range->offset = offset;
+
+	vec_push(&global_range->locals, local_range);
+
+	spinlock_acquire_or_wait(&pagemap->lock);
+
+	vec_push(&pagemap->mmap_ranges, local_range);
+
+	spinlock_drop(&pagemap->lock);
+
+	if (res != NULL) {
+		res->refcount++;
+	}
+
+	return (void *)base;
+
+cleanup:
+	if (local_range != NULL) {
+		kfree(local_range);
+	}
+	if (global_range != NULL) {
+		if (global_range->shadow_pagemap != NULL) {
+			vmm_destroy_pagemap(global_range->shadow_pagemap);
+		}
+
+		kfree(global_range);
+	}
+	return MAP_FAILED;
+}
+
 bool munmap(struct pagemap *pagemap, uintptr_t addr, size_t length) {
 	if (length == 0) {
 		errno = EINVAL;
@@ -275,4 +363,46 @@ bool munmap(struct pagemap *pagemap, uintptr_t addr, size_t length) {
 		}
 	}
 	return true;
+}
+
+void syscall_mmap(struct syscall_arguments *args) {
+	uintptr_t hint = args->args0;
+	size_t length = args->args1;
+	int prot = args->args2;
+	int flags = args->args3;
+	int fdnum = args->args4;
+	off_t offset = args->args5;
+
+	void *ret = MAP_FAILED;
+
+	struct thread *thread = prcb_return_current_cpu()->running_thread;
+	struct process *proc = thread->mother_proc;
+
+	struct resource *res = NULL;
+	if (fdnum != -1) {
+		struct f_descriptor *fd = fd_from_fdnum(proc, fdnum);
+		if (fd == NULL) {
+			goto cleanup;
+		}
+
+		res = fd->description->res;
+	} else if (offset != 0) {
+		errno = EINVAL;
+		goto cleanup;
+	}
+
+	ret = mmap(proc->process_pagemap, hint, length, prot, flags, res, offset);
+
+cleanup:
+	args->ret = (uint64_t)ret;
+}
+
+void syscall_munmap(struct syscall_arguments *args) {
+	uintptr_t addr = args->args0;
+	size_t length = args->args1;
+
+	struct thread *thread = prcb_return_current_cpu()->running_thread;
+	struct process *proc = thread->mother_proc;
+
+	args->ret = munmap(proc->process_pagemap, addr, length) ? 0 : -1;
 }

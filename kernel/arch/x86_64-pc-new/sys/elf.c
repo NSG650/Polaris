@@ -1,4 +1,5 @@
 #include <debug/debug.h>
+#include <fs/vfs.h>
 #include <klibc/hashmap.h>
 #include <klibc/misc.h>
 #include <klibc/module.h>
@@ -6,6 +7,7 @@
 #include <mm/vmm.h>
 #include <sched/sched.h>
 #include <sys/elf.h>
+#include <sys/prcb.h>
 
 static struct function_symbol *name_to_function = NULL;
 static struct function_symbol *function_to_name = NULL;
@@ -97,11 +99,20 @@ void elf_init_function_table(uint8_t *binary) {
 	}
 }
 
-uint64_t module_load(const uint8_t *data) {
+uint64_t module_load(const char *path) {
+	struct vfs_node *node = vfs_get_node(vfs_root, path, true);
+	if (!node)
+		return 1;
+
+	struct resource *res = node->resource;
+
 	struct module *m = kmalloc(sizeof(struct module));
 	memzero(m, sizeof(struct module));
+	strncpy(m->name, path, 128);
 
-	Elf64_Ehdr *ehdr = (Elf64_Ehdr *)data;
+	Elf64_Ehdr *ehdr = kmalloc(sizeof(Elf64_Ehdr));
+
+	res->read(res, NULL, ehdr, 0, sizeof(Elf64_Ehdr));
 
 	if (memcmp(ehdr->e_ident, ELFMAG, SELFMAG)) {
 		return 1;
@@ -123,8 +134,11 @@ uint64_t module_load(const uint8_t *data) {
 
 	// Setup variable for the section headers
 	size_t section_count = ehdr->e_shnum;
+	size_t section_header_size = sizeof(Elf64_Shdr);
 	Elf64_Shdr *elf_section_headers =
-		(Elf64_Shdr *)((uintptr_t)data + ehdr->e_shoff);
+		kmalloc(section_header_size * section_count);
+	res->read(res, NULL, elf_section_headers, ehdr->e_shoff,
+			  section_header_size * section_count);
 
 	for (size_t index = 0; index < section_count; index++) {
 		Elf64_Shdr *section = (elf_section_headers + index);
@@ -141,14 +155,21 @@ uint64_t module_load(const uint8_t *data) {
 
 			if (section->sh_type == SHT_PROGBITS) {
 				// Read data from the file
-				memcpy(mem, data + section->sh_offset, section->sh_size);
+				res->read(res, NULL, mem, section->sh_offset, section->sh_size);
+			} else if (section->sh_type == SHT_NOBITS) {
+				// Section is empty, so fill with zeros
+				memset(mem, '\0', section->sh_size);
 			}
 			section->sh_addr = (uintptr_t)mem;
 		}
 
 		// Load symbol and string tables from the file
 		if (section->sh_type == SHT_SYMTAB || section->sh_type == SHT_STRTAB) {
-			section->sh_addr = (uintptr_t)data + section->sh_offset;
+			Elf64_Sym *table = kmalloc(section->sh_size);
+
+			res->read(res, NULL, table, section->sh_offset, section->sh_size);
+
+			section->sh_addr = (uintptr_t)table;
 		}
 	}
 
@@ -162,9 +183,9 @@ uint64_t module_load(const uint8_t *data) {
 			}
 
 			// Load relocation entries from the file
-			Elf64_Rela *entries =
-				(Elf64_Rela *)((uintptr_t)data + section->sh_offset);
-			section->sh_addr = (uint64_t)(size_t)data + section->sh_offset;
+			Elf64_Rela *entries = kmalloc(section->sh_size);
+			res->read(res, NULL, entries, section->sh_offset, section->sh_size);
+			section->sh_addr = (uintptr_t)entries;
 
 			// Locate the section we are relocating
 			Elf64_Shdr *relocation_section =
@@ -288,7 +309,7 @@ uint64_t module_load(const uint8_t *data) {
 
 bool module_unload(const char *name) {
 	for (int i = 0; i < modules_list.length; i++) {
-		if (!strcmp(name, modules_list.data[i]->name)) {
+		if (!strncmp(name, modules_list.data[i]->name, 128)) {
 			struct module *m = modules_list.data[i];
 			if (!m->exit)
 				return false;

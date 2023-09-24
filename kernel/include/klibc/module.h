@@ -28,7 +28,7 @@ typedef vec_t(struct module *) module_list_t;
 
 extern module_list_t modules_list;
 
-uint64_t module_load(const uint8_t *data);
+uint64_t module_load(const char *path);
 bool module_unload(const char *name);
 
 #endif

@@ -27,6 +27,9 @@ void kargs_init(char *args) {
 			strncpy(kernel_arguments.init_binary_path, init_path_from_args,
 					length + 1);
 		}
+		if (!strncmp(tokens[i], "suppress-ubsan", 14)) {
+			kernel_arguments.kernel_args |= KERNEL_ARGS_SUPPRESS_UBSAN;
+		}
 	}
 
 	for (int i = 0; i < count; i++)

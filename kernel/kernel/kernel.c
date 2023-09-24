@@ -9,12 +9,25 @@
 #include <ipc/pipe.h>
 #include <kernel.h>
 #include <klibc/event.h>
+#include <klibc/module.h>
 #include <mm/mmap.h>
 #include <net/arp.h>
 #include <net/net.h>
 #include <sched/sched.h>
 #include <sys/prcb.h>
 #include <sys/timer.h>
+
+void module_thread(uint64_t *ret) {
+	uint64_t mod_ret = module_load("/lib/modules/hello.ko");
+	if (mod_ret)
+		kprintf("Failed to load module :(\n");
+	else
+		module_unload("/lib/modules/hello.ko");
+
+	*ret = mod_ret;
+
+	thread_kill(prcb_return_current_cpu()->running_thread, 1);
+}
 
 void kernel_main(void *args) {
 	vfs_init();
@@ -35,6 +48,11 @@ void kernel_main(void *args) {
 		ramdisk_install(module_info[0], module_info[1]);
 	}
 
+	uint64_t module_load_ret = 0;
+	thread_create((uintptr_t)module_thread, (uintptr_t)&module_load_ret, 0,
+				  prcb_return_current_cpu()->running_thread->mother_proc);
+	if (module_load_ret)
+		panic("Failed to load required kernel modules\n");
 	/*
 	syscall_register_handler(0x0, syscall_read);
 	syscall_register_handler(0x1, syscall_write);

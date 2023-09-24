@@ -1,6 +1,7 @@
 // Thanks Abb1x!
 
 #include <debug/debug.h>
+#include <klibc/kargs.h>
 #include <stdint.h>
 
 struct tu_source_location {
@@ -75,7 +76,8 @@ extern bool put_to_fb;
 
 static void tu_print_location(const char *message,
 							  struct tu_source_location loc) {
-	if (print_now) {
+	if (print_now &&
+		!(kernel_arguments.kernel_args & KERNEL_ARGS_SUPPRESS_UBSAN)) {
 		kprintffos(0, "tinyubsan: %s at file %s, line %d, column %d\n", message,
 				   loc.file, loc.line, loc.column);
 		put_to_fb = 1;
