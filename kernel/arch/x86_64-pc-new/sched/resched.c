@@ -26,12 +26,14 @@ uint64_t timer_sched_tick(void) {
 }
 
 void resched(registers_t *reg) {
-	spinlock_acquire_or_wait(&resched_lock);
+	//	spinlock_acquire_or_wait(&resched_lock);
 
 	vmm_switch_pagemap(kernel_pagemap);
 	prcb_return_current_cpu()->sched_ticks++;
 
-	for (int i = 0; i < sleeping_threads.length; i++) {
+	for (int i = 0; i < sleeping_threads.length &&
+					prcb_return_current_cpu()->cpu_number == 0;
+		 i++) {
 		struct thread *th = sleeping_threads.data[i];
 		if (th->sleeping_till < timer_get_abs_count()) {
 			th->sleeping_till = 0;
@@ -61,7 +63,7 @@ void resched(registers_t *reg) {
 
 	if (nex_index == -1) {
 		// we're idle
-		spinlock_drop(&resched_lock);
+		//		spinlock_drop(&resched_lock);
 
 		apic_eoi();
 		timer_sched_oneshot(48, 20000);
@@ -91,7 +93,7 @@ void resched(registers_t *reg) {
 	prcb_return_current_cpu()->running_thread->mother_proc->state =
 		PROCESS_NORMAL;
 
-	spinlock_drop(&resched_lock);
+	//	spinlock_drop(&resched_lock);
 
 	apic_eoi();
 	timer_sched_oneshot(48, running_thrd->runtime);

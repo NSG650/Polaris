@@ -7,6 +7,8 @@
 #include <mm/vmm.h>
 #include <sys/isr.h>
 
+bool mmap_handle_pf(registers_t *reg);
+
 struct pagemap *kernel_pagemap = NULL;
 
 extern char text_start_addr[], text_end_addr[];

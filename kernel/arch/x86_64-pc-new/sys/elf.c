@@ -4,6 +4,7 @@
 #include <klibc/module.h>
 #include <mm/pmm.h>
 #include <mm/vmm.h>
+#include <sched/sched.h>
 #include <sys/elf.h>
 
 static struct function_symbol *name_to_function = NULL;
@@ -279,7 +280,6 @@ uint64_t module_load(const uint8_t *data) {
 
 	if (run_func != NULL) {
 		vec_push(&modules_list, m);
-
 		return run_func(m);
 	} else {
 		return 1;

@@ -5,6 +5,7 @@ NAME := polaris
 ISO_IMAGE := $(NAME).iso
 KERNEL_ELF = $(NAME).elf
 PROGRAM_ELF = $(wildcard user/*.elf)
+DRIVER_ELF = $(wildcard drivers/*.ko)
 
 .PHONY: all
 all: $(ISO_IMAGE)
@@ -17,14 +18,19 @@ limine:
 kernel:
 	$(MAKE) -C kernel/arch/$(CONFIG_ARCH)-$(CONFIG_TARGET)
 
-#.PHONY: user
-#user:
-#	$(MAKE) -C user
+.PHONY: drivers
+drivers:
+	$(MAKE) -C drivers
 
-$(ISO_IMAGE): limine kernel #user
+.PHONY: user
+user:
+	$(MAKE) -C user
+
+$(ISO_IMAGE): limine kernel user drivers
 	rm -rf build
 	mkdir -p build
 	cp $(PROGRAM_ELF) root/bin
+	cp $(DRIVER_ELF) root/lib/modules
 	$(MAKE) -C root
 	cp kernel/arch/$(CONFIG_ARCH)-$(CONFIG_TARGET)/$(KERNEL_ELF) ramdisk.tar \
 		limine.cfg limine/limine-bios.sys limine/limine-bios-cd.bin limine/limine-uefi-cd.bin build/

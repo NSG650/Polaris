@@ -16,3 +16,9 @@ hello.ko: $(CHELLOFILES)
 beep.ko: $(CBEEPFILES)
 	$(CC) $(CFLAGS) $^ -o beep.ko
 
+.PHONY: all
+all: hello.ko
+
+.PHONY: clean
+clean:
+	rm -rf *.ko

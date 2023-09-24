@@ -29,13 +29,13 @@ void kernel_main(void *args) {
 			prcb_return_current_cpu()->running_thread->mother_proc->name,
 			prcb_return_current_cpu()->cpu_number);
 
-	/*
 	if (args != NULL) {
 		uint64_t *module_info = (uint64_t *)args;
 		kprintf("Ramdisk located at 0x%p\n", module_info[0]);
 		ramdisk_install(module_info[0], module_info[1]);
 	}
 
+	/*
 	syscall_register_handler(0x0, syscall_read);
 	syscall_register_handler(0x1, syscall_write);
 	syscall_register_handler(0x2, syscall_open);

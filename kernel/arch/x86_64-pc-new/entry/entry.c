@@ -59,6 +59,9 @@ static volatile struct limine_rsdp_request rsdp_request = {
 static volatile struct limine_smp_request smp_request = {
 	.id = LIMINE_SMP_REQUEST, .revision = 0, .response = NULL, .flags = 1};
 
+static volatile struct limine_module_request module_request = {
+	.id = LIMINE_MODULE_REQUEST, .revision = 0};
+
 extern bool is_halting;
 extern uint8_t is_pausing;
 
@@ -138,7 +141,12 @@ void arch_entry(void) {
 
 	smp_init(smp_request.response);
 
-	sched_init(0);
+	size_t module_info[2] = {0};
+	struct limine_file *module = module_request.response->modules[0];
+	module_info[0] = (size_t)module->address;
+	module_info[1] = (size_t)module->size;
+	sched_init((uint64_t)module_info);
+
 	timer_sched_oneshot(48, 20000);
 	sti();
 

@@ -202,7 +202,8 @@ void slab_free(void *addr) {
 	if (((uintptr_t)addr & 0xfff) == 0) {
 		struct alloc_metadata *metadata =
 			(struct alloc_metadata *)(addr - PAGE_SIZE);
-		pmm_free((void *)metadata - MEM_PHYS_OFFSET, metadata->pages + 1);
+		pmm_free((void *)((uintptr_t)metadata - MEM_PHYS_OFFSET),
+				 metadata->pages + 1);
 		return;
 	}
 
