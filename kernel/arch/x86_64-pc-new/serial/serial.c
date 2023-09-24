@@ -20,8 +20,6 @@
 #include <serial/serial.h>
 #include <stdbool.h>
 
-lock_t serial_lock = 0;
-
 void serial_init(void) {
 	outb(COM1 + 1, 0x1);
 	outb(COM1 + 3, 0x80);

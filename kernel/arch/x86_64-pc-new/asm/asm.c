@@ -36,3 +36,7 @@ void pause(void) {
 void nop(void) {
 	asm("nop");
 }
+
+void dbgbrk(void) {
+	asm("int 3");
+}

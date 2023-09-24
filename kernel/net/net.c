@@ -37,8 +37,4 @@ void net_handle_packet(uint8_t *packet, uint16_t packet_length) {
 
 void net_init(void) {
 	arp_init();
-#if defined(__x86_64__)
-#include <devices/rtl8139.h>
-	rtl8139_init();
-#endif
 }

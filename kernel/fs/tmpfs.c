@@ -35,7 +35,7 @@ static ssize_t tmpfs_resource_read(struct resource *_this,
 
 	struct tmpfs_resource *this = (struct tmpfs_resource *)_this;
 
-	spinlock_acquire_or_wait(this->lock);
+	spinlock_acquire_or_wait(&this->lock);
 
 	size_t actual_count = count;
 
@@ -44,7 +44,7 @@ static ssize_t tmpfs_resource_read(struct resource *_this,
 	}
 
 	memcpy(buf, this->data + offset, actual_count);
-	spinlock_drop(this->lock);
+	spinlock_drop(&this->lock);
 
 	return actual_count;
 }
@@ -58,7 +58,7 @@ static ssize_t tmpfs_resource_write(struct resource *_this,
 	ssize_t ret = -1;
 	struct tmpfs_resource *this = (struct tmpfs_resource *)_this;
 
-	spinlock_acquire_or_wait(this->lock);
+	spinlock_acquire_or_wait(&this->lock);
 
 	if (offset + count >= this->capacity) {
 		size_t new_capacity = this->capacity;
@@ -87,7 +87,7 @@ static ssize_t tmpfs_resource_write(struct resource *_this,
 	ret = count;
 
 fail:
-	spinlock_drop(this->lock);
+	spinlock_drop(&this->lock);
 	return ret;
 }
 
@@ -95,7 +95,7 @@ static void *tmpfs_resource_mmap(struct resource *_this, size_t file_page,
 								 int flags) {
 	struct tmpfs_resource *this = (struct tmpfs_resource *)_this;
 
-	spinlock_acquire_or_wait(this->lock);
+	spinlock_acquire_or_wait(&this->lock);
 
 	void *ret = NULL;
 	if ((flags & MAP_SHARED) != 0) {
@@ -111,7 +111,7 @@ static void *tmpfs_resource_mmap(struct resource *_this, size_t file_page,
 	}
 
 cleanup:
-	spinlock_drop(this->lock);
+	spinlock_drop(&this->lock);
 	return ret;
 }
 

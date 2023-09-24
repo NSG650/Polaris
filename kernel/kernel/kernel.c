@@ -25,14 +25,16 @@ void kernel_main(void *args) {
 	vfs_mount(vfs_root, NULL, "/dev", "devtmpfs");
 	streams_init();
 
+	kprintf("Hello I am %s running on CPU%u\n",
+			prcb_return_current_cpu()->running_thread->mother_proc->name,
+			prcb_return_current_cpu()->cpu_number);
+
+	/*
 	if (args != NULL) {
 		uint64_t *module_info = (uint64_t *)args;
 		kprintf("Ramdisk located at 0x%p\n", module_info[0]);
 		ramdisk_install(module_info[0], module_info[1]);
 	}
-
-	kprintf("Hello I am %s\n",
-			prcb_return_current_cpu()->running_thread->mother_proc->name);
 
 	syscall_register_handler(0x0, syscall_read);
 	syscall_register_handler(0x1, syscall_write);
@@ -61,9 +63,9 @@ void kernel_main(void *args) {
 
 	// net_init();
 
-	/*	std_console_device =
+		std_console_device =
 			(vfs_get_node(vfs_root, "/dev/console", true))->resource;
-	*/
+
 
 	char *argv[] = {"/bin/init.elf", NULL};
 
@@ -73,6 +75,7 @@ void kernel_main(void *args) {
 			"init", PROCESS_READY_TO_RUN, 1000, argv[0],
 			prcb_return_current_cpu()->running_thread->mother_proc))
 		panic("Failed to run init binary!\n");
+	*/
 
 	for (;;)
 		;

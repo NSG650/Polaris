@@ -1,5 +1,4 @@
 #include <debug/debug.h>
-#include <devices/termios.h>
 #include <fs/devtmpfs.h>
 #include <fs/vfs.h>
 #include <mm/slab.h>

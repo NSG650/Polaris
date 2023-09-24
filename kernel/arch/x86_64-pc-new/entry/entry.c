@@ -137,10 +137,10 @@ void arch_entry(void) {
 	apic_init();
 
 	smp_init(smp_request.response);
+
+	sched_init(0);
 	timer_sched_oneshot(48, 20000);
 	sti();
-
-	// sched_init(0);
 
 	for (;;) {
 		halt();

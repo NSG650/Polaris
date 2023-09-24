@@ -16,39 +16,39 @@ static ssize_t fbdev_write(struct resource *this,
 						   struct f_description *description, const void *buf,
 						   off_t offset, size_t count) {
 	(void)description;
-	spinlock_acquire_or_wait(this->lock);
+	spinlock_acquire_or_wait(&this->lock);
 	memcpy((void *)(framebuff.address + offset), buf, count);
-	spinlock_drop(this->lock);
+	spinlock_drop(&this->lock);
 	return 0;
 }
 
 static void *fbdev_mmap(struct resource *this, size_t file_page, int flags) {
 	(void)flags;
-	spinlock_acquire_or_wait(this->lock);
+	spinlock_acquire_or_wait(&this->lock);
 	size_t offset = file_page * PAGE_SIZE;
 
 	if (offset >= (framebuff.height * framebuff.pitch)) {
 		return NULL;
 	}
 
-	spinlock_drop(this->lock);
+	spinlock_drop(&this->lock);
 
 	return (void *)(((uint64_t)(framebuff.address) - MEM_PHYS_OFFSET) + offset);
 }
 
 static int fbdev_ioctl(struct resource *this, struct f_description *description,
 					   uint64_t request, uint64_t arg) {
-	spinlock_acquire_or_wait(this->lock);
+	spinlock_acquire_or_wait(&this->lock);
 	switch (request) {
 		case 0x1:
 			memcpy((void *)arg, &info, sizeof(struct fbdev_info));
-			spinlock_drop(this->lock);
+			spinlock_drop(&this->lock);
 			return 0;
 		default:
-			spinlock_drop(this->lock);
+			spinlock_drop(&this->lock);
 			return resource_default_ioctl(this, description, request, arg);
 	}
-	spinlock_drop(this->lock);
+	spinlock_drop(&this->lock);
 	errno = EINVAL;
 	return -1;
 }

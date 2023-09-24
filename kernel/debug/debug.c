@@ -27,7 +27,7 @@
 #include <sys/prcb.h>
 #include <sys/timer.h>
 
-static lock_t write_lock = 0;
+static lock_t write_lock = {0};
 bool in_panic = false;
 bool put_to_fb = true;
 bool print_now = false;
@@ -56,10 +56,8 @@ void syscall_puts(struct syscall_arguments *args) {
 }
 
 static void kprintf_(char *fmt, va_list args) {
-	spinlock_acquire_or_wait(&write_lock);
 	if (!print_now) {
 		return;
-		spinlock_drop(&write_lock);
 	}
 	if (in_panic) {
 		kputs("*** PANIC:\t");
@@ -79,7 +77,6 @@ static void kprintf_(char *fmt, va_list args) {
 			kputchar(*fmt++);
 
 		if (!*fmt++) {
-			spinlock_drop(&write_lock);
 			return;
 		}
 
@@ -136,16 +133,17 @@ static void kprintf_(char *fmt, va_list args) {
 				break;
 		}
 	}
-	spinlock_drop(&write_lock);
 }
 
 void kprintffos(bool fos, char *fmt, ...) {
+	spinlock_acquire_or_wait(&write_lock);
 	if (!fos)
 		put_to_fb = 0;
 	va_list args;
 	va_start(args, fmt);
 	kprintf_(fmt, args);
 	va_end(args);
+	spinlock_drop(&write_lock);
 }
 
 void debug_hex_dump(const void *data, size_t size) {

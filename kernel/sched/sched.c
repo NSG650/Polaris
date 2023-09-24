@@ -18,7 +18,7 @@
 
 struct resource *std_console_device;
 
-lock_t sched_lock = 0;
+lock_t sched_lock = {0};
 bool sched_runit = false;
 
 thread_vec_t threads;
@@ -27,9 +27,9 @@ process_vec_t processes;
 dead_process_vec_t dead_processes;
 
 int64_t pid = 0;
-lock_t process_lock = 0;
+lock_t process_lock = {0};
 
-lock_t thread_lock = 0;
+lock_t thread_lock = {0};
 int64_t tid = 0;
 
 struct process *sched_pid_to_process(int64_t process_pid) {
@@ -244,7 +244,7 @@ void sched_init(uint64_t args) {
 	syscall_register_handler(0x3b, syscall_execve);
 	syscall_register_handler(0x3f, syscall_uname);
 	syscall_register_handler(0x72, syscall_waitpid);
-	process_create("kernel_tasks", 0, 2000, (uintptr_t)kernel_main, args, 0,
+	process_create("kernel_tasks", 0, 20000, (uintptr_t)kernel_main, args, 0,
 				   NULL);
 }
 
@@ -394,7 +394,7 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 	thrd->tid = tid++;
 	thrd->state = THREAD_READY_TO_RUN;
 	thrd->runtime = proc->runtime;
-	thrd->lock = 0;
+	spinlock_init(thrd->lock);
 	thrd->mother_proc = proc;
 #if defined(__x86_64__)
 	thrd->reg.rip = pc_address;
@@ -414,19 +414,23 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 		thrd->reg.cs = 0x08;
 		thrd->reg.ss = 0x10;
 		thrd->reg.rsp += STACK_SIZE;
-		thrd->kernel_stack = thrd->reg.rsp;
+		thrd->reg.rsp += MEM_PHYS_OFFSET;
+		thrd->kernel_stack = thrd->reg.rsp + MEM_PHYS_OFFSET + STACK_SIZE;
+		thrd->stack = thrd->kernel_stack;
 	}
 	thrd->reg.rflags = 0x202;
 
 	thrd->fpu_storage =
-		pmm_allocz(DIV_ROUNDUP(fpu_storage_size, PAGE_SIZE)) + MEM_PHYS_OFFSET;
+		(void *)((uintptr_t)pmm_allocz(DIV_ROUNDUP(
+					 prcb_return_current_cpu()->fpu_storage_size, PAGE_SIZE)) +
+				 MEM_PHYS_OFFSET);
 	if (user) {
-		fpu_restore(thrd->fpu_storage);
+		prcb_return_current_cpu()->fpu_restore(thrd->fpu_storage);
 		uint16_t default_fcw = 0b1100111111;
 		asm volatile("fldcw %0" ::"m"(default_fcw) : "memory");
 		uint32_t default_mxcsr = 0b1111110000000;
 		asm volatile("ldmxcsr %0" ::"m"(default_mxcsr) : "memory");
-		fpu_save(thrd->fpu_storage);
+		prcb_return_current_cpu()->fpu_save(thrd->fpu_storage);
 		thrd->fs_base = 0;
 		thrd->gs_base = 0;
 		if (!proc->process_threads.length) {
@@ -511,7 +515,7 @@ void thread_fork(struct thread *pthrd, struct process *fproc) {
 	thrd->tid = tid++;
 	thrd->state = THREAD_READY_TO_RUN;
 	thrd->runtime = pthrd->runtime;
-	thrd->lock = 0;
+	spinlock_init(thrd->lock);
 	thrd->mother_proc = fproc;
 	memcpy(&thrd->reg, &pthrd->reg, sizeof(registers_t));
 	thrd->kernel_stack = (uint64_t)kmalloc(STACK_SIZE);
@@ -522,9 +526,12 @@ void thread_fork(struct thread *pthrd, struct process *fproc) {
 	thrd->fs_base = pthrd->fs_base;
 	thrd->gs_base = pthrd->gs_base;
 	thrd->fpu_storage =
-		pmm_allocz(DIV_ROUNDUP(fpu_storage_size, PAGE_SIZE)) + MEM_PHYS_OFFSET;
+		pmm_allocz(DIV_ROUNDUP(prcb_return_current_cpu()->fpu_storage_size,
+							   PAGE_SIZE)) +
+		MEM_PHYS_OFFSET;
 
-	memcpy(thrd->fpu_storage, pthrd->fpu_storage, fpu_storage_size);
+	memcpy(thrd->fpu_storage, pthrd->fpu_storage,
+		   prcb_return_current_cpu()->fpu_storage_size);
 #endif
 	thrd->sleeping_till = 0;
 	vec_push(&threads, thrd);
@@ -669,7 +676,7 @@ void thread_execve(struct process *proc, struct thread *thrd,
 	thrd->tid = tid++;
 	thrd->state = THREAD_READY_TO_RUN;
 	thrd->runtime = proc->runtime;
-	thrd->lock = 0;
+	spinlock_init(thrd->lock);
 	thrd->mother_proc = proc;
 
 #if defined(__x86_64__)
@@ -690,14 +697,16 @@ void thread_execve(struct process *proc, struct thread *thrd,
 	thrd->reg.rflags = 0x202;
 
 	thrd->fpu_storage =
-		pmm_allocz(DIV_ROUNDUP(fpu_storage_size, PAGE_SIZE)) + MEM_PHYS_OFFSET;
+		pmm_allocz(DIV_ROUNDUP(prcb_return_current_cpu()->fpu_storage_size,
+							   PAGE_SIZE)) +
+		MEM_PHYS_OFFSET;
 
-	fpu_restore(thrd->fpu_storage);
+	prcb_return_current_cpu()->fpu_restore(thrd->fpu_storage);
 	uint16_t default_fcw = 0b1100111111;
 	asm volatile("fldcw %0" ::"m"(default_fcw) : "memory");
 	uint32_t default_mxcsr = 0b1111110000000;
 	asm volatile("ldmxcsr %0" ::"m"(default_mxcsr) : "memory");
-	fpu_save(thrd->fpu_storage);
+	prcb_return_current_cpu()->fpu_save(thrd->fpu_storage);
 
 	thrd->fs_base = 0;
 	thrd->gs_base = 0;
@@ -799,7 +808,8 @@ void thread_kill(struct thread *thrd, bool r) {
 #if defined(__x86_64__)
 	if (thrd->mother_proc != processes.data[0]) {
 		pmm_free((void *)thrd->stack, STACK_SIZE / PAGE_SIZE);
-		pmm_free((void *)thrd->fpu_storage, fpu_storage_size / PAGE_SIZE);
+		pmm_free((void *)thrd->fpu_storage,
+				 prcb_return_current_cpu()->fpu_storage_size / PAGE_SIZE);
 		kfree((void *)thrd->kernel_stack);
 	} else {
 		pmm_free((void *)thrd->stack, STACK_SIZE / PAGE_SIZE);

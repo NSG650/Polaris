@@ -42,8 +42,9 @@ override INTERNALASFLAGS := \
 	-MP                     \
 	-f elf64
 
-CFILES := $(shell find ../../arch/x86_64-pc-new -path . -prune -type f -o -name '*.c')
-CFILES += ../../locks/spinlock.c ../../debug/debug.c ../../klibc/string.c ../../klibc/kargs.c ../../klibc/vec.c ../../fb/fb.c ../../fb/terminal/flanterm.c ../../fb/terminal/backends/fb.c
+CFILES := $(shell find ../../ -path ../../arch -prune -type f -o -name '*.c')
+CFILES += $(shell find ../../arch/x86_64-pc-new -path . -prune -type f -o -name '*.c')
+# CFILES += ../../locks/spinlock.c ../../debug/debug.c ../../klibc/string.c ../../klibc/kargs.c ../../klibc/vec.c ../../fb/fb.c ../../fb/terminal/flanterm.c ../../fb/terminal/backends/fb.c
 ASMFILES := $(shell find ../../arch/x86_64-pc-new -type f -name '*.asm')
 OBJ := $(CFILES:.c=.o) $(ASMFILES:.asm=.o)
 HEADER_DEPS := $(CFILES:.c=.d) $(ASMFILES:.asm=.d)

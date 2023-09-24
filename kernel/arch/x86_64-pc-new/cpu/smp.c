@@ -15,7 +15,7 @@
 #include <sys/timer.h>
 
 bool is_smp = false;
-static lock_t smp_lock = 0;
+static lock_t smp_lock = {0};
 struct prcb *prcbs = NULL;
 uint32_t smp_bsp_lapic_id = 0;
 static size_t cpu_count = 0;

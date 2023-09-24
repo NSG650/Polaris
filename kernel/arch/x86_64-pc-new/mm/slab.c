@@ -61,7 +61,7 @@ static inline struct slab *slab_for(size_t size) {
 }
 
 static void create_slab(struct slab *slab, size_t ent_size) {
-	slab->lock = 0;
+	spinlock_init(slab->lock);
 	slab->first_free = (void **)((uint64_t)pmm_alloc(1) + MEM_PHYS_OFFSET);
 	slab->ent_size = ent_size;
 

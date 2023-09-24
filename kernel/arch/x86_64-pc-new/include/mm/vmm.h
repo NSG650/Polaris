@@ -20,6 +20,8 @@
 
 #include <limine.h>
 #include <locks/spinlock.h>
+#include <mm/mmap.h>
+#include <reg.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -39,6 +41,7 @@ extern volatile struct limine_kernel_address_request kernel_address_request;
 struct pagemap {
 	lock_t lock;
 	uint64_t *top_level;
+	vec_t(struct mmap_range_local *) mmap_ranges;
 };
 
 extern struct pagemap *kernel_pagemap;
@@ -53,5 +56,8 @@ bool vmm_map_page(struct pagemap *pagemap, uint64_t virt_addr,
 bool vmm_unmap_page(struct pagemap *pagemap, uintptr_t virt);
 uint64_t vmm_virt_to_phys(struct pagemap *pagemap, uint64_t virt_addr);
 uint64_t vmm_virt_to_kernel(struct pagemap *pagemap, uint64_t virt_addr);
+void vmm_page_fault_handler(registers_t *reg);
+struct pagemap *vmm_fork_pagemap(struct pagemap *pagemap);
+void vmm_destroy_pagemap(struct pagemap *pagemap);
 
 #endif

@@ -10,12 +10,12 @@ static ssize_t pipe_read(struct resource *this,
 						 off_t offset, size_t count) {
 
 	(void)description;
-	spinlock_acquire_or_wait(this->lock);
+	spinlock_acquire_or_wait(&this->lock);
 
 	struct event *events[] = {&this->event};
 	if (event_await(events, 1, true) < 0) {
 		errno = EINTR;
-		spinlock_drop(this->lock);
+		spinlock_drop(&this->lock);
 		return -1;
 	}
 
@@ -32,7 +32,7 @@ static ssize_t pipe_read(struct resource *this,
 	}
 
 	if (p->capacity_used <= 0) {
-		spinlock_drop(this->lock);
+		spinlock_drop(&this->lock);
 		return 0;
 	}
 
@@ -43,7 +43,7 @@ static ssize_t pipe_read(struct resource *this,
 
 	event_trigger(&this->event, false);
 
-	spinlock_drop(this->lock);
+	spinlock_drop(&this->lock);
 
 	return size_to_read;
 }
@@ -52,7 +52,7 @@ static ssize_t pipe_write(struct resource *this,
 						  struct f_description *description, const void *buf,
 						  off_t offset, size_t count) {
 
-	spinlock_acquire_or_wait(this->lock);
+	spinlock_acquire_or_wait(&this->lock);
 	(void)description;
 
 	struct pipe *p = (struct pipe *)this;
@@ -75,7 +75,7 @@ static ssize_t pipe_write(struct resource *this,
 
 	event_trigger(&this->event, false);
 
-	spinlock_drop(this->lock);
+	spinlock_drop(&this->lock);
 
 	return size_to_copy;
 }

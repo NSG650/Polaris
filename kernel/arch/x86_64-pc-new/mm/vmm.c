@@ -1,7 +1,11 @@
+#include <cpu/cr.h>
+#include <debug/debug.h>
 #include <klibc/misc.h>
+#include <mm/mmap.h>
 #include <mm/pmm.h>
 #include <mm/slab.h>
 #include <mm/vmm.h>
+#include <sys/isr.h>
 
 struct pagemap *kernel_pagemap = NULL;
 
@@ -41,7 +45,7 @@ static uint64_t *get_next_level(uint64_t *top_level, size_t idx,
 
 void vmm_init(struct limine_memmap_entry **memmap, size_t memmap_entries) {
 	kernel_pagemap = kmalloc(sizeof(struct pagemap));
-	kernel_pagemap->lock = 0;
+	spinlock_init(kernel_pagemap->lock);
 	kernel_pagemap->top_level = pmm_allocz(1) + MEM_PHYS_OFFSET;
 
 	for (uint64_t p = 256; p < 512; p++)
@@ -105,6 +109,8 @@ void vmm_init(struct limine_memmap_entry **memmap, size_t memmap_entries) {
 	}
 	// Switch to the new page map, dropping Limine's default one
 	vmm_switch_pagemap(kernel_pagemap);
+
+	isr_register_handler(0xe, vmm_page_fault_handler);
 }
 
 void vmm_switch_pagemap(struct pagemap *pagemap) {
@@ -117,7 +123,7 @@ void vmm_switch_pagemap(struct pagemap *pagemap) {
 // Creates a new dynamically allocated page map
 struct pagemap *vmm_new_pagemap(void) {
 	struct pagemap *pagemap = kmalloc(sizeof(struct pagemap));
-	pagemap->lock = 0;
+	spinlock_init(pagemap->lock);
 	pagemap->top_level = pmm_allocz(1) + MEM_PHYS_OFFSET;
 	for (size_t i = 256; i < 512; i++)
 		pagemap->top_level[i] = kernel_pagemap->top_level[i];
@@ -291,4 +297,183 @@ uint64_t vmm_virt_to_kernel(struct pagemap *pagemap, uint64_t virt_addr) {
 	uint64_t aligned_virtual_address = ALIGN_DOWN(virt_addr, PAGE_SIZE);
 	uint64_t phys_addr = vmm_virt_to_phys(pagemap, virt_addr);
 	return (phys_addr + MEM_PHYS_OFFSET + virt_addr - aligned_virtual_address);
+}
+
+void vmm_page_fault_handler(registers_t *reg) {
+	if (mmap_handle_pf(reg)) {
+		return;
+	}
+
+	uint64_t faulting_address = read_cr("2");
+	bool present = reg->errorCode & 0x1;
+	bool read_write = reg->errorCode & 0x2;
+	bool user_supervisor = reg->errorCode & 0x4;
+	bool reserved = reg->errorCode & 0x8;
+	bool execute = reg->errorCode & 0x10;
+	/*
+	if (reg->cs & 0x3) {
+		struct thread *thrd = prcb_return_current_cpu()->running_thread;
+		kprintf("Killing user thread tid %d under process %s for Page Fault\n",
+				thrd->tid, thrd->mother_proc->name);
+		kprintf("User thread crashed at address: 0x%p\n", reg->rip);
+		backtrace((void *)reg->rbp);
+		kprintf("Page fault at 0x%p present: %s, read/write: %s, "
+				"user/supervisor: %s, reserved: %s, execute: %s\n",
+				faulting_address, present ? "P" : "NP", read_write ? "R" : "RW",
+				user_supervisor ? "U" : "S", reserved ? "R" : "NR",
+				execute ? "X" : "NX");
+		sched_display_crash_message(reg->rip, thrd->mother_proc, "Page fault");
+		if (thrd == thrd->mother_proc->process_threads.data[0])
+			process_kill(thrd->mother_proc, 1);
+		else
+			thread_kill(thrd, 1);
+	}
+	*/
+	panic_((void *)reg->rip, (void *)reg->rbp,
+		   "Page fault at 0x%p present: %s, read/write: %s, "
+		   "user/supervisor: %s, reserved: %s, execute: %s\n",
+		   faulting_address, present ? "P" : "NP", read_write ? "R" : "RW",
+		   user_supervisor ? "U" : "S", reserved ? "R" : "NR",
+		   execute ? "X" : "NX");
+}
+
+struct pagemap *vmm_fork_pagemap(struct pagemap *pagemap) {
+	spinlock_acquire_or_wait(&pagemap->lock);
+
+	struct pagemap *new_pagemap = vmm_new_pagemap();
+	if (new_pagemap == NULL) {
+		goto cleanup;
+	}
+
+	struct mmap_range_local *local_range = NULL;
+	int idxn = 0;
+	vec_foreach(&pagemap->mmap_ranges, local_range, idxn) {
+		struct mmap_range_global *global_range = local_range->global;
+
+		struct mmap_range_local *new_local_range =
+			kmalloc(sizeof(struct mmap_range_local));
+		if (new_local_range == NULL) {
+			goto cleanup;
+		}
+
+		*new_local_range = *local_range;
+		new_local_range->pagemap = new_pagemap;
+
+		if (global_range->res != NULL) {
+			global_range->res->refcount++;
+		}
+
+		if ((local_range->flags & MAP_SHARED) != 0) {
+			vec_push(&global_range->locals, new_local_range);
+			for (uintptr_t i = local_range->base;
+				 i < local_range->base + local_range->length; i += PAGE_SIZE) {
+				uint64_t *old_pte = vmm_virt_to_pte(pagemap, i, false);
+				if (old_pte == NULL) {
+					continue;
+				}
+
+				uint64_t *new_pte = vmm_virt_to_pte(new_pagemap, i, true);
+				if (new_pte == NULL) {
+					goto cleanup;
+				}
+				*new_pte = *old_pte;
+			}
+		} else {
+			struct mmap_range_global *new_global_range =
+				kmalloc(sizeof(struct mmap_range_global));
+			if (new_global_range == NULL) {
+				goto cleanup;
+			}
+
+			new_global_range->shadow_pagemap = vmm_new_pagemap();
+			if (new_global_range->shadow_pagemap == NULL) {
+				goto cleanup;
+			}
+
+			new_global_range->base = global_range->base;
+			new_global_range->length = global_range->length;
+			new_global_range->res = global_range->res;
+			new_global_range->offset = global_range->offset;
+
+			vec_push(&new_global_range->locals, new_local_range);
+
+			if ((local_range->flags & MAP_ANONYMOUS) != 0) {
+				for (uintptr_t i = local_range->base;
+					 i < local_range->base + local_range->length;
+					 i += PAGE_SIZE) {
+					uint64_t *old_pte = vmm_virt_to_pte(pagemap, i, false);
+					if (old_pte == NULL || (((*old_pte) & 0xfff) & 1) == 0) {
+						continue;
+					}
+
+					uint64_t *new_pte = vmm_virt_to_pte(new_pagemap, i, true);
+					if (new_pte == NULL) {
+						goto cleanup;
+					}
+
+					uint64_t *new_spte = vmm_virt_to_pte(
+						new_global_range->shadow_pagemap, i, true);
+					if (new_spte == NULL) {
+						goto cleanup;
+					}
+
+					void *old_page = (void *)((*old_pte) & 0xffffffffff000);
+					void *page = pmm_alloc(1);
+
+					if (page == NULL) {
+						goto cleanup;
+					}
+
+					memcpy(page + MEM_PHYS_OFFSET, old_page + MEM_PHYS_OFFSET,
+						   PAGE_SIZE);
+					*new_pte = ((*old_pte) & 0xfff) | (uint64_t)page;
+					*new_spte = *new_pte;
+				}
+			} else {
+				panic("Non anon fork\n");
+			}
+		}
+
+		vec_push(&new_pagemap->mmap_ranges, new_local_range);
+	}
+
+	spinlock_drop(&pagemap->lock);
+	return new_pagemap;
+
+cleanup:
+	spinlock_drop(&pagemap->lock);
+	if (new_pagemap != NULL) {
+		vmm_destroy_pagemap(new_pagemap);
+	}
+	return NULL;
+}
+
+static void destroy_level(uint64_t *pml, size_t start, size_t end, int level) {
+	if (level == 0) {
+		return;
+	}
+
+	for (size_t i = start; i < end; i++) {
+		uint64_t *next_level = get_next_level(pml, i, false);
+		if (next_level == NULL) {
+			continue;
+		}
+
+		destroy_level(next_level, 0, 512, level - 1);
+	}
+
+	pmm_free((void *)pml, 1);
+}
+
+void vmm_destroy_pagemap(struct pagemap *pagemap) {
+	spinlock_acquire_or_wait(&pagemap->lock);
+
+	while (pagemap->mmap_ranges.length > 0) {
+		struct mmap_range_local *local_range = pagemap->mmap_ranges.data[0];
+
+		munmap(pagemap, local_range->base, local_range->length);
+	}
+
+	destroy_level(pagemap->top_level, 0, 256, 4);
+	kfree(pagemap);
 }

@@ -27,7 +27,7 @@ struct dirent {
 	char d_name[256];
 };
 
-lock_t vfs_lock = 0;
+lock_t vfs_lock = {0};
 
 struct vfs_node *vfs_create_node(struct vfs_filesystem *fs,
 								 struct vfs_node *parent, const char *name,
@@ -62,11 +62,11 @@ static void create_dotentries(struct vfs_node *node, struct vfs_node *parent) {
 static HASHMAP_TYPE(struct vfs_filesystem *) filesystems;
 
 void vfs_add_filesystem(struct vfs_filesystem *fs, const char *identifier) {
-	spinlock_acquire_or_wait(vfs_lock);
+	spinlock_acquire_or_wait(&vfs_lock);
 
 	HASHMAP_SINSERT(&filesystems, identifier, fs);
 
-	spinlock_drop(vfs_lock);
+	spinlock_drop(&vfs_lock);
 }
 
 struct vfs_node *vfs_root = NULL;
@@ -212,7 +212,7 @@ static struct vfs_node *reduce_node(struct vfs_node *node,
 
 struct vfs_node *vfs_get_node(struct vfs_node *parent, const char *path,
 							  bool follow_links) {
-	spinlock_acquire_or_wait(vfs_lock);
+	spinlock_acquire_or_wait(&vfs_lock);
 
 	struct vfs_node *ret = NULL;
 
@@ -232,13 +232,13 @@ cleanup:
 	if (r.basename != NULL) {
 		kfree(r.basename);
 	}
-	spinlock_drop(vfs_lock);
+	spinlock_drop(&vfs_lock);
 	return ret;
 }
 
 bool vfs_mount(struct vfs_node *parent, const char *source, const char *target,
 			   const char *fs_name) {
-	spinlock_acquire_or_wait(vfs_lock);
+	spinlock_acquire_or_wait(&vfs_lock);
 
 	bool ret = false;
 	struct path2node_res r = {0};
@@ -298,13 +298,13 @@ cleanup:
 	if (r.basename != NULL) {
 		kfree(r.basename);
 	}
-	spinlock_drop(vfs_lock);
+	spinlock_drop(&vfs_lock);
 	return ret;
 }
 
 struct vfs_node *vfs_symlink(struct vfs_node *parent, const char *dest,
 							 const char *target) {
-	spinlock_acquire_or_wait(vfs_lock);
+	spinlock_acquire_or_wait(&vfs_lock);
 
 	struct vfs_node *ret = NULL;
 
@@ -331,14 +331,14 @@ cleanup:
 	if (r.basename != NULL) {
 		kfree(r.basename);
 	}
-	spinlock_drop(vfs_lock);
+	spinlock_drop(&vfs_lock);
 	return ret;
 }
 
 bool vfs_unlink(struct vfs_node *parent, const char *path) {
 	bool ret = false;
 
-	spinlock_acquire_or_wait(vfs_lock);
+	spinlock_acquire_or_wait(&vfs_lock);
 
 	struct path2node_res r = path2node(parent, path);
 
@@ -378,13 +378,13 @@ cleanup:
 	if (r.basename != NULL) {
 		kfree(r.basename);
 	}
-	spinlock_drop(vfs_lock);
+	spinlock_drop(&vfs_lock);
 	return ret;
 }
 
 struct vfs_node *vfs_create(struct vfs_node *parent, const char *name,
 							int mode) {
-	spinlock_acquire_or_wait(vfs_lock);
+	spinlock_acquire_or_wait(&vfs_lock);
 
 	struct vfs_node *ret = NULL;
 
@@ -415,7 +415,7 @@ cleanup:
 	if (r.basename != NULL) {
 		kfree(r.basename);
 	}
-	spinlock_drop(vfs_lock);
+	spinlock_drop(&vfs_lock);
 	return ret;
 }
 
@@ -679,7 +679,7 @@ void syscall_readdir(struct syscall_arguments *args) {
 	size_t *size = (size_t *)args->args2;
 
 	int ret = -1;
-	spinlock_acquire_or_wait(vfs_lock);
+	spinlock_acquire_or_wait(&vfs_lock);
 
 	struct f_descriptor *dir_fd = fd_from_fdnum(proc, dir_fdnum);
 	if (dir_fd == NULL) {
@@ -765,7 +765,7 @@ void syscall_readdir(struct syscall_arguments *args) {
 	ret = 0;
 
 cleanup:
-	spinlock_drop(vfs_lock);
+	spinlock_drop(&vfs_lock);
 	args->ret = ret;
 }
 

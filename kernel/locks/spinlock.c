@@ -16,20 +16,50 @@
  */
 
 #include <asm/asm.h>
+#include <debug/debug.h>
+#include <klibc/mem.h>
 #include <locks/spinlock.h>
+#include <stddef.h>
+#include <sys/prcb.h>
 
-bool spinlock_acquire(lock_t *spin) {
-	return __sync_bool_compare_and_swap(spin, 0, 1);
-}
-
-void spinlock_acquire_or_wait(lock_t *spin) {
+static void spinlock_spinning_for_too_long(lock_t *spin) {
+	kputs_("Possible deadlock? Last owner: 0x");
+	char string[20] = {0};
+	ultoa(spin->last_owner, string, 16);
+	kputs_(string);
+	kputs_(" Last CPU: ");
+	memzero(string, 20);
+	ultoa(spin->last_cpu, string, 10);
+	kputs_(string);
+	kputs_("\n");
 	for (;;) {
-		if (spinlock_acquire(spin))
-			break;
-		pause();
+		cli();
+		halt();
 	}
 }
 
+bool spinlock_acquire(lock_t *spin) {
+	bool ret = __sync_bool_compare_and_swap(&spin->lock, 0, 1);
+	if (ret)
+		spin->last_owner = __builtin_return_address(0);
+	return ret;
+}
+
+void spinlock_acquire_or_wait(lock_t *spin) {
+	volatile size_t deadlock_counter = 0;
+	for (;;) {
+		if (spinlock_acquire(spin))
+			break;
+		if (++deadlock_counter >= 100000000)
+			spinlock_spinning_for_too_long(spin);
+		pause();
+	}
+	spin->last_owner = __builtin_return_address(0);
+	extern bool is_smp;
+	if (is_smp)
+		spin->last_cpu = prcb_return_current_cpu()->cpu_number;
+}
+
 void spinlock_drop(lock_t *spin) {
-	__atomic_store_n(spin, 0, __ATOMIC_SEQ_CST);
+	__atomic_store_n(&spin->lock, 0, __ATOMIC_SEQ_CST);
 }

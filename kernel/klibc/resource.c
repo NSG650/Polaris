@@ -95,7 +95,7 @@ void *resource_create(size_t size) {
 
 dev_t resource_create_dev_id(void) {
 	static dev_t dev_id_counter = 1;
-	static lock_t lock = 0;
+	static lock_t lock = {0};
 	spinlock_acquire_or_wait(&lock);
 	dev_t ret = dev_id_counter++;
 	spinlock_drop(&lock);
@@ -144,7 +144,7 @@ int fdnum_create_from_fd(struct process *proc, struct f_descriptor *fd,
 	}
 
 	int res = -1;
-	spinlock_acquire_or_wait(proc->fds_lock);
+	spinlock_acquire_or_wait(&proc->fds_lock);
 
 	if (old_fdnum < 0 || old_fdnum >= MAX_FDS) {
 		errno = EBADF;
@@ -167,7 +167,7 @@ int fdnum_create_from_fd(struct process *proc, struct f_descriptor *fd,
 	}
 
 cleanup:
-	spinlock_drop(proc->fds_lock);
+	spinlock_drop(&proc->fds_lock);
 	return res;
 }
 
@@ -238,7 +238,7 @@ struct f_descriptor *fd_create_from_resource(struct resource *res, int flags) {
 
 	description->refcount = 1;
 	description->flags = flags & FILE_STATUS_FLAGS_MASK;
-	description->lock = 0;
+	spinlock_init(description->lock);
 	description->res = res;
 
 	struct f_descriptor *fd = kmalloc(sizeof(struct f_descriptor));
@@ -264,7 +264,7 @@ struct f_descriptor *fd_from_fdnum(struct process *proc, int fdnum) {
 	}
 
 	struct f_descriptor *ret = NULL;
-	spinlock_acquire_or_wait(proc->fds_lock);
+	spinlock_acquire_or_wait(&proc->fds_lock);
 
 	if (fdnum < 0 || fdnum >= MAX_FDS) {
 		errno = EBADF;
@@ -280,7 +280,7 @@ struct f_descriptor *fd_from_fdnum(struct process *proc, int fdnum) {
 	ret->description->refcount++;
 
 cleanup:
-	spinlock_drop(proc->fds_lock);
+	spinlock_drop(&proc->fds_lock);
 	return ret;
 }
 

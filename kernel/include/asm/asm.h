@@ -32,5 +32,6 @@ void cli(void);
 void sti(void);
 void pause(void);
 void nop(void);
+void dbgbrk(void);
 
 #endif

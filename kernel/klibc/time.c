@@ -11,7 +11,7 @@ static volatile struct limine_boot_time_request boot_time_request = {
 struct timespec time_monotonic = {0, 0};
 struct timespec time_realtime = {0, 0};
 
-static lock_t timers_lock = 0;
+static lock_t timers_lock = {0};
 static vec_t(struct timer *) armed_timers;
 
 struct timer *timer_new(struct timespec when) {
@@ -29,17 +29,17 @@ struct timer *timer_new(struct timespec when) {
 }
 
 void timer_arm(struct timer *timer) {
-	spinlock_acquire_or_wait(timers_lock);
+	spinlock_acquire_or_wait(&timers_lock);
 
 	timer->index = armed_timers.length;
 	timer->fired = false;
 
 	vec_push(&armed_timers, timer);
-	spinlock_drop(timers_lock);
+	spinlock_drop(&timers_lock);
 }
 
 void timer_disarm(struct timer *timer) {
-	spinlock_acquire_or_wait(timers_lock);
+	spinlock_acquire_or_wait(&timers_lock);
 
 	if (armed_timers.length == 0 || timer->index == -1 ||
 		timer->index >= armed_timers.length) {
@@ -54,7 +54,7 @@ void timer_disarm(struct timer *timer) {
 	timer->index = -1;
 
 cleanup:
-	spinlock_drop(timers_lock);
+	spinlock_drop(&timers_lock);
 }
 
 void time_init(void) {
@@ -72,7 +72,7 @@ void timer_handler(void) {
 	time_monotonic = timespec_add(time_monotonic, interval);
 	time_realtime = timespec_add(time_realtime, interval);
 
-	if (spinlock_acquire(timers_lock)) {
+	if (spinlock_acquire(&timers_lock)) {
 		for (int i = 0; i < armed_timers.length; i++) {
 			struct timer *timer = armed_timers.data[i];
 			if (timer->fired) {
@@ -86,7 +86,7 @@ void timer_handler(void) {
 			}
 		}
 
-		spinlock_drop(timers_lock);
+		spinlock_drop(&timers_lock);
 	}
 }
 

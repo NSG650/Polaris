@@ -61,13 +61,13 @@ static void detach_listeners(struct thread *thread) {
 
 static void lock_events(struct event **events, size_t num_events) {
 	for (size_t i = 0; i < num_events; i++) {
-		spinlock_acquire_or_wait(events[i]->lock);
+		spinlock_acquire_or_wait(&events[i]->lock);
 	}
 }
 
 static void unlock_events(struct event **events, size_t num_events) {
 	for (size_t i = 0; i < num_events; i++) {
-		spinlock_drop(events[i]->lock);
+		spinlock_drop(&events[i]->lock);
 	}
 }
 
@@ -116,7 +116,7 @@ size_t event_trigger(struct event *event, bool drop) {
 	cli();
 	bool old_state = flags & (1 << 9);
 
-	spinlock_acquire_or_wait(event->lock);
+	spinlock_acquire_or_wait(&event->lock);
 
 	size_t ret = 0;
 	if (event->listeners_i == 0) {
@@ -145,6 +145,6 @@ cleanup:
 	} else {
 		cli();
 	}
-	spinlock_drop(event->lock);
+	spinlock_drop(&event->lock);
 	return ret;
 }
