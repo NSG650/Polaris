@@ -20,7 +20,7 @@ kernel:
 
 .PHONY: drivers
 drivers:
-	$(MAKE) -C drivers
+	$(MAKE) -C drivers console.ko
 
 .PHONY: user
 user:

@@ -40,14 +40,26 @@ const char *elf_get_name_from_function(uint64_t address) {
 }
 
 uint64_t elf_get_function_from_name(const char *string) {
-	if (!symbol_table_initialised)
+	if (!symbol_table_initialised || !string)
 		return (uint64_t)NULL;
 
-	size_t index = hash(string, strlen(string)) % function_table_size;
-	uint64_t address = name_to_function[index].address;
+	// size_t index = hash(string, strlen(string)) % function_table_size;
+	// uint64_t address = name_to_function[index].address;
 
-	address -= 0xffffffff80000000;
-	address += KERNEL_BASE;
+	// I HATE HASH COLLISIONS
+	// I HATE HASH COLLISIONS
+	uint64_t address = 0;
+	for (size_t i = 0; i < function_table_size; i++) {
+		if (!strcmp(function_to_name[i].name, string)) {
+			address = function_to_name[i].address;
+			break;
+		}
+	}
+
+	if (address) {
+		address -= 0xffffffff80000000;
+		address += KERNEL_BASE;
+	}
 
 	return address;
 }
@@ -75,24 +87,28 @@ void elf_init_function_table(uint8_t *binary) {
 		Elf64_Sym *sym_entries = (Elf64_Sym *)(binary + symtab->sh_offset);
 		size_t num_symbols = symtab->sh_size / symtab->sh_entsize;
 
-		function_table_size = num_symbols;
-		name_to_function =
-			kmalloc(sizeof(struct function_symbol) * num_symbols);
+		function_table_size = 0;
+		// name_to_function =
+		//	kmalloc(sizeof(struct function_symbol) * num_symbols);
 		function_to_name =
 			kmalloc(sizeof(struct function_symbol) * num_symbols);
 
 		for (size_t i = 0; i < num_symbols; i++) {
 			if (ELF64_ST_TYPE(sym_entries[i].st_info) == STT_FUNC &&
 				ELF64_ST_BIND(sym_entries[i].st_info) == STB_GLOBAL) {
-				char *dupped =
-					strdup((char *)((uint64_t)strtab + sym_entries[i].st_name));
 
 				// We need a better hash function for the addresses since there
 				// are hash collisions. For now we are using this slow way.
-				function_to_name[i].address = sym_entries[i].st_value;
-				function_to_name[i].name = dupped;
+				if (((uint64_t)strtab + sym_entries[i].st_name)) {
+					char *dupped = strdup(
+						(char *)((uint64_t)strtab + sym_entries[i].st_name));
 
-				simple_append_name(dupped, sym_entries[i].st_value);
+					function_to_name[function_table_size].address =
+						sym_entries[i].st_value;
+					function_to_name[function_table_size++].name = dupped;
+
+					// simple_append_name(dupped, sym_entries[i].st_value);
+				}
 			}
 		}
 		symbol_table_initialised = true;
@@ -231,6 +247,9 @@ uint64_t module_load(const char *path) {
 					} else {
 						// The symbol is not defined inside the object file
 						// resolve using other rules
+						// kprintffos(0, "%s %p %s\n", symbol_name,
+						// elf_get_function_from_name(symbol_name),
+						// elf_get_name_from_function(elf_get_function_from_name(symbol_name)));
 						*location = elf_get_function_from_name(symbol_name);
 					}
 				} else {
@@ -298,6 +317,9 @@ uint64_t module_load(const char *path) {
 		if (run_func)
 			break;
 	}
+
+	kfree(ehdr);
+	kfree(elf_section_headers);
 
 	if (run_func != NULL) {
 		vec_push(&modules_list, m);

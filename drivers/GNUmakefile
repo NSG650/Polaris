@@ -2,6 +2,7 @@ CONFIG_ARCH ?= x86_64
 
 CHELLOFILES := $(wildcard $(CONFIG_ARCH)/hello/*.c)
 CBEEPFILES := $(wildcard $(CONFIG_ARCH)/beep/*.c)
+CCONSOLEFILES := $(wildcard console/*.c)
 
 ifeq ($(CONFIG_ARCH),x86_64)
 	AS := nasm
@@ -16,8 +17,11 @@ hello.ko: $(CHELLOFILES)
 beep.ko: $(CBEEPFILES)
 	$(CC) $(CFLAGS) $^ -o beep.ko
 
+console.ko: $(CCONSOLEFILES)
+	$(CC) $(CFLAGS) $^ -o console.ko
+
 .PHONY: all
-all: hello.ko
+all: console.ko
 
 .PHONY: clean
 clean:

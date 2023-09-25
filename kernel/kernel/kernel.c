@@ -17,17 +17,9 @@
 #include <sys/prcb.h>
 #include <sys/timer.h>
 
-void module_thread(uint64_t *ret) {
-	uint64_t mod_ret = module_load("/lib/modules/hello.ko");
-	if (mod_ret)
-		kprintf("Failed to load module :(\n");
-	else
-		module_unload("/lib/modules/hello.ko");
+const char *module_list[] = {"/lib/modules/console.ko"};
 
-	*ret = mod_ret;
-
-	thread_kill(prcb_return_current_cpu()->running_thread, 1);
-}
+#define MODULE_LIST_SIZE (sizeof(module_list) / sizeof(module_list[0]))
 
 void kernel_main(void *args) {
 	vfs_init();
@@ -48,12 +40,18 @@ void kernel_main(void *args) {
 		ramdisk_install(module_info[0], module_info[1]);
 	}
 
-	uint64_t module_load_ret = 0;
-	thread_create((uintptr_t)module_thread, (uintptr_t)&module_load_ret, 0,
-				  prcb_return_current_cpu()->running_thread->mother_proc);
-	if (module_load_ret)
-		panic("Failed to load required kernel modules\n");
-	/*
+	uint64_t mod_ret = 0;
+	for (size_t i = 0; i < MODULE_LIST_SIZE; i++) {
+		mod_ret = module_load(module_list[i]);
+		if (mod_ret) {
+			panic("Failed to load kernel module %s. Return value: 0x%p\n",
+				  module_list[i], mod_ret);
+			break;
+		}
+	}
+
+	fbdev_init();
+
 	syscall_register_handler(0x0, syscall_read);
 	syscall_register_handler(0x1, syscall_write);
 	syscall_register_handler(0x2, syscall_open);
@@ -76,15 +74,12 @@ void kernel_main(void *args) {
 	syscall_register_handler(0x124, syscall_dup3);
 	syscall_register_handler(0x125, syscall_pipe);
 
-	// console_init();
-	fbdev_init();
+	std_console_device =
+		(vfs_get_node(vfs_root, "/dev/console", true))->resource;
 
-	// net_init();
+	std_console_device->write(std_console_device, NULL, "Hello", 0, 5);
 
-		std_console_device =
-			(vfs_get_node(vfs_root, "/dev/console", true))->resource;
-
-
+	/*
 	char *argv[] = {"/bin/init.elf", NULL};
 
 	kprintf("Running init binary %s\n", argv[0]);

@@ -100,3 +100,7 @@ void framebuffer_putchar(char c) {
 void framebuffer_puts(char *string) {
 	flanterm_write(ctx, string, strlen(string));
 }
+
+struct framebuffer *framebuffer_info(void) {
+	return &framebuff;
+}

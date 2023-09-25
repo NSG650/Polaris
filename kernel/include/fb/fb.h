@@ -39,6 +39,7 @@ void framebuffer_init(struct framebuffer *fb);
 void framebuffer_clear(uint32_t foreground, uint32_t background);
 void framebuffer_putchar(char c);
 void framebuffer_puts(char *string);
+struct framebuffer *framebuffer_info(void);
 
 void fbdev_init(void);
 
