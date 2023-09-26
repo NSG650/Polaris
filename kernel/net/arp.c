@@ -27,6 +27,8 @@ void arp_handle(struct arp_packet *packet, uint32_t length) {
 	uint8_t dest_mac[6];
 	uint8_t dest_protocol_addr[4];
 
+	(void)length;
+
 	memcpy(dest_mac, packet->source_mac, 6);
 	memcpy(dest_protocol_addr, packet->source_protocol_addr, 4);
 

@@ -41,6 +41,17 @@ struct process *sched_pid_to_process(int64_t process_pid) {
 	return NULL;
 }
 
+static struct process *
+sched_pid_to_child_process(struct process *parent_process,
+						   int64_t process_pid) {
+	for (int i = 0; i < parent_process->child_processes.length; i++) {
+		if (parent_process->child_processes.data[i]->pid == process_pid) {
+			return parent_process->child_processes.data[i];
+		}
+	}
+	return NULL;
+}
+
 int sched_get_next_thread(int index) {
 	if (index == -1 || index > threads.length) {
 		index = 0;
@@ -154,6 +165,9 @@ void syscall_uname(struct syscall_arguments *args) {
 }
 
 void syscall_waitpid(struct syscall_arguments *args) {
+	args->ret = -1;
+	return;
+	/*
 #define WNOHANG 1
 	int64_t pid_to_wait_on = (int64_t)args->args0;
 
@@ -163,18 +177,35 @@ void syscall_waitpid(struct syscall_arguments *args) {
 	struct process *waiter_process =
 		prcb_return_current_cpu()->running_thread->mother_proc;
 
-	if (!waiter_process->child_processes.length) {
+	struct process *waitee_process = sched_pid_to_child_process(waiter_process,
+pid_to_wait_on);
+
+	spinlock_acquire_or_wait(&waiter_process->lock);
+
+	if (!waitee_process) {
+		spinlock_drop(&waiter_process->lock);
 		errno = ECHILD;
 		args->ret = -1;
+		kprintf("%d:%s\n", waiter_process->pid, waiter_process->name);
+		kprintf("syscall_waitpid: returning -1! at %d\n", __LINE__);
+		return;
+	}
+
+	if (!waiter_process->child_processes.length) {
+		spinlock_drop(&waiter_process->lock);
+		errno = ECHILD;
+		args->ret = -1;
+		kprintf("%d:%s\n", waiter_process->pid, waiter_process->name);
+		kprintf("syscall_waitpid: returning -1! at %d\n", __LINE__);
 		return;
 	}
 
 	if (pid_to_wait_on < -1 || pid_to_wait_on == 0) {
+		spinlock_drop(&waiter_process->lock);
 		errno = EINVAL;
 		args->ret = -1;
+		return;
 	}
-
-	struct process *waitee_process = sched_pid_to_process(pid_to_wait_on);
 
 	if (mode & WNOHANG) {
 		args->ret = 0;
@@ -205,10 +236,12 @@ void syscall_waitpid(struct syscall_arguments *args) {
 				}
 			}
 		}
+		spinlock_drop(&waiter_process->lock);
 		return;
 	}
 
 	if (pid_to_wait_on == -1) {
+		spinlock_drop(&waiter_process->lock);
 		process_wait_on_processes(waiter_process,
 								  waiter_process->child_processes);
 		args->ret = waiter_process->waitee.pid;
@@ -217,14 +250,16 @@ void syscall_waitpid(struct syscall_arguments *args) {
 	}
 
 	if (waitee_process == NULL) {
+		spinlock_drop(&waiter_process->lock);
 		errno = ECHILD;
 		args->ret = -1;
 		return;
 	}
 
+	spinlock_drop(&waiter_process->lock);
 	process_wait_on_another_process(waiter_process, waitee_process);
 	args->ret = waiter_process->waitee.pid;
-	*status = waiter_process->waitee.exit_code;
+	*status = waiter_process->waitee.exit_code;*/
 }
 
 void sched_init(uint64_t args) {
@@ -306,18 +341,25 @@ bool process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
 	const char *ld_path;
 
 	if (!node ||
-		!elf_load(proc->process_pagemap, node->resource, 0, &auxv, &ld_path))
+		!elf_load(proc->process_pagemap, node->resource, 0, &auxv, &ld_path)) {
 		return false;
+	}
 
-	if (ld_path) {
+	// HACK: ld_path for processes that don't depend on ld.so points to
+	// kmalloced memory which is not null checking the first letter is '/' or
+	// not to know if a program needs ld
+
+	uint64_t entry = auxv.at_entry;
+
+	if (ld_path && ld_path[0] == '/') {
 		struct vfs_node *ld_node = vfs_get_node(vfs_root, ld_path, true);
 
 		if (!ld_node || !elf_load(proc->process_pagemap, ld_node->resource,
-								  0x40000000, &ld_aux, NULL))
+								  0x40000000, &ld_aux, NULL)) {
 			return false;
+		}
+		entry = ld_aux.at_entry;
 	}
-
-	uint64_t entry = ld_path == NULL ? auxv.at_entry : ld_aux.at_entry;
 
 	proc->auxv = auxv;
 	vec_init(&proc->child_processes);
@@ -438,7 +480,8 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 			const char *envp[] = {"USER=root", NULL};
 			struct auxval auxv = proc->auxv;
 
-			uint64_t *stack = (uint64_t *)(thrd->stack + STACK_SIZE);
+			uint64_t *stack =
+				(uint64_t *)(thrd->stack + STACK_SIZE + MEM_PHYS_OFFSET);
 
 			// the stack structure address values are not accurate
 			/*
@@ -470,7 +513,8 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 			stack -= strlen(argv[0]) + 1;
 			memcpy((void *)stack, argv[0], strlen(argv[0]) + 1);
 
-			address_difference = (thrd->stack + STACK_SIZE) - (uint64_t)stack;
+			address_difference = (thrd->stack + STACK_SIZE) -
+								 ((uint64_t)stack - MEM_PHYS_OFFSET);
 			uint64_t addr_to_arg =
 				(uint64_t)VIRTUAL_STACK_ADDR - address_difference;
 
@@ -497,7 +541,8 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 
 			*(--stack) = 1;
 
-			address_difference = (thrd->stack + STACK_SIZE) - (uint64_t)stack;
+			address_difference = (thrd->stack + STACK_SIZE) -
+								 ((uint64_t)stack - MEM_PHYS_OFFSET);
 			thrd->reg.rsp -= address_difference;
 		}
 	}
@@ -526,9 +571,9 @@ void thread_fork(struct thread *pthrd, struct process *fproc) {
 	thrd->fs_base = pthrd->fs_base;
 	thrd->gs_base = pthrd->gs_base;
 	thrd->fpu_storage =
-		pmm_allocz(DIV_ROUNDUP(prcb_return_current_cpu()->fpu_storage_size,
-							   PAGE_SIZE)) +
-		MEM_PHYS_OFFSET;
+		(void *)((uintptr_t)pmm_allocz(DIV_ROUNDUP(
+					 prcb_return_current_cpu()->fpu_storage_size, PAGE_SIZE)) +
+				 MEM_PHYS_OFFSET);
 
 	memcpy(thrd->fpu_storage, pthrd->fpu_storage,
 		   prcb_return_current_cpu()->fpu_storage_size);
@@ -549,9 +594,8 @@ bool process_execve(char *path, char **argv, char **envp) {
 	struct vfs_node *node = vfs_get_node(proc->cwd, path, true);
 	const char *ld_path;
 
-	strncpy(proc->name, path, 256);
-
 	if (!node) {
+		spinlock_drop(&process_lock);
 		return false;
 	}
 
@@ -560,12 +604,13 @@ bool process_execve(char *path, char **argv, char **envp) {
 
 	if (!elf_load(proc->process_pagemap, node->resource, 0, &auxv, &ld_path)) {
 		proc->process_pagemap = old_pagemap;
+		spinlock_drop(&process_lock);
 		return false;
 	}
 
-	// HACK: ld_path for processes that dont depend on ld.so points to kmalloced
-	// memory which is not null checking the first letter is '/' or not to know
-	// if a program needs ld
+	// HACK: ld_path for processes that don't depend on ld.so points to
+	// kmalloced memory which is not null checking the first letter is '/' or
+	// not to know if a program needs ld
 
 	uint64_t entry = auxv.at_entry;
 
@@ -575,10 +620,13 @@ bool process_execve(char *path, char **argv, char **envp) {
 		if (!ld_node || !elf_load(proc->process_pagemap, ld_node->resource,
 								  0x40000000, &ld_aux, NULL)) {
 			proc->process_pagemap = old_pagemap;
+			spinlock_drop(&process_lock);
 			return false;
 		}
 		entry = ld_aux.at_entry;
 	}
+
+	strncpy(proc->name, path, 256);
 
 	for (int i = 0; i < proc->process_threads.length; i++) {
 		if (proc->process_threads.data[i] != thread) {
@@ -594,9 +642,9 @@ bool process_execve(char *path, char **argv, char **envp) {
 
 	proc->auxv = auxv;
 
-	thread_execve(proc, thread, entry, argv, envp);
-
 	spinlock_drop(&process_lock);
+
+	thread_execve(proc, thread, entry, argv, envp);
 
 	vmm_switch_pagemap(kernel_pagemap);
 
@@ -836,7 +884,7 @@ void thread_sleep(struct thread *thrd, uint64_t ns) {
 
 	while (prcb_return_current_cpu()->running_thread->sleeping_till >
 		   timer_get_abs_count())
-		;
+		pause();
 }
 
 void process_wait_on_another_process(struct process *waiter,

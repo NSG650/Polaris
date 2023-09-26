@@ -112,7 +112,9 @@ cleanup:
 
 size_t event_trigger(struct event *event, bool drop) {
 	uint64_t flags;
+#if defined(__x86_64__)
 	asm volatile("pushfq; pop %0" : "=rm"(flags));
+#endif
 	cli();
 	bool old_state = flags & (1 << 9);
 

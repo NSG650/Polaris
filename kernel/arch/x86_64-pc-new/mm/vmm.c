@@ -5,7 +5,10 @@
 #include <mm/pmm.h>
 #include <mm/slab.h>
 #include <mm/vmm.h>
+#include <sched/crash.h>
+#include <sched/sched.h>
 #include <sys/isr.h>
+#include <sys/prcb.h>
 
 bool mmap_handle_pf(registers_t *reg);
 
@@ -42,7 +45,7 @@ static uint64_t *get_next_level(uint64_t *top_level, size_t idx,
 	void *next_level = pmm_allocz(1);
 	top_level[idx] = (uint64_t)next_level | 0b111;
 
-	return next_level + MEM_PHYS_OFFSET;
+	return (uint64_t *)((uintptr_t)next_level + MEM_PHYS_OFFSET);
 }
 
 void vmm_init(struct limine_memmap_entry **memmap, size_t memmap_entries) {
@@ -126,7 +129,8 @@ void vmm_switch_pagemap(struct pagemap *pagemap) {
 struct pagemap *vmm_new_pagemap(void) {
 	struct pagemap *pagemap = kmalloc(sizeof(struct pagemap));
 	spinlock_init(pagemap->lock);
-	pagemap->top_level = pmm_allocz(1) + MEM_PHYS_OFFSET;
+	pagemap->top_level =
+		(uint64_t *)((uintptr_t)pmm_allocz(1) + MEM_PHYS_OFFSET);
 	for (size_t i = 256; i < 512; i++)
 		pagemap->top_level[i] = kernel_pagemap->top_level[i];
 	return pagemap;
@@ -243,7 +247,7 @@ level4:
 
 uint64_t *vmm_virt_to_pte(struct pagemap *pagemap, uintptr_t virt_addr,
 						  bool allocate) {
-	spinlock_acquire_or_wait(&pagemap->lock);
+	//	spinlock_acquire_or_wait(&pagemap->lock);
 	size_t pml5_entry = (virt_addr & ((uint64_t)0x1FF << 48)) >> 48;
 	size_t pml4_entry = (virt_addr & ((uint64_t)0x1FF << 39)) >> 39;
 	size_t pml3_entry = (virt_addr & ((uint64_t)0x1FF << 30)) >> 30;
@@ -283,12 +287,14 @@ level4:
 		return NULL;
 	}
 
-	spinlock_drop(&pagemap->lock);
+	//	spinlock_drop(&pagemap->lock);
 	return &pml1[pml1_entry];
 }
 
 uint64_t vmm_virt_to_phys(struct pagemap *pagemap, uint64_t virt_addr) {
+	spinlock_acquire_or_wait(&pagemap->lock);
 	uint64_t *pte = vmm_virt_to_pte(pagemap, virt_addr, false);
+	spinlock_drop(&pagemap->lock);
 	if (pte == NULL || (((*pte) & ~0xffffffffff000) & 1) == 0)
 		return INVALID_PHYS;
 
@@ -312,13 +318,13 @@ void vmm_page_fault_handler(registers_t *reg) {
 	bool user_supervisor = reg->errorCode & 0x4;
 	bool reserved = reg->errorCode & 0x8;
 	bool execute = reg->errorCode & 0x10;
-	/*
+
 	if (reg->cs & 0x3) {
 		struct thread *thrd = prcb_return_current_cpu()->running_thread;
 		kprintf("Killing user thread tid %d under process %s for Page Fault\n",
 				thrd->tid, thrd->mother_proc->name);
 		kprintf("User thread crashed at address: 0x%p\n", reg->rip);
-		backtrace((void *)reg->rbp);
+		// backtrace((void *)reg->rbp);
 		kprintf("Page fault at 0x%p present: %s, read/write: %s, "
 				"user/supervisor: %s, reserved: %s, execute: %s\n",
 				faulting_address, present ? "P" : "NP", read_write ? "R" : "RW",
@@ -330,7 +336,7 @@ void vmm_page_fault_handler(registers_t *reg) {
 		else
 			thread_kill(thrd, 1);
 	}
-	*/
+
 	panic_((void *)reg->rip, (void *)reg->rbp,
 		   "Page fault at 0x%p present: %s, read/write: %s, "
 		   "user/supervisor: %s, reserved: %s, execute: %s\n",
@@ -426,7 +432,8 @@ struct pagemap *vmm_fork_pagemap(struct pagemap *pagemap) {
 						goto cleanup;
 					}
 
-					memcpy(page + MEM_PHYS_OFFSET, old_page + MEM_PHYS_OFFSET,
+					memcpy((void *)((uintptr_t)page + MEM_PHYS_OFFSET),
+						   (void *)((uintptr_t)old_page + MEM_PHYS_OFFSET),
 						   PAGE_SIZE);
 					*new_pte = ((*old_pte) & 0xfff) | (uint64_t)page;
 					*new_spte = *new_pte;

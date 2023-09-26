@@ -211,6 +211,7 @@ void main(void) {
 
 		while (waitpid_return == 0)
 			waitpid_return = waitpid(pid, &status, 1);
+
 		puts_to_console("Whoops the shell exited\n");
 	}
 }

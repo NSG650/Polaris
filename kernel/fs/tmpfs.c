@@ -99,14 +99,16 @@ static void *tmpfs_resource_mmap(struct resource *_this, size_t file_page,
 
 	void *ret = NULL;
 	if ((flags & MAP_SHARED) != 0) {
-		ret = (this->data + file_page * PAGE_SIZE) - MEM_PHYS_OFFSET;
+		ret = (void *)(((uintptr_t)this->data + file_page * PAGE_SIZE) -
+					   MEM_PHYS_OFFSET);
 	} else {
 		ret = pmm_alloc(1);
 		if (ret == NULL) {
 			goto cleanup;
 		}
 
-		memcpy(ret + MEM_PHYS_OFFSET, this->data + file_page * PAGE_SIZE,
+		memcpy((void *)((uintptr_t)ret + MEM_PHYS_OFFSET),
+			   (void *)((uintptr_t)this->data + file_page * PAGE_SIZE),
 			   PAGE_SIZE);
 	}
 

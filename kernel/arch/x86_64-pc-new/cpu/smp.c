@@ -24,6 +24,8 @@ static size_t initialized_cpus = 0;
 extern void gdt_reload(void);
 extern void idt_reload(void);
 
+extern void amd_syscall_entry(void);
+
 static void smp_cpu_init(struct limine_smp_info *smp_info) {
 	struct prcb *prcb_local = (void *)smp_info->extra_argument;
 	gdt_reload();
@@ -49,7 +51,7 @@ static void smp_cpu_init(struct limine_smp_info *smp_info) {
 	cr4 = read_cr("4");
 	cr4 |= (3 << 9);
 	write_cr("4", cr4);
-	/*
+
 		// Enable syscall in EFER
 		wrmsr(0xc0000080, rdmsr(0xc0000080) | 1);
 
@@ -59,7 +61,7 @@ static void smp_cpu_init(struct limine_smp_info *smp_info) {
 		wrmsr(0xc0000082, (uint64_t)amd_syscall_entry);
 		// Flags mask
 		wrmsr(0xc0000084, (uint64_t) ~((uint32_t)0x2));
-	*/
+
 	// Security features
 	uint32_t a = 0, b = 0, c = 0, d = 0;
 	__get_cpuid(7, &a, &b, &c, &d);

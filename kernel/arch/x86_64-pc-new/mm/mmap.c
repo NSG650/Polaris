@@ -33,8 +33,6 @@ struct addr2range addr2range(struct pagemap *pagemap, uintptr_t virt) {
 }
 
 bool mmap_handle_pf(registers_t *reg) {
-	return false;
-
 	if ((reg->errorCode & 0x1) != 0) {
 		return false;
 	}
@@ -319,6 +317,8 @@ bool munmap(struct pagemap *pagemap, uintptr_t addr, size_t length) {
 			local_range->length -= postsplit_range->length;
 		}
 
+		spinlock_drop(&pagemap->lock);
+
 		for (uintptr_t j = snip_begin; j < snip_end; j += PAGE_SIZE) {
 			vmm_unmap_page(pagemap, j);
 		}
@@ -326,8 +326,6 @@ bool munmap(struct pagemap *pagemap, uintptr_t addr, size_t length) {
 		if (snip_length == local_range->length) {
 			vec_remove(&pagemap->mmap_ranges, local_range);
 		}
-
-		spinlock_drop(&pagemap->lock);
 
 		if (snip_length == local_range->length &&
 			global_range->locals.length == 1) {

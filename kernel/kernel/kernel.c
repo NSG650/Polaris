@@ -9,6 +9,7 @@
 #include <ipc/pipe.h>
 #include <kernel.h>
 #include <klibc/event.h>
+#include <klibc/kargs.h>
 #include <klibc/module.h>
 #include <mm/mmap.h>
 #include <net/arp.h>
@@ -77,10 +78,10 @@ void kernel_main(void *args) {
 	std_console_device =
 		(vfs_get_node(vfs_root, "/dev/console", true))->resource;
 
-	std_console_device->write(std_console_device, NULL, "Hello", 0, 5);
-
-	/*
 	char *argv[] = {"/bin/init.elf", NULL};
+	if (kernel_arguments.kernel_args & KERNEL_ARGS_INIT_PATH_GIVEN) {
+		argv[0] = kernel_arguments.init_binary_path;
+	}
 
 	kprintf("Running init binary %s\n", argv[0]);
 
@@ -88,7 +89,6 @@ void kernel_main(void *args) {
 			"init", PROCESS_READY_TO_RUN, 1000, argv[0],
 			prcb_return_current_cpu()->running_thread->mother_proc))
 		panic("Failed to run init binary!\n");
-	*/
 
 	for (;;)
 		;

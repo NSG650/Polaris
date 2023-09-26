@@ -9,19 +9,19 @@
 #include <sys/elf.h>
 #include <sys/prcb.h>
 
-static struct function_symbol *name_to_function = NULL;
+// static struct function_symbol *name_to_function = NULL;
 static struct function_symbol *function_to_name = NULL;
 static size_t function_table_size = 0;
 bool symbol_table_initialised = false;
 
 module_list_t modules_list = {0};
-
+/*
 static void simple_append_name(const char *string, uint64_t address) {
 	size_t index = hash(string, strlen(string)) % function_table_size;
 	name_to_function[index].address = address;
 	name_to_function[index].name = string;
 }
-
+*/
 const char *elf_get_name_from_function(uint64_t address) {
 	if (!symbol_table_initialised)
 		return "";
@@ -403,8 +403,10 @@ bool elf_load(struct pagemap *pagemap, struct resource *res, uint64_t load_base,
 					goto fail;
 				}
 
-				if (res->read(res, NULL, phys + misalign + MEM_PHYS_OFFSET,
-							  phdr.p_offset, phdr.p_filesz) < 0) {
+				if (res->read(
+						res, NULL,
+						(void *)((uintptr_t)phys + misalign + MEM_PHYS_OFFSET),
+						phdr.p_offset, phdr.p_filesz) < 0) {
 					goto fail;
 				}
 

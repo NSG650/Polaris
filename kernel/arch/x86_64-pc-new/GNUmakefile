@@ -49,9 +49,7 @@ ASMFILES := $(shell find ../../arch/x86_64-pc-new -type f -name '*.asm')
 OBJ := $(CFILES:.c=.o) $(ASMFILES:.asm=.o)
 HEADER_DEPS := $(CFILES:.c=.d) $(ASMFILES:.asm=.d)
 
-CROSS_TOOLCHAIN ?= x86_64-elf
-
-CC := gcc
+CC := x86_64-elf-gcc
 AS := nasm
 
 override INTERNALCFLAGS += 				\

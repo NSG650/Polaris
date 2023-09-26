@@ -22,20 +22,25 @@
 #include <stddef.h>
 #include <sys/prcb.h>
 
+static void *last_addr = NULL;
+
 static void spinlock_spinning_for_too_long(lock_t *spin) {
 	kputs_("Possible deadlock? Last owner: 0x");
 	char string[20] = {0};
-	ultoa(spin->last_owner, string, 16);
+	ultoa((uintptr_t)spin->last_owner, string, 16);
 	kputs_(string);
 	kputs_(" Last CPU: ");
 	memzero(string, 20);
-	ultoa(spin->last_cpu, string, 10);
+	ultoa((uintptr_t)spin->last_cpu, string, 10);
+	kputs_(string);
+	kputs_(" deadlocked at: 0x");
+	memzero(string, 20);
+	ultoa((uintptr_t)last_addr, string, 16);
 	kputs_(string);
 	kputs_("\n");
-	for (;;) {
-		cli();
-		halt();
-	}
+	//	kprintf("Possible deadlock? Last owner: 0x%p Last CPU: %u deadlocked at:
+	// 0x%p\n", spin->last_owner, spin->last_cpu, last_addr);
+	dbgbrk();
 }
 
 bool spinlock_acquire(lock_t *spin) {
@@ -47,6 +52,7 @@ bool spinlock_acquire(lock_t *spin) {
 
 void spinlock_acquire_or_wait(lock_t *spin) {
 	volatile size_t deadlock_counter = 0;
+	last_addr = __builtin_return_address(0);
 	for (;;) {
 		if (spinlock_acquire(spin))
 			break;

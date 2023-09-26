@@ -2,6 +2,7 @@
 #define SCHED_TYPES_H
 
 #include <fs/vfs.h>
+#include <klibc/event.h>
 #include <klibc/resource.h>
 #include <klibc/vec.h>
 #include <locks/spinlock.h>
@@ -72,6 +73,7 @@ struct process {
 #if defined(__x86_64__)
 	struct pagemap *process_pagemap;
 #endif
+	lock_t lock;
 	uintptr_t mmap_anon_base;
 	uint64_t runtime;
 	thread_vec_t process_threads;
