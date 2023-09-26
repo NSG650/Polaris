@@ -251,6 +251,8 @@ uint64_t module_load(const char *path) {
 						// elf_get_function_from_name(symbol_name),
 						// elf_get_name_from_function(elf_get_function_from_name(symbol_name)));
 						*location = elf_get_function_from_name(symbol_name);
+						if (*location == 0)
+							return 1;
 					}
 				} else {
 					return 1;

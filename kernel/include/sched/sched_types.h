@@ -83,9 +83,9 @@ struct process {
 	struct f_descriptor *fds[MAX_FDS];
 	struct process *parent_process;
 	process_vec_t child_processes;
-	process_vec_t waiter_processes;
 	struct dead_process waitee;
 	struct auxval auxv;
+	struct event death_event;
 	char name[256];
 };
 

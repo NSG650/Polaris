@@ -41,6 +41,15 @@ struct process *sched_pid_to_process(int64_t process_pid) {
 	return NULL;
 }
 
+static struct dead_process *
+sched_return_recently_dead_child_process(struct process *parent_process) {
+	for (int i = dead_processes.length - 1; i != -1; i--) {
+		if (dead_processes.data[i]->parent_process == parent_process)
+			return dead_processes.data[i];
+	}
+	return NULL;
+}
+
 static struct process *
 sched_pid_to_child_process(struct process *parent_process,
 						   int64_t process_pid) {
@@ -165,9 +174,6 @@ void syscall_uname(struct syscall_arguments *args) {
 }
 
 void syscall_waitpid(struct syscall_arguments *args) {
-	args->ret = -1;
-	return;
-	/*
 #define WNOHANG 1
 	int64_t pid_to_wait_on = (int64_t)args->args0;
 
@@ -177,89 +183,82 @@ void syscall_waitpid(struct syscall_arguments *args) {
 	struct process *waiter_process =
 		prcb_return_current_cpu()->running_thread->mother_proc;
 
-	struct process *waitee_process = sched_pid_to_child_process(waiter_process,
-pid_to_wait_on);
+	struct process *waitee_process = NULL;
 
-	spinlock_acquire_or_wait(&waiter_process->lock);
-
-	if (!waitee_process) {
-		spinlock_drop(&waiter_process->lock);
-		errno = ECHILD;
-		args->ret = -1;
-		kprintf("%d:%s\n", waiter_process->pid, waiter_process->name);
-		kprintf("syscall_waitpid: returning -1! at %d\n", __LINE__);
-		return;
-	}
+	bool block = (mode & WNOHANG) == 0;
 
 	if (!waiter_process->child_processes.length) {
-		spinlock_drop(&waiter_process->lock);
 		errno = ECHILD;
 		args->ret = -1;
-		kprintf("%d:%s\n", waiter_process->pid, waiter_process->name);
-		kprintf("syscall_waitpid: returning -1! at %d\n", __LINE__);
 		return;
 	}
 
-	if (pid_to_wait_on < -1 || pid_to_wait_on == 0) {
-		spinlock_drop(&waiter_process->lock);
+	struct event **events = NULL;
+	size_t event_num = 0;
+
+	if (pid_to_wait_on == -1) {
+		event_num = waiter_process->child_processes.length;
+		events = kmalloc(sizeof(struct event *) * event_num);
+		for (size_t i = 0; i < event_num; i++) {
+			events[i] = &waiter_process->child_processes.data[i]->death_event;
+		}
+	} else if (pid < -1 || pid == 0) {
 		errno = EINVAL;
 		args->ret = -1;
 		return;
+	} else {
+		waitee_process =
+			sched_pid_to_child_process(waiter_process, pid_to_wait_on);
+		if (!waitee_process) {
+			errno = ECHILD;
+			args->ret = -1;
+			return;
+		}
+		event_num = 1;
+		events = kmalloc(sizeof(struct event *));
+		events[0] = &waitee_process->death_event;
 	}
 
-	if (mode & WNOHANG) {
-		args->ret = 0;
-		if (pid_to_wait_on == -1) {
-			if (waiter_process->waitee.parent_process == waiter_process) {
-				args->ret = waiter_process->waitee.pid;
-				*status = waiter_process->waitee.exit_code;
-			} else {
-				// time to loop over every dead process and see if our child
-				// died
-				for (int i = 0; i < dead_processes.length; i++) {
-					if (dead_processes.data[i]->parent_process ==
-						waiter_process) {
-						args->ret = dead_processes.data[i]->pid;
-						*status = dead_processes.data[i]->exit_code;
-						break;
-					}
-				}
-			}
+	ssize_t which = event_await(events, event_num, block);
+	if (which == -1) {
+		if (!block) {
+			args->ret = 0;
+			kfree(events);
+			return;
 		} else {
-			if (waitee_process == NULL) {
-				args->ret = pid_to_wait_on;
-				for (int i = 0; i < dead_processes.length; i++) {
-					if (dead_processes.data[i]->pid == pid_to_wait_on) {
-						*status = dead_processes.data[i]->exit_code;
-						break;
-					}
-				}
+			errno = EINTR;
+			args->ret = -1;
+			kfree(events);
+			return;
+		}
+	}
+
+	if (pid_to_wait_on != -1) {
+		for (int i = 0; i < dead_processes.length; i++) {
+			if (dead_processes.data[i]->pid == pid_to_wait_on) {
+				*status = dead_processes.data[i]->exit_code;
+				struct dead_process *dead = dead_processes.data[i];
+				vec_remove(&dead_processes, dead_processes.data[i]);
+				kfree(dead);
+				break;
 			}
 		}
-		spinlock_drop(&waiter_process->lock);
-		return;
+		if (!block)
+			args->ret = pid_to_wait_on;
+	} else {
+		struct dead_process *dead_child =
+			sched_return_recently_dead_child_process(waiter_process);
+		if (dead_child == NULL) {
+			errno = ECHILD;
+			args->ret = -1;
+			return;
+		}
+		*status = dead_child->exit_code;
+		if (!block)
+			args->ret = dead_child->pid;
 	}
 
-	if (pid_to_wait_on == -1) {
-		spinlock_drop(&waiter_process->lock);
-		process_wait_on_processes(waiter_process,
-								  waiter_process->child_processes);
-		args->ret = waiter_process->waitee.pid;
-		*status = waiter_process->waitee.exit_code;
-		return;
-	}
-
-	if (waitee_process == NULL) {
-		spinlock_drop(&waiter_process->lock);
-		errno = ECHILD;
-		args->ret = -1;
-		return;
-	}
-
-	spinlock_drop(&waiter_process->lock);
-	process_wait_on_another_process(waiter_process, waitee_process);
-	args->ret = waiter_process->waitee.pid;
-	*status = waiter_process->waitee.exit_code;*/
+	kfree(events);
 }
 
 void sched_init(uint64_t args) {
@@ -303,7 +302,6 @@ void process_create(char *name, uint8_t state, uint64_t runtime,
 #endif
 	vec_init(&proc->process_threads);
 	vec_init(&proc->child_processes);
-	vec_init(&proc->waiter_processes);
 	vec_push(&processes, proc);
 
 	if (parent_process) {
@@ -364,7 +362,6 @@ bool process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
 	proc->auxv = auxv;
 	vec_init(&proc->child_processes);
 	vec_init(&proc->process_threads);
-	vec_init(&proc->waiter_processes);
 	vec_push(&processes, proc);
 	if (parent_process) {
 		vec_push(&parent_process->child_processes, proc);
@@ -405,7 +402,6 @@ int64_t process_fork(struct process *proc, struct thread *thrd) {
 
 	vec_init(&fproc->child_processes);
 	vec_init(&fproc->process_threads);
-	vec_init(&fproc->waiter_processes);
 	vec_push(&processes, fproc);
 
 	vec_push(&proc->child_processes, fproc);
@@ -682,30 +678,8 @@ void process_kill(struct process *proc, bool crash) {
 
 	vec_deinit(&proc->child_processes);
 
-	// processes waiting on this process can now stop waiting
-	for (int i = 0; i < proc->waiter_processes.length; i++) {
-		struct process *waiter_process = proc->waiter_processes.data[i];
+	event_trigger(&proc->death_event, true);
 
-		if (waiter_process == NULL)
-			continue;
-
-		waiter_process->state = PROCESS_READY_TO_RUN;
-		if (are_we_killing_ourselves && !crash) {
-			waiter_process->waitee.exit_code = proc->waitee.exit_code;
-			waiter_process->waitee.was_it_killed = 0;
-			dead_proc->was_it_killed = 0;
-
-		} else {
-			waiter_process->waitee.exit_code = -1;
-			waiter_process->waitee.was_it_killed = 1;
-			dead_proc->was_it_killed = 1;
-		}
-		waiter_process->waitee.pid = proc->pid;
-		waiter_process->waitee.parent_process = proc->parent_process;
-		vec_remove(&proc->waiter_processes, waiter_process);
-	}
-
-	vec_deinit(&proc->waiter_processes);
 	vec_remove(&processes, proc);
 
 	vec_push(&dead_processes, dead_proc);
@@ -761,7 +735,7 @@ void thread_execve(struct process *proc, struct thread *thrd,
 
 	struct auxval auxv = proc->auxv;
 
-	uint64_t *stack = (uint64_t *)(thrd->stack + STACK_SIZE);
+	uint64_t *stack = (uint64_t *)(thrd->stack + STACK_SIZE + MEM_PHYS_OFFSET);
 
 	int envp_len = 0;
 	uint64_t address_difference = 0;
@@ -775,7 +749,8 @@ void thread_execve(struct process *proc, struct thread *thrd,
 	}
 
 	stack = (uint64_t *)stack_but_in_bytes;
-	address_difference = (thrd->stack + STACK_SIZE) - (uint64_t)stack;
+	address_difference =
+		(thrd->stack + STACK_SIZE) - ((uint64_t)stack - MEM_PHYS_OFFSET);
 	uint64_t addr_to_env = (uint64_t)VIRTUAL_STACK_ADDR - address_difference;
 
 	int argv_len;
@@ -786,7 +761,8 @@ void thread_execve(struct process *proc, struct thread *thrd,
 	}
 
 	stack = (uint64_t *)stack_but_in_bytes;
-	address_difference = (thrd->stack + STACK_SIZE) - (uint64_t)stack;
+	address_difference =
+		(thrd->stack + STACK_SIZE) - ((uint64_t)stack - MEM_PHYS_OFFSET);
 	uint64_t addr_to_arg = (uint64_t)VIRTUAL_STACK_ADDR - address_difference;
 
 	// alignments
@@ -794,8 +770,6 @@ void thread_execve(struct process *proc, struct thread *thrd,
 	stack = (uintptr_t *)((uintptr_t)stack & ~(0b1111));
 	if (((argv_len + envp_len + 1) & 1) != 0)
 		stack--;
-
-	stack = (uintptr_t *)((uintptr_t)stack + MEM_PHYS_OFFSET);
 
 	*(--stack) = 0;
 	*(--stack) = 0;
@@ -838,9 +812,8 @@ void thread_execve(struct process *proc, struct thread *thrd,
 
 	*(--stack) = argv_len;
 
-	stack = (uintptr_t *)((uintptr_t)stack - MEM_PHYS_OFFSET);
-
-	address_difference = (thrd->stack + STACK_SIZE) - (uint64_t)stack;
+	address_difference =
+		(thrd->stack + STACK_SIZE) - ((uint64_t)stack - MEM_PHYS_OFFSET);
 	thrd->reg.rsp -= address_difference;
 #endif
 
@@ -890,15 +863,10 @@ void thread_sleep(struct thread *thrd, uint64_t ns) {
 void process_wait_on_another_process(struct process *waiter,
 									 struct process *waitee) {
 	waiter->state = PROCESS_WAITING_ON_ANOTHER_PROCESS;
-	vec_push(&waitee->waiter_processes, waiter);
 	sched_resched_now();
 }
 
 void process_wait_on_processes(struct process *waiter, process_vec_t waitees) {
 	waiter->state = PROCESS_WAITING_ON_ANOTHER_PROCESS;
-	for (int i = 0; i < waitees.length; i++) {
-		struct process *waitee = waitees.data[i];
-		vec_push(&waitee->waiter_processes, waiter);
-	}
 	sched_resched_now();
 }

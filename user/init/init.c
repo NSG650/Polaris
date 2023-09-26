@@ -196,21 +196,17 @@ void main(void) {
 
 			if (execve(argv[0], argv, envp) == -1)
 				puts_to_console("Failed to execve :((\n");
-
 			for (;;)
 				;
 		}
 
-		int waitpid_return = waitpid(pid, &status, 1);
+		int waitpid_return = waitpid(pid, &status, 0);
 
 		if (waitpid_return == -1) {
 			puts_to_console("Whoops waitpid failed\n");
 			for (;;)
 				;
 		}
-
-		while (waitpid_return == 0)
-			waitpid_return = waitpid(pid, &status, 1);
 
 		puts_to_console("Whoops the shell exited\n");
 	}

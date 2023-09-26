@@ -13,8 +13,8 @@ void backtrace(uintptr_t *bp) {
 		uintptr_t *old_rbp = (uintptr_t *)rbp[0];
 		uintptr_t *rip = (uintptr_t *)rbp[1];
 
-		if (rip == NULL || old_rbp == NULL ||
-			((uintptr_t)rip) < 0xffffffff80000000)
+		if (rip == NULL || old_rbp == NULL /*||
+			((uintptr_t)rip) < 0xffffffff80000000*/)
 			break;
 
 		kprintf("0x%p\n", rip);

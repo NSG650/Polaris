@@ -18,7 +18,7 @@ extern void resched_context_switch(registers_t *reg);
 
 void sched_resched_now(void) {
 	sti();
-	asm volatile("int 0x30");
+	apic_send_ipi(lapic_get_id(), 48);
 }
 
 uint64_t timer_sched_tick(void) {
@@ -26,10 +26,10 @@ uint64_t timer_sched_tick(void) {
 }
 
 void resched(registers_t *reg) {
-	//	spinlock_acquire_or_wait(&resched_lock);
-
 	vmm_switch_pagemap(kernel_pagemap);
 	prcb_return_current_cpu()->sched_ticks++;
+
+	timer_stop_sched();
 
 	for (int i = 0; i < sleeping_threads.length &&
 					prcb_return_current_cpu()->cpu_number == 0;
@@ -55,7 +55,6 @@ void resched(registers_t *reg) {
 			running_thrd->mother_proc->state = PROCESS_READY_TO_RUN;
 
 		running_thrd->fs_base = read_fs_base();
-
 		spinlock_drop(&running_thrd->lock);
 	}
 	int nex_index =
@@ -63,8 +62,6 @@ void resched(registers_t *reg) {
 
 	if (nex_index == -1) {
 		// we're idle
-		//		spinlock_drop(&resched_lock);
-
 		apic_eoi();
 		timer_sched_oneshot(48, 20000);
 		prcb_return_current_cpu()->running_thread = NULL;
@@ -93,11 +90,9 @@ void resched(registers_t *reg) {
 	prcb_return_current_cpu()->running_thread->mother_proc->state =
 		PROCESS_NORMAL;
 
-	//	spinlock_drop(&resched_lock);
-
 	apic_eoi();
 	timer_sched_oneshot(48, running_thrd->runtime);
-
+	sti();
 	vmm_switch_pagemap(running_thrd->mother_proc->process_pagemap);
 	resched_context_switch(&running_thrd->reg);
 }
