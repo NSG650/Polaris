@@ -182,6 +182,8 @@ void panic_(size_t *ip, size_t *bp, char *fmt, ...) {
 	extern bool is_smp;
 	if (in_panic) {
 		halt_other_cpus();
+		kputs_("Pretty bad kernel panic here\n");
+		kputs_(fmt);
 		halt_current_cpu();
 	}
 	in_panic = true;

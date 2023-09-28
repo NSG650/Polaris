@@ -8,19 +8,19 @@
 #include <stdint.h>
 
 static inline void set_kernel_gs(uint64_t address) {
-	wrmsr(0xc0000101, address);
-}
-
-static inline uintptr_t read_kernel_gs(void) {
-	return rdmsr(0xc0000101);
-}
-
-static inline void set_user_gs(uint64_t address) {
 	wrmsr(0xc0000102, address);
 }
 
-static inline uintptr_t read_user_gs(void) {
+static inline uintptr_t read_kernel_gs(void) {
 	return rdmsr(0xc0000102);
+}
+
+static inline void set_user_gs(uint64_t address) {
+	wrmsr(0xc0000101, address);
+}
+
+static inline uintptr_t read_user_gs(void) {
+	return rdmsr(0xc0000101);
 }
 
 static inline void set_fs_base(uint64_t address) {

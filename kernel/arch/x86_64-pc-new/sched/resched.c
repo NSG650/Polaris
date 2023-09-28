@@ -42,6 +42,8 @@ void resched(registers_t *reg) {
 		}
 	}
 
+	//	spinlock_acquire_or_wait(&resched_lock);
+
 	struct thread *running_thrd = prcb_return_current_cpu()->running_thread;
 	if (running_thrd) {
 		running_thrd->reg = *reg;
@@ -57,8 +59,11 @@ void resched(registers_t *reg) {
 		running_thrd->fs_base = read_fs_base();
 		spinlock_drop(&running_thrd->lock);
 	}
+
 	int nex_index =
 		sched_get_next_thread(prcb_return_current_cpu()->thread_index);
+
+	//	spinlock_drop(&resched_lock);
 
 	if (nex_index == -1) {
 		// we're idle
@@ -72,6 +77,8 @@ void resched(registers_t *reg) {
 	}
 
 	running_thrd = threads.data[nex_index];
+
+	// spinlock_acquire_or_wait(&resched_lock);
 
 	prcb_return_current_cpu()->fpu_restore(running_thrd->fpu_storage);
 
@@ -93,6 +100,9 @@ void resched(registers_t *reg) {
 	apic_eoi();
 	timer_sched_oneshot(48, running_thrd->runtime);
 	sti();
+
+	// spinlock_drop(&resched_lock);
+
 	vmm_switch_pagemap(running_thrd->mother_proc->process_pagemap);
 	resched_context_switch(&running_thrd->reg);
 }

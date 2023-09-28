@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #if defined(__x86_64__)
+#include <cpu/smp.h>
 #include <sys/gdt.h>
 #endif
 #include <klibc/vec.h>
@@ -29,6 +30,13 @@ extern struct prcb *prcbs;
 
 #if defined(__x86_64__)
 
+static inline struct prcb *prcb_return_current_cpu(void) {
+	return (struct prcb *)read_kernel_gs();
+}
+
+#endif
+
+#if 0
 #define prcb_return_current_cpu()               \
 	({                                          \
 		uint64_t cpu_number;                    \
@@ -38,7 +46,6 @@ extern struct prcb *prcbs;
 					 : "memory");               \
 		&prcbs[cpu_number];                     \
 	})
-
 #endif
 
 size_t prcb_return_installed_cpus(void);
