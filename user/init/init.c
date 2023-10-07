@@ -182,51 +182,33 @@ void main(void) {
 		puts_to_console("Whoops can't find /etc/motd\n");
 	}
 
-	puts_to_console("Userspace hell\n");
+	int status = 0;
 
 	for (;;) {
-		if (syscall0(0xAA) != 0xbabe650)
-			puts_to_console("YO YO WE ARE FAILING\n");
-	}
+		int pid = fork();
 
-	/*	for (int i = 0; i < 4; i++) {
-			int pid = fork();
-			if (pid == 0) {
-				for (;;) {
-					puts("A");
-				}
-			}
+		if (pid == 0) {
+			char *argv[] = {"/bin/busybox", "ash", NULL};
+
+			char *envp[] = {"USER=root", "HOME=/root",
+							"PATH=/bin:/usr/bin:/usr/local/bin", "TERM=linux",
+							NULL};
+
+			if (execve(argv[0], argv, envp) == -1)
+				puts_to_console("Failed to execve :((\n");
+
+			for (;;)
+				;
 		}
 
-		for (;;)
-			; */
+		int waitpid_return = waitpid(pid, &status, 0);
 
-	/*	int status = 0;
+		if (waitpid_return == -1) {
+			puts_to_console("Whoops waitpid failed\n");
+			for (;;)
+				;
+		}
 
-		for (;;) {
-			int pid = fork();
-
-			if (pid == 0) {
-				char *argv[] = {"/bin/busybox", "ash", NULL};
-
-				char *envp[] = {"USER=root", "HOME=/root",
-								"PATH=/bin:/usr/bin:/usr/local/bin",
-	   "TERM=linux", NULL};
-
-				if (execve(argv[0], argv, envp) == -1)
-					puts_to_console("Failed to execve :((\n");
-				for (;;)
-					;
-			}
-
-			int waitpid_return = waitpid(pid, &status, 0);
-
-			if (waitpid_return == -1) {
-				puts_to_console("Whoops waitpid failed\n");
-				for (;;)
-					;
-			}
-
-			puts_to_console("Whoops the shell exited\n");
-		} */
+		puts_to_console("Whoops the shell exited\n");
+	}
 }

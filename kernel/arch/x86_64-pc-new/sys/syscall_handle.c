@@ -8,13 +8,11 @@
 
 void syscall_handler(registers_t *reg) {
 	// Save original reg in case we're suspending the current thread
-	if (prcb_return_current_cpu()->running_thread || reg) {
-		prcb_return_current_cpu()->running_thread->reg = *reg;
-		prcb_return_current_cpu()->running_thread->stack =
-			prcb_return_current_cpu()->user_stack;
-		prcb_return_current_cpu()->fpu_save(
-			prcb_return_current_cpu()->running_thread->fpu_storage);
-	}
+	prcb_return_current_cpu()->running_thread->reg = *reg;
+	prcb_return_current_cpu()->running_thread->stack =
+		prcb_return_current_cpu()->user_stack;
+	prcb_return_current_cpu()->fpu_save(
+		prcb_return_current_cpu()->running_thread->fpu_storage);
 
 	struct syscall_arguments args = {.syscall_nr = reg->rax,
 									 .args0 = reg->rdi,

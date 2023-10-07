@@ -308,7 +308,12 @@ uint64_t vmm_virt_to_kernel(struct pagemap *pagemap, uint64_t virt_addr) {
 }
 
 void vmm_page_fault_handler(registers_t *reg) {
+	if (reg->cs & 0x3)
+		swapgs();
+
 	if (mmap_handle_pf(reg)) {
+		if (reg->cs & 0x3)
+			swapgs();
 		return;
 	}
 
@@ -335,14 +340,17 @@ void vmm_page_fault_handler(registers_t *reg) {
 			process_kill(thrd->mother_proc, 1);
 		else
 			thread_kill(thrd, 1);
-	}
+	} else {
+		if (reg->cs & 0x3)
+			swapgs();
 
-	panic_((void *)reg->rip, (void *)reg->rbp,
-		   "Page fault at 0x%p present: %s, read/write: %s, "
-		   "user/supervisor: %s, reserved: %s, execute: %s\n",
-		   faulting_address, present ? "P" : "NP", read_write ? "R" : "RW",
-		   user_supervisor ? "U" : "S", reserved ? "R" : "NR",
-		   execute ? "X" : "NX");
+		panic_((void *)reg->rip, (void *)reg->rbp,
+			   "Page fault at 0x%p present: %s, read/write: %s, "
+			   "user/supervisor: %s, reserved: %s, execute: %s\n",
+			   faulting_address, present ? "P" : "NP", read_write ? "R" : "RW",
+			   user_supervisor ? "U" : "S", reserved ? "R" : "NR",
+			   execute ? "X" : "NX");
+	}
 }
 
 struct pagemap *vmm_fork_pagemap(struct pagemap *pagemap) {

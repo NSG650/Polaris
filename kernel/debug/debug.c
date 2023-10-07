@@ -178,12 +178,16 @@ void debug_hex_dump(const void *data, size_t size) {
 
 void panic_(size_t *ip, size_t *bp, char *fmt, ...) {
 	cli();
+	spinlock_drop(&write_lock);
+	halt_other_cpus();
 	put_to_fb = 1;
 	extern bool is_smp;
 	if (in_panic) {
-		halt_other_cpus();
-		kputs_("Pretty bad kernel panic here\n");
-		kputs_(fmt);
+		kprintf("Pretty bad kernel panic here\n");
+		va_list args;
+		va_start(args, fmt);
+		kprintf_(fmt, args);
+		va_end(args);
 		halt_current_cpu();
 	}
 	in_panic = true;
@@ -192,8 +196,6 @@ void panic_(size_t *ip, size_t *bp, char *fmt, ...) {
 		kprintf("Panic called on CPU%d\n",
 				prcb_return_current_cpu()->cpu_number);
 	}
-
-	halt_other_cpus();
 	va_list args;
 	va_start(args, fmt);
 	kprintf_(fmt, args);

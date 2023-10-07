@@ -20,7 +20,8 @@ enum thread_states {
 	THREAD_READY_TO_RUN,
 	THREAD_SLEEPING,
 	THREAD_WAITING_FOR_FUTEX,
-	THREAD_WAITING_FOR_EVENT
+	THREAD_WAITING_FOR_EVENT,
+	THREAD_IN_SYSCALL
 };
 
 enum process_states {
@@ -45,6 +46,7 @@ struct thread {
 	uint64_t stack;
 	uint64_t kernel_stack;
 	uint64_t sleeping_till;
+	uint64_t last_scheduled;
 	void *fpu_storage;
 	size_t which_event;
 	size_t attached_events_i;

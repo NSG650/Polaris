@@ -56,6 +56,8 @@ void resched(registers_t *reg) {
 		if (running_thrd->mother_proc->state == PROCESS_NORMAL)
 			running_thrd->mother_proc->state = PROCESS_READY_TO_RUN;
 
+		running_thrd->last_scheduled =
+			timer_count() - running_thrd->last_scheduled;
 		running_thrd->fs_base = read_fs_base();
 		spinlock_drop(&running_thrd->lock);
 	}
