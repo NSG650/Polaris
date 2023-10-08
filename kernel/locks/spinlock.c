@@ -25,7 +25,7 @@
 static void *last_addr = NULL;
 
 static void spinlock_spinning_for_too_long(lock_t *spin) {
-	kputs_("Possible deadlock? Last owner: 0x");
+	kputs_("\n\nPossible deadlock? Last owner: 0x");
 	char string[20] = {0};
 	ultoa((uintptr_t)spin->last_owner, string, 16);
 	kputs_(string);

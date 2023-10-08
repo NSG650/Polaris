@@ -78,6 +78,7 @@ struct process {
 	lock_t lock;
 	uintptr_t mmap_anon_base;
 	uint64_t runtime;
+	uintptr_t stack_top;
 	thread_vec_t process_threads;
 	struct vfs_node *cwd;
 	lock_t fds_lock;
@@ -85,6 +86,7 @@ struct process {
 	struct f_descriptor *fds[MAX_FDS];
 	struct process *parent_process;
 	process_vec_t child_processes;
+	process_vec_t waiter_processes;
 	struct dead_process waitee;
 	struct auxval auxv;
 	struct event death_event;

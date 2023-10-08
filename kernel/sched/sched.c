@@ -183,82 +183,89 @@ void syscall_waitpid(struct syscall_arguments *args) {
 	struct process *waiter_process =
 		prcb_return_current_cpu()->running_thread->mother_proc;
 
-	struct process *waitee_process = NULL;
+	struct process *waitee_process =
+		sched_pid_to_child_process(waiter_process, pid_to_wait_on);
 
-	bool block = (mode & WNOHANG) == 0;
+	spinlock_acquire_or_wait(&waiter_process->lock);
+
+	if (!waitee_process) {
+		spinlock_drop(&waiter_process->lock);
+		errno = ECHILD;
+		args->ret = -1;
+		kprintf("%d:%s\n", waiter_process->pid, waiter_process->name);
+		kprintf("syscall_waitpid: returning -1! at %d\n", __LINE__);
+		return;
+	}
 
 	if (!waiter_process->child_processes.length) {
+		spinlock_drop(&waiter_process->lock);
+		errno = ECHILD;
+		args->ret = -1;
+		kprintf("%d:%s\n", waiter_process->pid, waiter_process->name);
+		kprintf("syscall_waitpid: returning -1! at %d\n", __LINE__);
+		return;
+	}
+
+	if (pid_to_wait_on < -1 || pid_to_wait_on == 0) {
+		spinlock_drop(&waiter_process->lock);
+		errno = EINVAL;
+		args->ret = -1;
+		return;
+	}
+
+	if (mode & WNOHANG) {
+		args->ret = 0;
+		if (pid_to_wait_on == -1) {
+			if (waiter_process->waitee.parent_process == waiter_process) {
+				args->ret = waiter_process->waitee.pid;
+				*status = waiter_process->waitee.exit_code;
+			} else {
+				// time to loop over every dead process and see if our child
+				// died
+				for (int i = 0; i < dead_processes.length; i++) {
+					if (dead_processes.data[i]->parent_process ==
+						waiter_process) {
+						args->ret = dead_processes.data[i]->pid;
+						*status = dead_processes.data[i]->exit_code;
+						break;
+					}
+				}
+			}
+		} else {
+			if (waitee_process == NULL) {
+				args->ret = pid_to_wait_on;
+				for (int i = 0; i < dead_processes.length; i++) {
+					if (dead_processes.data[i]->pid == pid_to_wait_on) {
+						*status = dead_processes.data[i]->exit_code;
+						break;
+					}
+				}
+			}
+		}
+		spinlock_drop(&waiter_process->lock);
+		return;
+	}
+
+	if (pid_to_wait_on == -1) {
+		spinlock_drop(&waiter_process->lock);
+		process_wait_on_processes(waiter_process,
+								  waiter_process->child_processes);
+		args->ret = waiter_process->waitee.pid;
+		*status = waiter_process->waitee.exit_code;
+		return;
+	}
+
+	if (waitee_process == NULL) {
+		spinlock_drop(&waiter_process->lock);
 		errno = ECHILD;
 		args->ret = -1;
 		return;
 	}
 
-	struct event **events = NULL;
-	size_t event_num = 0;
-
-	if (pid_to_wait_on == -1) {
-		event_num = waiter_process->child_processes.length;
-		events = kmalloc(sizeof(struct event *) * event_num);
-		for (size_t i = 0; i < event_num; i++) {
-			events[i] = &waiter_process->child_processes.data[i]->death_event;
-		}
-	} else if (pid < -1 || pid == 0) {
-		errno = EINVAL;
-		args->ret = -1;
-		return;
-	} else {
-		waitee_process =
-			sched_pid_to_child_process(waiter_process, pid_to_wait_on);
-		if (!waitee_process) {
-			errno = ECHILD;
-			args->ret = -1;
-			return;
-		}
-		event_num = 1;
-		events = kmalloc(sizeof(struct event *));
-		events[0] = &waitee_process->death_event;
-	}
-
-	ssize_t which = event_await(events, event_num, block);
-	if (which == -1) {
-		if (!block) {
-			args->ret = 0;
-			kfree(events);
-			return;
-		} else {
-			errno = EINTR;
-			args->ret = -1;
-			kfree(events);
-			return;
-		}
-	}
-
-	if (pid_to_wait_on != -1) {
-		for (int i = 0; i < dead_processes.length; i++) {
-			if (dead_processes.data[i]->pid == pid_to_wait_on) {
-				*status = dead_processes.data[i]->exit_code;
-				struct dead_process *dead = dead_processes.data[i];
-				vec_remove(&dead_processes, dead_processes.data[i]);
-				kfree(dead);
-				break;
-			}
-		}
-		if (!block)
-			args->ret = pid_to_wait_on;
-	} else {
-		struct dead_process *dead_child =
-			sched_return_recently_dead_child_process(waiter_process);
-		if (dead_child == NULL) {
-			errno = ECHILD;
-			args->ret = -1;
-			return;
-		}
-		*status = dead_child->exit_code;
-		if (!block)
-			args->ret = dead_child->pid;
-	}
-
-	kfree(events);
+	spinlock_drop(&waiter_process->lock);
+	process_wait_on_another_process(waiter_process, waitee_process);
+	args->ret = waiter_process->waitee.pid;
+	*status = waiter_process->waitee.exit_code;
 }
 
 void sched_init(uint64_t args) {
@@ -302,6 +309,7 @@ void process_create(char *name, uint8_t state, uint64_t runtime,
 #endif
 	vec_init(&proc->process_threads);
 	vec_init(&proc->child_processes);
+	vec_init(&proc->waiter_processes);
 	vec_push(&processes, proc);
 
 	if (parent_process) {
@@ -362,6 +370,7 @@ bool process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
 	proc->auxv = auxv;
 	vec_init(&proc->child_processes);
 	vec_init(&proc->process_threads);
+	vec_init(&proc->waiter_processes);
 	vec_push(&processes, proc);
 	if (parent_process) {
 		vec_push(&parent_process->child_processes, proc);
@@ -402,6 +411,7 @@ int64_t process_fork(struct process *proc, struct thread *thrd) {
 
 	vec_init(&fproc->child_processes);
 	vec_init(&fproc->process_threads);
+	vec_init(&fproc->waiter_processes);
 	vec_push(&processes, fproc);
 
 	vec_push(&proc->child_processes, fproc);
@@ -671,15 +681,37 @@ void process_kill(struct process *proc, bool crash) {
 		struct process *child_process = proc->child_processes.data[i];
 		child_process->parent_process =
 			processes.data[1]; // the init proc is the second process
-							   // first one is the kernel
+		// first one is the kernel
 		vec_push(&processes.data[1]->child_processes, child_process);
 		vec_remove(&proc->child_processes, child_process);
 	}
 
 	vec_deinit(&proc->child_processes);
 
-	event_trigger(&proc->death_event, true);
+	// processes waiting on this process can now stop waiting
+	for (int i = 0; i < proc->waiter_processes.length; i++) {
+		struct process *waiter_process = proc->waiter_processes.data[i];
 
+		if (waiter_process == NULL)
+			continue;
+
+		waiter_process->state = PROCESS_READY_TO_RUN;
+		if (are_we_killing_ourselves && !crash) {
+			waiter_process->waitee.exit_code = proc->waitee.exit_code;
+			waiter_process->waitee.was_it_killed = 0;
+			dead_proc->was_it_killed = 0;
+
+		} else {
+			waiter_process->waitee.exit_code = -1;
+			waiter_process->waitee.was_it_killed = 1;
+			dead_proc->was_it_killed = 1;
+		}
+		waiter_process->waitee.pid = proc->pid;
+		waiter_process->waitee.parent_process = proc->parent_process;
+		vec_remove(&proc->waiter_processes, waiter_process);
+	}
+
+	vec_deinit(&proc->waiter_processes);
 	vec_remove(&processes, proc);
 
 	vec_push(&dead_processes, dead_proc);

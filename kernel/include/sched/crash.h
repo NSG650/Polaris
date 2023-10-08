@@ -7,6 +7,6 @@
 #include <sched/sched.h>
 
 void sched_display_crash_message(uintptr_t crash_address, struct process *proc,
-								 char *reason);
+								 const char *reason);
 
 #endif

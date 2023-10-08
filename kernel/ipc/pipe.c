@@ -22,7 +22,9 @@ static ssize_t pipe_read(struct resource *this,
 	struct pipe *p = (struct pipe *)this;
 	size_t size_to_read = count;
 
-	if ((p->data + p->data_length) <= (p->data + p->read_ptr)) {
+	if ((p->data + p->data_length) <= (p->data + p->read_ptr) ||
+		(p->read_ptr + offset + p->data_length) <=
+			(uintptr_t)(p->data + p->read_ptr)) {
 		p->read_ptr -= p->data_length;
 	}
 
@@ -36,7 +38,7 @@ static ssize_t pipe_read(struct resource *this,
 		return 0;
 	}
 
-	memcpy(buf, (void *)(p->data + p->read_ptr), size_to_read);
+	memcpy(buf, (void *)(p->data + p->read_ptr + offset), size_to_read);
 
 	p->read_ptr += size_to_read;
 	p->capacity_used -= size_to_read;
@@ -59,8 +61,10 @@ static ssize_t pipe_write(struct resource *this,
 
 	size_t size_to_copy = count;
 
-	if ((p->data + p->data_length) <= (p->data + p->write_ptr)) {
-		p->write_ptr -= p->data_length;
+	if ((p->data + p->data_length) <= (p->data + p->read_ptr) ||
+		(p->read_ptr + offset + p->data_length) <=
+			(uintptr_t)(p->data + p->read_ptr)) {
+		p->read_ptr -= p->data_length;
 	}
 
 	if (count > p->data_length) {
@@ -68,7 +72,7 @@ static ssize_t pipe_write(struct resource *this,
 		p->write_ptr = 0;
 	}
 
-	memcpy((void *)(p->data + p->write_ptr), buf, size_to_copy);
+	memcpy((void *)(p->data + p->write_ptr + offset), buf, size_to_copy);
 
 	p->write_ptr += size_to_copy;
 	p->capacity_used += size_to_copy;

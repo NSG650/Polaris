@@ -8,11 +8,9 @@
 #include <fs/vfs.h>
 #include <ipc/pipe.h>
 #include <kernel.h>
-#include <klibc/event.h>
 #include <klibc/kargs.h>
 #include <klibc/module.h>
 #include <mm/mmap.h>
-#include <net/arp.h>
 #include <net/net.h>
 #include <sched/sched.h>
 #include <sys/prcb.h>
@@ -21,11 +19,6 @@
 const char *module_list[] = {"/lib/modules/console.ko"};
 
 #define MODULE_LIST_SIZE (sizeof(module_list) / sizeof(module_list[0]))
-
-void syscall_hell(struct syscall_arguments *args) {
-	kputchar_('A' + prcb_return_current_cpu()->cpu_number);
-	args->ret = 0xbabe650;
-}
 
 void kernel_main(void *args) {
 	vfs_init();
@@ -79,7 +72,6 @@ void kernel_main(void *args) {
 	syscall_register_handler(0x10c, syscall_fchmodat);
 	syscall_register_handler(0x124, syscall_dup3);
 	syscall_register_handler(0x125, syscall_pipe);
-	syscall_register_handler(0xAA, syscall_hell);
 
 	std_console_device =
 		(vfs_get_node(vfs_root, "/dev/console", true))->resource;
