@@ -44,6 +44,6 @@ void syscall_prctl(struct syscall_arguments *args);
 void process_wait_on_another_process(struct process *waiter,
 									 struct process *waitee);
 
-void process_wait_on_processes(struct process *waiter, process_vec_t waitees);
+void process_wait_on_processes(struct process *waiter, process_vec_t *waitees);
 
 #endif

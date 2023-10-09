@@ -15,10 +15,49 @@
 #include <sched/sched.h>
 #include <sys/prcb.h>
 #include <sys/timer.h>
+#include <mm/pmm.h>
 
 const char *module_list[] = {"/lib/modules/console.ko"};
 
 #define MODULE_LIST_SIZE (sizeof(module_list) / sizeof(module_list[0]))
+
+struct sysinfo {
+    long uptime;             /* Seconds since boot */
+    unsigned long loads[3];  /* 1, 5, and 15 minute load averages */
+    unsigned long totalram;  /* Total usable main memory size */
+    unsigned long freeram;   /* Available memory size */
+    unsigned long sharedram; /* Amount of shared memory */
+    unsigned long bufferram; /* Memory used by buffers */
+    unsigned long totalswap; /* Total swap space size */
+    unsigned long freeswap;  /* swap space still available */
+    unsigned short procs;    /* Number of current processes */
+    unsigned long totalhigh; /* Total high memory size */
+    unsigned long freehigh;  /* Available high memory size */
+    unsigned int mem_unit;   /* Memory unit size in bytes */
+    char _f[20-2*sizeof(long)-sizeof(int)]; /* Padding to 64 bytes */
+};
+
+void syscall_sysinfo(struct syscall_arguments *args) {
+    struct sysinfo *from_user = (struct sysinfo *)(args->args0);
+
+    uint64_t page_info[2] = {0};
+    pmm_get_memory_info(page_info);
+
+    from_user->uptime = (long)timer_count() / 1000;
+    from_user->loads[0] = 0;
+    from_user->loads[1] = 0;
+    from_user->loads[2] = 0;
+    from_user->totalram = page_info[0] * PAGE_SIZE;
+    from_user->freeram = page_info[1] * PAGE_SIZE;
+    from_user->sharedram = 0;
+    from_user->bufferram = 0;
+    from_user->totalswap = 0;
+    from_user->freeswap = 0;
+    from_user->procs = (uint16_t)prcb_return_installed_cpus();
+    from_user->mem_unit = 0;
+
+    args->ret = 0;
+}
 
 void kernel_main(void *args) {
 	vfs_init();
@@ -72,6 +111,7 @@ void kernel_main(void *args) {
 	syscall_register_handler(0x10c, syscall_fchmodat);
 	syscall_register_handler(0x124, syscall_dup3);
 	syscall_register_handler(0x125, syscall_pipe);
+    syscall_register_handler(0x63, syscall_sysinfo);
 
 	std_console_device =
 		(vfs_get_node(vfs_root, "/dev/console", true))->resource;
@@ -89,5 +129,5 @@ void kernel_main(void *args) {
 		panic("Failed to run init binary!\n");
 
 	for (;;)
-		pause();
+        ;
 }

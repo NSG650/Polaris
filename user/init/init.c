@@ -8,6 +8,23 @@ struct fbdev_info {
 	uint16_t width, height;
 };
 
+struct sysinfo {
+    long uptime;             /* Seconds since boot */
+    unsigned long loads[3];  /* 1, 5, and 15 minute load averages */
+    unsigned long totalram;  /* Total usable main memory size */
+    unsigned long freeram;   /* Available memory size */
+    unsigned long sharedram; /* Amount of shared memory */
+    unsigned long bufferram; /* Memory used by buffers */
+    unsigned long totalswap; /* Total swap space size */
+    unsigned long freeswap;  /* swap space still available */
+    unsigned short procs;    /* Number of current processes */
+    unsigned long totalhigh; /* Total high memory size */
+    unsigned long freehigh;  /* Available high memory size */
+    unsigned int mem_unit;   /* Memory unit size in bytes */
+    char _f[20-2*sizeof(long)-sizeof(int)]; /* Padding to 64 bytes */
+};
+
+
 #define PROT_NONE 0x00
 #define PROT_READ 0x01
 #define PROT_WRITE 0x02
@@ -70,6 +87,41 @@ size_t strlen(char *string) {
 	while (*string++)
 		count++;
 	return count;
+}
+
+char *ltoa(int64_t value, char *str, int base) {
+	char *rc;
+	char *ptr;
+	char *low;
+	// Check for supported base.
+	if (base < 2 || base > 36) {
+		*str = '\0';
+		return str;
+	}
+	rc = ptr = str;
+	// Set '-' for negative decimals.
+	if (value < 0 && base == 10) {
+		*ptr++ = '-';
+	}
+	// Remember where the numbers start.
+	low = ptr;
+	// The actual conversion.
+	do {
+		// Modulo is negative for negative value. This trick makes abs()
+		// unnecessary.
+		*ptr++ = "zyxwvutsrqponmlkjihgfedcba9876543210123456789abcdefghijklmnop"
+				 "qrstuvwxyz"[35 + value % base];
+		value /= base;
+	} while (value);
+	// Terminating the string.
+	*ptr-- = '\0';
+	// Invert the numbers.
+	while (low < ptr) {
+		char tmp = *low;
+		*low++ = *ptr;
+		*ptr-- = tmp;
+	}
+	return rc;
 }
 
 void puts(char *string) {
@@ -160,6 +212,29 @@ void puts_to_console_with_length(char *string, size_t length) {
 	write(stdout, string, length);
 }
 
+int sysinfo(struct sysinfo *info) {
+	syscall1(0x63, (uint64_t)info);
+}
+
+int msleep(long msec)
+{
+    struct timespec ts;
+    int res;
+
+    if (msec <= 0) {
+        return -1;
+    }
+
+    ts.tv_sec = msec / 1000;
+    ts.tv_nsec = (msec % 1000) * 1000000;
+
+	nanosleep(&ts, &ts);
+
+
+    return res;
+}
+
+
 void *memset(void *d, int c, size_t n);
 
 void main(void) {
@@ -182,36 +257,28 @@ void main(void) {
 		puts_to_console("Whoops can't find /etc/motd\n");
 	}
 
-	int status = 0;
+	struct sysinfo info = {0};
+	sysinfo(&info);
+
+	char number[21] = {0};
+
+	puts_to_console("System has ");
+	ltoa(info.totalram / (1024 * 1024), number, 10);
+	puts_to_console(number);
+	puts_to_console(" MB of memory installed and ");
+	memset(number, 0, 21);
+	ltoa(info.freeram / (1024 * 1024), number, 10);
+	puts_to_console(number);
+	puts_to_console(" MB of memory free along with ");
+	memset(number, 0, 21);
+	ltoa(info.procs , number, 10);
+	puts_to_console(number);
+	puts_to_console(" CPUs installed\n");
 
 	for (;;) {
 		int pid = fork();
-
 		if (pid == 0) {
-			char *argv[] = {"/bin/busybox", "ash", NULL};
-
-			char *envp[] = {"USER=root", "HOME=/root",
-							"PATH=/bin:/usr/bin:/usr/local/bin", "TERM=linux",
-							NULL};
-
-			if (execve(argv[0], argv, envp) == -1)
-				puts_to_console("Failed to execve :((\n");
-
-			for (;;)
-				;
+			syscall1(60, 0);
 		}
-
-		int waitpid_return = waitpid(pid, &status, 0);
-
-		if (waitpid_return == -1) {
-			puts_to_console("Whoops waitpid failed\n");
-			for (;;)
-				;
-		}
-
-		while (waitpid_return == 0)
-			waitpid_return = waitpid(pid, &status, 1);
-
-		puts_to_console("Whoops the shell exited\n");
 	}
 }

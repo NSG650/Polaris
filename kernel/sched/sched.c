@@ -32,6 +32,8 @@ lock_t process_lock = {0};
 lock_t thread_lock = {0};
 int64_t tid = 0;
 
+lock_t fork_lock = {0};
+
 struct process *sched_pid_to_process(int64_t process_pid) {
 	for (int i = 0; i < processes.length; i++) {
 		if (processes.data[i]->pid == process_pid) {
@@ -91,7 +93,7 @@ int sched_get_next_thread(int index) {
 }
 
 void syscall_kill(struct syscall_arguments *args) {
-	struct process *proc = sched_pid_to_process(args->args0);
+	struct process *proc = sched_pid_to_process((int64_t)args->args0);
 	args->ret = 0;
 	if (!proc)
 		args->ret = -1;
@@ -131,9 +133,11 @@ void syscall_nanosleep(struct syscall_arguments *args) {
 }
 
 void syscall_fork(struct syscall_arguments *args) {
+    spinlock_acquire_or_wait(&fork_lock);
 	struct thread *running_thread = prcb_return_current_cpu()->running_thread;
 	struct process *running_process = running_thread->mother_proc;
 	args->ret = process_fork(running_process, running_thread);
+    spinlock_drop(&fork_lock);
 }
 
 void syscall_execve(struct syscall_arguments *args) {
@@ -174,98 +178,13 @@ void syscall_uname(struct syscall_arguments *args) {
 }
 
 void syscall_waitpid(struct syscall_arguments *args) {
-#define WNOHANG 1
-	int64_t pid_to_wait_on = (int64_t)args->args0;
+    int pid_to_wait_on = (int)args->args0;
+    int *status = (int *)args->args1;
+    int mode = (int)args->args2;
 
-	int *status = (int *)args->args1;
-	int mode = (int)args->args2;
+    kprintf("syscall_waitpid(%d, %p, %d)\n", pid_to_wait_on, status, mode);
 
-	struct process *waiter_process =
-		prcb_return_current_cpu()->running_thread->mother_proc;
-
-	struct process *waitee_process =
-		sched_pid_to_child_process(waiter_process, pid_to_wait_on);
-
-	spinlock_acquire_or_wait(&waiter_process->lock);
-
-	if (!waitee_process) {
-		spinlock_drop(&waiter_process->lock);
-		errno = ECHILD;
-		args->ret = -1;
-		kprintf("%d:%s\n", waiter_process->pid, waiter_process->name);
-		kprintf("syscall_waitpid: returning -1! at %d\n", __LINE__);
-		return;
-	}
-
-	if (!waiter_process->child_processes.length) {
-		spinlock_drop(&waiter_process->lock);
-		errno = ECHILD;
-		args->ret = -1;
-		kprintf("%d:%s\n", waiter_process->pid, waiter_process->name);
-		kprintf("syscall_waitpid: returning -1! at %d\n", __LINE__);
-		return;
-	}
-
-	if (pid_to_wait_on < -1 || pid_to_wait_on == 0) {
-		spinlock_drop(&waiter_process->lock);
-		errno = EINVAL;
-		args->ret = -1;
-		return;
-	}
-
-	if (mode & WNOHANG) {
-		args->ret = 0;
-		if (pid_to_wait_on == -1) {
-			if (waiter_process->waitee.parent_process == waiter_process) {
-				args->ret = waiter_process->waitee.pid;
-				*status = waiter_process->waitee.exit_code;
-			} else {
-				// time to loop over every dead process and see if our child
-				// died
-				for (int i = 0; i < dead_processes.length; i++) {
-					if (dead_processes.data[i]->parent_process ==
-						waiter_process) {
-						args->ret = dead_processes.data[i]->pid;
-						*status = dead_processes.data[i]->exit_code;
-						break;
-					}
-				}
-			}
-		} else {
-			if (waitee_process == NULL) {
-				args->ret = pid_to_wait_on;
-				for (int i = 0; i < dead_processes.length; i++) {
-					if (dead_processes.data[i]->pid == pid_to_wait_on) {
-						*status = dead_processes.data[i]->exit_code;
-						break;
-					}
-				}
-			}
-		}
-		spinlock_drop(&waiter_process->lock);
-		return;
-	}
-
-	if (pid_to_wait_on == -1) {
-		spinlock_drop(&waiter_process->lock);
-		process_wait_on_processes(waiter_process,
-								  waiter_process->child_processes);
-		args->ret = waiter_process->waitee.pid;
-		*status = waiter_process->waitee.exit_code;
-		return;
-	}
-
-	if (waitee_process == NULL) {
-		spinlock_drop(&waiter_process->lock);
-		errno = ECHILD;
-		args->ret = -1;
-		return;
-	}
-
-	spinlock_drop(&waiter_process->lock);
-	process_wait_on_another_process(waiter_process, waitee_process);
-	args->ret = waiter_process->waitee.pid;
-	*status = waiter_process->waitee.exit_code;
+    args->ret = -1;
 }
 
 void sched_init(uint64_t args) {
@@ -287,6 +206,7 @@ void sched_init(uint64_t args) {
 	syscall_register_handler(0x72, syscall_waitpid);
 	process_create("kernel_tasks", 0, 20000, (uintptr_t)kernel_main, args, 0,
 				   NULL);
+    sched_runit = true;
 }
 
 void process_create(char *name, uint8_t state, uint64_t runtime,
@@ -660,7 +580,7 @@ bool process_execve(char *path, char **argv, char **envp) {
 
 void process_kill(struct process *proc, bool crash) {
 	spinlock_acquire_or_wait(&process_lock);
-
+    cli();
 	struct dead_process *dead_proc = kmalloc(sizeof(struct dead_process));
 	dead_proc->pid = proc->pid;
 	dead_proc->exit_code = proc->waitee.exit_code;
@@ -887,18 +807,23 @@ void thread_sleep(struct thread *thrd, uint64_t ns) {
 	spinlock_drop(&thread_lock);
 	sti();
 
-	while (prcb_return_current_cpu()->running_thread->sleeping_till >
-		   timer_get_abs_count())
-		pause();
+    while (prcb_return_current_cpu()->running_thread->sleeping_till >
+           timer_get_abs_count())
+        sched_resched_now();
 }
 
 void process_wait_on_another_process(struct process *waiter,
 									 struct process *waitee) {
 	waiter->state = PROCESS_WAITING_ON_ANOTHER_PROCESS;
-	sched_resched_now();
+    vec_push(&waitee->waiter_processes, waiter);
+    sched_resched_now();
 }
 
-void process_wait_on_processes(struct process *waiter, process_vec_t waitees) {
+void process_wait_on_processes(struct process *waiter, process_vec_t *waitees) {
 	waiter->state = PROCESS_WAITING_ON_ANOTHER_PROCESS;
+    for (int i = 0; i < waitees->length; i++) {
+        struct process *waitee = waitees->data[i];
+        vec_push(&waitee->waiter_processes, waiter);
+    }
 	sched_resched_now();
 }

@@ -42,5 +42,6 @@ void *pmm_alloc(size_t pages);
 void *pmm_allocz(size_t pages);
 void pmm_free(void *addr, size_t pages);
 void pmm_init(struct limine_memmap_entry **memmap, size_t memmap_entries);
+void pmm_get_memory_info(uint64_t *info);
 
 #endif

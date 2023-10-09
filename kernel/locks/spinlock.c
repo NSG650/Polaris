@@ -24,6 +24,9 @@
 
 static void *last_addr = NULL;
 
+extern bool sched_runit;
+extern bool is_smp;
+
 static void spinlock_spinning_for_too_long(lock_t *spin) {
 	kputs_("\n\nPossible deadlock? Last owner: 0x");
 	char string[20] = {0};
@@ -41,9 +44,12 @@ static void spinlock_spinning_for_too_long(lock_t *spin) {
 	//	kprintf("Possible deadlock? Last owner: 0x%p Last CPU: %u deadlocked at:
 	// 0x%p\n", spin->last_owner, spin->last_cpu, last_addr);
 	dbgbrk();
+
+    if (sched_runit) sched_resched_now();
 }
 
 bool spinlock_acquire(lock_t *spin) {
+    if (!spin) return false;
 	bool ret = __sync_bool_compare_and_swap(&spin->lock, 0, 1);
 	if (ret)
 		spin->last_owner = __builtin_return_address(0);
@@ -51,6 +57,7 @@ bool spinlock_acquire(lock_t *spin) {
 }
 
 void spinlock_acquire_or_wait(lock_t *spin) {
+    if (!spin) return;
 	volatile size_t deadlock_counter = 0;
 	last_addr = __builtin_return_address(0);
 	for (;;) {
@@ -61,11 +68,11 @@ void spinlock_acquire_or_wait(lock_t *spin) {
 		pause();
 	}
 	spin->last_owner = __builtin_return_address(0);
-	extern bool is_smp;
 	if (is_smp)
 		spin->last_cpu = prcb_return_current_cpu()->cpu_number;
 }
 
 void spinlock_drop(lock_t *spin) {
+    if (!spin) return;
 	__atomic_store_n(&spin->lock, 0, __ATOMIC_SEQ_CST);
 }

@@ -126,3 +126,8 @@ void pmm_free(void *addr, size_t pages) {
 		bitmap_reset(bitmap, i);
 	spinlock_drop(&memory_lock);
 }
+
+void pmm_get_memory_info(uint64_t *info) {
+    info[0] = total_page_count;
+    info[1] = free_pages;
+}
