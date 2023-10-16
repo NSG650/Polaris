@@ -276,9 +276,6 @@ void main(void) {
 	puts_to_console(" CPUs installed\n");
 
 	for (;;) {
-		int pid = fork();
-		if (pid == 0) {
-			syscall1(60, 0);
-		}
+		;
 	}
 }

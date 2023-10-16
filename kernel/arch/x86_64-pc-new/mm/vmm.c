@@ -421,14 +421,17 @@ struct pagemap *vmm_fork_pagemap(struct pagemap *pagemap) {
 					if (old_pte == NULL || (((*old_pte) & 0xfff) & 1) == 0) {
 						continue;
 					}
-
+					spinlock_acquire_or_wait(&new_pagemap->lock);
 					uint64_t *new_pte = vmm_virt_to_pte(new_pagemap, i, true);
+					spinlock_drop(&new_pagemap->lock);
 					if (new_pte == NULL) {
 						goto cleanup;
 					}
-
+					spinlock_acquire_or_wait(
+						&new_global_range->shadow_pagemap->lock);
 					uint64_t *new_spte = vmm_virt_to_pte(
 						new_global_range->shadow_pagemap, i, true);
+					spinlock_drop(&new_global_range->shadow_pagemap->lock);
 					if (new_spte == NULL) {
 						goto cleanup;
 					}
@@ -443,6 +446,7 @@ struct pagemap *vmm_fork_pagemap(struct pagemap *pagemap) {
 					memcpy((void *)((uintptr_t)page + MEM_PHYS_OFFSET),
 						   (void *)((uintptr_t)old_page + MEM_PHYS_OFFSET),
 						   PAGE_SIZE);
+
 					*new_pte = ((*old_pte) & 0xfff) | (uint64_t)page;
 					*new_spte = *new_pte;
 				}

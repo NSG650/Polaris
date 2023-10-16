@@ -52,15 +52,15 @@ static void smp_cpu_init(struct limine_smp_info *smp_info) {
 	cr4 |= (3 << 9);
 	write_cr("4", cr4);
 
-		// Enable syscall in EFER
-		wrmsr(0xc0000080, rdmsr(0xc0000080) | 1);
+	// Enable syscall in EFER
+	wrmsr(0xc0000080, rdmsr(0xc0000080) | 1);
 
-		// Set up syscall
-		wrmsr(0xc0000081, 0x13000800000000);
-		// Syscall entry address
-		wrmsr(0xc0000082, (uint64_t)amd_syscall_entry);
-		// Flags mask
-		wrmsr(0xc0000084, (uint64_t) ~((uint32_t)0x2));
+	// Set up syscall
+	wrmsr(0xc0000081, 0x13000800000000);
+	// Syscall entry address
+	wrmsr(0xc0000082, (uint64_t)amd_syscall_entry);
+	// Flags mask
+	wrmsr(0xc0000084, (uint64_t) ~((uint32_t)0x2));
 
 	// Security features
 	uint32_t a = 0, b = 0, c = 0, d = 0;

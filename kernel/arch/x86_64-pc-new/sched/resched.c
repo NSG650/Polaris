@@ -18,7 +18,7 @@ extern void resched_context_switch(registers_t *reg);
 
 void sched_resched_now(void) {
 	sti();
-	apic_send_ipi(lapic_get_id(), 48);
+	asm volatile("int 0x30");
 }
 
 uint64_t timer_sched_tick(void) {
