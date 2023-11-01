@@ -75,6 +75,7 @@ void nmi_vector(registers_t *reg) {
 		while (is_pausing & PAUSING) {
 			pause();
 		}
+		apic_eoi();
 	} else {
 		panic_((void *)(reg->rip), (void *)(reg->rbp), "Unexpected NMI\n");
 	}

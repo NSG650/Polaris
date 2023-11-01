@@ -23,7 +23,6 @@ void syscall_prctl(struct syscall_arguments *args) {
 			//			args->ret = read_user_gs();
 			break;
 		case ARCH_SET_FS: {
-			prcb_return_current_cpu()->running_thread->fs_base = arg2;
 			set_fs_base(prcb_return_current_cpu()->running_thread->fs_base);
 			break;
 		}
@@ -31,7 +30,7 @@ void syscall_prctl(struct syscall_arguments *args) {
 			args->ret = read_fs_base();
 			break;
 		default:
-			errno = -EINVAL;
+			errno = EINVAL;
 			break;
 	}
 }

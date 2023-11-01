@@ -21,7 +21,6 @@ enum thread_states {
 	THREAD_SLEEPING,
 	THREAD_WAITING_FOR_FUTEX,
 	THREAD_WAITING_FOR_EVENT,
-	THREAD_IN_SYSCALL
 };
 
 enum process_states {
@@ -44,6 +43,7 @@ struct thread {
 	enum thread_states state;
 	uint64_t runtime;
 	uint64_t stack;
+	uint64_t pf_stack;
 	uint64_t kernel_stack;
 	uint64_t sleeping_till;
 	uint64_t last_scheduled;
@@ -52,10 +52,10 @@ struct thread {
 	size_t attached_events_i;
 	struct event *attached_events[MAX_EVENTS];
 	struct process *mother_proc;
-#if defined(__x86_64__)
+	// GS is PCB
+	// FS is TCB
 	uint64_t gs_base;
 	uint64_t fs_base;
-#endif
 };
 
 struct dead_process {

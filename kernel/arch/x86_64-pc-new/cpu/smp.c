@@ -165,6 +165,7 @@ void smp_init(struct limine_smp_response *smp_info) {
 			(uint64_t)pmm_allocz(STACK_SIZE / PAGE_SIZE) + MEM_PHYS_OFFSET;
 		prcbs[i].cpu_tss.ist1 =
 			(uint64_t)pmm_allocz(STACK_SIZE / PAGE_SIZE) + MEM_PHYS_OFFSET;
+		prcbs[i].cpu_tss.ist2 = prcbs[i].cpu_tss.ist1;
 
 		if (cpu->lapic_id != smp_bsp_lapic_id) {
 			cpu->goto_address = smp_cpu_init;

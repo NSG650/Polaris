@@ -29,14 +29,6 @@ struct prcb {
 extern struct prcb *prcbs;
 
 #if defined(__x86_64__)
-
-static inline struct prcb *prcb_return_current_cpu(void) {
-	return (struct prcb *)read_kernel_gs();
-}
-
-#endif
-
-#if 0
 #define prcb_return_current_cpu()               \
 	({                                          \
 		uint64_t cpu_number;                    \

@@ -1,5 +1,6 @@
 #include <cpu/smp.h>
 #include <debug/debug.h>
+#include <errno.h>
 #include <mm/vmm.h>
 #include <sched/sched.h>
 #include <sched/syscall.h>
@@ -25,7 +26,11 @@ void syscall_handler(registers_t *reg) {
 
 	syscall_handle(&args);
 
-	reg->rax = args.ret;
+	int ret = (int)args.ret;
+	if (ret < 0)
+		ret = -((int)errno);
+
+	reg->rax = ret;
 }
 
 void syscall_install_handler(void) {

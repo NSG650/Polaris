@@ -21,7 +21,7 @@ void isr_install(void) {
 	idt_set_gate(11, isr11, 0);
 	idt_set_gate(12, isr12, 0);
 	idt_set_gate(13, isr13, 0);
-	idt_set_gate(14, isr14, 0);
+	idt_set_gate(14, isr14, 2);
 	idt_set_gate(15, isr15, 0);
 	idt_set_gate(16, isr16, 0);
 	idt_set_gate(17, isr17, 0);

@@ -49,7 +49,7 @@ void syscall_futex(struct syscall_arguments *args) {
 	struct thread *thrd = prcb_return_current_cpu()->running_thread;
 
 	if (!from_kernel_address) {
-		errno = -EFAULT;
+		errno = EFAULT;
 		return;
 	}
 
@@ -57,7 +57,7 @@ void syscall_futex(struct syscall_arguments *args) {
 		case FUTEX_WAIT:
 		case FUTEX_WAIT_BITSET:
 			if (!futex_wait(value, from_kernel_address, thrd)) {
-				errno = -EFAULT;
+				errno = EFAULT;
 				return;
 			}
 			return;
@@ -66,7 +66,7 @@ void syscall_futex(struct syscall_arguments *args) {
 			futex_wake(from_kernel_address);
 			return;
 		default:
-			errno = -EINVAL;
+			errno = EINVAL;
 			return;
 	}
 }

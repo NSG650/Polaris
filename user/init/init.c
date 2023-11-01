@@ -216,9 +216,8 @@ int sysinfo(struct sysinfo *info) {
 	syscall1(0x63, (uint64_t)info);
 }
 
-int msleep(long msec)
-{
-    struct timespec ts;
+int msleep(long msec) {
+	struct timespec ts;
     int res;
 
     if (msec <= 0) {
@@ -234,12 +233,11 @@ int msleep(long msec)
     return res;
 }
 
-
 void *memset(void *d, int c, size_t n);
 
 void main(void) {
 	int motd_fd = open("/etc/motd", O_RDONLY, 0);
-	if (motd_fd != -1) {
+	if (motd_fd > 0) {
 		struct stat motd_stat = {0};
 		fstatat(motd_fd, "", &motd_stat, AT_EMPTY_PATH);
 		char *motd_string =

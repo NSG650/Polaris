@@ -8,6 +8,7 @@
 #include <klibc/misc.h>
 #include <klibc/vec.h>
 #include <mm/mmap.h>
+#include <sched/futex.h>
 #include <sched/sched.h>
 #include <sched/syscall.h>
 #include <sys/elf.h>
@@ -16,7 +17,7 @@
 
 #define VIRTUAL_STACK_ADDR 0x70000000000
 
-struct resource *std_console_device;
+struct resource *std_console_device = NULL;
 
 lock_t sched_lock = {0};
 bool sched_runit = false;
@@ -204,6 +205,7 @@ void sched_init(uint64_t args) {
 	syscall_register_handler(0x3b, syscall_execve);
 	syscall_register_handler(0x3f, syscall_uname);
 	syscall_register_handler(0x72, syscall_waitpid);
+	futex_init();
 	process_create("kernel_tasks", 0, 20000, (uintptr_t)kernel_main, args, 0,
 				   NULL);
     sched_runit = true;
@@ -378,12 +380,15 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 		thrd->reg.rsp = VIRTUAL_STACK_ADDR;
 		thrd->kernel_stack = (uint64_t)kmalloc(STACK_SIZE);
 		thrd->kernel_stack += STACK_SIZE;
+		thrd->pf_stack = (uint64_t)kmalloc(STACK_SIZE);
+		thrd->pf_stack += STACK_SIZE;
 	} else {
 		thrd->reg.cs = 0x08;
 		thrd->reg.ss = 0x10;
 		thrd->reg.rsp += STACK_SIZE;
 		thrd->reg.rsp += MEM_PHYS_OFFSET;
 		thrd->kernel_stack = thrd->reg.rsp + MEM_PHYS_OFFSET + STACK_SIZE;
+		thrd->pf_stack = thrd->kernel_stack;
 		// thrd->stack = thrd->kernel_stack;
 	}
 	thrd->reg.rflags = 0x202;
@@ -491,6 +496,8 @@ void thread_fork(struct thread *pthrd, struct process *fproc) {
 	memcpy(&thrd->reg, &pthrd->reg, sizeof(registers_t));
 	thrd->kernel_stack = (uint64_t)kmalloc(STACK_SIZE);
 	thrd->kernel_stack += STACK_SIZE;
+	thrd->pf_stack = (uint64_t)kmalloc(STACK_SIZE);
+	thrd->pf_stack += STACK_SIZE;
 #if defined(__x86_64__)
 	thrd->reg.rax = 0;
 	thrd->reg.rbx = 0;
@@ -667,6 +674,8 @@ void thread_execve(struct process *proc, struct thread *thrd,
 	thrd->reg.rsp = VIRTUAL_STACK_ADDR;
 	thrd->kernel_stack = (uint64_t)kmalloc(STACK_SIZE);
 	thrd->kernel_stack += STACK_SIZE;
+	thrd->pf_stack = (uint64_t)kmalloc(STACK_SIZE);
+	thrd->pf_stack += STACK_SIZE;
 
 	thrd->reg.rflags = 0x202;
 
@@ -783,7 +792,8 @@ void thread_kill(struct thread *thrd, bool r) {
 		pmm_free((void *)thrd->stack, STACK_SIZE / PAGE_SIZE);
 		pmm_free((void *)thrd->fpu_storage,
 				 prcb_return_current_cpu()->fpu_storage_size / PAGE_SIZE);
-		kfree((void *)thrd->kernel_stack);
+		kfree((void *)(thrd->kernel_stack - STACK_SIZE));
+		kfree((void *)(thrd->pf_stack - STACK_SIZE));
 	} else {
 		pmm_free((void *)((uintptr_t)thrd->stack), STACK_SIZE / PAGE_SIZE);
 	}

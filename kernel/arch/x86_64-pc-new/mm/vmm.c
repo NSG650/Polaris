@@ -341,9 +341,6 @@ void vmm_page_fault_handler(registers_t *reg) {
 		else
 			thread_kill(thrd, 1);
 	} else {
-		if (reg->cs & 0x3)
-			swapgs();
-
 		panic_((void *)reg->rip, (void *)reg->rbp,
 			   "Page fault at 0x%p present: %s, read/write: %s, "
 			   "user/supervisor: %s, reserved: %s, execute: %s\n",
