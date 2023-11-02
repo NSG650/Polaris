@@ -3,6 +3,7 @@ from_source=libxcrypt
 revision=1
 hostdeps="gcc automake autoconf libtool pkg-config"
 deps="mlibc-base libgcc libstdc++"
+imagedeps="python-passlib"
 
 configure() {
     ${source_dir}/configure \
