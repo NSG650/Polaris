@@ -42,6 +42,9 @@ bool mmap_handle_pf(registers_t *reg) {
 	uint64_t cr2 = read_cr("2");
 
 	struct thread *thread = prcb_return_current_cpu()->running_thread;
+	if (thread == NULL) {
+		return false;
+	}
 	struct process *process = thread->mother_proc;
 	struct pagemap *pagemap = process->process_pagemap;
 
@@ -390,7 +393,6 @@ void syscall_mmap(struct syscall_arguments *args) {
 	}
 
 	ret = mmap(proc->process_pagemap, hint, length, prot, flags, res, offset);
-
 cleanup:
 	args->ret = (uint64_t)ret;
 }

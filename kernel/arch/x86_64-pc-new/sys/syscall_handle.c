@@ -27,10 +27,11 @@ void syscall_handler(registers_t *reg) {
 	syscall_handle(&args);
 
 	int ret = (int)args.ret;
-	if (ret < 0)
+	if (ret < 0) {
 		ret = -((int)errno);
-
-	reg->rax = ret;
+		reg->rax = ret;
+	} else
+		reg->rax = args.ret;
 }
 
 void syscall_install_handler(void) {

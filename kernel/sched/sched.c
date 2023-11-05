@@ -1,3 +1,4 @@
+#include <asm-generic/errno-base.h>
 #include <asm/asm.h>
 #include <cpu/smp.h>
 #include <debug/debug.h>
@@ -143,8 +144,9 @@ void syscall_fork(struct syscall_arguments *args) {
 
 void syscall_execve(struct syscall_arguments *args) {
 	if (!process_execve((char *)args->args0, (char **)args->args1,
-						(char **)args->args2))
+						(char **)args->args2)) {
 		args->ret = -1;
+	}
 }
 
 void syscall_uname(struct syscall_arguments *args) {
@@ -538,6 +540,7 @@ bool process_execve(char *path, char **argv, char **envp) {
 	if (!elf_load(proc->process_pagemap, node->resource, 0, &auxv, &ld_path)) {
 		proc->process_pagemap = old_pagemap;
 		spinlock_drop(&process_lock);
+		errno = ENOENT;
 		return false;
 	}
 
@@ -554,6 +557,7 @@ bool process_execve(char *path, char **argv, char **envp) {
 								  0x40000000, &ld_aux, NULL)) {
 			proc->process_pagemap = old_pagemap;
 			spinlock_drop(&process_lock);
+			errno = ENOENT;
 			return false;
 		}
 		entry = ld_aux.at_entry;
@@ -580,7 +584,6 @@ bool process_execve(char *path, char **argv, char **envp) {
 	thread_execve(proc, thread, entry, argv, envp);
 
 	vmm_switch_pagemap(kernel_pagemap);
-
 	sched_resched_now();
 	return false;
 }
@@ -680,9 +683,9 @@ void thread_execve(struct process *proc, struct thread *thrd,
 	thrd->reg.rflags = 0x202;
 
 	thrd->fpu_storage =
-		pmm_allocz(DIV_ROUNDUP(prcb_return_current_cpu()->fpu_storage_size,
-							   PAGE_SIZE)) +
-		MEM_PHYS_OFFSET;
+		(void *)((uint64_t)pmm_allocz(DIV_ROUNDUP(
+					 prcb_return_current_cpu()->fpu_storage_size, PAGE_SIZE)) +
+				 MEM_PHYS_OFFSET);
 
 	prcb_return_current_cpu()->fpu_restore(thrd->fpu_storage);
 	uint16_t default_fcw = 0b1100111111;
@@ -705,7 +708,7 @@ void thread_execve(struct process *proc, struct thread *thrd,
 
 	for (envp_len = 0; envp[envp_len] != NULL; envp_len++) {
 		stack_but_in_bytes -= (strlen(envp[envp_len]) + 1);
-		memcpy((void *)stack_but_in_bytes + MEM_PHYS_OFFSET, envp[envp_len],
+		memcpy((void *)stack_but_in_bytes, envp[envp_len],
 			   strlen(envp[envp_len]) + 1);
 	}
 
@@ -717,7 +720,7 @@ void thread_execve(struct process *proc, struct thread *thrd,
 	int argv_len;
 	for (argv_len = 0; argv[argv_len] != NULL; argv_len++) {
 		stack_but_in_bytes -= (strlen(argv[argv_len]) + 1);
-		memcpy((void *)stack_but_in_bytes + MEM_PHYS_OFFSET, argv[argv_len],
+		memcpy((void *)stack_but_in_bytes, argv[argv_len],
 			   strlen(argv[argv_len]) + 1);
 	}
 

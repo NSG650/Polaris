@@ -11,11 +11,11 @@
 
 void syscall_prctl(struct syscall_arguments *args) {
 	int option = (int)args->args0;
-	uint64_t arg2 = args->args1;
+	uint64_t value = args->args1;
 	switch (option) {
 		case ARCH_SET_GS: {
 			//			prcb_return_current_cpu()->running_thread->gs_base =
-			//arg2;
+			// value;
 			//			set_user_gs(prcb_return_current_cpu()->running_thread->gs_base);
 			break;
 		}
@@ -23,6 +23,7 @@ void syscall_prctl(struct syscall_arguments *args) {
 			//			args->ret = read_user_gs();
 			break;
 		case ARCH_SET_FS: {
+			prcb_return_current_cpu()->running_thread->fs_base = value;
 			set_fs_base(prcb_return_current_cpu()->running_thread->fs_base);
 			break;
 		}

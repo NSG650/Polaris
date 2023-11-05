@@ -35,8 +35,9 @@ int console_ioctl(struct resource *this, struct f_description *description,
 				  uint64_t request, uint64_t arg) {
 	spinlock_acquire_or_wait(&this->lock);
 
-	if (!arg)
+	if (!arg) {
 		return -1;
+	}
 
 	switch (request) {
 		case TCGETS: {
@@ -73,6 +74,9 @@ static ssize_t console_write(struct resource *_this,
 							 off_t offset, size_t count) {
 	(void)description;
 	(void)offset;
+	if (!buf) {
+		return -1;
+	}
 	spinlock_acquire_or_wait(&_this->lock);
 	char *r = (char *)buf;
 	for (size_t i = 0; i < count; i++) {

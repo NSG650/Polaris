@@ -1,4 +1,5 @@
 #include "types.h"
+#include <stdint.h>
 
 int stdin = 0;
 int stdout = 1;
@@ -242,24 +243,23 @@ void main(void) {
 		fstatat(motd_fd, "", &motd_stat, AT_EMPTY_PATH);
 		char *motd_string =
 			mmap(0, motd_stat.st_size, PROT_READ, MAP_SHARED, motd_fd, 0);
-		if (motd_string == (void *)-1) {
+
+		if ((int)((uint64_t)(motd_string)) < 0) {
 			puts_to_console("mmap failed.\n");
 		} else {
-			read(motd_fd, motd_string, motd_stat.st_size);
 			puts_to_console_with_length(motd_string, motd_stat.st_size);
 			munmap(motd_string, motd_stat.st_size);
 		}
-	}
-
-	else {
+	} else {
 		puts_to_console("Whoops can't find /etc/motd\n");
 	}
+
+	char number[21] = {0};
 
 	struct sysinfo info = {0};
 	sysinfo(&info);
 
-	char number[21] = {0};
-
+	memset(number, 0, 21);
 	puts_to_console("System has ");
 	ltoa(info.totalram / (1024 * 1024), number, 10);
 	puts_to_console(number);
