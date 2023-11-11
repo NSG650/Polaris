@@ -205,6 +205,10 @@ int pipe(int *pipe_fds, int flags) {
 	return syscall2(0x125, pipe_fds, flags);
 }
 
+int dup3(int old_fd, int new_fd, int flags) {
+	return syscall3(0x124, old_fd, new_fd, flags);
+}
+
 void puts_to_console(char *string) {
 	write(stdout, string, strlen(string));
 }
@@ -272,6 +276,23 @@ void main(void) {
 	ltoa(info.procs , number, 10);
 	puts_to_console(number);
 	puts_to_console(" CPUs installed\n");
+
+	int fork_ret = fork();
+	if (fork_ret == 0) {
+		int serial_fd = open("/dev/stty", O_RDWR, 0);
+		if (serial_fd > 0) {
+			dup3(serial_fd, 0, 0);
+			dup3(serial_fd, 1, 0);
+			dup3(serial_fd, 2, 0);
+		}
+		char *argv[] = {"/bin/busybox", "ash", "/root/demo.sh", NULL};
+		char *envp[] = {"USER=ROOT", "HOME=/root",
+						"PATH=/bin:/usr/bin:/usr/local/bin", "TERM=linux",
+						NULL};
+		if (execve(argv[0], argv, envp) == -1)
+			puts_to_console("Failed to execve :(\n");
+		syscall1(0x3c, 1);
+	}
 
 	for (;;) {
 		;

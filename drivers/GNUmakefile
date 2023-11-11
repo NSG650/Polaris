@@ -1,8 +1,7 @@
 CONFIG_ARCH ?= x86_64
-
-CHELLOFILES := $(wildcard $(CONFIG_ARCH)/hello/*.c)
-CBEEPFILES := $(wildcard $(CONFIG_ARCH)/beep/*.c)
 CCONSOLEFILES := $(wildcard console/*.c)
+CKEYBOARDFILES := $(wildcard x86_64/keyboard/*.c)
+CSERIALFILES := $(wildcard x86_64/serial/*.c)
 
 ifeq ($(CONFIG_ARCH),x86_64)
 	AS := nasm
@@ -11,17 +10,11 @@ ifeq ($(CONFIG_ARCH),x86_64)
 	CFLAGS := -c -mcmodel=large -fno-asynchronous-unwind-tables -ffreestanding -masm=intel -Isdk
 endif
 
-hello.ko: $(CHELLOFILES)
-	$(CC) $(CFLAGS) $^ -o hello.ko
-
-beep.ko: $(CBEEPFILES)
-	$(CC) $(CFLAGS) $^ -o beep.ko
-
-console.ko: $(CCONSOLEFILES)
-	$(CC) $(CFLAGS) $^ -o console.ko
-
 .PHONY: all
-all: console.ko
+all: 
+	$(CC) $(CFLAGS) $(CCONSOLEFILES) -o console.ko
+	$(CC) $(CFLAGS) $(CKEYBOARDFILES) -o keyboard.ko
+	$(CC) $(CFLAGS) $(CSERIALFILES) -o serial.ko
 
 .PHONY: clean
 clean:

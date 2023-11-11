@@ -1,4 +1,3 @@
-#include <asm-generic/errno-base.h>
 #include <asm/asm.h>
 #include <cpu/smp.h>
 #include <debug/debug.h>
@@ -208,9 +207,9 @@ void sched_init(uint64_t args) {
 	syscall_register_handler(0x3f, syscall_uname);
 	syscall_register_handler(0x72, syscall_waitpid);
 	futex_init();
-	process_create("kernel_tasks", 0, 20000, (uintptr_t)kernel_main, args, 0,
+	process_create("kernel_tasks", 0, 100000, (uintptr_t)kernel_main, args, 0,
 				   NULL);
-    sched_runit = true;
+	sched_runit = true;
 }
 
 void process_create(char *name, uint8_t state, uint64_t runtime,
@@ -430,10 +429,10 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 			 *	0x6fffffffeb6 - AT_PHNUM
 			 *	0x6fffffffeae - 5
 			 *	0x6fffffffea6 - 0x0 			// START OF ENVP
-			 *	0x6fffffffe9e - 0x6fffffffff6	// pointer to envp[0][9] aka
-			 *envp[0] 0x6fffffffe96 - 0x0				// START OF ARGV
-			 *	0x6fffffffe8e - 0x6fffffffef6	// pointer to argv[0][0] aka
-			 *argv[0] 0x6fffffffe86 - 1				// argc
+			 *	0x6fffffffe9e - 0x6fffffffff6	// pointer to envp[0]
+			 *  0x6fffffffe96 - 0x0				// START OF ARGV
+			 *	0x6fffffffe8e - 0x6fffffffef6	// pointer to argv[0]
+			 *  0x6fffffffe86 - 1				// argc
 			 */
 
 			stack -= strlen(envp[0]) + 1;
@@ -812,17 +811,15 @@ void thread_kill(struct thread *thrd, bool r) {
 }
 
 void thread_sleep(struct thread *thrd, uint64_t ns) {
-	cli();
 	spinlock_acquire_or_wait(&thread_lock);
 	thrd->state = THREAD_SLEEPING;
 	thrd->sleeping_till = timer_get_sleep_ns(ns);
 	vec_push(&sleeping_threads, thrd);
 	spinlock_drop(&thread_lock);
-	sti();
 
-    while (prcb_return_current_cpu()->running_thread->sleeping_till >
-           timer_get_abs_count())
-        sched_resched_now();
+	while (prcb_return_current_cpu()->running_thread->sleeping_till >
+		   timer_get_abs_count())
+		sched_resched_now();
 }
 
 void process_wait_on_another_process(struct process *waiter,

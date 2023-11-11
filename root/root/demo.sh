@@ -1,2 +1,2 @@
-/bin/gears &
-/bin/doomgeneric
+/bin/busybox uname -a
+/bin/lua

@@ -25,21 +25,11 @@ uint64_t timer_sched_tick(void) {
 }
 
 void resched(registers_t *reg) {
+	cli();
 	vmm_switch_pagemap(kernel_pagemap);
 	prcb_return_current_cpu()->sched_ticks++;
 
 	timer_stop_sched();
-
-	for (int i = 0; i < sleeping_threads.length &&
-					prcb_return_current_cpu()->cpu_number == 0;
-		 i++) {
-		struct thread *th = sleeping_threads.data[i];
-		if (th->sleeping_till < timer_get_abs_count()) {
-			th->sleeping_till = 0;
-			th->state = THREAD_READY_TO_RUN;
-			vec_remove(&sleeping_threads, th);
-		}
-	}
 
 	struct thread *running_thrd = prcb_return_current_cpu()->running_thread;
 	if (running_thrd) {

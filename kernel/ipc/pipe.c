@@ -109,7 +109,7 @@ void syscall_pipe(struct syscall_arguments *args) {
 
 	args->ret = 0;
 
-	struct resource *p = pipe_create();
+	struct resource *p = (struct resource *)pipe_create();
 
 	if (p == NULL) {
 		errno = ENOMEM;
