@@ -113,7 +113,7 @@ static void kprintf_(char *fmt, va_list args) {
 			case 'i':
 			case 'd': {
 				char string[21] = {0};
-				int64_t number = va_arg(args, int64_t);
+				int64_t number = (int64_t)va_arg(args, size_t);
 				ltoa(number, string, 10);
 				kputs(string);
 				break;

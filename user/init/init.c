@@ -277,24 +277,27 @@ void main(void) {
 	puts_to_console(number);
 	puts_to_console(" CPUs installed\n");
 
-	int fork_ret = fork();
-	if (fork_ret == 0) {
-		int serial_fd = open("/dev/stty", O_RDWR, 0);
-		if (serial_fd > 0) {
-			dup3(serial_fd, 0, 0);
-			dup3(serial_fd, 1, 0);
-			dup3(serial_fd, 2, 0);
-		}
-		char *argv[] = {"/bin/busybox", "ash", "/root/demo.sh", NULL};
-		char *envp[] = {"USER=ROOT", "HOME=/root",
-						"PATH=/bin:/usr/bin:/usr/local/bin", "TERM=linux",
-						NULL};
-		if (execve(argv[0], argv, envp) == -1)
-			puts_to_console("Failed to execve :(\n");
-		syscall1(0x3c, 1);
-	}
-
 	for (;;) {
-		;
+		int fork_ret = fork();
+		if (fork_ret == 0) {
+			int serial_fd = open("/dev/stty", O_RDWR, 0);
+			if (serial_fd > 0) {
+				dup3(serial_fd, 0, 0);
+				dup3(serial_fd, 1, 0);
+				dup3(serial_fd, 2, 0);
+			}
+			char *argv[] = {"/bin/busybox", "ash", NULL};
+			char *envp[] = {"USER=ROOT", "HOME=/root",
+							"PATH=/bin:/usr/bin:/usr/local/bin", "TERM=linux",
+							NULL};
+			if (execve(argv[0], argv, envp) == -1)
+				puts_to_console("Failed to execve :(\n");
+			syscall1(0x3c, 1);
+		}
+		int status = 0;
+		while (waitpid(fork_ret, &status, 1) == 0) {
+			msleep(10);
+		}
+		msleep(10);
 	}
 }

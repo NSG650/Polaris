@@ -46,8 +46,17 @@ struct process *sched_pid_to_process(int64_t process_pid) {
 
 static struct dead_process *
 sched_return_recently_dead_child_process(struct process *parent_process) {
-	for (int i = dead_processes.length - 1; i != -1; i--) {
+	for (int i = dead_processes.length - 1; i >= 0; i--) {
 		if (dead_processes.data[i]->parent_process == parent_process)
+			return dead_processes.data[i];
+	}
+	return NULL;
+}
+
+static struct dead_process *
+sched_pid_to_dead_child_process(int64_t process_pid) {
+	for (int i = 0; i < dead_processes.length; i++) {
+		if (dead_processes.data[i]->pid == process_pid)
 			return dead_processes.data[i];
 	}
 	return NULL;
@@ -65,16 +74,15 @@ sched_pid_to_child_process(struct process *parent_process,
 }
 
 int sched_get_next_thread(int index) {
-	if (index == -1 || index > threads.length) {
+	if (index == -1 || index >= threads.length) {
 		index = 0;
-	} else {
-		index++;
 	}
 
 	for (int i = 0; i < threads.length; i++) {
 		if (index >= threads.length) {
 			index = 0;
 		}
+
 		struct thread *thread = threads.data[index];
 
 		if (thread->state != THREAD_READY_TO_RUN ||
@@ -180,13 +188,70 @@ void syscall_uname(struct syscall_arguments *args) {
 }
 
 void syscall_waitpid(struct syscall_arguments *args) {
-    int pid_to_wait_on = (int)args->args0;
+#define WNOHANG 1
+	int pid_to_wait_on = (int)args->args0;
     int *status = (int *)args->args1;
     int mode = (int)args->args2;
 
-    kprintf("syscall_waitpid(%d, %p, %d)\n", pid_to_wait_on, status, mode);
+	struct process *waiter_proc =
+		prcb_return_current_cpu()->running_thread->mother_proc;
 
-    args->ret = -1;
+	if (!waiter_proc->child_processes.length) {
+		errno = ECHILD;
+		args->ret = -1;
+		return;
+	}
+
+	if (pid_to_wait_on < -1 || pid_to_wait_on == 0) {
+		errno = EINVAL;
+		args->ret = -1;
+		return;
+	}
+
+	spinlock_acquire_or_wait(&process_lock);
+
+	args->ret = 0;
+	if (mode & WNOHANG) {
+		struct dead_process *dead_proc = NULL;
+		if (pid_to_wait_on == -1) {
+			dead_proc = sched_return_recently_dead_child_process(waiter_proc);
+			if (dead_proc) {
+				args->ret = dead_proc->pid;
+				*status = dead_proc->exit_code;
+			}
+		} else {
+			dead_proc = sched_pid_to_dead_child_process(pid_to_wait_on);
+			if (dead_proc) {
+				args->ret = dead_proc->pid;
+				*status = dead_proc->exit_code;
+			}
+		}
+		spinlock_drop(&process_lock);
+		return;
+	} else {
+		args->ret = -1;
+		errno = ECHILD;
+		if (pid_to_wait_on == -1) {
+			spinlock_drop(&process_lock);
+			process_wait_on_processes(waiter_proc,
+									  &waiter_proc->child_processes);
+			spinlock_acquire_or_wait(&process_lock);
+			args->ret = waiter_proc->waitee.pid;
+			*status = waiter_proc->waitee.exit_code;
+		} else {
+			struct process *waitee_proc =
+				sched_pid_to_child_process(waiter_proc, pid_to_wait_on);
+			if (waitee_proc) {
+				spinlock_drop(&process_lock);
+				process_wait_on_another_process(waiter_proc, waitee_proc);
+				spinlock_acquire_or_wait(&process_lock);
+				args->ret = waiter_proc->waitee.pid;
+				*status = waiter_proc->waitee.exit_code;
+			}
+		}
+		spinlock_drop(&process_lock);
+		return;
+	}
 }
 
 void sched_init(uint64_t args) {
@@ -207,7 +272,7 @@ void sched_init(uint64_t args) {
 	syscall_register_handler(0x3f, syscall_uname);
 	syscall_register_handler(0x72, syscall_waitpid);
 	futex_init();
-	process_create("kernel_tasks", 0, 100000, (uintptr_t)kernel_main, args, 0,
+	process_create("kernel_tasks", 0, 200000, (uintptr_t)kernel_main, args, 0,
 				   NULL);
 	sched_runit = true;
 }
@@ -512,6 +577,7 @@ void thread_fork(struct thread *pthrd, struct process *fproc) {
 	memcpy(thrd->fpu_storage, pthrd->fpu_storage,
 		   prcb_return_current_cpu()->fpu_storage_size);
 #endif
+	thrd->last_scheduled = 0;
 	thrd->sleeping_till = 0;
 	vec_push(&threads, thrd);
 	vec_push(&fproc->process_threads, thrd);
@@ -647,8 +713,11 @@ void process_kill(struct process *proc, bool crash) {
 
 	spinlock_drop(&process_lock);
 
-	if (are_we_killing_ourselves)
+	if (are_we_killing_ourselves) {
+		prcb_return_current_cpu()->running_thread = NULL;
+		prcb_return_current_cpu()->thread_index = -1;
 		sched_resched_now();
+	}
 }
 
 // TODO: This can be optimized way moreeeee

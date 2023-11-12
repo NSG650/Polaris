@@ -44,7 +44,7 @@ void main(void) {
 		syscall1(0x3c, 1);
 	}
 
-	int ret = syscall1(0x3e, pid);
+	int ret = syscall2(0x3e, pid, 9);
 	if (ret == -1) {
 		char nope[] = "Seems like a process with that pid does not exist!\n";
 		write(1, nope, sizeof(nope));

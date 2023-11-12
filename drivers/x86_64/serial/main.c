@@ -69,6 +69,7 @@ static ssize_t serial_read(struct resource *_this,
 	while (bytes_read < count) {
 		c = serial_get_byte();
 		if (c == '\r') {
+			serial_putchar('\r');
 			serial_putchar('\n');
 			break;
 		}
@@ -104,10 +105,10 @@ int serial_ioctl(struct resource *this, struct f_description *description,
 		}
 		case TIOCGWINSZ: {
 			struct winsize *w = (void *)arg;
-			w->ws_row = 80;
-			w->ws_col = 25;
-			w->ws_xpixel = 80 * 8;
-			w->ws_ypixel = 25 * 16;
+			w->ws_row = 100;
+			w->ws_col = 30;
+			w->ws_xpixel = 100 * 8;
+			w->ws_ypixel = 30 * 16;
 			spinlock_drop(&this->lock);
 			return 0;
 		}
@@ -124,7 +125,9 @@ static ssize_t serial_write(struct resource *_this,
 	char *buf = (char *)_buf;
 
 	for (size_t i = 0; i < count; i++) {
-		serial_putchar(*buf++);
+		serial_putchar(*buf);
+		if (*buf++ == '\n')
+			serial_putchar('\r');
 	}
 
 	spinlock_drop(&_this->lock);
@@ -150,8 +153,8 @@ uint64_t driver_entry(struct module *driver_module) {
 	serial_device->res.stat.st_blksize = 4096;
 	serial_device->res.stat.st_rdev = resource_create_dev_id();
 	serial_device->res.stat.st_mode = 0644 | S_IFCHR;
-	serial_device->info.height = 80 * 8;
-	serial_device->info.width = 25 * 16;
+	serial_device->info.height = 100 * 8;
+	serial_device->info.width = 30 * 16;
 	serial_device->info.tex_x = 0;
 	serial_device->info.tex_y = 0;
 
