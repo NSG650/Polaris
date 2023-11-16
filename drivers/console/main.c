@@ -42,7 +42,8 @@ int console_ioctl(struct resource *this, struct f_description *description,
 	switch (request) {
 		case TCGETS: {
 			struct termios *t = (void *)arg;
-			*t = console_device->info.termios_info;
+			if (t)
+				*t = console_device->info.termios_info;
 			spinlock_drop(&this->lock);
 			return 0;
 		}
@@ -50,12 +51,17 @@ int console_ioctl(struct resource *this, struct f_description *description,
 		case TCSETSW:
 		case TCSETSF: {
 			struct termios *t = (void *)arg;
-			console_device->info.termios_info = *t;
+			if (t)
+				console_device->info.termios_info = *t;
 			spinlock_drop(&this->lock);
 			return 0;
 		}
 		case TIOCGWINSZ: {
 			struct winsize *w = (void *)arg;
+			if (!w) {
+				spinlock_drop(&this->lock);
+				return -1;
+			}
 			w->ws_row = console_device->info.width;
 			w->ws_col = console_device->info.height;
 			w->ws_xpixel = framebuff->width;
@@ -79,6 +85,10 @@ static ssize_t console_write(struct resource *_this,
 	}
 	spinlock_acquire_or_wait(&_this->lock);
 	char *r = (char *)buf;
+	if (!r) {
+		spinlock_drop(&_this->lock);
+		return -1;
+	}
 	for (size_t i = 0; i < count; i++) {
 		framebuffer_putchar(r[i]);
 	}
