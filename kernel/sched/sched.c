@@ -78,6 +78,8 @@ int sched_get_next_thread(int index) {
 		index = 0;
 	}
 
+	index++;
+
 	for (int i = 0; i < threads.length; i++) {
 		if (index >= threads.length) {
 			index = 0;
@@ -503,7 +505,8 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 			stack -= strlen(envp[0]) + 1;
 			memcpy((void *)stack, envp[0], strlen(envp[0]) + 1);
 			uint64_t address_difference =
-				(thrd->stack + STACK_SIZE) - (uint64_t)stack;
+				(thrd->stack + STACK_SIZE) -
+				(uint64_t)((uint64_t)stack - MEM_PHYS_OFFSET);
 			uint64_t addr_to_env =
 				(uint64_t)VIRTUAL_STACK_ADDR - address_difference;
 

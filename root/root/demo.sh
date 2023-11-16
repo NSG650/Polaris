@@ -1,2 +1,2 @@
 /bin/busybox uname -a
-/bin/lua
+/bin/gears 1

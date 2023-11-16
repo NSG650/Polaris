@@ -141,5 +141,6 @@ void kernel_main(void *args) {
 				vec_remove(&sleeping_threads, th);
 			}
 		}
+		sched_resched_now();
 	}
 }

@@ -143,7 +143,7 @@ void smp_init(struct limine_smp_response *smp_info) {
 
 	if (kernel_arguments.kernel_args & KERNEL_ARGS_CPU_COUNT_GIVEN) {
 		cpu_count = kernel_arguments.cpu_count;
-		if (cpu_count > smp_info->cpu_count) {
+		if (cpu_count > smp_info->cpu_count || cpu_count < 1) {
 			cpu_count = smp_info->cpu_count;
 			kprintf("SMP: Download more CPU today!\n");
 		}
