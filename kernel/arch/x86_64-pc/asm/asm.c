@@ -1,5 +1,3 @@
-#include <asm/asm.h>
-
 /*
  * Copyright 2021 - 2023 NSG650
  * Copyright 2021 - 2023 Neptune
@@ -16,6 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#include <asm/asm.h>
 
 void halt(void) {
 	asm("hlt");
@@ -35,4 +35,8 @@ void pause(void) {
 
 void nop(void) {
 	asm("nop");
+}
+
+void dbgbrk(void) {
+	asm("int 3");
 }

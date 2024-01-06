@@ -48,7 +48,7 @@ struct alloc_metadata {
 	size_t size;
 };
 
-static struct slab slabs[10];
+static struct slab slabs[10] = {0};
 
 static inline struct slab *slab_for(size_t size) {
 	for (size_t i = 0; i < SIZEOF_ARRAY(slabs); i++) {
@@ -61,8 +61,8 @@ static inline struct slab *slab_for(size_t size) {
 }
 
 static void create_slab(struct slab *slab, size_t ent_size) {
-	slab->lock = 0;
-	slab->first_free = pmm_alloc(1) + MEM_PHYS_OFFSET;
+	spinlock_init(slab->lock);
+	slab->first_free = (void **)((uint64_t)pmm_alloc(1) + MEM_PHYS_OFFSET);
 	slab->ent_size = ent_size;
 
 	size_t header_offset = ALIGN_UP(sizeof(struct slab_header), ent_size);
@@ -83,7 +83,7 @@ static void create_slab(struct slab *slab, size_t ent_size) {
 }
 
 static void *alloc_from_slab(struct slab *slab) {
-	spinlock_acquire_or_wait(slab->lock);
+	spinlock_acquire_or_wait(&slab->lock);
 
 	if (slab->first_free == NULL) {
 		create_slab(slab, slab->ent_size);
@@ -93,12 +93,12 @@ static void *alloc_from_slab(struct slab *slab) {
 	slab->first_free = *old_free;
 	memset(old_free, 0, slab->ent_size);
 
-	spinlock_drop(slab->lock);
+	spinlock_drop(&slab->lock);
 	return old_free;
 }
 
 static void free_in_slab(struct slab *slab, void *addr) {
-	spinlock_acquire_or_wait(slab->lock);
+	spinlock_acquire_or_wait(&slab->lock);
 
 	if (addr == NULL) {
 		goto cleanup;
@@ -109,10 +109,11 @@ static void free_in_slab(struct slab *slab, void *addr) {
 	slab->first_free = new_head;
 
 cleanup:
-	spinlock_drop(slab->lock);
+	spinlock_drop(&slab->lock);
 }
 
 void slab_init(void) {
+	memzero(slabs, sizeof(struct slab) * 10);
 	create_slab(&slabs[0], 8);
 	create_slab(&slabs[1], 16);
 	create_slab(&slabs[2], 24);
@@ -132,8 +133,8 @@ void *slab_alloc(size_t size) {
 	}
 
 	size_t page_count = DIV_ROUNDUP(size, PAGE_SIZE);
-	void *ret = pmm_allocz(page_count + 1);
-	if (ret == NULL) {
+	uint64_t ret = (uint64_t)pmm_allocz(page_count + 1);
+	if ((void *)ret == NULL) {
 		return NULL;
 	}
 
@@ -143,7 +144,7 @@ void *slab_alloc(size_t size) {
 	metadata->pages = page_count;
 	metadata->size = size;
 
-	return ret + PAGE_SIZE;
+	return (void *)(ret + PAGE_SIZE);
 }
 
 void *slab_realloc(void *addr, size_t new_size) {
@@ -201,7 +202,8 @@ void slab_free(void *addr) {
 	if (((uintptr_t)addr & 0xfff) == 0) {
 		struct alloc_metadata *metadata =
 			(struct alloc_metadata *)(addr - PAGE_SIZE);
-		pmm_free((void *)metadata - MEM_PHYS_OFFSET, metadata->pages + 1);
+		pmm_free((void *)((uintptr_t)metadata - MEM_PHYS_OFFSET),
+				 metadata->pages + 1);
 		return;
 	}
 

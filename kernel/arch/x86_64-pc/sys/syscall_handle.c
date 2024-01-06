@@ -1,5 +1,6 @@
 #include <cpu/smp.h>
 #include <debug/debug.h>
+#include <errno.h>
 #include <mm/vmm.h>
 #include <sched/sched.h>
 #include <sched/syscall.h>
@@ -11,7 +12,8 @@ void syscall_handler(registers_t *reg) {
 	prcb_return_current_cpu()->running_thread->reg = *reg;
 	prcb_return_current_cpu()->running_thread->stack =
 		prcb_return_current_cpu()->user_stack;
-	fpu_save(prcb_return_current_cpu()->running_thread->fpu_storage);
+	prcb_return_current_cpu()->fpu_save(
+		prcb_return_current_cpu()->running_thread->fpu_storage);
 
 	struct syscall_arguments args = {.syscall_nr = reg->rax,
 									 .args0 = reg->rdi,
@@ -24,7 +26,12 @@ void syscall_handler(registers_t *reg) {
 
 	syscall_handle(&args);
 
-	reg->rax = args.ret;
+	int ret = (int)args.ret;
+	if (ret < 0) {
+		ret = -((int)errno);
+		reg->rax = ret;
+	} else
+		reg->rax = args.ret;
 }
 
 void syscall_install_handler(void) {

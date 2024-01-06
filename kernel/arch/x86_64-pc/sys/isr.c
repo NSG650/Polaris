@@ -2,7 +2,6 @@
 #include <debug/debug.h>
 #include <sched/crash.h>
 #include <sched/sched.h>
-#include <sys/apic.h>
 #include <sys/idt.h>
 #include <sys/isr.h>
 #include <sys/prcb.h>
@@ -22,7 +21,7 @@ void isr_install(void) {
 	idt_set_gate(11, isr11, 0);
 	idt_set_gate(12, isr12, 0);
 	idt_set_gate(13, isr13, 0);
-	idt_set_gate(14, isr14, 0);
+	idt_set_gate(14, isr14, 2);
 	idt_set_gate(15, isr15, 0);
 	idt_set_gate(16, isr16, 0);
 	idt_set_gate(17, isr17, 0);
@@ -305,43 +304,41 @@ static const char *isr_exception_messages[] = {"Divide by zero",
 
 static event_handlers_t event_handlers[256] = {NULL};
 
+void isr_register_handler(int n, void *handler) {
+	event_handlers[n] = handler;
+}
+
 void isr_handle(registers_t *r) {
 	if (r->cs & 0x3)
 		swapgs();
 
-	if (event_handlers[r->isrNumber] != NULL)
+	if (r->isrNumber < 256 && event_handlers[r->isrNumber] != NULL)
 		return event_handlers[r->isrNumber](r);
 
 	if (r->isrNumber < 32) {
 		if (r->cs & 0x3) {
 			struct thread *thrd = prcb_return_current_cpu()->running_thread;
+			if (!thrd) {
+				swapgs();
+				return;
+			}
 			kprintf("Killing user thread tid %d under process %s for exception "
 					"%s\n",
 					thrd->tid, thrd->mother_proc->name,
 					isr_exception_messages[r->isrNumber]);
 			kprintf("User thread crashed at address: 0x%p\n", r->rip);
-			kprintf("User backtrace: \n");
-			backtrace((void *)r->rbp);
 			sched_display_crash_message(r->rip, thrd->mother_proc,
 										isr_exception_messages[r->isrNumber]);
 			if (thrd == thrd->mother_proc->process_threads.data[0])
 				process_kill(thrd->mother_proc, 1);
 			else
 				thread_kill(thrd, 1);
-		} else
+		} else {
 			panic_((void *)r->rip, (void *)r->rbp, "Unhandled Exception: %s\n",
 				   isr_exception_messages[r->isrNumber]);
+		}
 	}
-
-	if (r->isrNumber == 0xf0)
-		kprintf("Weird. NMI from APIC?\n");
 
 	if (r->cs & 0x3)
 		swapgs();
-
-	apic_eoi();
-}
-
-void isr_register_handler(int n, void *handler) {
-	event_handlers[n] = handler;
 }

@@ -6,7 +6,7 @@ override KERNEL := polaris.elf
 
 # User controllable CFLAGS.
 GIT_VERSION := $(shell git --no-pager describe --tags --always --dirty)
-CFLAGS ?= -Wall -Wextra -Wvla -Wshadow -g -Og -pipe -DGIT_VERSION=\"$(GIT_VERSION)\"
+CFLAGS ?= -Wvla -Wshadow -g -Og -pipe -DGIT_VERSION=\"$(GIT_VERSION)\"
 
 # User controllable linker flags. We set none by default.
 LDFLAGS ?=
@@ -42,30 +42,30 @@ override INTERNALASFLAGS := \
 	-MP                     \
 	-f elf64
 
-CFILES := $(shell find ../../ -path . -prune -type f -o -name '*.c')
-ASMFILES := $(shell find ../../ -type f -name '*.asm')
+CFILES := $(shell find ../../ -path ../../arch -prune -type f -o -name '*.c')
+CFILES += $(shell find ../../arch/x86_64-pc -path . -prune -type f -o -name '*.c')
+# CFILES += ../../locks/spinlock.c ../../debug/debug.c ../../klibc/string.c ../../klibc/kargs.c ../../klibc/vec.c ../../fb/fb.c ../../fb/terminal/flanterm.c ../../fb/terminal/backends/fb.c
+ASMFILES := $(shell find ../../arch/x86_64-pc -type f -name '*.asm')
 OBJ := $(CFILES:.c=.o) $(ASMFILES:.asm=.o)
 HEADER_DEPS := $(CFILES:.c=.d) $(ASMFILES:.asm=.d)
 
-CROSS_TOOLCHAIN ?= x86_64-elf
-
-CC := $(CROSS_TOOLCHAIN)-gcc
+CC := x86_64-elf-gcc
 AS := nasm
 
-override INTERNALCFLAGS += \
-	-m64                   \
-	-march=x86-64          \
-	-mabi=sysv             \
-	-masm=intel            \
-	-mgeneral-regs-only    \
-	-I fw/lai/include      \
-	-I include/debug       \
+override INTERNALCFLAGS += 				\
+	-m64                   				\
+	-march=x86-64          				\
+	-masm=intel            				\
+	-mgeneral-regs-only    				\
+	-I fw/lai/include      				\
+	-I include/debug       				\
+	-fsanitize=undefined   				\
+	-Wall -Wextra 		   				\
+	-Wno-builtin-declaration-mismatch	\
 	-mno-red-zone
 
 override INTERNALLDFLAGS += \
-	-Wl,-m,elf_x86_64       \
-	-L debug/               \
-	-l:zydis.a
+	-Wl,-m,elf_x86_64
 
 .PHONY: all
 all: $(KERNEL)

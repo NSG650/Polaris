@@ -1,59 +1,44 @@
 #include <cpu/cr.h>
+#include <cpu/msr.h>
 #include <cpu/smp.h>
 #include <cpu_features.h>
 #include <cpuid.h>
 #include <debug/debug.h>
+#include <klibc/kargs.h>
 #include <klibc/mem.h>
-#include <klibc/vec.h>
 #include <locks/spinlock.h>
-#include <mm/pmm.h>
 #include <mm/slab.h>
-#include <mm/vmm.h>
 #include <sys/apic.h>
 #include <sys/gdt.h>
-#include <sys/halt.h>
 #include <sys/isr.h>
 #include <sys/prcb.h>
 #include <sys/timer.h>
 
-size_t fpu_storage_size = 0;
-void (*fpu_save)(void *ctx) = NULL;
-void (*fpu_restore)(void *ctx) = NULL;
-
-struct prcb *prcbs;
-static uint8_t bsp_lapic_core = 0;
-static size_t cpu_count = 0;
-static size_t initialized_cores = 0;
 bool is_smp = false;
-lock_t smp_lock = 0;
+static lock_t smp_lock = {0};
+struct prcb *prcbs = NULL;
+uint32_t smp_bsp_lapic_id = 0;
+static size_t cpu_count = 0;
+static size_t initialized_cpus = 0;
+
+extern void gdt_reload(void);
+extern void idt_reload(void);
 
 extern void amd_syscall_entry(void);
 
-static void smp_init_core(struct limine_smp_info *smp_info) {
-	spinlock_acquire_or_wait(smp_lock);
-	cli();
-	gdt_init();
-	isr_install();
+static void smp_cpu_init(struct limine_smp_info *smp_info) {
+	struct prcb *prcb_local = (void *)smp_info->extra_argument;
+	gdt_reload();
+	idt_reload();
 
-	vmm_switch_pagemap(kernel_pagemap);
+	prcb_local->sched_ticks = 0;
 
-	struct prcb *ap = kmalloc(sizeof(struct prcb));
+	spinlock_acquire_or_wait(&smp_lock);
 
-	ap->cpu_number = smp_info->processor_id;
-	ap->running_thread = NULL;
-	ap->thread_index = 0;
+	gdt_load_tss((size_t)(&prcb_local->cpu_tss));
 
-	ap->cpu_tss.rsp0 = (uint64_t)pmm_allocz(STACK_SIZE / PAGE_SIZE);
-	ap->cpu_tss.rsp0 += MEM_PHYS_OFFSET + STACK_SIZE;
-
-	ap->cpu_tss.ist1 = (uint64_t)pmm_allocz(STACK_SIZE / PAGE_SIZE);
-	ap->cpu_tss.ist1 += MEM_PHYS_OFFSET + STACK_SIZE;
-
-	prcbs[ap->cpu_number] = *ap;
-
-	set_kernel_gs((uint64_t)&prcbs[ap->cpu_number]);
-	set_user_gs((uint64_t)&prcbs[ap->cpu_number]);
-	gdt_load_tss((size_t)&prcb_return_current_cpu()->cpu_tss);
+	set_kernel_gs((uint64_t)prcb_local);
+	set_user_gs((uint64_t)prcb_local);
 
 	// SSE/SSE2
 	uint64_t cr0 = 0;
@@ -125,50 +110,81 @@ static void smp_init_core(struct limine_smp_info *smp_info) {
 
 		__cpuid(13, a, b, c, d);
 
-		fpu_storage_size = c;
-		fpu_save = xsave;
-		fpu_restore = xrstor;
+		prcb_local->fpu_storage_size = c;
+		prcb_local->fpu_save = xsave;
+		prcb_local->fpu_restore = xrstor;
 	} else {
-		fpu_storage_size = 512;
-		fpu_save = fxsave;
-		fpu_restore = fxrstor;
+		prcb_local->fpu_storage_size = 512;
+		prcb_local->fpu_save = fxsave;
+		prcb_local->fpu_restore = fxrstor;
 	}
 
-	lapic_init(smp_info->lapic_id);
-	kprintf("CPU%u: I am alive!\n", prcb_return_current_cpu()->cpu_number);
+	prcb_local->running_thread = NULL;
 
-	initialized_cores++;
-	spinlock_drop(smp_lock);
-	if (prcb_return_current_cpu()->cpu_number != bsp_lapic_core) {
+	if (prcb_local->lapic_id != smp_bsp_lapic_id) {
+		lapic_init(smp_info->lapic_id);
+		timer_sched_oneshot(48, 20000);
+		kprintf("CPU%u: I am alive!\n", prcb_return_current_cpu()->cpu_number);
+		initialized_cpus++;
+		spinlock_drop(&smp_lock);
 		sti();
-		for (;;)
-			;
+		for (;;) {
+			halt();
+		}
 	}
+	kprintf("CPU%u: I am alive and I am the BSP!\n",
+			prcb_return_current_cpu()->cpu_number);
+	initialized_cpus++;
+	spinlock_drop(&smp_lock);
 }
 
 void smp_init(struct limine_smp_response *smp_info) {
-	ioapic_redirect_irq(0, 48);
-	bsp_lapic_core = smp_info->bsp_lapic_id;
-	cpu_count = smp_info->cpu_count;
-	prcbs = kmalloc(cpu_count * sizeof(struct prcb));
-	kprintf("SMP: Bringing up the AP cores\n");
-	for (size_t i = 0; i < smp_info->cpu_count; i++) {
-		if (smp_info->cpus[i]->lapic_id == bsp_lapic_core) {
-			kprintf("SMP: BSP Core %u\n", bsp_lapic_core);
-			smp_init_core((void *)smp_info->cpus[i]);
-			continue;
+	kprintf("SMP: Total number of Processors Installed %u\n",
+			smp_info->cpu_count);
+	smp_bsp_lapic_id = smp_info->bsp_lapic_id;
+
+	if (kernel_arguments.kernel_args & KERNEL_ARGS_CPU_COUNT_GIVEN) {
+		cpu_count = kernel_arguments.cpu_count;
+		if (cpu_count > smp_info->cpu_count || cpu_count < 1) {
+			cpu_count = smp_info->cpu_count;
+			kprintf("SMP: Download more CPU today!\n");
 		}
-		smp_info->cpus[i]->goto_address = smp_init_core;
-		spinlock_drop(smp_lock);
-		timer_sleep(100);
+		kprintf("SMP: Setting up only %u Processors\n", cpu_count);
+	} else {
+		cpu_count = smp_info->cpu_count;
 	}
-	while (initialized_cores != cpu_count)
+
+	prcbs = kcalloc(cpu_count, struct prcb);
+
+	memzero(prcbs, sizeof(struct prcb) * cpu_count);
+
+	for (size_t i = 0; i < cpu_count; i++) {
+		struct limine_smp_info *cpu = smp_info->cpus[i];
+		cpu->extra_argument = (uint64_t)&prcbs[i];
+		prcbs[i].cpu_number = i;
+		prcbs[i].lapic_id = cpu->lapic_id;
+		prcbs[i].cpu_tss.rsp0 =
+			(uint64_t)pmm_allocz(STACK_SIZE / PAGE_SIZE) + MEM_PHYS_OFFSET;
+		prcbs[i].cpu_tss.ist1 =
+			(uint64_t)pmm_allocz(STACK_SIZE / PAGE_SIZE) + MEM_PHYS_OFFSET;
+		prcbs[i].cpu_tss.ist2 = prcbs[i].cpu_tss.ist1;
+
+		if (cpu->lapic_id != smp_bsp_lapic_id) {
+			cpu->goto_address = smp_cpu_init;
+		} else {
+			smp_cpu_init(cpu);
+		}
+	}
+
+	while (initialized_cpus != cpu_count) {
 		pause();
-	is_smp = true;
+	}
+
 	kprintf("SMP: %u CPUs installed in the system\n",
 			prcb_return_installed_cpus());
+	is_smp = true;
 }
 
 size_t prcb_return_installed_cpus(void) {
-	return initialized_cores;
+	return initialized_cpus;
 }

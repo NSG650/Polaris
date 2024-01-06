@@ -49,5 +49,6 @@ extern bool print_now;
 
 // printf debugging best debugging
 #define crash_or_not() kprintf("Do we crash? %s:%d\n", __FILE__, __LINE__)
+#define print_var_hex(var) kprintffos(0, #var ": 0x%p\n", var);
 
 #endif

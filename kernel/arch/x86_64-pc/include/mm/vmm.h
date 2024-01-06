@@ -18,18 +18,25 @@
  * limitations under the License.
  */
 
-#include <klibc/vec.h>
 #include <limine.h>
 #include <locks/spinlock.h>
-#include <reg.h>
+#include <mm/mmap.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <sys/isr.h>
 
 extern volatile struct limine_hhdm_request hhdm_request;
+extern volatile struct limine_kernel_address_request kernel_address_request;
 
 #define PAGE_SIZE ((size_t)4096)
 #define MEM_PHYS_OFFSET (hhdm_request.response->offset)
+#define KERNEL_BASE (kernel_address_request.response->virtual_base)
 #define INVALID_PHYS ((uint64_t)0xffffffffffffffff)
+
+#define PAGE_READ (0b1)
+#define PAGE_WRITE (0b10)
+#define PAGE_EXECUTE (1ull << 63ull)
 
 struct pagemap {
 	lock_t lock;
@@ -37,9 +44,9 @@ struct pagemap {
 	vec_t(struct mmap_range_local *) mmap_ranges;
 };
 
-enum page_size { Size4KiB, Size2MiB, Size1GiB };
-
 extern struct pagemap *kernel_pagemap;
+
+enum page_size { Size4KiB, Size2MiB, Size1GiB };
 
 void vmm_init(struct limine_memmap_entry **memmap, size_t memmap_entries);
 void vmm_switch_pagemap(struct pagemap *pagemap);

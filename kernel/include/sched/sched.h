@@ -13,17 +13,33 @@
 #include <reg.h>
 #include <sys/elf.h>
 void resched(registers_t *reg);
+void thread_setup_context(struct thread *thrd, uintptr_t pc_address,
+						  uint64_t arguments, bool user);
+void thread_setup_context_for_execve(struct thread *thrd, uintptr_t pc_address,
+									 char **argv, char **envp);
+void thread_fork_context(struct thread *thrd, struct thread *fthrd);
+void thread_destroy_context(struct thread *thrd);
+void process_setup_context(struct process *proc, bool user);
+void process_fork_context(struct process *proc, struct process *fproc);
+void process_destroy_context(struct process *proc);
 #endif
 
+extern struct thread *thread_list;
+extern struct process *process_list;
+extern struct thread *sleeping_threads;
 extern dead_process_vec_t dead_processes;
-extern process_vec_t processes;
-extern thread_vec_t threads;
-extern thread_vec_t sleeping_threads;
 extern struct resource *std_console_device;
 
 void sched_resched_now(void);
-int sched_get_next_thread(int index);
+struct thread *sched_get_next_thread(struct thread *thrd);
 void sched_init(uint64_t args);
+void sched_add_thread_to_list(struct thread **thrd_list, struct thread *thrd);
+void sched_remove_thread_from_list(struct thread **thrd_list,
+								   struct thread *thrd);
+void sched_add_process_to_list(struct process **proc_list,
+							   struct process *proc);
+void sched_remove_process_from_list(struct process **proc_list,
+									struct process *proc);
 void process_create(char *name, uint8_t state, uint64_t runtime,
 					uintptr_t pc_address, uint64_t arguments, bool user,
 					struct process *parent_process);
@@ -36,7 +52,7 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 				   struct process *proc);
 void thread_execve(struct process *proc, struct thread *thrd,
 				   uintptr_t pc_address, char **argv, char **envp);
-void thread_kill(struct thread *thrd, bool r);
+void thread_kill(struct thread *thrd, bool reschedule);
 void thread_sleep(struct thread *thrd, uint64_t ns);
 void thread_fork(struct thread *pthrd, struct process *fproc);
 void syscall_prctl(struct syscall_arguments *args);

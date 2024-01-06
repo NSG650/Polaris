@@ -1,106 +1,141 @@
-#include <asm/asm.h>
-#include <cpu/smp.h>
 #include <debug/debug.h>
 #include <errno.h>
-#include <fb/fb.h>
 #include <kernel.h>
-#include <klibc/elf.h>
-#include <klibc/misc.h>
-#include <klibc/vec.h>
-#include <mm/mmap.h>
+#include <mm/slab.h>
 #include <sched/futex.h>
 #include <sched/sched.h>
-#include <sched/syscall.h>
-#include <sys/elf.h>
 #include <sys/prcb.h>
 #include <sys/timer.h>
 
 #define VIRTUAL_STACK_ADDR 0x70000000000
-
-struct resource *std_console_device = NULL;
+#define MMAP_ANON_BASE 0x80000000000
 
 lock_t sched_lock = {0};
 bool sched_runit = false;
 
-thread_vec_t threads;
-thread_vec_t sleeping_threads;
-process_vec_t processes;
-dead_process_vec_t dead_processes;
+struct thread *thread_list = NULL;
+struct process *process_list = NULL;
+struct thread *sleeping_threads = NULL;
+dead_process_vec_t dead_processes = {0};
 
+int64_t tid = 0;
 int64_t pid = 0;
-lock_t process_lock = {0};
 
 lock_t thread_lock = {0};
-int64_t tid = 0;
+lock_t process_lock = {0};
 
-lock_t fork_lock = {0};
+struct resource *std_console_device = NULL;
 
-struct process *sched_pid_to_process(int64_t process_pid) {
-	for (int i = 0; i < processes.length; i++) {
-		if (processes.data[i]->pid == process_pid) {
-			return processes.data[i];
-		}
-	}
-	return NULL;
-}
-
-static struct dead_process *
-sched_return_recently_dead_child_process(struct process *parent_process) {
-	for (int i = dead_processes.length - 1; i >= 0; i--) {
-		if (dead_processes.data[i]->parent_process == parent_process)
-			return dead_processes.data[i];
-	}
-	return NULL;
-}
-
-static struct dead_process *
-sched_pid_to_dead_child_process(int64_t process_pid) {
-	for (int i = 0; i < dead_processes.length; i++) {
-		if (dead_processes.data[i]->pid == process_pid)
-			return dead_processes.data[i];
-	}
-	return NULL;
-}
-
-static struct process *
-sched_pid_to_child_process(struct process *parent_process,
-						   int64_t process_pid) {
-	for (int i = 0; i < parent_process->child_processes.length; i++) {
-		if (parent_process->child_processes.data[i]->pid == process_pid) {
-			return parent_process->child_processes.data[i];
-		}
-	}
-	return NULL;
-}
-
-int sched_get_next_thread(int index) {
-	if (index == -1 || index >= threads.length) {
-		index = 0;
+struct thread *sched_get_next_thread(struct thread *thrd) {
+	struct thread *this = NULL;
+	if (thrd) {
+		this = thrd->next;
+	} else {
+		this = thread_list;
 	}
 
-	index++;
-
-	for (int i = 0; i < threads.length; i++) {
-		if (index >= threads.length) {
-			index = 0;
-		}
-
-		struct thread *thread = threads.data[index];
-
-		if (thread->state != THREAD_READY_TO_RUN ||
-			thread->mother_proc->state != PROCESS_READY_TO_RUN) {
-			index++;
+	while (this) {
+		if (this->state != THREAD_READY_TO_RUN) {
+			this = this->next;
 			continue;
 		}
-
-		if (spinlock_acquire(&thread->lock)) {
-			return index;
-		}
-
-		index++;
+		if (spinlock_acquire(&this->lock))
+			return this;
+		this = this->next;
 	}
 
-	return -1;
+	return NULL;
+}
+
+static struct thread *sched_tid_to_thread(int64_t t) {
+	struct thread *this = thread_list;
+	while (this) {
+		if (this->tid == t)
+			return this;
+		this = this->next;
+	}
+	return NULL;
+}
+
+static struct process *sched_pid_to_process(int64_t p) {
+	struct process *this = process_list;
+	while (this) {
+		if (this->pid == p)
+			return this;
+		this = this->next;
+	}
+	return NULL;
+}
+
+void sched_add_thread_to_list(struct thread **thrd_list, struct thread *thrd) {
+	struct thread *this = *thrd_list;
+
+	if (this == NULL) {
+		*thrd_list = thrd;
+		return;
+	}
+
+	while (this->next) {
+		this = this->next;
+	}
+	this->next = thrd;
+}
+
+void sched_remove_thread_from_list(struct thread **thrd_list,
+								   struct thread *thrd) {
+	struct thread *this = *thrd_list;
+	struct thread *next = NULL;
+
+	if (this == thrd) {
+		*thrd_list = this->next;
+		return;
+	}
+
+	while (this) {
+		next = this->next;
+		if (next == thrd) {
+			this->next = next->next;
+			next->next = NULL;
+			return;
+		}
+		this = next;
+	}
+}
+
+void sched_add_process_to_list(struct process **proc_list,
+							   struct process *proc) {
+	struct process *this = *proc_list;
+
+	if (this == NULL) {
+		*proc_list = proc;
+		return;
+	}
+
+	while (this->next) {
+		this = this->next;
+	}
+	this->next = proc;
+}
+
+void sched_remove_process_from_list(struct process **proc_list,
+									struct process *proc) {
+	struct process *this = *proc_list;
+	struct process *next = NULL;
+
+	if (this == proc) {
+		*proc_list = this->next;
+		return;
+	}
+
+	while (this) {
+		next = this->next;
+		if (next == proc) {
+			this->next = next->next;
+			next->next = NULL;
+			return;
+		}
+		this = next;
+	}
 }
 
 void syscall_kill(struct syscall_arguments *args) {
@@ -109,14 +144,14 @@ void syscall_kill(struct syscall_arguments *args) {
 	if (!proc)
 		args->ret = -1;
 	else
-		process_kill(proc, 0);
+		process_kill(proc, false);
 }
 
 void syscall_exit(struct syscall_arguments *args) {
 	(void)args;
 	prcb_return_current_cpu()->running_thread->mother_proc->waitee.exit_code =
 		(uint8_t)args->args0;
-	process_kill(prcb_return_current_cpu()->running_thread->mother_proc, 0);
+	process_kill(prcb_return_current_cpu()->running_thread->mother_proc, false);
 }
 
 void syscall_getpid(struct syscall_arguments *args) {
@@ -144,11 +179,9 @@ void syscall_nanosleep(struct syscall_arguments *args) {
 }
 
 void syscall_fork(struct syscall_arguments *args) {
-    spinlock_acquire_or_wait(&fork_lock);
 	struct thread *running_thread = prcb_return_current_cpu()->running_thread;
 	struct process *running_process = running_thread->mother_proc;
 	args->ret = process_fork(running_process, running_thread);
-    spinlock_drop(&fork_lock);
 }
 
 void syscall_execve(struct syscall_arguments *args) {
@@ -189,79 +222,9 @@ void syscall_uname(struct syscall_arguments *args) {
 	args->ret = 0;
 }
 
-void syscall_waitpid(struct syscall_arguments *args) {
-#define WNOHANG 1
-	int pid_to_wait_on = (int)args->args0;
-    int *status = (int *)args->args1;
-    int mode = (int)args->args2;
-
-	struct process *waiter_proc =
-		prcb_return_current_cpu()->running_thread->mother_proc;
-
-	if (!waiter_proc->child_processes.length) {
-		errno = ECHILD;
-		args->ret = -1;
-		return;
-	}
-
-	if (pid_to_wait_on < -1 || pid_to_wait_on == 0) {
-		errno = EINVAL;
-		args->ret = -1;
-		return;
-	}
-
-	spinlock_acquire_or_wait(&process_lock);
-
-	args->ret = 0;
-	if (mode & WNOHANG) {
-		struct dead_process *dead_proc = NULL;
-		if (pid_to_wait_on == -1) {
-			dead_proc = sched_return_recently_dead_child_process(waiter_proc);
-			if (dead_proc) {
-				args->ret = dead_proc->pid;
-				*status = dead_proc->exit_code;
-			}
-		} else {
-			dead_proc = sched_pid_to_dead_child_process(pid_to_wait_on);
-			if (dead_proc) {
-				args->ret = dead_proc->pid;
-				*status = dead_proc->exit_code;
-			}
-		}
-		spinlock_drop(&process_lock);
-		return;
-	} else {
-		args->ret = -1;
-		errno = ECHILD;
-		if (pid_to_wait_on == -1) {
-			spinlock_drop(&process_lock);
-			process_wait_on_processes(waiter_proc,
-									  &waiter_proc->child_processes);
-			spinlock_acquire_or_wait(&process_lock);
-			args->ret = waiter_proc->waitee.pid;
-			*status = waiter_proc->waitee.exit_code;
-		} else {
-			struct process *waitee_proc =
-				sched_pid_to_child_process(waiter_proc, pid_to_wait_on);
-			if (waitee_proc) {
-				spinlock_drop(&process_lock);
-				process_wait_on_another_process(waiter_proc, waitee_proc);
-				spinlock_acquire_or_wait(&process_lock);
-				args->ret = waiter_proc->waitee.pid;
-				*status = waiter_proc->waitee.exit_code;
-			}
-		}
-		spinlock_drop(&process_lock);
-		return;
-	}
-}
-
 void sched_init(uint64_t args) {
-	kprintf("SCHED: Creating kernel thread\n");
-	vec_init(&threads);
-	vec_init(&processes);
-	vec_init(&sleeping_threads);
 	vec_init(&dead_processes);
+
 	syscall_register_handler(0x27, syscall_getpid);
 	syscall_register_handler(0x67, syscall_puts);
 	syscall_register_handler(0x6e, syscall_getppid);
@@ -272,10 +235,11 @@ void sched_init(uint64_t args) {
 	syscall_register_handler(0x39, syscall_fork);
 	syscall_register_handler(0x3b, syscall_execve);
 	syscall_register_handler(0x3f, syscall_uname);
-	syscall_register_handler(0x72, syscall_waitpid);
+
 	futex_init();
-	process_create("kernel_tasks", 0, 200000, (uintptr_t)kernel_main, args, 0,
-				   NULL);
+
+	process_create("kernel_tasks", PROCESS_READY_TO_RUN, 100000,
+				   (uintptr_t)kernel_main, args, false, NULL);
 	sched_runit = true;
 }
 
@@ -283,58 +247,78 @@ void process_create(char *name, uint8_t state, uint64_t runtime,
 					uintptr_t pc_address, uint64_t arguments, bool user,
 					struct process *parent_process) {
 	spinlock_acquire_or_wait(&process_lock);
+
 	struct process *proc = kmalloc(sizeof(struct process));
+	memzero(proc, sizeof(struct process));
+
 	strncpy(proc->name, name, 256);
+
 	proc->runtime = runtime;
 	proc->state = state;
 	proc->pid = pid++;
-	proc->state = PROCESS_READY_TO_RUN;
-	memset(&proc->auxv, 0, sizeof(struct auxval));
-#if defined(__x86_64__)
-	if (user) {
-		proc->process_pagemap = vmm_new_pagemap();
-	} else {
-		proc->process_pagemap = kernel_pagemap;
-	}
-#endif
-	vec_init(&proc->process_threads);
-	vec_init(&proc->child_processes);
-	vec_init(&proc->waiter_processes);
-	vec_push(&processes, proc);
+
+	process_setup_context(proc, user);
+
+	proc->cwd = vfs_root;
+	proc->stack_top = VIRTUAL_STACK_ADDR;
 
 	if (parent_process) {
-		vec_push(&parent_process->child_processes, proc);
-		if (parent_process->cwd != NULL) {
+		proc->parent_process = parent_process;
+		if (proc->parent_process->cwd) {
 			proc->cwd = parent_process->cwd;
-		} else {
-			proc->cwd = vfs_root;
 		}
 		proc->umask = parent_process->umask;
 		proc->mmap_anon_base = parent_process->mmap_anon_base;
-		proc->process_pagemap =
-			vmm_fork_pagemap(parent_process->process_pagemap);
+		vec_push(&parent_process->child_processes, proc);
 	} else {
-		proc->cwd = vfs_root;
 		proc->umask = S_IWGRP | S_IWOTH;
-		proc->mmap_anon_base = 0x80000000000;
+		proc->mmap_anon_base = MMAP_ANON_BASE;
 	}
+	proc->next = NULL;
+
+	vec_init(&proc->process_threads);
+	vec_init(&proc->child_processes);
+
+	sched_add_process_to_list(&process_list, proc);
 	thread_create(pc_address, arguments, user, proc);
+
 	spinlock_drop(&process_lock);
 }
 
 bool process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
 						struct process *parent_process) {
 	spinlock_acquire_or_wait(&process_lock);
+
 	struct process *proc = kmalloc(sizeof(struct process));
+	memzero(proc, sizeof(struct process));
+
 	strncpy(proc->name, name, 256);
+
 	proc->runtime = runtime;
 	proc->state = state;
 	proc->pid = pid++;
-	proc->state = PROCESS_READY_TO_RUN;
-	proc->process_pagemap = vmm_new_pagemap();
+
+	process_setup_context(proc, true);
+
+	proc->cwd = vfs_root;
+	proc->stack_top = VIRTUAL_STACK_ADDR;
+
+	if (parent_process) {
+		proc->parent_process = parent_process;
+		if (proc->parent_process->cwd) {
+			proc->cwd = parent_process->cwd;
+		}
+		proc->umask = parent_process->umask;
+		proc->mmap_anon_base = parent_process->mmap_anon_base;
+		vec_push(&parent_process->child_processes, proc);
+	} else {
+		proc->umask = S_IWGRP | S_IWOTH;
+		proc->mmap_anon_base = MMAP_ANON_BASE;
+	}
+
 	struct auxval auxv, ld_aux;
 	struct vfs_node *node = vfs_get_node(vfs_root, path, true);
-	const char *ld_path;
+	const char *ld_path = NULL;
 
 	if (!node ||
 		!elf_load(proc->process_pagemap, node->resource, 0, &auxv, &ld_path)) {
@@ -358,51 +342,41 @@ bool process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
 	}
 
 	proc->auxv = auxv;
-	vec_init(&proc->child_processes);
-	vec_init(&proc->process_threads);
-	vec_init(&proc->waiter_processes);
-	vec_push(&processes, proc);
-	if (parent_process) {
-		vec_push(&parent_process->child_processes, proc);
-		if (parent_process->cwd != NULL) {
-			proc->cwd = parent_process->cwd;
-		} else {
-			proc->cwd = vfs_root;
-		}
-		proc->umask = parent_process->umask;
-		proc->mmap_anon_base = parent_process->mmap_anon_base;
-	} else {
-		proc->cwd = vfs_root;
-		proc->umask = S_IWGRP | S_IWOTH;
-		proc->mmap_anon_base = 0x80000000000;
-	}
 
 	for (int i = 0; i < 3; i++)
 		fdnum_create_from_resource(proc, std_console_device, 0, i, true);
 
-	thread_create((uintptr_t)entry, 0, 1, proc);
+	proc->next = NULL;
+
+	vec_init(&proc->process_threads);
+	vec_init(&proc->child_processes);
+
+	sched_add_process_to_list(&process_list, proc);
+	thread_create(entry, 0, true, proc);
 
 	spinlock_drop(&process_lock);
+
 	return true;
 }
 
 int64_t process_fork(struct process *proc, struct thread *thrd) {
 	spinlock_acquire_or_wait(&process_lock);
-	struct process *fproc = kmalloc(sizeof(struct process));
-	memcpy(fproc->name, proc->name, sizeof(proc->name));
 
-	fproc->process_pagemap = vmm_fork_pagemap(proc->process_pagemap);
+	struct process *fproc = kmalloc(sizeof(struct process));
+	memzero(fproc, sizeof(struct process));
+	strncpy(fproc->name, proc->name, 256);
+
+	process_fork_context(proc, fproc);
 
 	fproc->mmap_anon_base = proc->mmap_anon_base;
 	fproc->cwd = proc->cwd;
 	fproc->umask = proc->umask;
 	fproc->pid = pid++;
 	fproc->parent_process = proc;
+	fproc->next = NULL;
 
 	vec_init(&fproc->child_processes);
 	vec_init(&fproc->process_threads);
-	vec_init(&fproc->waiter_processes);
-	vec_push(&processes, fproc);
 
 	vec_push(&proc->child_processes, fproc);
 
@@ -417,178 +391,17 @@ int64_t process_fork(struct process *proc, struct thread *thrd) {
 		}
 	}
 
+	sched_add_process_to_list(&process_list, fproc);
 	thread_fork(thrd, fproc);
 
 	fproc->state = PROCESS_READY_TO_RUN;
-
 	spinlock_drop(&process_lock);
+
 	return fproc->pid;
 }
 
-void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
-				   struct process *proc) {
-	spinlock_acquire_or_wait(&thread_lock);
-	struct thread *thrd = kmalloc(sizeof(struct thread));
-	thrd->tid = tid++;
-	thrd->state = THREAD_READY_TO_RUN;
-	thrd->runtime = proc->runtime;
-	spinlock_init(thrd->lock);
-	thrd->mother_proc = proc;
-#if defined(__x86_64__)
-	thrd->reg.rip = pc_address;
-	thrd->reg.rdi = arguments;
-	thrd->reg.rsp = (uint64_t)pmm_allocz(STACK_SIZE / PAGE_SIZE);
-	thrd->stack = thrd->reg.rsp;
-	if (user) {
-		thrd->reg.cs = 0x23;
-		thrd->reg.ss = 0x1b;
-		mmap_range(proc->process_pagemap, VIRTUAL_STACK_ADDR - STACK_SIZE,
-				   (uintptr_t)thrd->reg.rsp, STACK_SIZE, PROT_READ | PROT_WRITE,
-				   MAP_ANONYMOUS);
-		thrd->reg.rsp = VIRTUAL_STACK_ADDR;
-		thrd->kernel_stack = (uint64_t)kmalloc(STACK_SIZE);
-		thrd->kernel_stack += STACK_SIZE;
-		thrd->pf_stack = (uint64_t)kmalloc(STACK_SIZE);
-		thrd->pf_stack += STACK_SIZE;
-	} else {
-		thrd->reg.cs = 0x08;
-		thrd->reg.ss = 0x10;
-		thrd->reg.rsp += STACK_SIZE;
-		thrd->reg.rsp += MEM_PHYS_OFFSET;
-		thrd->kernel_stack = thrd->reg.rsp + MEM_PHYS_OFFSET + STACK_SIZE;
-		thrd->pf_stack = thrd->kernel_stack;
-		// thrd->stack = thrd->kernel_stack;
-	}
-	thrd->reg.rflags = 0x202;
-
-	thrd->fpu_storage =
-		(void *)((uintptr_t)pmm_allocz(DIV_ROUNDUP(
-					 prcb_return_current_cpu()->fpu_storage_size, PAGE_SIZE)) +
-				 MEM_PHYS_OFFSET);
-	if (user) {
-		prcb_return_current_cpu()->fpu_restore(thrd->fpu_storage);
-		uint16_t default_fcw = 0b1100111111;
-		asm volatile("fldcw %0" ::"m"(default_fcw) : "memory");
-		uint32_t default_mxcsr = 0b1111110000000;
-		asm volatile("ldmxcsr %0" ::"m"(default_mxcsr) : "memory");
-		prcb_return_current_cpu()->fpu_save(thrd->fpu_storage);
-		thrd->fs_base = 0;
-		thrd->gs_base = 0;
-		if (!proc->process_threads.length) {
-			const char *argv[] = {proc->name, NULL};
-			const char *envp[] = {"USER=root", NULL};
-			struct auxval auxv = proc->auxv;
-
-			uint64_t *stack =
-				(uint64_t *)(thrd->stack + STACK_SIZE + MEM_PHYS_OFFSET);
-
-			// the stack structure address values are not accurate
-			/*
-			 * 	0x70000000000 - "USER=root\0" 	// envp[0][9]
-			 * 	0x6fffffffff6 - proc->name 		// argv[0][255]
-			 *	0x6fffffffef6 - 0x0, 0x0		// zeros
-			 *	0x6fffffffee6 - AT_ENTRY
-			 *	0x6fffffffede - 0x400789		// example values
-			 *	0x6fffffffed6 - AT_PHDR
-			 *	0x6fffffffece - 2
-			 *	0x6fffffffec6 - AT_PHENT
-			 *	0x6fffffffebe - 7
-			 *	0x6fffffffeb6 - AT_PHNUM
-			 *	0x6fffffffeae - 5
-			 *	0x6fffffffea6 - 0x0 			// START OF ENVP
-			 *	0x6fffffffe9e - 0x6fffffffff6	// pointer to envp[0]
-			 *  0x6fffffffe96 - 0x0				// START OF ARGV
-			 *	0x6fffffffe8e - 0x6fffffffef6	// pointer to argv[0]
-			 *  0x6fffffffe86 - 1				// argc
-			 */
-
-			stack -= strlen(envp[0]) + 1;
-			memcpy((void *)stack, envp[0], strlen(envp[0]) + 1);
-			uint64_t address_difference =
-				(thrd->stack + STACK_SIZE) -
-				(uint64_t)((uint64_t)stack - MEM_PHYS_OFFSET);
-			uint64_t addr_to_env =
-				(uint64_t)VIRTUAL_STACK_ADDR - address_difference;
-
-			stack -= strlen(argv[0]) + 1;
-			memcpy((void *)stack, argv[0], strlen(argv[0]) + 1);
-
-			address_difference = (thrd->stack + STACK_SIZE) -
-								 ((uint64_t)stack - MEM_PHYS_OFFSET);
-			uint64_t addr_to_arg =
-				(uint64_t)VIRTUAL_STACK_ADDR - address_difference;
-
-			*(--stack) = 0;
-			*(--stack) = 0;
-			stack -= 2;
-			stack[0] = 9;
-			stack[1] = auxv.at_entry;
-			stack -= 2;
-			stack[0] = 3;
-			stack[1] = auxv.at_phdr;
-			stack -= 2;
-			stack[0] = 4;
-			stack[1] = auxv.at_phent;
-			stack -= 2;
-			stack[0] = 5;
-			stack[1] = auxv.at_phnum;
-
-			*(--stack) = 0;
-			*(--stack) = addr_to_env;
-
-			*(--stack) = 0;
-			*(--stack) = addr_to_arg;
-
-			*(--stack) = 1;
-
-			address_difference = (thrd->stack + STACK_SIZE) -
-								 ((uint64_t)stack - MEM_PHYS_OFFSET);
-			thrd->reg.rsp -= address_difference;
-		}
-	}
-#endif
-	thrd->sleeping_till = 0;
-
-	vec_push(&threads, thrd);
-	vec_push(&proc->process_threads, thrd);
-	spinlock_drop(&thread_lock);
-}
-
-void thread_fork(struct thread *pthrd, struct process *fproc) {
-	spinlock_acquire_or_wait(&thread_lock);
-	struct thread *thrd = kmalloc(sizeof(struct thread));
-	thrd->tid = tid++;
-	thrd->state = THREAD_READY_TO_RUN;
-	thrd->runtime = pthrd->runtime;
-	spinlock_init(thrd->lock);
-	thrd->mother_proc = fproc;
-	memcpy(&thrd->reg, &pthrd->reg, sizeof(registers_t));
-	thrd->kernel_stack = (uint64_t)kmalloc(STACK_SIZE);
-	thrd->kernel_stack += STACK_SIZE;
-	thrd->pf_stack = (uint64_t)kmalloc(STACK_SIZE);
-	thrd->pf_stack += STACK_SIZE;
-#if defined(__x86_64__)
-	thrd->reg.rax = 0;
-	thrd->reg.rbx = 0;
-	thrd->fs_base = pthrd->fs_base;
-	thrd->gs_base = pthrd->gs_base;
-	thrd->fpu_storage =
-		(void *)((uintptr_t)pmm_allocz(DIV_ROUNDUP(
-					 prcb_return_current_cpu()->fpu_storage_size, PAGE_SIZE)) +
-				 MEM_PHYS_OFFSET);
-
-	memcpy(thrd->fpu_storage, pthrd->fpu_storage,
-		   prcb_return_current_cpu()->fpu_storage_size);
-#endif
-	thrd->last_scheduled = 0;
-	thrd->sleeping_till = 0;
-	vec_push(&threads, thrd);
-	vec_push(&fproc->process_threads, thrd);
-	spinlock_drop(&thread_lock);
-}
-
 bool process_execve(char *path, char **argv, char **envp) {
-	spinlock_acquire_or_wait(&process_lock);
+	spinlock_acquire(&process_lock);
 
 	struct thread *thread = prcb_return_current_cpu()->running_thread;
 	struct process *proc = thread->mother_proc;
@@ -603,7 +416,7 @@ bool process_execve(char *path, char **argv, char **envp) {
 	}
 
 	struct pagemap *old_pagemap = proc->process_pagemap;
-	proc->process_pagemap = vmm_new_pagemap();
+	process_setup_context(proc, true);
 
 	if (!elf_load(proc->process_pagemap, node->resource, 0, &auxv, &ld_path)) {
 		proc->process_pagemap = old_pagemap;
@@ -639,7 +452,8 @@ bool process_execve(char *path, char **argv, char **envp) {
 		}
 	}
 
-	proc->mmap_anon_base = 0x80000000000;
+	proc->mmap_anon_base = MMAP_ANON_BASE;
+	proc->stack_top = VIRTUAL_STACK_ADDR;
 	proc->state = PROCESS_READY_TO_RUN;
 
 	// We no longer exist. There is no point in saving anything now.
@@ -652,260 +466,155 @@ bool process_execve(char *path, char **argv, char **envp) {
 	thread_execve(proc, thread, entry, argv, envp);
 
 	vmm_switch_pagemap(kernel_pagemap);
+
 	sched_resched_now();
 	return false;
 }
 
 void process_kill(struct process *proc, bool crash) {
 	spinlock_acquire_or_wait(&process_lock);
-    cli();
+	cli();
+
+	if (proc->pid < 2) {
+		panic("Attempted to kill init!\n");
+	}
+
 	struct dead_process *dead_proc = kmalloc(sizeof(struct dead_process));
-	dead_proc->pid = proc->pid;
-	dead_proc->exit_code = proc->waitee.exit_code;
 	dead_proc->parent_process = proc->parent_process;
+	dead_proc->pid = proc->pid;
 
-	bool are_we_killing_ourselves = 0;
-	if (prcb_return_current_cpu()->running_thread->mother_proc == proc)
-		are_we_killing_ourselves = 1;
+	bool are_we_killing_ourselves = false;
+	if (prcb_return_current_cpu()->running_thread->mother_proc == proc) {
+		are_we_killing_ourselves = true;
+	}
 
-	for (int i = 0; i < proc->process_threads.length; i++)
+	for (int i = 0; i < proc->process_threads.length; i++) {
 		thread_kill(proc->process_threads.data[i], false);
+	}
 
-	if (proc->parent_process)
+	if (proc->parent_process) {
 		vec_remove(&proc->parent_process->child_processes, proc);
+	}
 
-	// child processes are now owned by the init
+	struct process *init_proc = process_list->next;
+
 	for (int i = 0; i < proc->child_processes.length; i++) {
-		struct process *child_process = proc->child_processes.data[i];
-		child_process->parent_process =
-			processes.data[1]; // the init proc is the second process
-		// first one is the kernel
-		vec_push(&processes.data[1]->child_processes, child_process);
-		vec_remove(&proc->child_processes, child_process);
+		struct process *child_proc = proc->child_processes.data[i];
+		child_proc->parent_process = init_proc;
+		vec_push(&init_proc->child_processes, child_proc);
 	}
 
-	vec_deinit(&proc->child_processes);
+	if (are_we_killing_ourselves && !crash) {
+		dead_proc->exit_code = proc->waitee.exit_code;
+		dead_proc->was_it_killed = false;
 
-	// processes waiting on this process can now stop waiting
-	for (int i = 0; i < proc->waiter_processes.length; i++) {
-		struct process *waiter_process = proc->waiter_processes.data[i];
-
-		if (waiter_process == NULL)
-			continue;
-
-		waiter_process->state = PROCESS_READY_TO_RUN;
-		if (are_we_killing_ourselves && !crash) {
-			waiter_process->waitee.exit_code = proc->waitee.exit_code;
-			waiter_process->waitee.was_it_killed = 0;
-			dead_proc->was_it_killed = 0;
-
-		} else {
-			waiter_process->waitee.exit_code = -1;
-			waiter_process->waitee.was_it_killed = 1;
-			dead_proc->was_it_killed = 1;
-		}
-		waiter_process->waitee.pid = proc->pid;
-		waiter_process->waitee.parent_process = proc->parent_process;
-		vec_remove(&proc->waiter_processes, waiter_process);
+	} else {
+		dead_proc->exit_code = -1;
+		dead_proc->was_it_killed = true;
 	}
 
-	vec_deinit(&proc->waiter_processes);
-	vec_remove(&processes, proc);
+	process_destroy_context(proc);
 
 	vec_push(&dead_processes, dead_proc);
 
+	vec_deinit(&proc->child_processes);
+	sched_remove_process_from_list(&process_list, proc);
+
+	kfree(proc);
+
+	sti();
 	spinlock_drop(&process_lock);
 
 	if (are_we_killing_ourselves) {
 		prcb_return_current_cpu()->running_thread = NULL;
-		prcb_return_current_cpu()->thread_index = -1;
 		sched_resched_now();
 	}
 }
 
-// TODO: This can be optimized way moreeeee
+void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
+				   struct process *proc) {
+	spinlock_acquire_or_wait(&thread_lock);
+
+	struct thread *thrd = kmalloc(sizeof(struct thread));
+	memzero(thrd, sizeof(struct thread));
+	thrd->tid = tid++;
+	thrd->runtime = proc->runtime;
+	thrd->mother_proc = proc;
+
+	thread_setup_context(thrd, pc_address, arguments, user);
+
+	thrd->next = NULL;
+	spinlock_init(thrd->lock);
+	thrd->state = THREAD_READY_TO_RUN;
+
+	vec_push(&proc->process_threads, thrd);
+	sched_add_thread_to_list(&thread_list, thrd);
+
+	spinlock_drop(&thread_lock);
+}
+
+void thread_fork(struct thread *pthrd, struct process *fproc) {
+	spinlock_acquire_or_wait(&thread_lock);
+	struct thread *thrd = kmalloc(sizeof(struct thread));
+	memzero(thrd, sizeof(struct thread));
+
+	thrd->tid = tid++;
+	thrd->state = THREAD_READY_TO_RUN;
+	thrd->runtime = pthrd->runtime;
+	thrd->mother_proc = fproc;
+	spinlock_init(thrd->lock);
+
+	thread_fork_context(pthrd, thrd);
+
+	thrd->last_scheduled = 0;
+	thrd->sleeping_till = 0;
+	sched_add_thread_to_list(&thread_list, thrd);
+	vec_push(&fproc->process_threads, thrd);
+
+	spinlock_drop(&thread_lock);
+}
 
 void thread_execve(struct process *proc, struct thread *thrd,
 				   uintptr_t pc_address, char **argv, char **envp) {
 	spinlock_acquire_or_wait(&thread_lock);
+
+	memzero(thrd, sizeof(struct thread));
+
 	thrd->tid = tid++;
 	thrd->state = THREAD_READY_TO_RUN;
 	thrd->runtime = proc->runtime;
 	spinlock_init(thrd->lock);
 	thrd->mother_proc = proc;
 
-#if defined(__x86_64__)
-	thrd->reg.rip = pc_address;
-	thrd->reg.rsp = (uint64_t)pmm_allocz(STACK_SIZE / PAGE_SIZE);
-	thrd->stack = thrd->reg.rsp;
-	thrd->reg.cs = 0x23;
-	thrd->reg.ss = 0x1b;
-
-	mmap_range(proc->process_pagemap, VIRTUAL_STACK_ADDR - STACK_SIZE,
-			   (uintptr_t)thrd->reg.rsp, STACK_SIZE + 1, PROT_READ | PROT_WRITE,
-			   MAP_ANONYMOUS);
-
-	thrd->reg.rsp = VIRTUAL_STACK_ADDR;
-	thrd->kernel_stack = (uint64_t)kmalloc(STACK_SIZE);
-	thrd->kernel_stack += STACK_SIZE;
-	thrd->pf_stack = (uint64_t)kmalloc(STACK_SIZE);
-	thrd->pf_stack += STACK_SIZE;
-
-	thrd->reg.rflags = 0x202;
-
-	thrd->fpu_storage =
-		(void *)((uint64_t)pmm_allocz(DIV_ROUNDUP(
-					 prcb_return_current_cpu()->fpu_storage_size, PAGE_SIZE)) +
-				 MEM_PHYS_OFFSET);
-
-	prcb_return_current_cpu()->fpu_restore(thrd->fpu_storage);
-	uint16_t default_fcw = 0b1100111111;
-	asm volatile("fldcw %0" ::"m"(default_fcw) : "memory");
-	uint32_t default_mxcsr = 0b1111110000000;
-	asm volatile("ldmxcsr %0" ::"m"(default_mxcsr) : "memory");
-	prcb_return_current_cpu()->fpu_save(thrd->fpu_storage);
-
-	thrd->fs_base = 0;
-	thrd->gs_base = 0;
-
-	struct auxval auxv = proc->auxv;
-
-	uint64_t *stack = (uint64_t *)(thrd->stack + STACK_SIZE + MEM_PHYS_OFFSET);
-
-	int envp_len = 0;
-	uint64_t address_difference = 0;
-
-	uint8_t *stack_but_in_bytes = (uint8_t *)stack;
-
-	for (envp_len = 0; envp[envp_len] != NULL; envp_len++) {
-		stack_but_in_bytes -= (strlen(envp[envp_len]) + 1);
-		memcpy((void *)stack_but_in_bytes, envp[envp_len],
-			   strlen(envp[envp_len]) + 1);
-	}
-
-	stack = (uint64_t *)stack_but_in_bytes;
-	address_difference =
-		(thrd->stack + STACK_SIZE) - ((uint64_t)stack - MEM_PHYS_OFFSET);
-	uint64_t addr_to_env = (uint64_t)VIRTUAL_STACK_ADDR - address_difference;
-
-	int argv_len;
-	for (argv_len = 0; argv[argv_len] != NULL; argv_len++) {
-		stack_but_in_bytes -= (strlen(argv[argv_len]) + 1);
-		memcpy((void *)stack_but_in_bytes, argv[argv_len],
-			   strlen(argv[argv_len]) + 1);
-	}
-
-	stack = (uint64_t *)stack_but_in_bytes;
-	address_difference =
-		(thrd->stack + STACK_SIZE) - ((uint64_t)stack - MEM_PHYS_OFFSET);
-	uint64_t addr_to_arg = (uint64_t)VIRTUAL_STACK_ADDR - address_difference;
-
-	// alignments
-
-	stack = (uintptr_t *)((uintptr_t)stack & ~(0b1111));
-	if (((argv_len + envp_len + 1) & 1) != 0)
-		stack--;
-
-	*(--stack) = 0;
-	*(--stack) = 0;
-	stack -= 2;
-	stack[0] = 9;
-	stack[1] = auxv.at_entry;
-	stack -= 2;
-	stack[0] = 3;
-	stack[1] = auxv.at_phdr;
-	stack -= 2;
-	stack[0] = 4;
-	stack[1] = auxv.at_phent;
-	stack -= 2;
-	stack[0] = 5;
-	stack[1] = auxv.at_phnum;
-
-	*(--stack) = 0;
-
-	stack -= envp_len;
-
-	uint64_t offset = 0;
-	for (int i = envp_len - 1; i >= 0; i--) {
-		if (i != envp_len - 1) {
-			offset += strlen(envp[i + 1]) + 1;
-		}
-		stack[i] = addr_to_env + offset;
-	}
-
-	*(--stack) = 0;
-
-	stack -= argv_len;
-
-	offset = 0;
-	for (int i = argv_len - 1; i >= 0; i--) {
-		if (i != argv_len - 1) {
-			offset += strlen(argv[i + 1]) + 1;
-		}
-		stack[i] = addr_to_arg + offset;
-	}
-
-	*(--stack) = argv_len;
-
-	address_difference =
-		(thrd->stack + STACK_SIZE) - ((uint64_t)stack - MEM_PHYS_OFFSET);
-	thrd->reg.rsp -= address_difference;
-#endif
+	thread_setup_context_for_execve(thrd, pc_address, argv, envp);
 
 	spinlock_drop(&thread_lock);
-}
-
-void thread_kill(struct thread *thrd, bool r) {
-	spinlock_acquire_or_wait(&thread_lock);
-	if (thrd->mother_proc->pid <= 1) {
-		if (thrd->mother_proc->process_threads.data[0] == thrd)
-			panic("Attempted to kill init!\n");
-	}
-#if defined(__x86_64__)
-	if (thrd->mother_proc != processes.data[0]) {
-		pmm_free((void *)thrd->stack, STACK_SIZE / PAGE_SIZE);
-		pmm_free((void *)thrd->fpu_storage,
-				 prcb_return_current_cpu()->fpu_storage_size / PAGE_SIZE);
-		kfree((void *)(thrd->kernel_stack - STACK_SIZE));
-		kfree((void *)(thrd->pf_stack - STACK_SIZE));
-	} else {
-		pmm_free((void *)((uintptr_t)thrd->stack), STACK_SIZE / PAGE_SIZE);
-	}
-#endif
-	vec_remove(&thrd->mother_proc->process_threads, thrd);
-	vec_remove(&threads, thrd);
-	kfree(thrd);
-
-	spinlock_drop(&thread_lock);
-	if (r) {
-		sched_resched_now();
-	}
 }
 
 void thread_sleep(struct thread *thrd, uint64_t ns) {
 	spinlock_acquire_or_wait(&thread_lock);
+
 	thrd->state = THREAD_SLEEPING;
 	thrd->sleeping_till = timer_get_sleep_ns(ns);
-	vec_push(&sleeping_threads, thrd);
+
+	sched_remove_thread_from_list(&thread_list, thrd);
+	sched_add_thread_to_list(&sleeping_threads, thrd);
+
+	spinlock_drop(&thread_lock);
+	sched_resched_now();
+}
+
+void thread_kill(struct thread *thrd, bool reschedule) {
+	spinlock_acquire_or_wait(&thread_lock);
+
+	vec_remove(&thrd->mother_proc->process_threads, thrd);
+	thread_destroy_context(thrd);
+	sched_remove_thread_from_list(&thread_list, thrd);
+	kfree(thrd);
+
 	spinlock_drop(&thread_lock);
 
-	while (prcb_return_current_cpu()->running_thread->sleeping_till >
-		   timer_get_abs_count())
+	if (reschedule) {
 		sched_resched_now();
-}
-
-void process_wait_on_another_process(struct process *waiter,
-									 struct process *waitee) {
-	waiter->state = PROCESS_WAITING_ON_ANOTHER_PROCESS;
-    vec_push(&waitee->waiter_processes, waiter);
-    sched_resched_now();
-}
-
-void process_wait_on_processes(struct process *waiter, process_vec_t *waitees) {
-	waiter->state = PROCESS_WAITING_ON_ANOTHER_PROCESS;
-    for (int i = 0; i < waitees->length; i++) {
-        struct process *waitee = waitees->data[i];
-        vec_push(&waitee->waiter_processes, waiter);
-    }
-	sched_resched_now();
+	}
 }

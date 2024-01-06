@@ -44,7 +44,9 @@ static void spinlock_spinning_for_too_long(lock_t *spin) {
 	//	kprintf("Possible deadlock? Last owner: 0x%p Last CPU: %u deadlocked at:
 	// 0x%p\n", spin->last_owner, spin->last_cpu, last_addr);
 
-	if (sched_runit) sched_resched_now();
+	if (sched_runit) {
+		sched_resched_now();
+	}
 }
 
 bool spinlock_acquire(lock_t *spin) {

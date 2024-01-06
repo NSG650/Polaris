@@ -1,13 +1,111 @@
-#include <Zydis/Zydis.h>
 #include <cpu/smp.h>
 #include <debug/debug.h>
 #include <klibc/mem.h>
+#include <sys/halt.h>
 #include <sys/isr.h>
+#include <sys/prcb.h>
 
-#define DUMP_SIZE 100
+static void backtrace_dump(registers_t *reg) {
+	kprintffos(0, "============   Backtrace  ==========\n");
+
+	kprintffos(0, "-> 0x%p\n", reg->rip);
+
+	uintptr_t *rbp = (uintptr_t *)reg->rbp;
+
+	if (rbp == NULL)
+		asm volatile("mov %%rbp, %0" : "=g"(rbp)::"memory");
+
+	if (rbp == NULL)
+		return;
+
+	for (;;) {
+		uintptr_t *old_rbp = (uintptr_t *)rbp[0];
+		uintptr_t *rip = (uintptr_t *)rbp[1];
+
+		if (rip == NULL || old_rbp == NULL)
+			break;
+
+		kprintffos(0, "0x%p\n", rip);
+
+		rbp = old_rbp;
+	}
+
+	kprintffos(0, "============ End of dumps ==========\n");
+}
+
+static void register_dump(registers_t *reg) {
+	kprintffos(0, "========= Register dumps =========\n");
+	kprintffos(0, "RIP: 0x%p RBP: 0x%p RSP: 0x%p\n", reg->rip, reg->rbp,
+			   reg->rsp);
+	kprintffos(0, "RAX: 0x%p RBX: 0x%p RCX: 0x%p\n", reg->rax, reg->rbx,
+			   reg->rcx);
+	kprintffos(0, "RDX: 0x%p RDI: 0x%p RSI: 0x%p\n", reg->rdx, reg->rdi,
+			   reg->rsi);
+	kprintffos(0, "R8 : 0x%p R9 : 0x%p R10: 0x%p\n", reg->r8, reg->r9,
+			   reg->r10);
+	kprintffos(0, "R11: 0x%p R12: 0x%p R13: 0x%p\n", reg->r11, reg->r12,
+			   reg->r13);
+	kprintffos(0, "R14: 0x%p R15: 0x%p\n", reg->r14, reg->r15);
+	kprintffos(0, "CS : 0x%p SS : 0x%p RFLAGS: 0x%p\n", reg->cs, reg->ss,
+			   reg->rflags);
+	kprintffos(0, "FS: 0x%p UGS: 0x%p KGS: 0x%p\n", read_fs_base(),
+			   read_user_gs(), read_kernel_gs());
+
+	kprintffos(0, "============ End of dumps ==========\n");
+}
+
+static void tss_dump(void) {
+	kprintffos(0, "============   TSS Dumps  ==========\n");
+
+	kprintffos(0, "tss.rsp0: 0x%p\n", prcb_return_current_cpu()->cpu_tss.rsp0);
+	kprintffos(0, "tss.rsp1: 0x%p\n", prcb_return_current_cpu()->cpu_tss.rsp1);
+	kprintffos(0, "tss.rsp2: 0x%p\n", prcb_return_current_cpu()->cpu_tss.rsp2);
+
+	kprintffos(0, "tss.ist1: 0x%p\n", prcb_return_current_cpu()->cpu_tss.ist1);
+	kprintffos(0, "tss.ist2: 0x%p\n", prcb_return_current_cpu()->cpu_tss.ist2);
+	kprintffos(0, "tss.ist3: 0x%p\n", prcb_return_current_cpu()->cpu_tss.ist3);
+	kprintffos(0, "tss.ist4: 0x%p\n", prcb_return_current_cpu()->cpu_tss.ist4);
+	kprintffos(0, "tss.ist5: 0x%p\n", prcb_return_current_cpu()->cpu_tss.ist5);
+	kprintffos(0, "tss.ist6: 0x%p\n", prcb_return_current_cpu()->cpu_tss.ist6);
+	kprintffos(0, "tss.ist7: 0x%p\n", prcb_return_current_cpu()->cpu_tss.ist7);
+
+	kprintffos(0, "tss.iomap_base: 0x%p\n",
+			   prcb_return_current_cpu()->cpu_tss.iomap_base);
+
+	kprintffos(0, "============ End of dumps ==========\n");
+}
+
+static void prcb_dump(void) {
+	kprintffos(0, "============  PRCB Dumps  ==========\n");
+
+	kprintffos(0, "prcb->cpu_number: %u\n",
+			   prcb_return_current_cpu()->cpu_number);
+	kprintffos(0, "prcb->kernel_stack: 0x%p\n",
+			   prcb_return_current_cpu()->kernel_stack);
+	kprintffos(0, "prcb->user_stack: 0x%p\n",
+			   prcb_return_current_cpu()->user_stack);
+	kprintffos(0, "prcb->running_thread: 0x%p\n",
+			   prcb_return_current_cpu()->running_thread);
+	kprintffos(0, "prcb->sched_ticks: 0x%p\n",
+			   prcb_return_current_cpu()->user_stack);
+
+	kprintffos(0, "prcb->lapic_id: %u\n", prcb_return_current_cpu()->lapic_id);
+	kprintffos(0, "prcb->fpu_storage_size: 0x%p\n",
+			   prcb_return_current_cpu()->fpu_storage_size);
+	kprintffos(0, "prcb->fpu_save: 0x%p\n",
+			   prcb_return_current_cpu()->fpu_save);
+	kprintffos(0, "prcb->fpu_restore: 0x%p\n",
+			   prcb_return_current_cpu()->fpu_restore);
+
+	kprintffos(0, "============ End of dumps ==========\n");
+}
 
 void breakpoint_handler(registers_t *reg) {
+	pause_other_cpus();
+
 	kprintffos(0, "=========== Start of dumps =========\n");
+	kprintffos(0, "Breakpoint hit on CPU%u\n",
+			   prcb_return_current_cpu()->cpu_number);
 	if (reg->cs & 0x3) {
 		kprintffos(0, "Breakpoint hit in user!\n");
 	} else {
@@ -29,46 +127,32 @@ void breakpoint_handler(registers_t *reg) {
 			   reg->rflags);
 	kprintffos(0, "FS: 0x%p UGS: 0x%p KGS: 0x%p\n", read_fs_base(),
 			   read_user_gs(), read_kernel_gs());
-	kprintffos(0, "============ Code dump ===========\n");
-	// dump the code present at rip
-	uint8_t *code = (uint8_t *)reg->rip;
-	uint8_t code_dis[DUMP_SIZE] = {0};
-	for (size_t i = 0; i < DUMP_SIZE; i++) {
-		kprintffos(0, "\\x%x", code[i]);
-	}
-	memcpy(code_dis, code, 100);
-	kprintffos(0, "\n============ Disassembly ===========\n");
-
-	// Just the example code from zydis
-
-	ZydisDecoder decoder;
-	ZydisDecoderInit(&decoder, ZYDIS_MACHINE_MODE_LONG_64,
-					 ZYDIS_STACK_WIDTH_64);
-
-	ZydisFormatter formatter;
-	ZydisFormatterInit(&formatter, ZYDIS_FORMATTER_STYLE_INTEL);
-
-	ZyanU64 runtime_address = reg->rip;
-	ZyanUSize offset = 0;
-	const ZyanUSize length = sizeof(code_dis);
-	ZydisDecodedInstruction instruction;
-	ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT_VISIBLE];
-
-	while (ZYAN_SUCCESS(ZydisDecoderDecodeFull(
-		&decoder, code_dis + offset, length - offset, &instruction, operands,
-		ZYDIS_MAX_OPERAND_COUNT_VISIBLE, ZYDIS_DFLAG_VISIBLE_OPERANDS_ONLY))) {
-		// Format & print the binary instruction structure to human readable
-		// format
-		char buffer[256];
-		ZydisFormatterFormatInstruction(&formatter, &instruction, operands,
-										instruction.operand_count_visible,
-										buffer, sizeof(buffer), runtime_address,
-										ZYAN_NULL);
-
-		kprintffos(0, "0x%p: %s\n", runtime_address, buffer);
-		offset += instruction.length;
-		runtime_address += instruction.length;
-	}
 
 	kprintffos(0, "============ End of dumps ==========\n");
+
+	char option = 0;
+
+	while (option != 'C') {
+		kprintffos(0, "(C)ontinue, Dump (P)RCB, Dump (R)egisters, Dump (T)SS, "
+					  "(B)acktrace?\n");
+		option = serial_getchar();
+		serial_putchar('\n');
+		switch (option) {
+			case 'P':
+				prcb_dump();
+				break;
+			case 'R':
+				register_dump(reg);
+				break;
+			case 'T':
+				tss_dump();
+				break;
+			case 'B':
+				backtrace_dump(reg);
+			default:
+				break;
+		}
+	}
+
+	unpause_other_cpus();
 }

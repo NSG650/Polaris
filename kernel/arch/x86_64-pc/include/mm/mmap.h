@@ -2,6 +2,7 @@
 #define MMAP_H
 
 #include <klibc/resource.h>
+#include <klibc/vec.h>
 #include <mm/vmm.h>
 
 #define PROT_NONE 0x00
@@ -64,7 +65,6 @@ struct mmap_range_local {
 };
 
 void mmap_list_ranges(struct pagemap *pagemap);
-bool mmap_handle_pf(registers_t *reg);
 bool mmap_page_in_range(struct mmap_range_global *global, uintptr_t virt,
 						uintptr_t phys, int prot);
 bool mmap_range(struct pagemap *pagemap, uintptr_t virt, uintptr_t phys,

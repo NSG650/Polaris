@@ -18,9 +18,11 @@
 #include <mm/pmm.h>
 
 const char *module_list[] = {"/lib/modules/console.ko",
-							 "/lib/modules/serial.ko"};
+							 "/lib/modules/serial.ko",
+							 "/lib/modules/keyboard.ko"};
 
 #define MODULE_LIST_SIZE (sizeof(module_list) / sizeof(module_list[0]))
+#define ONE_SECOND (uint64_t)(1000 * 1000 * 1000)
 
 struct sysinfo {
     long uptime;             /* Seconds since boot */
@@ -58,6 +60,21 @@ void syscall_sysinfo(struct syscall_arguments *args) {
     from_user->mem_unit = 0;
 
     args->ret = 0;
+}
+
+void kernel_dummy_sleeping_thread(void) {
+	for (;;) {
+		thread_sleep(prcb_return_current_cpu()->running_thread, ONE_SECOND * 5);
+	}
+}
+
+void kernel_dummy_threads(uint64_t id) {
+	for (;;) {
+		//        kputchar_('0' + id);
+		//        kputchar_('A' + prcb_return_current_cpu()->cpu_number);
+		halt();
+		sched_resched_now();
+	}
 }
 
 void kernel_main(void *args) {
@@ -131,15 +148,16 @@ void kernel_main(void *args) {
 			prcb_return_current_cpu()->running_thread->mother_proc))
 		panic("Failed to run init binary!\n");
 
+	for (uint64_t i = 0; i < prcb_return_installed_cpus(); i++) {
+		thread_create((uintptr_t)kernel_dummy_threads, i, false,
+					  prcb_return_current_cpu()->running_thread->mother_proc);
+	}
+
+	thread_create((uintptr_t)kernel_dummy_sleeping_thread, 0, false,
+				  prcb_return_current_cpu()->running_thread->mother_proc);
+
 	for (;;) {
-		uint64_t now = timer_get_abs_count();
-		for (int i = 0; i < sleeping_threads.length; i++) {
-			struct thread *th = sleeping_threads.data[i];
-			if (th->sleeping_till < now) {
-				th->sleeping_till = 0;
-				th->state = THREAD_READY_TO_RUN;
-				vec_remove(&sleeping_threads, th);
-			}
-		}
+		halt();
+		sched_resched_now();
 	}
 }

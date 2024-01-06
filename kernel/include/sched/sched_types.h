@@ -52,10 +52,9 @@ struct thread {
 	size_t attached_events_i;
 	struct event *attached_events[MAX_EVENTS];
 	struct process *mother_proc;
-	// GS is PCB
-	// FS is TCB
 	uint64_t gs_base;
 	uint64_t fs_base;
+	struct thread *next;
 };
 
 struct dead_process {
@@ -72,9 +71,7 @@ typedef vec_t(struct process *) process_vec_t;
 struct process {
 	int64_t pid;
 	enum process_states state;
-#if defined(__x86_64__)
 	struct pagemap *process_pagemap;
-#endif
 	lock_t lock;
 	uintptr_t mmap_anon_base;
 	uint64_t runtime;
@@ -86,11 +83,11 @@ struct process {
 	struct f_descriptor *fds[MAX_FDS];
 	struct process *parent_process;
 	process_vec_t child_processes;
-	process_vec_t waiter_processes;
-	struct dead_process waitee;
 	struct auxval auxv;
 	struct event death_event;
+	struct dead_process waitee;
 	char name[256];
+	struct process *next;
 };
 
 #define STACK_SIZE 32768

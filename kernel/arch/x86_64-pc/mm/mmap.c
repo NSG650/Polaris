@@ -3,6 +3,8 @@
 #include <errno.h>
 #include <klibc/misc.h>
 #include <mm/mmap.h>
+#include <sched/sched.h>
+#include <sys/prcb.h>
 
 struct addr2range {
 	struct mmap_range_local *range;
@@ -40,15 +42,18 @@ bool mmap_handle_pf(registers_t *reg) {
 	uint64_t cr2 = read_cr("2");
 
 	struct thread *thread = prcb_return_current_cpu()->running_thread;
+	if (thread == NULL) {
+		return false;
+	}
 	struct process *process = thread->mother_proc;
 	struct pagemap *pagemap = process->process_pagemap;
 
-	spinlock_acquire_or_wait(pagemap->lock);
+	spinlock_acquire_or_wait(&pagemap->lock);
 
 	struct addr2range range = addr2range(pagemap, cr2);
 	struct mmap_range_local *local_range = range.range;
 
-	spinlock_drop(pagemap->lock);
+	spinlock_drop(&pagemap->lock);
 
 	if (local_range == NULL) {
 		return false;
@@ -69,38 +74,6 @@ bool mmap_handle_pf(registers_t *reg) {
 	return mmap_page_in_range(local_range->global,
 							  range.memory_page * PAGE_SIZE, (uintptr_t)page,
 							  local_range->prot);
-}
-
-bool mmap_page_in_range(struct mmap_range_global *global, uintptr_t virt,
-						uintptr_t phys, int prot) {
-	uint64_t pt_flags = 0b1 | 0b100;
-
-	if ((prot & PROT_WRITE) != 0) {
-		pt_flags |= 0b010;
-	}
-	if ((prot & PROT_EXEC) == 0) {
-		pt_flags |= 1ull << 63ull;
-	}
-
-	if (!vmm_map_page(global->shadow_pagemap, virt, phys, pt_flags, Size4KiB)) {
-		return false;
-	}
-
-	struct mmap_range_local *local_range = NULL;
-	int i = 0;
-	vec_foreach(&global->locals, local_range, i) {
-		if (virt < local_range->base ||
-			virt >= local_range->base + local_range->length) {
-			continue;
-		}
-
-		if (!vmm_map_page(local_range->pagemap, virt, phys, pt_flags,
-						  Size4KiB)) {
-			return false;
-		}
-	}
-
-	return true;
 }
 
 bool mmap_range(struct pagemap *pagemap, uintptr_t virt, uintptr_t phys,
@@ -142,11 +115,11 @@ bool mmap_range(struct pagemap *pagemap, uintptr_t virt, uintptr_t phys,
 
 	vec_push(&global_range->locals, local_range);
 
-	spinlock_acquire_or_wait(pagemap->lock);
+	spinlock_acquire_or_wait(&pagemap->lock);
 
 	vec_push(&pagemap->mmap_ranges, local_range);
 
-	spinlock_drop(pagemap->lock);
+	spinlock_drop(&pagemap->lock);
 
 	for (size_t i = 0; i < aligned_length; i += PAGE_SIZE) {
 		if (!mmap_page_in_range(global_range, aligned_virt + i, phys + i,
@@ -170,6 +143,38 @@ cleanup:
 		kfree(global_range);
 	}
 	return false;
+}
+
+bool mmap_page_in_range(struct mmap_range_global *global, uintptr_t virt,
+						uintptr_t phys, int prot) {
+	uint64_t pt_flags = 0b1 | 0b100;
+
+	if ((prot & PROT_WRITE) != 0) {
+		pt_flags |= 0b010;
+	}
+	if ((prot & PROT_EXEC) == 0) {
+		pt_flags |= 1ull << 63ull;
+	}
+
+	if (!vmm_map_page(global->shadow_pagemap, virt, phys, pt_flags, Size4KiB)) {
+		return false;
+	}
+
+	struct mmap_range_local *local_range = NULL;
+	int i = 0;
+	vec_foreach(&global->locals, local_range, i) {
+		if (virt < local_range->base ||
+			virt >= local_range->base + local_range->length) {
+			continue;
+		}
+
+		if (!vmm_map_page(local_range->pagemap, virt, phys, pt_flags,
+						  Size4KiB)) {
+			return false;
+		}
+	}
+
+	return true;
 }
 
 void *mmap(struct pagemap *pagemap, uintptr_t addr, size_t length, int prot,
@@ -233,11 +238,11 @@ void *mmap(struct pagemap *pagemap, uintptr_t addr, size_t length, int prot,
 
 	vec_push(&global_range->locals, local_range);
 
-	spinlock_acquire_or_wait(pagemap->lock);
+	spinlock_acquire_or_wait(&pagemap->lock);
 
 	vec_push(&pagemap->mmap_ranges, local_range);
 
-	spinlock_drop(pagemap->lock);
+	spinlock_drop(&pagemap->lock);
 
 	if (res != NULL) {
 		res->refcount++;
@@ -287,7 +292,7 @@ bool munmap(struct pagemap *pagemap, uintptr_t addr, size_t length) {
 		uintptr_t snip_end = i;
 		size_t snip_length = snip_end - snip_begin;
 
-		spinlock_acquire_or_wait(pagemap->lock);
+		spinlock_acquire_or_wait(&pagemap->lock);
 
 		if (snip_begin > local_range->base &&
 			snip_end < local_range->base + local_range->length) {
@@ -296,7 +301,7 @@ bool munmap(struct pagemap *pagemap, uintptr_t addr, size_t length) {
 			if (postsplit_range == NULL) {
 				// FIXME: Page map is in inconsistent state at this point!
 				errno = ENOMEM;
-				spinlock_drop(pagemap->lock);
+				spinlock_drop(&pagemap->lock);
 				return false;
 			}
 
@@ -315,6 +320,8 @@ bool munmap(struct pagemap *pagemap, uintptr_t addr, size_t length) {
 			local_range->length -= postsplit_range->length;
 		}
 
+		spinlock_drop(&pagemap->lock);
+
 		for (uintptr_t j = snip_begin; j < snip_end; j += PAGE_SIZE) {
 			vmm_unmap_page(pagemap, j);
 		}
@@ -322,8 +329,6 @@ bool munmap(struct pagemap *pagemap, uintptr_t addr, size_t length) {
 		if (snip_length == local_range->length) {
 			vec_remove(&pagemap->mmap_ranges, local_range);
 		}
-
-		spinlock_drop(pagemap->lock);
 
 		if (snip_length == local_range->length &&
 			global_range->locals.length == 1) {
@@ -388,7 +393,6 @@ void syscall_mmap(struct syscall_arguments *args) {
 	}
 
 	ret = mmap(proc->process_pagemap, hint, length, prot, flags, res, offset);
-
 cleanup:
 	args->ret = (uint64_t)ret;
 }

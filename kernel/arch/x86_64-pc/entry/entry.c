@@ -20,57 +20,81 @@
 #include <debug/debug.h>
 #include <fb/fb.h>
 #include <fw/acpi.h>
-#include <fw/madt.h>
-#include <klibc/mem.h>
-#include <klibc/time.h>
+#include <klibc/kargs.h>
+#include <klibc/module.h>
 #include <limine.h>
 #include <mm/pmm.h>
 #include <mm/slab.h>
-#include <mm/vmm.h>
 #include <sched/sched.h>
-#include <sched/syscall.h>
 #include <serial/serial.h>
-#include <stddef.h>
-#include <stdint.h>
 #include <sys/apic.h>
+#include <sys/elf.h>
 #include <sys/gdt.h>
 #include <sys/halt.h>
 #include <sys/hpet.h>
+#include <sys/idt.h>
 #include <sys/isr.h>
-#include <sys/timer.h>
+#include <sys/prcb.h>
 
-void breakpoint_handler(registers_t *reg);
+extern bool print_now;
+
+volatile struct limine_stack_size_request stack_size_request = {
+	.id = LIMINE_STACK_SIZE_REQUEST,
+	.revision = 0,
+	.stack_size = 32768,
+};
+
+static volatile struct limine_kernel_file_request limine_kernel_file_request = {
+	.id = LIMINE_KERNEL_FILE_REQUEST, .revision = 0};
 
 static volatile struct limine_memmap_request memmap_request = {
 	.id = LIMINE_MEMMAP_REQUEST, .revision = 0};
 
-static volatile struct limine_stack_size_request stack_size_request = {
-	.id = LIMINE_STACK_SIZE_REQUEST,
-	.revision = 0,
-	.response = NULL,
-	.stack_size = STACK_SIZE};
-
-static volatile struct limine_smp_request smp_request = {
-	.id = LIMINE_SMP_REQUEST, .revision = 0, .response = NULL, .flags = 1};
-
 static volatile struct limine_framebuffer_request framebuffer_request = {
 	.id = LIMINE_FRAMEBUFFER_REQUEST, .revision = 0};
-
-static volatile struct limine_module_request module_request = {
-	.id = LIMINE_MODULE_REQUEST, .revision = 0};
 
 static volatile struct limine_rsdp_request rsdp_request = {
 	.id = LIMINE_RSDP_REQUEST, .revision = 0};
 
+static volatile struct limine_smp_request smp_request = {
+	.id = LIMINE_SMP_REQUEST, .revision = 0, .response = NULL, .flags = 1};
+
+static volatile struct limine_module_request module_request = {
+	.id = LIMINE_MODULE_REQUEST, .revision = 0};
+
+extern bool is_halting;
+extern uint8_t is_pausing;
+
+void nmi_vector(registers_t *reg) {
+	if (is_halting) {
+		for (;;) {
+			cli();
+			halt();
+		}
+	} else if (is_pausing) {
+		while (is_pausing & PAUSING) {
+			pause();
+		}
+		apic_eoi();
+	} else {
+		panic_((void *)(reg->rip), (void *)(reg->rbp), "Unexpected NMI\n");
+	}
+}
+
+void breakpoint_handler(registers_t *reg);
+
 void arch_entry(void) {
+	cli();
+
 	struct limine_memmap_entry **memmap = memmap_request.response->entries;
 	size_t memmap_entries = memmap_request.response->entry_count;
 	pmm_init(memmap, memmap_entries);
 	slab_init();
 	vmm_init(memmap, memmap_entries);
+
 	struct limine_framebuffer *framebuffer =
 		framebuffer_request.response->framebuffers[0];
-	struct framebuffer fb;
+	struct framebuffer fb = {0};
 	fb.address = (uint32_t *)framebuffer->address;
 	fb.pitch = framebuffer->pitch;
 	fb.bpp = framebuffer->bpp;
@@ -82,29 +106,51 @@ void arch_entry(void) {
 	fb.bg_color = 0x00124560;
 	framebuffer_init(&fb);
 	print_now = true;
-	kprintf("Hello x86_64!\n");
+	serial_init();
+
+	struct limine_file *kernel_file =
+		limine_kernel_file_request.response->kernel_file;
+
+	kargs_init(kernel_file->cmdline);
+	uint16_t kernel_args_num = kernel_arguments.kernel_args;
+	uint32_t cpu_count = kernel_arguments.cpu_count;
+
+	if ((kernel_args_num & KERNEL_ARGS_KPRINTF_LOGS)) {
+		put_to_fb = true;
+	}
+
+	kprintf("Hello x86_64 yet again!\n");
 #ifdef GIT_VERSION
 	kprintf("Version: %s\n", GIT_VERSION);
 #endif
-	cli();
-	isr_register_handler(0xff, halt_current_cpu);
+	kprintf("Got kernel cmdline as \"%s\"\n", kernel_file->cmdline);
+
+	if ((kernel_args_num & KERNEL_ARGS_CPU_COUNT_GIVEN))
+		kprintf("CPU count is %u\n", cpu_count);
+
+	gdt_init();
+	isr_install();
+
+	isr_register_handler(2, nmi_vector);
+	isr_register_handler(3, breakpoint_handler);
 	isr_register_handler(48, resched);
-	isr_register_handler(0xe, vmm_page_fault_handler);
-	isr_register_handler(0x3, breakpoint_handler);
+
+	elf_init_function_table(kernel_file->address);
+
 	acpi_init(rsdp_request.response->address);
-	pic_init();
+	apic_init();
+
 	smp_init(smp_request.response);
-	time_init();
-	syscall_install_handler();
-	if (module_request.response->module_count < 1)
-		panic("No init found\n");
+
 	size_t module_info[2] = {0};
 	struct limine_file *module = module_request.response->modules[0];
 	module_info[0] = (size_t)module->address;
 	module_info[1] = (size_t)module->size;
 	sched_init((uint64_t)module_info);
-	timer_sched_oneshot(32, 20000);
+
+	timer_sched_oneshot(48, 20000);
 	sti();
+
 	for (;;) {
 		halt();
 	}

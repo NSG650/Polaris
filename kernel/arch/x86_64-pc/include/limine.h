@@ -1,3 +1,19 @@
+/* BSD Zero Clause License */
+
+/* Copyright (C) 2022-2023 mintsuki and contributors.
+ *
+ * Permission to use, copy, modify, and/or distribute this software for any
+ * purpose with or without fee is hereby granted.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+ * SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
+ * OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
+ * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
 #ifndef _LIMINE_H
 #define _LIMINE_H 1
 
@@ -13,6 +29,18 @@ extern "C" {
 #  define LIMINE_PTR(TYPE) uint64_t
 #else
 #  define LIMINE_PTR(TYPE) TYPE
+#endif
+
+#ifdef __GNUC__
+#define LIMINE_DEPRECATED __attribute__((__deprecated__))
+#define LIMINE_DEPRECATED_IGNORE_START \
+	_Pragma("GCC diagnostic push")     \
+		_Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"")
+#define LIMINE_DEPRECATED_IGNORE_END _Pragma("GCC diagnostic pop")
+#else
+#define LIMINE_DEPRECATED
+#define LIMINE_DEPRECATED_IGNORE_START
+#define LIMINE_DEPRECATED_IGNORE_END
 #endif
 
 #define LIMINE_COMMON_MAGIC 0xc7b1dd30df4c8b88, 0x0a82e883a194f07b
@@ -97,6 +125,20 @@ struct limine_hhdm_request {
 
 #define LIMINE_FRAMEBUFFER_RGB 1
 
+struct limine_video_mode {
+	uint64_t pitch;
+	uint64_t width;
+	uint64_t height;
+	uint16_t bpp;
+	uint8_t memory_model;
+	uint8_t red_mask_size;
+	uint8_t red_mask_shift;
+	uint8_t green_mask_size;
+	uint8_t green_mask_shift;
+	uint8_t blue_mask_size;
+	uint8_t blue_mask_shift;
+};
+
 struct limine_framebuffer {
     LIMINE_PTR(void *) address;
     uint64_t width;
@@ -113,6 +155,9 @@ struct limine_framebuffer {
     uint8_t unused[7];
     uint64_t edid_size;
     LIMINE_PTR(void *) edid;
+	/* Response revision 1 */
+	uint64_t mode_count;
+	LIMINE_PTR(struct limine_video_mode **) modes;
 };
 
 struct limine_framebuffer_response {
@@ -145,44 +190,104 @@ struct limine_framebuffer_request {
 #define LIMINE_TERMINAL_CTX_RESTORE ((uint64_t)(-3))
 #define LIMINE_TERMINAL_FULL_REFRESH ((uint64_t)(-4))
 
-struct limine_terminal;
+/* Response revision 1 */
+#define LIMINE_TERMINAL_OOB_OUTPUT_GET ((uint64_t)(-10))
+#define LIMINE_TERMINAL_OOB_OUTPUT_SET ((uint64_t)(-11))
+
+#define LIMINE_TERMINAL_OOB_OUTPUT_OCRNL (1 << 0)
+#define LIMINE_TERMINAL_OOB_OUTPUT_OFDEL (1 << 1)
+#define LIMINE_TERMINAL_OOB_OUTPUT_OFILL (1 << 2)
+#define LIMINE_TERMINAL_OOB_OUTPUT_OLCUC (1 << 3)
+#define LIMINE_TERMINAL_OOB_OUTPUT_ONLCR (1 << 4)
+#define LIMINE_TERMINAL_OOB_OUTPUT_ONLRET (1 << 5)
+#define LIMINE_TERMINAL_OOB_OUTPUT_ONOCR (1 << 6)
+#define LIMINE_TERMINAL_OOB_OUTPUT_OPOST (1 << 7)
+
+LIMINE_DEPRECATED_IGNORE_START
+
+struct LIMINE_DEPRECATED limine_terminal;
 
 typedef void (*limine_terminal_write)(struct limine_terminal *, const char *, uint64_t);
 typedef void (*limine_terminal_callback)(struct limine_terminal *, uint64_t, uint64_t, uint64_t, uint64_t);
 
-struct limine_terminal {
-    uint64_t columns;
+struct LIMINE_DEPRECATED limine_terminal {
+	uint64_t columns;
     uint64_t rows;
     LIMINE_PTR(struct limine_framebuffer *) framebuffer;
 };
 
-struct limine_terminal_response {
-    uint64_t revision;
+struct LIMINE_DEPRECATED limine_terminal_response {
+	uint64_t revision;
     uint64_t terminal_count;
     LIMINE_PTR(struct limine_terminal **) terminals;
     LIMINE_PTR(limine_terminal_write) write;
 };
 
-struct limine_terminal_request {
-    uint64_t id[4];
+struct LIMINE_DEPRECATED limine_terminal_request {
+	uint64_t id[4];
     uint64_t revision;
     LIMINE_PTR(struct limine_terminal_response *) response;
     LIMINE_PTR(limine_terminal_callback) callback;
+};
+
+LIMINE_DEPRECATED_IGNORE_END
+
+/* Paging mode */
+
+#define LIMINE_PAGING_MODE_REQUEST \
+	{ LIMINE_COMMON_MAGIC, 0x95c1a0edab0944cb, 0xa4e5cb3842f7488a }
+
+#if defined(__x86_64__) || defined(__i386__)
+#define LIMINE_PAGING_MODE_X86_64_4LVL 0
+#define LIMINE_PAGING_MODE_X86_64_5LVL 1
+#define LIMINE_PAGING_MODE_MAX LIMINE_PAGING_MODE_X86_64_5LVL
+#define LIMINE_PAGING_MODE_DEFAULT LIMINE_PAGING_MODE_X86_64_4LVL
+#elif defined(__aarch64__)
+#define LIMINE_PAGING_MODE_AARCH64_4LVL 0
+#define LIMINE_PAGING_MODE_AARCH64_5LVL 1
+#define LIMINE_PAGING_MODE_MAX LIMINE_PAGING_MODE_AARCH64_5LVL
+#define LIMINE_PAGING_MODE_DEFAULT LIMINE_PAGING_MODE_AARCH64_4LVL
+#elif defined(__riscv) && (__riscv_xlen == 64)
+#define LIMINE_PAGING_MODE_RISCV_SV39 0
+#define LIMINE_PAGING_MODE_RISCV_SV48 1
+#define LIMINE_PAGING_MODE_RISCV_SV57 2
+#define LIMINE_PAGING_MODE_MAX LIMINE_PAGING_MODE_RISCV_SV57
+#define LIMINE_PAGING_MODE_DEFAULT LIMINE_PAGING_MODE_RISCV_SV48
+#else
+#error Unknown architecture
+#endif
+
+struct limine_paging_mode_response {
+	uint64_t revision;
+	uint64_t mode;
+	uint64_t flags;
+};
+
+struct limine_paging_mode_request {
+	uint64_t id[4];
+	uint64_t revision;
+	LIMINE_PTR(struct limine_paging_mode_response *) response;
+	uint64_t mode;
+	uint64_t flags;
 };
 
 /* 5-level paging */
 
 #define LIMINE_5_LEVEL_PAGING_REQUEST { LIMINE_COMMON_MAGIC, 0x94469551da9b3192, 0xebe5e86db7382888 }
 
-struct limine_5_level_paging_response {
-    uint64_t revision;
+LIMINE_DEPRECATED_IGNORE_START
+
+struct LIMINE_DEPRECATED limine_5_level_paging_response {
+	uint64_t revision;
 };
 
-struct limine_5_level_paging_request {
-    uint64_t id[4];
+struct LIMINE_DEPRECATED limine_5_level_paging_request {
+	uint64_t id[4];
     uint64_t revision;
     LIMINE_PTR(struct limine_5_level_paging_response *) response;
 };
+
+LIMINE_DEPRECATED_IGNORE_END
 
 /* SMP */
 
@@ -229,6 +334,24 @@ struct limine_smp_response {
     uint64_t bsp_mpidr;
     uint64_t cpu_count;
     LIMINE_PTR(struct limine_smp_info **) cpus;
+};
+
+#elif defined(__riscv) && (__riscv_xlen == 64)
+
+struct limine_smp_info {
+	uint32_t processor_id;
+	uint64_t hartid;
+	uint64_t reserved;
+	LIMINE_PTR(limine_goto_address) goto_address;
+	uint64_t extra_argument;
+};
+
+struct limine_smp_response {
+	uint64_t revision;
+	uint32_t flags;
+	uint64_t bsp_hartid;
+	uint64_t cpu_count;
+	LIMINE_PTR(struct limine_smp_info **) cpus;
 };
 
 #else
@@ -309,6 +432,14 @@ struct limine_kernel_file_request {
 
 #define LIMINE_MODULE_REQUEST { LIMINE_COMMON_MAGIC, 0x3e7e279702be32af, 0xca1c4f3bd1280cee }
 
+#define LIMINE_INTERNAL_MODULE_REQUIRED (1 << 0)
+
+struct limine_internal_module {
+	LIMINE_PTR(const char *) path;
+	LIMINE_PTR(const char *) cmdline;
+	uint64_t flags;
+};
+
 struct limine_module_response {
     uint64_t revision;
     uint64_t module_count;
@@ -319,6 +450,10 @@ struct limine_module_request {
     uint64_t id[4];
     uint64_t revision;
     LIMINE_PTR(struct limine_module_response *) response;
+
+	/* Request revision 1 */
+	uint64_t internal_module_count;
+	LIMINE_PTR(struct limine_internal_module **) internal_modules;
 };
 
 /* RSDP */

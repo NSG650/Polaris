@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-#include <reg.h>
+#include <x86_64/reg.h>
 
 #define PASTER(x, y) x##y
 #define EVALUATOR(x, y) PASTER(x, y)

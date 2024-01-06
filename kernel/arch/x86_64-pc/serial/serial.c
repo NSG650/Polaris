@@ -20,8 +20,6 @@
 #include <serial/serial.h>
 #include <stdbool.h>
 
-lock_t serial_lock = 0;
-
 void serial_init(void) {
 	outb(COM1 + 1, 0x1);
 	outb(COM1 + 3, 0x80);
@@ -44,21 +42,40 @@ static inline void transmit_data(uint8_t value) {
 }
 
 void serial_putchar(char ch) {
-	spinlock_acquire_or_wait(serial_lock);
-
 	transmit_data(ch);
-
-	spinlock_drop(serial_lock);
 }
 
 void serial_puts(char *str) {
-	spinlock_acquire_or_wait(serial_lock);
-
 	while (*str) {
 		if (*str == '\n')
 			transmit_data('\r');
 		transmit_data(*str++);
 	}
+}
 
-	spinlock_drop(serial_lock);
+int serial_received(void) {
+	return inb(COM1 + 5) & 1;
+}
+
+char serial_get_byte(void) {
+	while (serial_received() == 0)
+		;
+
+	return inb(COM1);
+}
+
+char serial_getchar(void) {
+	char c = '\0';
+	char last_c = c;
+	while (1) {
+		if (c != '\0')
+			serial_putchar('\b');
+		serial_putchar(c);
+		c = serial_get_byte();
+		if (c == '\r')
+			break;
+
+		last_c = c;
+	}
+	return last_c;
 }

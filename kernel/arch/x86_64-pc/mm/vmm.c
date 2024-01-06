@@ -1,30 +1,16 @@
-/*
- * Copyright 2021 - 2023 NSG650
- * Copyright 2021 - 2023 Neptune
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 #include <cpu/cr.h>
-#include <cpu_features.h>
-#include <cpuid.h>
 #include <debug/debug.h>
 #include <klibc/misc.h>
 #include <mm/mmap.h>
 #include <mm/pmm.h>
 #include <mm/slab.h>
 #include <mm/vmm.h>
+#include <sched/crash.h>
+#include <sched/sched.h>
+#include <sys/isr.h>
 #include <sys/prcb.h>
+
+bool mmap_handle_pf(registers_t *reg);
 
 struct pagemap *kernel_pagemap = NULL;
 
@@ -38,8 +24,12 @@ volatile struct limine_hhdm_request hhdm_request = {.id = LIMINE_HHDM_REQUEST,
 volatile struct limine_kernel_address_request kernel_address_request = {
 	.id = LIMINE_KERNEL_ADDRESS_REQUEST, .revision = 0};
 
-static volatile struct limine_5_level_paging_request five_level_paging_request =
-	{.id = LIMINE_5_LEVEL_PAGING_REQUEST, .revision = 0};
+static volatile struct limine_paging_mode_request paging_mode_request = {
+	.id = LIMINE_PAGING_MODE_REQUEST,
+	.revision = 0,
+	.response = NULL,
+	.mode = LIMINE_PAGING_MODE_X86_64_5LVL,
+	.flags = 0};
 
 static uint64_t *get_next_level(uint64_t *top_level, size_t idx,
 								bool allocate) {
@@ -55,32 +45,19 @@ static uint64_t *get_next_level(uint64_t *top_level, size_t idx,
 	void *next_level = pmm_allocz(1);
 	top_level[idx] = (uint64_t)next_level | 0b111;
 
-	return next_level + MEM_PHYS_OFFSET;
+	return (uint64_t *)((uintptr_t)next_level + MEM_PHYS_OFFSET);
 }
 
 void vmm_init(struct limine_memmap_entry **memmap, size_t memmap_entries) {
 	kernel_pagemap = kmalloc(sizeof(struct pagemap));
-	kernel_pagemap->lock = 0;
+	spinlock_init(kernel_pagemap->lock);
 	kernel_pagemap->top_level = pmm_allocz(1) + MEM_PHYS_OFFSET;
 
 	for (uint64_t p = 256; p < 512; p++)
 		get_next_level(kernel_pagemap->top_level, p, true);
 
-	for (uint64_t p = 0; p < 0x200000; p += PAGE_SIZE) {
-		if (p != 0) {
-			vmm_map_page(kernel_pagemap, p, p, 0b111, Size4KiB);
-		}
-		vmm_map_page(kernel_pagemap, p + MEM_PHYS_OFFSET, p, 0b111, Size4KiB);
-	}
-
-	for (uint64_t p = 0x200000; p < 0x40000000; p += PAGE_SIZE) {
-		vmm_map_page(kernel_pagemap, p, p, 0b111, Size4KiB);
-		vmm_map_page(kernel_pagemap, p + MEM_PHYS_OFFSET, p, 0b111, Size4KiB);
-	}
-
-	for (uint64_t p = 0x40000000; p < 4096UL * 1024 * 1024; p += PAGE_SIZE) {
-		vmm_map_page(kernel_pagemap, p, p, 0b111, Size4KiB);
-		vmm_map_page(kernel_pagemap, p + MEM_PHYS_OFFSET, p, 0b111, Size4KiB);
+	for (uint64_t p = 0; p < 4096UL * 1024 * 1024; p += 0x200000) {
+		vmm_map_page(kernel_pagemap, p + MEM_PHYS_OFFSET, p, 0b11, Size2MiB);
 	}
 
 	for (size_t i = 0; i < memmap_entries; i++) {
@@ -100,8 +77,7 @@ void vmm_init(struct limine_memmap_entry **memmap, size_t memmap_entries) {
 
 		for (uint64_t j = 0; j < aligned_length; j += PAGE_SIZE) {
 			uint64_t page = aligned_base + j;
-			vmm_map_page(kernel_pagemap, page, page, 0b111, Size4KiB);
-			vmm_map_page(kernel_pagemap, page + MEM_PHYS_OFFSET, page, 0b111,
+			vmm_map_page(kernel_pagemap, page + MEM_PHYS_OFFSET, page, 0b11,
 						 Size4KiB);
 		}
 	}
@@ -138,20 +114,23 @@ void vmm_init(struct limine_memmap_entry **memmap, size_t memmap_entries) {
 	}
 	// Switch to the new page map, dropping Limine's default one
 	vmm_switch_pagemap(kernel_pagemap);
+
+	isr_register_handler(0xe, vmm_page_fault_handler);
 }
 
 void vmm_switch_pagemap(struct pagemap *pagemap) {
 	asm volatile("mov cr3, %0"
 				 :
-				 : "r"((void *)pagemap->top_level - MEM_PHYS_OFFSET)
+				 : "r"((void *)((uint64_t)pagemap->top_level - MEM_PHYS_OFFSET))
 				 : "memory");
 }
 
 // Creates a new dynamically allocated page map
 struct pagemap *vmm_new_pagemap(void) {
 	struct pagemap *pagemap = kmalloc(sizeof(struct pagemap));
-	pagemap->top_level = pmm_allocz(1) + MEM_PHYS_OFFSET;
-	pagemap->lock = 0;
+	spinlock_init(pagemap->lock);
+	pagemap->top_level =
+		(uint64_t *)((uintptr_t)pmm_allocz(1) + MEM_PHYS_OFFSET);
 	for (size_t i = 256; i < 512; i++)
 		pagemap->top_level[i] = kernel_pagemap->top_level[i];
 	return pagemap;
@@ -159,7 +138,7 @@ struct pagemap *vmm_new_pagemap(void) {
 
 bool vmm_map_page(struct pagemap *pagemap, uint64_t virt_addr,
 				  uint64_t phys_addr, uint64_t flags, enum page_size pg_size) {
-	spinlock_acquire_or_wait(pagemap->lock);
+	spinlock_acquire_or_wait(&pagemap->lock);
 
 	// Calculate the indices in the various tables using the virtual address
 	size_t pml5_entry = (virt_addr & ((uint64_t)0x1FF << 48)) >> 48;
@@ -170,7 +149,7 @@ bool vmm_map_page(struct pagemap *pagemap, uint64_t virt_addr,
 
 	uint64_t *pml5, *pml4, *pml3, *pml2, *pml1;
 
-	if (five_level_paging_request.response != NULL) {
+	if (paging_mode_request.response->mode == LIMINE_PAGING_MODE_X86_64_5LVL) {
 		pml5 = pagemap->top_level;
 		goto level5;
 	} else {
@@ -181,57 +160,39 @@ bool vmm_map_page(struct pagemap *pagemap, uint64_t virt_addr,
 level5:
 	pml4 = get_next_level(pml5, pml5_entry, true);
 	if (pml4 == NULL) {
-		return false;
+		goto die;
 	}
 level4:
 	pml3 = get_next_level(pml4, pml4_entry, true);
 	if (pml3 == NULL) {
-		return false;
-	}
-
-	if (pg_size == Size1GiB) {
-		uint32_t a = 0, b = 0, c = 0, d = 0;
-		__get_cpuid(0x80000001, &a, &b, &c, &d);
-		// Check for 1GiB pages support.
-		if (d & CPUID_GBPAGE) {
-			pml3[pml3_entry] = phys_addr | flags | (1 << 7);
-			spinlock_drop(pagemap->lock);
-			return true;
-		} else {
-			// If 1GiB pages are not supported then emulate it by splitting
-			// them into 2MiB pages.
-			for (uint64_t i = 0; i < 0x40000000; i += 0x200000) {
-				vmm_map_page(pagemap, virt_addr + i, phys_addr + i, flags,
-							 Size2MiB);
-			}
-		}
+		goto die;
 	}
 
 	pml2 = get_next_level(pml3, pml3_entry, true);
-
 	if (pml2 == NULL) {
-		return false;
+		goto die;
 	}
 
 	if (pg_size == Size2MiB) {
 		pml2[pml2_entry] = phys_addr | flags | (1 << 7);
-		spinlock_drop(pagemap->lock);
+		spinlock_drop(&pagemap->lock);
 		return true;
 	}
 
 	pml1 = get_next_level(pml2, pml2_entry, true);
-
 	if (pml1 == NULL) {
+	die:
+		spinlock_drop(&pagemap->lock);
 		return false;
 	}
 
 	pml1[pml1_entry] = phys_addr | flags;
-	spinlock_drop(pagemap->lock);
+	spinlock_drop(&pagemap->lock);
 	return true;
 }
 
 bool vmm_unmap_page(struct pagemap *pagemap, uintptr_t virt) {
-	spinlock_acquire_or_wait(pagemap->lock);
+	spinlock_acquire_or_wait(&pagemap->lock);
 
 	size_t pml5_entry = (virt & ((uint64_t)0x1FF << 48)) >> 48;
 	size_t pml4_entry = (virt & ((uint64_t)0x1FF << 39)) >> 39;
@@ -241,7 +202,7 @@ bool vmm_unmap_page(struct pagemap *pagemap, uintptr_t virt) {
 
 	uint64_t *pml5, *pml4, *pml3, *pml2, *pml1;
 
-	if (five_level_paging_request.response != NULL) {
+	if (paging_mode_request.response->mode == LIMINE_PAGING_MODE_X86_64_5LVL) {
 		pml5 = pagemap->top_level;
 		goto level5;
 	} else {
@@ -252,30 +213,27 @@ bool vmm_unmap_page(struct pagemap *pagemap, uintptr_t virt) {
 level5:
 	pml4 = get_next_level(pml5, pml5_entry, false);
 	if (pml4 == NULL) {
-		spinlock_drop(pagemap->lock);
-		return false;
+		goto die;
 	}
 level4:
 	pml3 = get_next_level(pml4, pml4_entry, false);
 	if (pml3 == NULL) {
-		spinlock_drop(pagemap->lock);
-		return false;
+		goto die;
 	}
 
 	pml2 = get_next_level(pml3, pml3_entry, false);
 	if (pml2 == NULL) {
-		spinlock_drop(pagemap->lock);
-		return false;
+		goto die;
 	}
 
 	pml1 = get_next_level(pml2, pml2_entry, false);
 	if (pml1 == NULL) {
-		spinlock_drop(pagemap->lock);
-		return false;
+		goto die;
 	}
 
 	if ((pml1[pml1_entry] & 1) == 0) {
-		spinlock_drop(pagemap->lock);
+	die:
+		spinlock_drop(&pagemap->lock);
 		return false;
 	}
 
@@ -283,12 +241,13 @@ level4:
 
 	asm volatile("invlpg [%0]" : : "r"(virt) : "memory");
 
-	spinlock_drop(pagemap->lock);
+	spinlock_drop(&pagemap->lock);
 	return true;
 }
 
 uint64_t *vmm_virt_to_pte(struct pagemap *pagemap, uintptr_t virt_addr,
 						  bool allocate) {
+	//	spinlock_acquire_or_wait(&pagemap->lock);
 	size_t pml5_entry = (virt_addr & ((uint64_t)0x1FF << 48)) >> 48;
 	size_t pml4_entry = (virt_addr & ((uint64_t)0x1FF << 39)) >> 39;
 	size_t pml3_entry = (virt_addr & ((uint64_t)0x1FF << 30)) >> 30;
@@ -297,7 +256,7 @@ uint64_t *vmm_virt_to_pte(struct pagemap *pagemap, uintptr_t virt_addr,
 
 	uint64_t *pml5, *pml4, *pml3, *pml2, *pml1;
 
-	if (five_level_paging_request.response != NULL) {
+	if (paging_mode_request.response->mode == LIMINE_PAGING_MODE_X86_64_5LVL) {
 		pml5 = pagemap->top_level;
 		goto level5;
 	} else {
@@ -308,27 +267,34 @@ uint64_t *vmm_virt_to_pte(struct pagemap *pagemap, uintptr_t virt_addr,
 level5:
 	pml4 = get_next_level(pml5, pml5_entry, allocate);
 	if (pml4 == NULL) {
-		return NULL;
+		goto die;
 	}
 level4:
 	pml3 = get_next_level(pml4, pml4_entry, allocate);
 	if (pml3 == NULL) {
-		return NULL;
+		goto die;
 	}
+
 	pml2 = get_next_level(pml3, pml3_entry, allocate);
 	if (pml2 == NULL) {
-		return NULL;
+		goto die;
 	}
+
 	pml1 = get_next_level(pml2, pml2_entry, allocate);
 	if (pml1 == NULL) {
+	die:
+		spinlock_drop(&pagemap->lock);
 		return NULL;
 	}
 
+	//	spinlock_drop(&pagemap->lock);
 	return &pml1[pml1_entry];
 }
 
 uint64_t vmm_virt_to_phys(struct pagemap *pagemap, uint64_t virt_addr) {
+	spinlock_acquire_or_wait(&pagemap->lock);
 	uint64_t *pte = vmm_virt_to_pte(pagemap, virt_addr, false);
+	spinlock_drop(&pagemap->lock);
 	if (pte == NULL || (((*pte) & ~0xffffffffff000) & 1) == 0)
 		return INVALID_PHYS;
 
@@ -342,42 +308,52 @@ uint64_t vmm_virt_to_kernel(struct pagemap *pagemap, uint64_t virt_addr) {
 }
 
 void vmm_page_fault_handler(registers_t *reg) {
+	if (reg->cs & 0x3)
+		swapgs();
+
 	if (mmap_handle_pf(reg)) {
+		if (reg->cs & 0x3)
+			swapgs();
 		return;
 	}
+
 	uint64_t faulting_address = read_cr("2");
 	bool present = reg->errorCode & 0x1;
 	bool read_write = reg->errorCode & 0x2;
 	bool user_supervisor = reg->errorCode & 0x4;
 	bool reserved = reg->errorCode & 0x8;
 	bool execute = reg->errorCode & 0x10;
+
 	if (reg->cs & 0x3) {
 		struct thread *thrd = prcb_return_current_cpu()->running_thread;
 		kprintf("Killing user thread tid %d under process %s for Page Fault\n",
 				thrd->tid, thrd->mother_proc->name);
 		kprintf("User thread crashed at address: 0x%p\n", reg->rip);
-		backtrace((void *)reg->rbp);
+		// backtrace((void *)reg->rbp);
 		kprintf("Page fault at 0x%p present: %s, read/write: %s, "
 				"user/supervisor: %s, reserved: %s, execute: %s\n",
 				faulting_address, present ? "P" : "NP", read_write ? "R" : "RW",
 				user_supervisor ? "U" : "S", reserved ? "R" : "NR",
 				execute ? "X" : "NX");
 		sched_display_crash_message(reg->rip, thrd->mother_proc, "Page fault");
+
 		if (thrd == thrd->mother_proc->process_threads.data[0])
 			process_kill(thrd->mother_proc, 1);
 		else
 			thread_kill(thrd, 1);
+
+	} else {
+		panic_((void *)reg->rip, (void *)reg->rbp,
+			   "Page fault at 0x%p present: %s, read/write: %s, "
+			   "user/supervisor: %s, reserved: %s, execute: %s\n",
+			   faulting_address, present ? "P" : "NP", read_write ? "R" : "RW",
+			   user_supervisor ? "U" : "S", reserved ? "R" : "NR",
+			   execute ? "X" : "NX");
 	}
-	panic_((void *)reg->rip, (void *)reg->rbp,
-		   "Page fault at 0x%p present: %s, read/write: %s, "
-		   "user/supervisor: %s, reserved: %s, execute: %s\n",
-		   faulting_address, present ? "P" : "NP", read_write ? "R" : "RW",
-		   user_supervisor ? "U" : "S", reserved ? "R" : "NR",
-		   execute ? "X" : "NX");
 }
 
 struct pagemap *vmm_fork_pagemap(struct pagemap *pagemap) {
-	spinlock_acquire_or_wait(pagemap->lock);
+	spinlock_acquire_or_wait(&pagemap->lock);
 
 	struct pagemap *new_pagemap = vmm_new_pagemap();
 	if (new_pagemap == NULL) {
@@ -444,14 +420,17 @@ struct pagemap *vmm_fork_pagemap(struct pagemap *pagemap) {
 					if (old_pte == NULL || (((*old_pte) & 0xfff) & 1) == 0) {
 						continue;
 					}
-
+					spinlock_acquire_or_wait(&new_pagemap->lock);
 					uint64_t *new_pte = vmm_virt_to_pte(new_pagemap, i, true);
+					spinlock_drop(&new_pagemap->lock);
 					if (new_pte == NULL) {
 						goto cleanup;
 					}
-
+					spinlock_acquire_or_wait(
+						&new_global_range->shadow_pagemap->lock);
 					uint64_t *new_spte = vmm_virt_to_pte(
 						new_global_range->shadow_pagemap, i, true);
+					spinlock_drop(&new_global_range->shadow_pagemap->lock);
 					if (new_spte == NULL) {
 						goto cleanup;
 					}
@@ -463,8 +442,10 @@ struct pagemap *vmm_fork_pagemap(struct pagemap *pagemap) {
 						goto cleanup;
 					}
 
-					memcpy(page + MEM_PHYS_OFFSET, old_page + MEM_PHYS_OFFSET,
+					memcpy((void *)((uintptr_t)page + MEM_PHYS_OFFSET),
+						   (void *)((uintptr_t)old_page + MEM_PHYS_OFFSET),
 						   PAGE_SIZE);
+
 					*new_pte = ((*old_pte) & 0xfff) | (uint64_t)page;
 					*new_spte = *new_pte;
 				}
@@ -476,11 +457,11 @@ struct pagemap *vmm_fork_pagemap(struct pagemap *pagemap) {
 		vec_push(&new_pagemap->mmap_ranges, new_local_range);
 	}
 
-	spinlock_drop(pagemap->lock);
+	spinlock_drop(&pagemap->lock);
 	return new_pagemap;
 
 cleanup:
-	spinlock_drop(pagemap->lock);
+	spinlock_drop(&pagemap->lock);
 	if (new_pagemap != NULL) {
 		vmm_destroy_pagemap(new_pagemap);
 	}
@@ -505,8 +486,6 @@ static void destroy_level(uint64_t *pml, size_t start, size_t end, int level) {
 }
 
 void vmm_destroy_pagemap(struct pagemap *pagemap) {
-	spinlock_acquire_or_wait(pagemap->lock);
-
 	while (pagemap->mmap_ranges.length > 0) {
 		struct mmap_range_local *local_range = pagemap->mmap_ranges.data[0];
 
