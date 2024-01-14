@@ -1,7 +1,7 @@
 name=micropython
-version=1.19.1
-tarball_url="https://github.com/NSG650/micropython-polaris/archive/6756f3974cf8c004844a53318a9d204c0aaeef73.tar.gz"
-tarball_blake2b="85758510d1ce654a5bf63234968889ff382a5d5236de6da7b4822db2010eacfacc780b9ca109ad3d4dbfb71f6440ccaf945d96e7f05d3cab20c92ca1cbd54ed5"
+version=1.22.0
+tarball_url="https://github.com/Neptune650/micropython-polaris/archive/6536fba7751c6e5520ab5ac817e75c0de513fd6d.tar.gz"
+tarball_blake2b="43603381914c3c33b82cd3b34bb378cb9786a1a25d99ca202a895255f1aef5971608d2676b7e69986cd4669cfa83525f8ed53d41de7094ec7aa1b48a4c8a1298"
 
 regenerate() {
 	true
