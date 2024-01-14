@@ -13,5 +13,6 @@ build() {
 
 package() {
 	cd doomgeneric
-	cp ./doomgeneric "${dest_dir}/usr/bin"
+	mkdir -p "${dest_dir}/usr/bin"
+	cp -p ./doomgeneric "${dest_dir}/usr/bin/"
 }
