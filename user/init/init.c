@@ -10,21 +10,20 @@ struct fbdev_info {
 };
 
 struct sysinfo {
-    long uptime;             /* Seconds since boot */
-    unsigned long loads[3];  /* 1, 5, and 15 minute load averages */
-    unsigned long totalram;  /* Total usable main memory size */
-    unsigned long freeram;   /* Available memory size */
-    unsigned long sharedram; /* Amount of shared memory */
-    unsigned long bufferram; /* Memory used by buffers */
-    unsigned long totalswap; /* Total swap space size */
-    unsigned long freeswap;  /* swap space still available */
-    unsigned short procs;    /* Number of current processes */
-    unsigned long totalhigh; /* Total high memory size */
-    unsigned long freehigh;  /* Available high memory size */
-    unsigned int mem_unit;   /* Memory unit size in bytes */
-    char _f[20-2*sizeof(long)-sizeof(int)]; /* Padding to 64 bytes */
+	long uptime;			 /* Seconds since boot */
+	unsigned long loads[3];	 /* 1, 5, and 15 minute load averages */
+	unsigned long totalram;	 /* Total usable main memory size */
+	unsigned long freeram;	 /* Available memory size */
+	unsigned long sharedram; /* Amount of shared memory */
+	unsigned long bufferram; /* Memory used by buffers */
+	unsigned long totalswap; /* Total swap space size */
+	unsigned long freeswap;	 /* swap space still available */
+	unsigned short procs;	 /* Number of current processes */
+	unsigned long totalhigh; /* Total high memory size */
+	unsigned long freehigh;	 /* Available high memory size */
+	unsigned int mem_unit;	 /* Memory unit size in bytes */
+	char _f[20 - 2 * sizeof(long) - sizeof(int)]; /* Padding to 64 bytes */
 };
-
 
 #define PROT_NONE 0x00
 #define PROT_READ 0x01
@@ -223,19 +222,18 @@ int sysinfo(struct sysinfo *info) {
 
 int msleep(long msec) {
 	struct timespec ts;
-    int res;
+	int res;
 
-    if (msec <= 0) {
-        return -1;
-    }
+	if (msec <= 0) {
+		return -1;
+	}
 
-    ts.tv_sec = msec / 1000;
-    ts.tv_nsec = (msec % 1000) * 1000000;
+	ts.tv_sec = msec / 1000;
+	ts.tv_nsec = (msec % 1000) * 1000000;
 
 	nanosleep(&ts, &ts);
 
-
-    return res;
+	return res;
 }
 
 void *memset(void *d, int c, size_t n);
@@ -273,7 +271,7 @@ void main(void) {
 	puts_to_console(number);
 	puts_to_console(" MB of memory free along with ");
 	memset(number, 0, 21);
-	ltoa(info.procs , number, 10);
+	ltoa(info.procs, number, 10);
 	puts_to_console(number);
 	puts_to_console(" CPUs installed\n");
 

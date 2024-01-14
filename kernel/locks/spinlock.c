@@ -50,7 +50,8 @@ static void spinlock_spinning_for_too_long(lock_t *spin) {
 }
 
 bool spinlock_acquire(lock_t *spin) {
-    if (!spin) return false;
+	if (!spin)
+		return false;
 	bool ret = __sync_bool_compare_and_swap(&spin->lock, 0, 1);
 	if (ret)
 		spin->last_owner = __builtin_return_address(0);
@@ -58,7 +59,8 @@ bool spinlock_acquire(lock_t *spin) {
 }
 
 void spinlock_acquire_or_wait(lock_t *spin) {
-    if (!spin) return;
+	if (!spin)
+		return;
 	volatile size_t deadlock_counter = 0;
 	last_addr = __builtin_return_address(0);
 	for (;;) {
@@ -74,6 +76,7 @@ void spinlock_acquire_or_wait(lock_t *spin) {
 }
 
 void spinlock_drop(lock_t *spin) {
-    if (!spin) return;
+	if (!spin)
+		return;
 	__atomic_store_n(&spin->lock, 0, __ATOMIC_SEQ_CST);
 }

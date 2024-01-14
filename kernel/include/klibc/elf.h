@@ -192,10 +192,10 @@ typedef struct {
 
 /* The following are used with relocations */
 #define ELF32_R_SYM(x) ((x) >> 8)
-#define ELF32_R_TYPE(x) ((x)&0xff)
+#define ELF32_R_TYPE(x) ((x) & 0xff)
 
 #define ELF64_R_SYM(i) ((i) >> 32)
-#define ELF64_R_TYPE(i) ((i)&0xffffffff)
+#define ELF64_R_TYPE(i) ((i) & 0xffffffff)
 
 typedef struct elf32_rel {
 	Elf32_Addr r_offset;
