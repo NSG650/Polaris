@@ -5,9 +5,15 @@ hostdeps="gcc automake autoconf libtool pkg-config"
 deps="mlibc-base libgcc libstdc++ libiconv"
 
 build() {
+        ACLOCAL=true \
+        AUTOCONF=true \
+        AUTOMAKE=true \
+        AUTOHEADER=true \
     ${source_dir}/configure    \
-        --host=${OS_TRIPLET}   \
+        --host=${OS_TRIPLET}    \
         --prefix=${prefix}     \
+        --sysconfdir=/etc \
+        --localstatedir=/var \
         --without-emacs        \
         --without-lispdir      \
         `# Normally this controls nls behavior in general, but the libintl` \
@@ -27,11 +33,13 @@ build() {
         --without-bzip2 \
         --without-xz
 
+    sed -i 's/touch $@//g' gettext-runtime/intl/Makefile
+
     make -C gettext-runtime/intl -j${parallelism}
 }
 
 package() {
     DESTDIR="${dest_dir}" make -C gettext-runtime/intl install-strip
 
-    ${OS_TRIPLET}-strip "${dest_dir}${prefix}"/lib/libintl.so.8.3.0
+    ${OS_TRIPLET}-strip "${dest_dir}${prefix}"/lib/libintl.so.8.4.0
 }
