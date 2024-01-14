@@ -17,9 +17,9 @@
 #include <sys/prcb.h>
 #include <sys/timer.h>
 
-const char *module_list[] = {"/lib/modules/console.ko",
-							 "/lib/modules/serial.ko",
-							 "/lib/modules/keyboard.ko"};
+const char *module_list[] = {"/usr/lib/modules/console.ko",
+							 "/usr/lib/modules/serial.ko",
+							 "/usr/lib/modules/keyboard.ko"};
 
 #define MODULE_LIST_SIZE (sizeof(module_list) / sizeof(module_list[0]))
 #define ONE_SECOND (uint64_t)(1000 * 1000 * 1000)
@@ -136,7 +136,7 @@ void kernel_main(void *args) {
 	std_console_device =
 		(vfs_get_node(vfs_root, "/dev/console", true))->resource;
 
-	char *argv[] = {"/bin/init.elf", NULL};
+	char *argv[] = {"/usr/bin/init", NULL};
 	if (kernel_arguments.kernel_args & KERNEL_ARGS_INIT_PATH_GIVEN) {
 		argv[0] = kernel_arguments.init_binary_path;
 	}

@@ -1,49 +1,11 @@
 CONFIG_ARCH ?= x86_64
 CONFIG_TARGET ?= pc
 
-NAME := polaris
-ISO_IMAGE := $(NAME).iso
-KERNEL_ELF = $(NAME).elf
-PROGRAM_ELF = $(wildcard user/*.elf)
-DRIVER_ELF = $(wildcard drivers/*.ko)
-
 .PHONY: all
-all: $(ISO_IMAGE)
-
-.PHONY: limine
-limine:
-	make -C limine
-
-.PHONY: kernel
-kernel:
-	$(MAKE) -C kernel/arch/$(CONFIG_ARCH)-$(CONFIG_TARGET)
-
-.PHONY: drivers
-drivers:
-	$(MAKE) -C drivers
-
-.PHONY: user
-user:
-	$(MAKE) -C user
-
-$(ISO_IMAGE): limine kernel user drivers
-	rm -rf build
-	mkdir -p build
-	cp $(PROGRAM_ELF) root/bin
-	cp $(DRIVER_ELF) root/lib/modules
-	$(MAKE) -C root
-	cp kernel/arch/$(CONFIG_ARCH)-$(CONFIG_TARGET)/$(KERNEL_ELF) ramdisk.tar \
-		limine.cfg limine/limine-bios.sys limine/limine-bios-cd.bin limine/limine-uefi-cd.bin build/
-	mkdir -p build/EFI/BOOT
-	cp -v limine/BOOTX64.EFI build/EFI/BOOT/
-	cp -v limine/BOOTIA32.EFI build/EFI/BOOT/
-	xorriso -as mkisofs -b limine-bios-cd.bin \
-		-no-emul-boot -boot-load-size 4 -boot-info-table \
-		--efi-boot limine-uefi-cd.bin \
-		-efi-boot-part --efi-boot-image --protective-msdos-label \
-		build -o $(ISO_IMAGE)
-	limine/limine bios-install $(ISO_IMAGE)
-	rm -rf build
+all:
+	rm -f builds/kernel.* builds/drivers.* builds/init.*
+	./jinx build-all
+	./build-support/makeiso.sh
 
 .PHONY: clean
 clean:

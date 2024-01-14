@@ -49,7 +49,7 @@ ASMFILES := $(shell find ../../arch/x86_64-pc -type f -name '*.asm')
 OBJ := $(CFILES:.c=.o) $(ASMFILES:.asm=.o)
 HEADER_DEPS := $(CFILES:.c=.d) $(ASMFILES:.asm=.d)
 
-CC := x86_64-elf-gcc
+CC := x86_64-polaris-gcc
 AS := nasm
 
 override INTERNALCFLAGS += 				\

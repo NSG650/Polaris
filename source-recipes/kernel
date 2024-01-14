@@ -1,0 +1,10 @@
+name=kernel
+version=0.0
+source_dir="kernel"
+hostdeps="automake autoconf libtool pkg-config"
+imagedeps="git gcc"
+allow_network="yes"
+
+regenerate() {
+    true
+}

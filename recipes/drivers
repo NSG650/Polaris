@@ -1,0 +1,15 @@
+name=drivers
+from_source=drivers
+revision=1
+hostdeps="gcc autoconf automake libtool pkg-config"
+deps="core-libs"
+
+build() {
+    cp -rp "${source_dir}"/. ./
+    make -j${parallelism}
+}
+
+package() {
+    mkdir -p "${dest_dir}/usr/lib/modules"
+    cp ./*.ko "${dest_dir}/usr/lib/modules/"
+}

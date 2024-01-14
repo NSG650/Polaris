@@ -124,8 +124,11 @@ GitHub.sublime-settings
 /host-pkgs
 /pkgs
 /sources
+/sysroot
 /.jinx-cache
 
-root/bin 
+root/bin
 root/usr
 */.vscode/
+
+/iso_root

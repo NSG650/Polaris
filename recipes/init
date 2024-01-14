@@ -1,0 +1,16 @@
+name=init
+from_source=init
+revision=1
+hostdeps="gcc autoconf automake libtool pkg-config"
+imagedeps="nasm"
+deps="core-libs"
+
+build() {
+    cp -rp "${source_dir}"/. ./
+    make -j${parallelism}
+}
+
+package() {
+    mkdir -p "${dest_dir}/usr/bin"
+    cp ./init.elf "${dest_dir}/usr/bin/init"
+}

@@ -1,0 +1,10 @@
+name=drivers
+version=0.0
+source_dir="drivers"
+hostdeps="automake autoconf libtool pkg-config"
+imagedeps="git gcc"
+allow_network="yes"
+
+regenerate() {
+    true
+}
