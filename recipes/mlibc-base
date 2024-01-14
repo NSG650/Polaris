@@ -5,7 +5,7 @@ imagedeps="meson ninja"
 hostdeps="gcc pkg-config libgcc-binaries"
 deps="linux-headers mlibc-headers cxxshim frigg"
 
-configure() {
+build() {
         LDFLAGS="-Wl,/usr/local/libgcc-binaries/libgcc-x86_64.a" \
     meson setup \
         --cross-file ${base_dir}/build-support/cross_file.txt \
@@ -19,12 +19,10 @@ configure() {
         -Dlinux_kernel_headers=${sysroot_dir}${prefix}/include \
         -Ddisable_libgcc_dependency=true \
         ${source_dir}
-}
 
-build() {
     ninja
 }
 
-install() {
+package() {
     DESTDIR="${dest_dir}" ninja install
 }

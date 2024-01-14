@@ -1,17 +1,14 @@
 name=gcc
-version=13.1.0
+version=13.2.0
 tarball_url="https://ftp.gnu.org/gnu/gcc/gcc-${version}/gcc-${version}.tar.xz"
-tarball_blake2b="b956a773cffe8b43bd6c9a99fe614f53f665438925a6b320975d301f547923e45d4d6fa577a143467fb03e0a9c1bab2b6719a1011d672367f3e644433a2d7606"
+tarball_blake2b="0034b29d3d6cc05821f0c4253ce077805943aff7b370729dd203bda57d89c107edd657eeddc2fb1e69ea15c7b0323b961f46516c7f4af89a3ccf7fea84701be2"
 hostdeps="automake autoconf libtool pkg-config"
+imagedeps="git"
 
 regenerate() {
     for i in "${base_dir}"/patches/gcc-host/*; do
         patch -p1 < "$i"
     done
 
-    GCC_CONFIG_PATH="$(realpath ./config)"
-    for f in $(find . -name configure.ac); do
-        ( cd $(dirname $f) && libtoolize -cfvi && autoreconf -fvi -I$GCC_CONFIG_PATH )
-    done
-    unset GCC_CONFIG_PATH
+    autotools_recursive_regen -I"$(realpath ./config)"
 }

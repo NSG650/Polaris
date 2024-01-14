@@ -6,7 +6,7 @@ hostdeps="autoconf automake libtool pkg-config"
 hostrundeps="binutils"
 deps="mlibc-headers"
 
-configure() {
+build() {
     cp -rp "${source_dir}"/. ./
 
     mkdir build && cd build
@@ -15,7 +15,7 @@ configure() {
         CFLAGS_FOR_TARGET="$CFLAGS" \
     ../configure \
         --prefix="${prefix}" \
-        --target=x86_64-polaris \
+        --target=${OS_TRIPLET} \
         --with-sysroot="${sysroot_dir}" \
         --disable-nls \
         --enable-languages=c,c++,lto \
@@ -23,14 +23,11 @@ configure() {
         --enable-initfini-array \
         --enable-shared \
         --enable-host-shared
-}
 
-build() {
-    cd build
     make -j${parallelism} all-gcc
 }
 
-install() {
+package() {
     cd build
     DESTDIR="${dest_dir}" make install-gcc
 }

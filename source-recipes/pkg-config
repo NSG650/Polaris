@@ -1,7 +1,7 @@
 name=pkg-config
-version=1.9.3
+version=2.1.0
 tarball_url="https://github.com/pkgconf/pkgconf/archive/refs/tags/pkgconf-${version}.tar.gz"
-tarball_blake2b="209c61ed2b9e86bb85aee089dca3715e6183b914728656d868f1c6f14999644df1ff48aa31d8deccb336d8cba872dcabaac239aae3b7dbdc312be82d2ada14ed"
+tarball_blake2b="ab0f03494c37659c18a882ff03e6bb746c3cfe0ad66b7a9d9d0b2de66bec89258b2374addd3eb3a571442d8bab3c1311410e296379b697d16aaebe2bc89b318c"
 hostdeps="autoconf automake libtool"
 
 regenerate() {

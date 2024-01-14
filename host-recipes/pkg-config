@@ -4,24 +4,22 @@ revision=1
 imagedeps="gcc"
 hostdeps="automake autoconf libtool"
 
-configure() {
+build() {
     "${source_dir}"/configure \
         --prefix="${prefix}"
-}
 
-build() {
     make -j${parallelism}
 }
 
-install() {
+package() {
     DESTDIR="${dest_dir}" make install-strip
     mkdir -p "${dest_dir}${prefix}/share/pkgconfig/personality.d"
-    cat <<EOF >"${dest_dir}${prefix}/share/pkgconfig/personality.d/x86_64-polaris.personality"
-Triplet: x86_64-polaris
+    cat <<EOF >"${dest_dir}${prefix}/share/pkgconfig/personality.d/${OS_TRIPLET}.personality"
+Triplet: ${OS_TRIPLET}
 SysrootDir: ${sysroot_dir}
 DefaultSearchPaths: ${sysroot_dir}/usr/lib/pkgconfig:${sysroot_dir}/usr/share/pkgconfig
 SystemIncludePaths: ${sysroot_dir}/usr/include
 SystemLibraryPaths: ${sysroot_dir}/usr/lib
 EOF
-    ln -s pkgconf "${dest_dir}${prefix}/bin/x86_64-polaris-pkg-config"
+    ln -s pkgconf "${dest_dir}${prefix}/bin/${OS_TRIPLET}-pkg-config"
 }

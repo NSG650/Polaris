@@ -3,14 +3,10 @@ from_source=mlibc
 revision=1
 deps="mlibc-base libgcc libstdc++ libintl libiconv libxcrypt"
 
-configure() {
-    true
-}
-
 build() {
     true
 }
 
-install() {
+package() {
     true
 }

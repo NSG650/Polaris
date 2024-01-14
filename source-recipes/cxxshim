@@ -1,7 +1,7 @@
 name=cxxshim
-version=1abc678c17a8b54bf9497065443c1d4b292accb9
+version=6f146a41dda736572879fc524cf729eb193dc0a6
 tarball_url="https://github.com/managarm/cxxshim/archive/${version}.tar.gz"
-tarball_blake2b="4bf7a835e5df38c8ceb2f12aa9329c1aab1daed09bdeb4ae6981d379456988ef13a2ac662ffe5b4b0c1dde89fc32e17a4219bd752d2dbef4608f95bf20a884d8"
+tarball_blake2b="05d8cbad3d46b4272c7e31b1c8041cc5e640cc66853dddf58af953aeba6697dcbc05decb01dc6d4669fec52acd18b3265706dbf710d11dd98e7c1771ac598a49"
 
 regenerate() {
     true

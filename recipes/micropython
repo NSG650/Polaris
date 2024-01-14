@@ -5,18 +5,14 @@ imagedeps="git python gcc"
 hostdeps="gcc automake pkg-config"
 deps="mlibc"
 
-configure() {
-	true
-}
-
 build() {
 	cp -rp "${source_dir}"/. ./
 	cd ./ports/minimal
 	make clean
-	make CC=x86_64-polaris-gcc -j${parallelism}
+	make CC=${OS_TRIPLET}-gcc -j${parallelism}
 }
 
-install() {
+package() {
 	cd ./ports/minimal/build
 	mkdir -p "${dest_dir}/usr/bin"
 	mv ./firmware.elf ./micropython

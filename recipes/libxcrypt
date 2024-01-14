@@ -5,19 +5,17 @@ hostdeps="gcc automake autoconf libtool pkg-config"
 deps="mlibc-base libgcc libstdc++"
 imagedeps="python-passlib"
 
-configure() {
+build() {
     ${source_dir}/configure \
-        --host=x86_64-polaris \
+        --host=${OS_TRIPLET} \
         --prefix=${prefix} \
         --enable-obsolete-api=yes \
         --disable-xcrypt-compat-files \
         --disable-static
-}
 
-build() {
     make -j${parallelism}
 }
 
-install() {
+package() {
     DESTDIR="${dest_dir}" make install-strip
 }

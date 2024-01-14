@@ -4,17 +4,13 @@ revision=1
 hostdeps="gcc automake pkg-config"
 deps="mlibc"
 
-configure() {
-	true
-}
-
 build() {
 	cp -rp "${source_dir}"/. ./
-	sed -i "1s/.*/CC = x86_64-polaris-gcc/" Makefile
+	sed -i "1s/.*/CC = ${OS_TRIPLET}-gcc/" Makefile
 	make -j${parallelism}
 }
 
-install() {
+package() {
 	mkdir -p "${dest_dir}/usr/bin"
 	cp ./hello "${dest_dir}/usr/bin"
 }

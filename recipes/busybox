@@ -5,16 +5,12 @@ hostdeps="gcc automake"
 deps="mlibc"
 imagedeps="wget gcc"
 
-configure() {
-	true
-}
-
 build() {
 	cp -rp "${source_dir}"/. ./
-	make CROSS_COMPILE="x86_64-polaris-" -j${parallelism}
+	make CROSS_COMPILE="${OS_TRIPLET}-" -j${parallelism}
 }
 
-install() {
+package() {
 	mkdir -p "${dest_dir}/usr/bin"
 	cp ./busybox "${dest_dir}/usr/bin"
 }

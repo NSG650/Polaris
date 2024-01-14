@@ -4,9 +4,9 @@ revision=1
 hostdeps="gcc automake autoconf libtool pkg-config"
 deps="mlibc-base libgcc libstdc++ libiconv"
 
-configure() {
+build() {
     ${source_dir}/configure    \
-        --host=x86_64-polaris  \
+        --host=${OS_TRIPLET}   \
         --prefix=${prefix}     \
         --without-emacs        \
         --without-lispdir      \
@@ -26,12 +26,12 @@ configure() {
         --without-cvs \
         --without-bzip2 \
         --without-xz
-}
 
-build() {
     make -C gettext-runtime/intl -j${parallelism}
 }
 
-install() {
+package() {
     DESTDIR="${dest_dir}" make -C gettext-runtime/intl install-strip
+
+    ${OS_TRIPLET}-strip "${dest_dir}${prefix}"/lib/libintl.so.8.3.0
 }

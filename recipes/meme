@@ -4,17 +4,13 @@ revision=1
 hostdeps="gcc automake pkg-config"
 deps="mlibc"
 
-configure() {
-	true
-}
-
 build() {
 	cp -rp "${source_dir}"/. ./
 	cd polaris
 	make -j${parallelism}
 }
 
-install() {
+package() {
 	cd polaris
 	mkdir -p "${dest_dir}/usr/bin"
 	cp ./meme "${dest_dir}/usr/bin"
