@@ -1,16 +1,23 @@
 name=hello
 from_source=hello
 revision=1
-hostdeps="gcc automake pkg-config"
-deps="mlibc"
+hostdeps="gcc autoconf automake libtool pkg-config"
+deps="core-libs"
+imagedeps="libiconv"
 
 build() {
-	cp -rp "${source_dir}"/. ./
-	sed -i "1s/.*/CC = ${OS_TRIPLET}-gcc/" Makefile
-	make -j${parallelism}
+    cp -rp "${source_dir}"/. ./
+
+    ./configure \
+        --host=${OS_TRIPLET} \
+        --prefix=${prefix} \
+        --sysconfdir=/etc \
+        --localstatedir=/var \
+        --disable-nls
+
+    make -j${parallelism}
 }
 
 package() {
-	mkdir -p "${dest_dir}/usr/bin"
-	cp ./hello "${dest_dir}/usr/bin"
+    DESTDIR="${dest_dir}" make install-strip
 }

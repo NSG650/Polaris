@@ -1,8 +1,10 @@
 name=hello
-version=1.2
-tarball_url="https://github.com/lowlevelmemes/hello/archive/refs/tags/v${version}.tar.gz"
-tarball_blake2b="54597f43a04eda7518943c258c5e10b2519d121fdea69f622f2c468973bc267360cbe7b394c5ca1f13bc7e21a3a2a205514e97fd1a1c78717ac419ba2fb04204"
+version=2.12.1
+tarball_url="https://ftp.gnu.org/gnu/hello/hello-${version}.tar.gz"
+tarball_blake2b="685881db0f37c6fafa310182ff938026c5fe67039b902335148d4357cb5066d6e1c1c61a3fefcc8f42f07c21407be591cdb4a88021185c6965a00d9d0f1dcddc"
+hostdeps="automake autoconf libtool pkg-config"
+imagedeps="git"
 
 regenerate() {
-	true
+    autotools_recursive_regen
 }

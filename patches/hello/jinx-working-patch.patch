@@ -1,0 +1,13 @@
+diff --git hello-clean/configure.ac hello-workdir/configure.ac
+index 6d52c41..9eea27c 100644
+--- hello-clean/configure.ac
++++ hello-workdir/configure.ac
+@@ -62,7 +62,7 @@ dnl Ensure VLAs are not used.
+ AC_DEFINE([GNULIB_NO_VLA], [1], [Define to 1 to disable use of VLAs])
+ 
+ dnl i18n support from GNU gettext.
+-AM_GNU_GETTEXT_VERSION([0.18.1])
++AM_GNU_GETTEXT_VERSION([0.20])
+ AM_GNU_GETTEXT([external])
+ 
+ AC_CONFIG_FILES([Makefile
