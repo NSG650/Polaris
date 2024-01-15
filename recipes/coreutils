@@ -1,0 +1,24 @@
+name=coreutils
+from_source=coreutils
+revision=1
+hostdeps="gcc automake autoconf libtool pkg-config"
+deps="core-libs tzdata"
+imagedeps="gcc gperf"
+
+build() {
+    cp -rp "${source_dir}"/. ./
+
+        CFLAGS="-DSLOW_BUT_NO_HACKS $CFLAGS" \
+    ./configure    \
+        --host=${OS_TRIPLET}    \
+        --prefix=${prefix}     \
+        --sysconfdir=/etc \
+        --localstatedir=/var \
+        --disable-nls
+
+    make -j${parallelism}
+}
+
+package() {
+    DESTDIR="${dest_dir}" make install-strip
+}
