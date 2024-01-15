@@ -9,8 +9,8 @@ ifeq ($(CONFIG_ARCH),x86_64)
 	CC := x86_64-polaris-gcc
 	LD := x86_64-polaris-ld
 	LDFLAGS := -T$(CONFIG_ARCH)/linker.ld
-	ASFLAGS := -felf64 -static
-	CFLAGS := -Os -ffreestanding -mno-red-zone -fno-pic -fno-pie -static
+	ASFLAGS := -felf64
+	CFLAGS := -ffreestanding -Os -pipe -Wall -Wextra -std=gnu11
 endif
 
 .PHONY: all
