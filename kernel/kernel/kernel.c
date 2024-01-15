@@ -131,7 +131,7 @@ void kernel_main(void *args) {
 	syscall_register_handler(0x125, syscall_pipe);
 	syscall_register_handler(0x63, syscall_sysinfo);
 
-	kprintffos(0, "Bye Bye framebuffer kernel console!\n");
+	kprintffos(0, "Bye framebuffer kernel console!\n");
 
 	std_console_device =
 		(vfs_get_node(vfs_root, "/dev/console", true))->resource;

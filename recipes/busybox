@@ -2,8 +2,8 @@ name=busybox
 from_source=busybox
 revision=1
 hostdeps="gcc automake"
-deps="mlibc"
-imagedeps="wget gcc"
+deps="core-libs"
+imagedeps="gcc"
 
 build() {
 	cp -rp "${source_dir}"/. ./
@@ -12,5 +12,5 @@ build() {
 
 package() {
 	mkdir -p "${dest_dir}/usr/bin"
-	cp ./busybox "${dest_dir}/usr/bin"
+	cp ./busybox "${dest_dir}/usr/bin/"
 }
