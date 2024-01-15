@@ -83,6 +83,16 @@ struct path2node_res {
 	char *basename;
 };
 
+static bool populate(struct vfs_node *node) {
+	if (node->filesystem && node->filesystem->populate &&
+		node->populated == false && node->resource &&
+		S_ISDIR(node->resource->stat.st_mode)) {
+		node->filesystem->populate(node->filesystem, node);
+		return node->populated;
+	}
+	return true;
+}
+
 static struct vfs_node *reduce_node(struct vfs_node *node,
 									bool follow_symlinks);
 
@@ -95,8 +105,13 @@ static struct path2node_res path2node(struct vfs_node *parent,
 
 	size_t path_len = strlen(path);
 
+	bool ask_for_dir = path[path_len - 1] == '/';
+
 	size_t index = 0;
 	struct vfs_node *current_node = reduce_node(parent, false);
+	if (!populate(current_node)) {
+		return (struct path2node_res){NULL, NULL, NULL};
+	}
 
 	if (path[index] == '/') {
 		current_node = reduce_node(vfs_root, false);
@@ -140,8 +155,15 @@ static struct path2node_res path2node(struct vfs_node *parent,
 		}
 
 		new_node = reduce_node(new_node, false);
+		if (!populate(new_node)) {
+			return (struct path2node_res){NULL, NULL, NULL};
+		}
 
 		if (last) {
+			if (ask_for_dir && !S_ISDIR(new_node->resource->stat.st_mode)) {
+				errno = ENOTDIR;
+				return (struct path2node_res){current_node, NULL, elem_str};
+			}
 			return (struct path2node_res){current_node, new_node, elem_str};
 		}
 
@@ -153,7 +175,7 @@ static struct path2node_res path2node(struct vfs_node *parent,
 			if (r.target == NULL) {
 				return (struct path2node_res){NULL, NULL, NULL};
 			}
-			continue;
+			current_node = r.target;
 		}
 
 		if (!S_ISDIR(current_node->resource->stat.st_mode)) {
@@ -280,7 +302,9 @@ bool vfs_mount(struct vfs_node *parent, const char *source, const char *target,
 
 	struct vfs_node *mount_node =
 		fs->mount(r.target_parent, r.basename, source_node);
-
+	if (mount_node == NULL) {
+		goto cleanup;
+	}
 	r.target->mountpoint = mount_node;
 
 	create_dotentries(mount_node, r.target_parent);
@@ -536,19 +560,13 @@ void syscall_openat(struct syscall_arguments *args) {
 		return;
 	}
 
-	if (!S_ISREG(node->resource->stat.st_mode) && (flags & O_TRUNC) != 0) {
-		errno = EINVAL;
-		args->ret = -1;
-		return;
-	}
-
 	struct f_descriptor *fd = fd_create_from_resource(node->resource, flags);
 	if (fd == NULL) {
 		args->ret = -1;
 		return;
 	}
 
-	if ((flags & O_TRUNC) != 0) {
+	if ((flags & O_TRUNC) != 0 && S_ISREG(node->resource->stat.st_mode)) {
 		node->resource->truncate(node->resource, fd->description, 0);
 	}
 

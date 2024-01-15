@@ -19,6 +19,7 @@ struct vfs_node {
 	struct vfs_node *parent;
 	HASHMAP_TYPE(struct vfs_node *) children;
 	char *symlink_target;
+	bool populated;
 };
 
 struct vfs_filesystem {
