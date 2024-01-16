@@ -79,6 +79,9 @@ limine.h:
 $(KERNEL): $(OBJ)
 	$(CC) $(OBJ) $(LDFLAGS) $(INTERNALLDFLAGS) -o $@
 
+../../fb/terminal/backends/fb.o: override INTERNALCFLAGS += \
+	-DFLANTERM_FB_DISABLE_BUMP_ALLOC
+
 # Compilation rules for *.c files.
 -include $(HEADER_DEPS)
 %.o: %.c limine.h

@@ -2,7 +2,7 @@ name=kernel
 from_source=kernel
 revision=1
 hostdeps="gcc autoconf automake libtool pkg-config"
-imagedeps="nasm"
+imagedeps="nasm git"
 deps="core-libs"
 
 build() {
