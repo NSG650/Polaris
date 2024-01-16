@@ -1,7 +1,7 @@
 name=lua
-version=5.4.4
-tarball_url="https://www.lua.org/ftp/lua-5.4.4.tar.gz"
-tarball_blake2b="8747ef5c83bd4c54b73eeaad6991ab5fccc54ee000973afd9cf3367b8945f03c54e843ec88c48043003cd9d3b42281c593cb485b7165add2744cfea06d8b7668"
+version=5.4.6
+tarball_url="https://www.lua.org/ftp/lua-${version}.tar.gz"
+tarball_blake2b="b5d8dbc4b3ec1708b715be438c1a1f48d4f5f226885992af147c1aa6a8823bed318f77ef7cc92b265dadd26cf6088f0f39784fbfd2f9887c35de8e9def2c0558"
 
 regenerate() {
 	true

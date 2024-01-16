@@ -2,7 +2,7 @@ name=lua
 from_source=lua
 revision=5
 hostdeps="gcc automake pkg-config"
-deps="mlibc"
+deps="core-libs"
 
 build() {
 	cp -rp "${source_dir}"/. ./
