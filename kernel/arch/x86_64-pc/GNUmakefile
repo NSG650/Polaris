@@ -87,12 +87,3 @@ $(KERNEL): $(OBJ)
 # Compilation rules for *.asm files.
 %.o: %.asm
 	$(AS) $(ASFLAGS) $(INTERNALASFLAGS) $< -o $@
-
-# Remove object files and the final executable.
-.PHONY: clean
-clean:
-	rm -rf *.elf $(OBJ) $(HEADER_DEPS)
-
-.PHONY: distclean
-distclean: clean
-	rm -f include/limine.h
