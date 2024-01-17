@@ -1,23 +1,27 @@
+/*
+ * Copyright 2021 - 2023 Misha
+ * Copyright 2021 - 2023 NSG650
+ * Copyright 2021 - 2023 Neptune
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef PCI_H
 #define PCI_H
 
+#include <fw/acpi.h>
+#include <klibc/vec.h>
 #include <stdint.h>
-
-#if !(defined(__x86_64__))
-#error "THIS IS ONLY FOR x86_64"
-#endif
-
-typedef struct acpi_header_t {
-	char signature[4];
-	uint32_t length;
-	uint8_t revision;
-	uint8_t checksum;
-	char oem[6];
-	char oem_table[8];
-	uint32_t oem_revision;
-	uint32_t creator_id;
-	uint32_t creator_revision;
-} __attribute__((packed)) acpi_header_t;
 
 struct mcfg_entry {
 	uint64_t base;
@@ -46,6 +50,12 @@ struct pci_device {
 	uint8_t device;
 };
 
+typedef vec_t(struct mcfg_entry) mcfg_vec_t;
+
+extern mcfg_vec_t mcfg_entries;
+extern struct pci_device *pci_devices[];
+
+void pci_init(void);
 void pci_write(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t function,
 			   uint16_t offset, uint32_t value, uint8_t access_size);
 uint32_t pci_read(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t function,

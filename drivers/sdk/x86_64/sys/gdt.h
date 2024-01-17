@@ -1,12 +1,25 @@
 #ifndef GDT_H
 #define GDT_H
 
+/*
+ * Copyright 2021 - 2023 NSG650
+ * Copyright 2021 - 2023 Neptune
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include <stddef.h>
 #include <stdint.h>
-
-#if !(defined(__x86_64__))
-#error "THIS IS ONLY FOR x86_64"
-#endif
 
 #define GDT_KERNEL_BASE 0x0
 #define GDT_KERNEL_CODE64 0x8
@@ -33,5 +46,8 @@ struct tss {
 	uint16_t reserved4;
 	uint16_t iomap_base;
 } __attribute__((packed));
+
+void gdt_init(void);
+void gdt_load_tss(size_t addr);
 
 #endif

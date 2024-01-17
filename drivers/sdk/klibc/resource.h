@@ -3,6 +3,7 @@
 
 #include <klibc/event.h>
 #include <locks/spinlock.h>
+#include <sched/syscall.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -68,5 +69,14 @@ int resource_default_ioctl(struct resource *this,
 #define FILE_DESCRIPTOR_FLAGS_MASK (O_CLOEXEC)
 #define FILE_STATUS_FLAGS_MASK \
 	(~(FILE_CREATION_FLAGS_MASK | FILE_DESCRIPTOR_FLAGS_MASK))
+
+void syscall_close(struct syscall_arguments *args);
+void syscall_read(struct syscall_arguments *args);
+void syscall_write(struct syscall_arguments *args);
+void syscall_seek(struct syscall_arguments *args);
+void syscall_fcntl(struct syscall_arguments *args);
+void syscall_ioctl(struct syscall_arguments *args);
+void syscall_dup3(struct syscall_arguments *args);
+void syscall_fchmodat(struct syscall_arguments *args);
 
 #endif

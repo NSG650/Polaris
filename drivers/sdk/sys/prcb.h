@@ -4,16 +4,17 @@
 #include <stddef.h>
 #include <stdint.h>
 #if defined(__x86_64__)
-#include <x86_64/sys/gdt.h>
+#include <cpu/smp.h>
+#include <sys/gdt.h>
 #endif
-#include <sched/sched_types.h>
+#include <klibc/vec.h>
+#include <sched/sched.h>
 
 struct prcb {
 	uint64_t cpu_number;
 	uint64_t kernel_stack;
 	uint64_t user_stack;
 	struct thread *running_thread;
-	uint64_t thread_index;
 	uint64_t sched_ticks;
 #if defined(__x86_64__)
 	struct tss cpu_tss;
@@ -27,7 +28,6 @@ struct prcb {
 extern struct prcb *prcbs;
 
 #if defined(__x86_64__)
-
 #define prcb_return_current_cpu()               \
 	({                                          \
 		uint64_t cpu_number;                    \
@@ -37,7 +37,6 @@ extern struct prcb *prcbs;
 					 : "memory");               \
 		&prcbs[cpu_number];                     \
 	})
-
 #endif
 
 size_t prcb_return_installed_cpus(void);

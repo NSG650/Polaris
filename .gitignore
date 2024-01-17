@@ -132,3 +132,5 @@ root/usr
 */.vscode/
 
 /iso_root
+*.WAD
+kernel/fb/terminal

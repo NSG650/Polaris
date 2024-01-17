@@ -2,6 +2,7 @@
 #define SCHED_TYPES_H
 
 #include <fs/vfs.h>
+#include <klibc/event.h>
 #include <klibc/resource.h>
 #include <klibc/vec.h>
 #include <locks/spinlock.h>
@@ -10,8 +11,8 @@
 #include <sys/elf.h>
 
 #if defined(__x86_64__)
-#include <x86_64/mm/vmm.h>
-#include <x86_64/reg.h>
+#include <mm/vmm.h>
+#include <reg.h>
 #endif
 
 enum thread_states {
@@ -42,17 +43,18 @@ struct thread {
 	enum thread_states state;
 	uint64_t runtime;
 	uint64_t stack;
+	uint64_t pf_stack;
 	uint64_t kernel_stack;
 	uint64_t sleeping_till;
+	uint64_t last_scheduled;
 	void *fpu_storage;
 	size_t which_event;
 	size_t attached_events_i;
 	struct event *attached_events[MAX_EVENTS];
 	struct process *mother_proc;
-#if defined(__x86_64__)
 	uint64_t gs_base;
 	uint64_t fs_base;
-#endif
+	struct thread *next;
 };
 
 struct dead_process {
@@ -69,11 +71,11 @@ typedef vec_t(struct process *) process_vec_t;
 struct process {
 	int64_t pid;
 	enum process_states state;
-#if defined(__x86_64__)
 	struct pagemap *process_pagemap;
-#endif
+	lock_t lock;
 	uintptr_t mmap_anon_base;
 	uint64_t runtime;
+	uintptr_t stack_top;
 	thread_vec_t process_threads;
 	struct vfs_node *cwd;
 	lock_t fds_lock;
@@ -81,10 +83,11 @@ struct process {
 	struct f_descriptor *fds[MAX_FDS];
 	struct process *parent_process;
 	process_vec_t child_processes;
-	process_vec_t waiter_processes;
-	struct dead_process waitee;
 	struct auxval auxv;
+	struct event death_event;
+	struct dead_process waitee;
 	char name[256];
+	struct process *next;
 };
 
 #define STACK_SIZE 32768

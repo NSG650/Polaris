@@ -277,7 +277,7 @@ void main(void) {
 
 	int fork_ret = fork();
 	if (fork_ret == 0) {
-		char *argv[] = {"/usr/bin/ls", "-a", "--color", NULL};
+		char *argv[] = {"/usr/bin/gears", NULL};
 		char *envp[] = {"USER=ROOT", "HOME=/root",
 						"PATH=/bin:/usr/bin:/usr/local/bin", "TERM=linux",
 						NULL};

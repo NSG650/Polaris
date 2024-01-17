@@ -57,6 +57,8 @@ void vfs_create_dotentries(struct vfs_node *node, struct vfs_node *parent) {
 
 	HASHMAP_SINSERT(&node->children, ".", dot);
 	HASHMAP_SINSERT(&node->children, "..", dotdot);
+
+    node->resource->stat.st_mode |= S_IFDIR;
 }
 
 static HASHMAP_TYPE(fs_mount_t) filesystems;
@@ -265,7 +267,7 @@ bool vfs_mount(struct vfs_node *parent, const char *source, const char *target,
 	bool ret = false;
 	struct path2node_res r = {0};
 
-	fs_mount_t fs_mount;
+	fs_mount_t fs_mount = {0};
 	if (!HASHMAP_SGET(&filesystems, fs_mount, fs_name)) {
 		errno = ENODEV;
 		goto cleanup;
@@ -701,7 +703,7 @@ void syscall_readdir(struct syscall_arguments *args) {
 	struct process *proc =
 		prcb_return_current_cpu()->running_thread->mother_proc;
 
-	int dir_fdnum = args->args0;
+	int dir_fdnum = (int)args->args0;
 	void *buffer = (void *)args->args1;
 	size_t *size = (size_t *)args->args2;
 
@@ -750,7 +752,7 @@ void syscall_readdir(struct syscall_arguments *args) {
 			for (size_t j = 0; j < bucket->filled; j++) {
 				struct vfs_node *child = bucket->items[j].item;
 				struct vfs_node *reduced = reduce_node(child, false);
-				struct dirent *ent = buffer + offset;
+				struct dirent *ent = (struct dirent *)((size_t)buffer + offset);
 
 				ent->d_ino = reduced->resource->stat.st_ino;
 				ent->d_reclen =
@@ -797,7 +799,7 @@ cleanup:
 }
 
 void syscall_readlinkat(struct syscall_arguments *args) {
-	int dir_fdnum = args->args0;
+	int dir_fdnum = (int)args->args0;
 	const char *path = (char *)args->args1;
 	char *buffer = (char *)args->args2;
 	size_t limit = args->args3;
