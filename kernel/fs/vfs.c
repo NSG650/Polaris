@@ -281,7 +281,7 @@ bool vfs_mount(struct vfs_node *parent, const char *source, const char *target,
 		if (source_node == NULL) {
 			goto cleanup;
 		}
-		if (!S_ISDIR(source_node->resource->stat.st_mode)) {
+		if (S_ISDIR(source_node->resource->stat.st_mode)) {
 			errno = EISDIR;
 			goto cleanup;
 		}
@@ -624,9 +624,15 @@ void syscall_fstatat(struct syscall_arguments *args) {
 			stat_src = &fd->description->res->stat;
 		}
 	} else {
-		struct vfs_node *node = NULL;
-		if (!vfs_fdnum_path_to_node(dir_fdnum, path, false, true, NULL, &node,
-									NULL)) {
+		struct vfs_node *parent = get_parent_dir(dir_fdnum, path);
+		if (parent == NULL) {
+			args->ret = -1;
+			return;
+		}
+
+		struct vfs_node *node =
+			vfs_get_node(parent, path, (flags & AT_SYMLINK_NOFOLLOW) == 0);
+		if (node == NULL) {
 			args->ret = -1;
 			return;
 		}
