@@ -283,7 +283,6 @@ static inline struct vfs_filesystem *devtmpfs_instantiate(void) {
 		return NULL;
 	}
 
-	new_fs->mount = devtmpfs_mount;
 	new_fs->create = devtmpfs_create;
 	new_fs->symlink = devtmpfs_symlink;
 	new_fs->link = devtmpfs_link;
@@ -302,7 +301,7 @@ void devtmpfs_init(void) {
 		panic("Failed to create root devtmpfs node");
 	}
 
-	vfs_add_filesystem(devtmpfs, "devtmpfs");
+	vfs_add_filesystem(devtmpfs_mount, "devtmpfs");
 }
 
 bool devtmpfs_add_device(struct resource *device, const char *name) {

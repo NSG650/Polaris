@@ -284,7 +284,6 @@ static inline struct vfs_filesystem *tmpfs_instantiate(void) {
 		return NULL;
 	}
 
-	new_fs->mount = tmpfs_mount;
 	new_fs->create = tmpfs_create;
 	new_fs->symlink = tmpfs_symlink;
 	new_fs->link = tmpfs_link;
@@ -293,8 +292,5 @@ static inline struct vfs_filesystem *tmpfs_instantiate(void) {
 }
 
 void tmpfs_init(void) {
-	struct vfs_filesystem *tmpfs = tmpfs_instantiate();
-	if (tmpfs) {
-		vfs_add_filesystem(tmpfs, "tmpfs");
-	}
+	vfs_add_filesystem(tmpfs_mount, "tmpfs");
 }

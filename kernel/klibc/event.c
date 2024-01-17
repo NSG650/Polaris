@@ -142,11 +142,11 @@ size_t event_trigger(struct event *event, bool drop) {
 	event->listeners_i = 0;
 
 cleanup:
+	spinlock_drop(&event->lock);
 	if (old_state) {
 		sti();
 	} else {
 		cli();
 	}
-	spinlock_drop(&event->lock);
 	return ret;
 }

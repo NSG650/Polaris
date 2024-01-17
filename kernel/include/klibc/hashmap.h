@@ -61,12 +61,16 @@ static inline uint32_t hash(const void *data, size_t length) {
 
 #define HASHMAP_GET(HASHMAP, RET, KEY_DATA, KEY_LENGTH)                     \
 	({                                                                      \
+		__label__ out;                                                      \
 		bool HASHMAP_GET_ok = false;                                        \
                                                                             \
 		__auto_type HASHMAP_GET_key_data = KEY_DATA;                        \
 		__auto_type HASHMAP_GET_key_length = KEY_LENGTH;                    \
                                                                             \
 		__auto_type HASHMAP_GET_hashmap = HASHMAP;                          \
+		if (HASHMAP_GET_hashmap->buckets == NULL) {                         \
+			goto out;                                                       \
+		}                                                                   \
                                                                             \
 		size_t HASHMAP_GET_hash =                                           \
 			hash(HASHMAP_GET_key_data, HASHMAP_GET_key_length);             \
@@ -91,6 +95,7 @@ static inline uint32_t hash(const void *data, size_t length) {
 			}                                                               \
 		}                                                                   \
                                                                             \
+	out:                                                                    \
 		HASHMAP_GET_ok;                                                     \
 	})
 

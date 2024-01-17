@@ -24,7 +24,7 @@ struct dirent {
 	off_t d_off;
 	unsigned short d_reclen;
 	unsigned char d_type;
-	char d_name[256];
+	char d_name[1024];
 };
 
 lock_t vfs_lock = {0};
@@ -47,7 +47,7 @@ struct vfs_node *vfs_create_node(struct vfs_filesystem *fs,
 	return node;
 }
 
-static void create_dotentries(struct vfs_node *node, struct vfs_node *parent) {
+void vfs_create_dotentries(struct vfs_node *node, struct vfs_node *parent) {
 	struct vfs_node *dot = vfs_create_node(node->filesystem, node, ".", false);
 	struct vfs_node *dotdot =
 		vfs_create_node(node->filesystem, node, "..", false);
@@ -59,12 +59,12 @@ static void create_dotentries(struct vfs_node *node, struct vfs_node *parent) {
 	HASHMAP_SINSERT(&node->children, "..", dotdot);
 }
 
-static HASHMAP_TYPE(struct vfs_filesystem *) filesystems;
+static HASHMAP_TYPE(fs_mount_t) filesystems;
 
-void vfs_add_filesystem(struct vfs_filesystem *fs, const char *identifier) {
+void vfs_add_filesystem(fs_mount_t fs_mount, const char *identifier) {
 	spinlock_acquire_or_wait(&vfs_lock);
 
-	HASHMAP_SINSERT(&filesystems, identifier, fs);
+	HASHMAP_SINSERT(&filesystems, identifier, fs_mount);
 
 	spinlock_drop(&vfs_lock);
 }
@@ -265,8 +265,8 @@ bool vfs_mount(struct vfs_node *parent, const char *source, const char *target,
 	bool ret = false;
 	struct path2node_res r = {0};
 
-	struct vfs_filesystem *fs;
-	if (!HASHMAP_SGET(&filesystems, fs, fs_name)) {
+	fs_mount_t fs_mount;
+	if (!HASHMAP_SGET(&filesystems, fs_mount, fs_name)) {
 		errno = ENODEV;
 		goto cleanup;
 	}
@@ -301,13 +301,13 @@ bool vfs_mount(struct vfs_node *parent, const char *source, const char *target,
 	}
 
 	struct vfs_node *mount_node =
-		fs->mount(r.target_parent, r.basename, source_node);
+		fs_mount(r.target_parent, r.basename, source_node);
 	if (mount_node == NULL) {
 		goto cleanup;
 	}
 	r.target->mountpoint = mount_node;
 
-	create_dotentries(mount_node, r.target_parent);
+	vfs_create_dotentries(mount_node, r.target_parent);
 
 	if (source != NULL && strlen(source) != 0) {
 		kprintf("VFS: Mounted '%s' on '%s' with filesystem '%s'\n", source,
@@ -383,7 +383,10 @@ bool vfs_unlink(struct vfs_node *parent, const char *path) {
 		goto cleanup;
 	}
 
-	if (!r.target->resource->unref(r.target->resource, NULL)) {
+	if (!r.target->resource->unref(
+			r.target->resource,
+			&((struct f_description){.node = r.target,
+									 .res = r.target->resource}))) {
 		goto cleanup;
 	}
 
@@ -430,7 +433,7 @@ struct vfs_node *vfs_create(struct vfs_node *parent, const char *name,
 	HASHMAP_SINSERT(&r.target_parent->children, r.basename, target_node);
 
 	if (S_ISDIR(target_node->resource->stat.st_mode)) {
-		create_dotentries(target_node, r.target_parent);
+		vfs_create_dotentries(target_node, r.target_parent);
 	}
 
 	ret = target_node;
@@ -571,11 +574,11 @@ void syscall_openat(struct syscall_arguments *args) {
 	}
 
 	fd->description->node = node;
+	args->ret = fdnum_create_from_fd(proc, fd, 0, false);
 
 	if (basename != NULL) {
 		kfree(basename);
 	}
-	args->ret = fdnum_create_from_fd(proc, fd, 0, false);
 }
 
 void syscall_open(struct syscall_arguments *args) {
