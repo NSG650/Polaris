@@ -2,9 +2,10 @@
 #include <mm/vmm.h>
 
 void backtrace(uintptr_t *bp) {
-    kprintf("Kernel base: 0x%p Mem phys base: 0x%p\n", KERNEL_BASE, MEM_PHYS_OFFSET);
+	kprintf("Kernel base: 0x%p Mem phys base: 0x%p\n", KERNEL_BASE,
+			MEM_PHYS_OFFSET);
 
-    kprintf("Stack trace:\n");
+	kprintf("Stack trace:\n");
 	uintptr_t *rbp = (uintptr_t *)bp;
 
 	if (rbp == NULL)

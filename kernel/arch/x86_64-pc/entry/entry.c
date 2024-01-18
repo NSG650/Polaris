@@ -22,6 +22,7 @@
 #include <fw/acpi.h>
 #include <klibc/kargs.h>
 #include <klibc/module.h>
+#include <klibc/time.h>
 #include <limine.h>
 #include <mm/pmm.h>
 #include <mm/slab.h>
@@ -147,6 +148,8 @@ void arch_entry(void) {
 	module_info[0] = (size_t)module->address;
 	module_info[1] = (size_t)module->size;
 	sched_init((uint64_t)module_info);
+
+	time_init();
 
 	timer_sched_oneshot(48, 20000);
 	sti();

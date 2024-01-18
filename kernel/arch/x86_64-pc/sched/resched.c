@@ -40,6 +40,7 @@ void sched_wake_up_sleeping_threads(void) {
 }
 
 void resched(registers_t *reg) {
+	timer_handler();
 	cli();
 	vmm_switch_pagemap(kernel_pagemap);
 	prcb_return_current_cpu()->sched_ticks++;

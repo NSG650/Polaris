@@ -93,10 +93,9 @@ ssize_t event_await(struct event **events, size_t num_events, bool block) {
 
 	attach_listeners(events, num_events, thread);
 	thread->state = THREAD_WAITING_FOR_EVENT;
-	// sched_dequeue_thread(thread);
+	sched_remove_thread_from_list(&thread_list, thread);
 	unlock_events(events, num_events);
 	sched_resched_now();
-	// sched_yield(true);
 
 	ret = thread->which_event;
 
