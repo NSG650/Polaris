@@ -11,8 +11,8 @@ typedef int64_t off_t;
 
 typedef uint64_t dev_t;
 typedef uint64_t ino_t;
-typedef int32_t mode_t;
-typedef int32_t nlink_t;
+typedef unsigned int mode_t;
+typedef unsigned long nlink_t;
 typedef int64_t blksize_t;
 typedef int64_t blkcnt_t;
 
@@ -142,17 +142,19 @@ struct timespec {
 struct stat {
 	dev_t st_dev;
 	ino_t st_ino;
-	mode_t st_mode;
 	nlink_t st_nlink;
+	mode_t st_mode;
 	uid_t st_uid;
 	gid_t st_gid;
+	unsigned int __pad0;
 	dev_t st_rdev;
 	off_t st_size;
+	blksize_t st_blksize;
+	blkcnt_t st_blocks;
 	struct timespec st_atim;
 	struct timespec st_mtim;
 	struct timespec st_ctim;
-	blksize_t st_blksize;
-	blkcnt_t st_blocks;
+	long __unused[3];
 };
 
 #define TCGETS 0x5401

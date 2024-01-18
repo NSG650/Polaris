@@ -57,8 +57,6 @@ void vfs_create_dotentries(struct vfs_node *node, struct vfs_node *parent) {
 
 	HASHMAP_SINSERT(&node->children, ".", dot);
 	HASHMAP_SINSERT(&node->children, "..", dotdot);
-
-    node->resource->stat.st_mode |= S_IFDIR;
 }
 
 static HASHMAP_TYPE(fs_mount_t) filesystems;
