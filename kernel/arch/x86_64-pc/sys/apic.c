@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <asm/asm.h>
 #include <cpu/msr.h>
 #include <cpu_features.h>
 #include <cpuid.h>
@@ -21,6 +22,7 @@
 #include <fw/acpi.h>
 #include <fw/madt.h>
 #include <io/mmio.h>
+#include <klibc/time.h>
 #include <mm/vmm.h>
 #include <sys/apic.h>
 #include <sys/hpet.h>
@@ -98,19 +100,19 @@ uint8_t lapic_get_id(void) {
 
 void lapic_init(uint8_t processor_id) {
 	kprintf("LAPIC: Setting up LAPIC on Processor %u\n", processor_id);
-	// Enable APIC and x2APIC if available
 	uint64_t apic_msr = rdmsr(0x1B);
-	// Set enable flag
+	// Set APIC enable flag
 	apic_msr |= 1 << 11;
 	uint32_t a = 0, b = 0, c = 0, d = 0;
 	if (__get_cpuid(1, &a, &b, &c, &d)) {
 		if (c & CPUID_X2APIC) {
 			x2apic = true;
-			// Set x2APIC flag
+			// Set x2APIC flag if support is detected
 			apic_msr |= 1 << 10;
 		}
 	}
 	wrmsr(0x1B, apic_msr);
+
 	// Initialize local APIC
 	lapic_write(0x80, 0);
 	lapic_write(0xF0, lapic_read(0xF0) | 0x100);
@@ -118,19 +120,31 @@ void lapic_init(uint8_t processor_id) {
 		lapic_write(0xE0, 0xF0000000);
 		lapic_write(0xD0, lapic_read(0x20));
 	}
-	// Set NMIs
+
+	// Set NMIs according to the MADT
 	for (int i = 0; i < madt_nmis.length; i++) {
 		struct madt_nmi *nmi = madt_nmis.data[i];
 		lapic_set_nmi(2, processor_id, nmi->processor, nmi->flags, nmi->lint);
 	}
 
-	lapic_write(0x3E0, 3);			// Divide by 16
-	lapic_write(0x380, 0xFFFFFFFF); // Set value to -1
+	// Set up APIC timer
+
+	// Tell APIC timer to divide by 16
+	lapic_write(0x3E0, 3);
+	// Set timer init counter to -1
+	lapic_write(0x380, 0xFFFFFFFF);
+
 	timer_sleep(10);
+
+	// Stop the APIC timer
 	lapic_write(0x320, 0x10000);
+
+	// How much the APIC timer ticked in 10ms
 	tick_in_10ms = 0xFFFFFFFF - lapic_read(0x390);
 
+	// Start timer as periodic on IRQ 0
 	lapic_write(0x320, 32 | 0x20000);
+	// With divider 16
 	lapic_write(0x3E0, 3);
 	lapic_write(0x380, tick_in_10ms / 10);
 }
@@ -254,4 +268,14 @@ void apic_init(void) {
 	lapic_addr = acpi_get_lapic();
 	lapic_init(madt_local_apics.data[0]->processor_id);
 	ioapic_redirect_irq(0, 48);
+}
+
+void timer_int_handle(registers_t *reg) {
+	cli();
+
+	timer_handler();
+	resched(reg);
+
+	apic_eoi();
+	sti();
 }

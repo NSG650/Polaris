@@ -66,6 +66,7 @@ struct timer *timer_new(struct timespec when);
 void timer_arm(struct timer *timer);
 void timer_disarm(struct timer *timer);
 void timer_handler(void);
+void time_nsleep(uint64_t ns);
 
 void time_init(void);
 void syscall_getclock(struct syscall_arguments *args);

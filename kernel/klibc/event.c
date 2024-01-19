@@ -134,7 +134,7 @@ size_t event_trigger(struct event *event, bool drop) {
 
 		thread->which_event = listener->which;
 		thread->state = THREAD_READY_TO_RUN;
-		// sched_enqueue_thread(thread, false);
+		sched_add_thread_to_list(&thread_list, thread);
 	}
 
 	ret = event->listeners_i;

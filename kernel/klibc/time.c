@@ -14,6 +14,8 @@ struct timespec time_realtime = {0, 0};
 static lock_t timers_lock = {0};
 static vec_t(struct timer *) armed_timers;
 
+extern uint32_t tick_in_10ms;
+
 struct timer *timer_new(struct timespec when) {
 	struct timer *timer = kmalloc(sizeof(struct timer));
 	if (timer == NULL) {
@@ -66,8 +68,8 @@ void time_init(void) {
 }
 
 void timer_handler(void) {
-	struct timespec interval = {.tv_sec = 0,
-								.tv_nsec = 1000000000 / TIMER_FREQ};
+	struct timespec interval = {
+		.tv_sec = 0, .tv_nsec = 1000000000 / ((tick_in_10ms / 10) / 1000)};
 
 	time_monotonic = timespec_add(time_monotonic, interval);
 	time_realtime = timespec_add(time_realtime, interval);
@@ -88,6 +90,25 @@ void timer_handler(void) {
 
 		spinlock_drop(&timers_lock);
 	}
+}
+
+void time_nsleep(uint64_t ns) {
+	struct timespec duration = {.tv_sec = ns / 1000000000, .tv_nsec = ns};
+	struct timer *timer = NULL;
+
+	timer = timer_new(duration);
+	if (timer == NULL) {
+		goto cleanup;
+	}
+
+	struct event *events[] = {&timer->event};
+	event_await(events, 1, true);
+
+	timer_disarm(timer);
+
+	kfree(timer);
+cleanup:
+	return;
 }
 
 void syscall_getclock(struct syscall_arguments *args) {
