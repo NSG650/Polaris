@@ -1,6 +1,7 @@
 #ifndef KEYBOARD_H
 #define KEYBOARD_H
 
+#include <locks/spinlock.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -132,6 +133,7 @@ struct key_press_buffer {
 	struct key_press presses[KEYBOARD_BUFFER_SIZE];
 	uintptr_t write_index;
 	uintptr_t read_index;
+	lock_t lock;
 };
 
 #endif
