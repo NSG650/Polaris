@@ -97,6 +97,8 @@ static ssize_t console_write(struct resource *_this,
 }
 
 uint64_t driver_entry(struct module *driver_module) {
+	strncpy(driver_module->name, "console", sizeof(driver_module->name));
+
 	framebuff = framebuffer_info();
 	if (!framebuff) {
 		return 2;

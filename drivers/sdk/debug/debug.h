@@ -39,13 +39,11 @@ void panic_(size_t *ip, size_t *bp, char *fmt, ...);
 void syscall_puts(struct syscall_arguments *args);
 void backtrace(uintptr_t *bp);
 void debug_hex_dump(const void *data, size_t size);
-extern bool put_to_fb;
-extern bool print_now;
 
 #define panic(...) \
 	panic_(__builtin_return_address(0), __builtin_frame_address(0), __VA_ARGS__)
 
-#define kprintf(...) kprintffos(put_to_fb, __VA_ARGS__)
+#define kprintf(...) kprintffos(0, __VA_ARGS__)
 
 // printf debugging best debugging
 #define crash_or_not() kprintf("Do we crash? %s:%d\n", __FILE__, __LINE__)

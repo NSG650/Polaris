@@ -117,34 +117,39 @@ void elf_init_function_table(uint8_t *binary) {
 
 uint64_t module_load(const char *path) {
 	struct vfs_node *node = vfs_get_node(vfs_root, path, true);
-	if (!node)
+	if (!node) {
 		return 1;
+	}
 
 	struct resource *res = node->resource;
 
 	struct module *m = kmalloc(sizeof(struct module));
 	memzero(m, sizeof(struct module));
-	strncpy(m->name, path, 128);
+	strncpy(m->name, path, sizeof(m->name));
 
 	Elf64_Ehdr *ehdr = kmalloc(sizeof(Elf64_Ehdr));
 
 	res->read(res, NULL, ehdr, 0, sizeof(Elf64_Ehdr));
 
 	if (memcmp(ehdr->e_ident, ELFMAG, SELFMAG)) {
+		kprintf("ELF header check fail\n");
 		return 1;
 	}
 
 	if (ehdr->e_ident[EI_CLASS] != ELFCLASS64 ||
 		ehdr->e_ident[EI_DATA] != ELFDATA2LSB || ehdr->e_ident[EI_OSABI] != 0 ||
 		ehdr->e_machine != EM_X86_64) {
+		kprintf("This ELF isn't for us\n");
 		return 1;
 	}
 
 	if (ehdr->e_type != 1) {
+		kprintf("This ELF isn't executable\n");
 		return 1;
 	}
 
 	if (ehdr->e_shentsize != sizeof(Elf64_Shdr)) {
+		kprintf("Malformed ELF?\n");
 		return 1;
 	}
 
@@ -251,10 +256,14 @@ uint64_t module_load(const char *path) {
 						// elf_get_function_from_name(symbol_name),
 						// elf_get_name_from_function(elf_get_function_from_name(symbol_name)));
 						*location = elf_get_function_from_name(symbol_name);
-						if (*location == 0)
+						if (*location == 0) {
+							// We need to add some exemptions
+							kprintf("Failed to find symbol %s\n", symbol_name);
 							return 1;
+						}
 					}
 				} else {
+					kprintf("What the fuck?\n");
 					return 1;
 				}
 			}
@@ -327,6 +336,7 @@ uint64_t module_load(const char *path) {
 		vec_push(&modules_list, m);
 		return run_func(m);
 	} else {
+		kprintf("Failed to find driver_entry\n");
 		return 1;
 	}
 }
