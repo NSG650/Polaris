@@ -1,4 +1,5 @@
 #include "keyboard.h"
+#include <asm/asm.h>
 #include <debug/debug.h>
 #include <fb/fb.h>
 #include <fs/devtmpfs.h>
@@ -17,31 +18,37 @@ static int keyboard_flags = 0;
 
 static bool ringbuffer_write(struct key_press_buffer *buffer,
 							 struct key_press *val) {
+	cli();
 	spinlock_acquire_or_wait(&buffer->lock);
 	if (((buffer->write_index + 1) % KEYBOARD_BUFFER_SIZE) !=
 		buffer->read_index) {
 		buffer->presses[buffer->write_index] = *val;
 		buffer->write_index = (buffer->write_index + 1) % KEYBOARD_BUFFER_SIZE;
 		spinlock_drop(&buffer->lock);
+		sti();
 		return true;
 	}
 
 	kprintf("Warning keyboard buffer is full\n");
 	spinlock_drop(&buffer->lock);
+	sti();
 	return false;
 }
 
 static void ringbuffer_read(struct key_press_buffer *buffer,
 							struct key_press **val) {
+	cli();
 	spinlock_acquire_or_wait(&buffer->lock);
 	if (buffer->write_index == buffer->read_index) {
 		*val = NULL;
 		spinlock_drop(&buffer->lock);
+		sti();
 		return;
 	}
 	*val = &buffer->presses[buffer->read_index];
 	buffer->read_index = (buffer->read_index + 1) % KEYBOARD_BUFFER_SIZE;
 	spinlock_drop(&buffer->lock);
+	sti();
 }
 
 static char codes[128] = {KEYCODE_RESERVED,
