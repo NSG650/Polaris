@@ -1,6 +1,5 @@
 CONFIG_ARCH ?= x86_64
 CCONSOLEFILES := $(wildcard console/*.c)
-CKEYBOARDFILES := $(wildcard x86_64/keyboard/*.c)
 
 ifeq ($(CONFIG_ARCH),x86_64)
 	AS := nasm
@@ -12,7 +11,6 @@ endif
 .PHONY: all
 all:
 	$(CC) $(CFLAGS) $(CCONSOLEFILES) -o console.ko
-	$(CC) $(CFLAGS) $(CKEYBOARDFILES) -o keyboard.ko
 
 .PHONY: clean
 clean:
