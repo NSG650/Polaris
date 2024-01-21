@@ -19,20 +19,21 @@ static int keyboard_flags = 0;
 static bool ringbuffer_write(struct key_press_buffer *buffer,
 							 struct key_press *val) {
 	cli();
+	bool ret = false;
 	spinlock_acquire_or_wait(&buffer->lock);
 	if (((buffer->write_index + 1) % KEYBOARD_BUFFER_SIZE) !=
 		buffer->read_index) {
 		buffer->presses[buffer->write_index] = *val;
 		buffer->write_index = (buffer->write_index + 1) % KEYBOARD_BUFFER_SIZE;
-		spinlock_drop(&buffer->lock);
-		sti();
-		return true;
+		ret = true;
+		goto end;
 	}
 
-	kprintf("Warning keyboard buffer is full\n");
+	kprintf("Warning: Keyboard buffer is full\n");
+end:
 	spinlock_drop(&buffer->lock);
 	sti();
-	return false;
+	return ret;
 }
 
 static void ringbuffer_read(struct key_press_buffer *buffer,
@@ -41,12 +42,11 @@ static void ringbuffer_read(struct key_press_buffer *buffer,
 	spinlock_acquire_or_wait(&buffer->lock);
 	if (buffer->write_index == buffer->read_index) {
 		*val = NULL;
-		spinlock_drop(&buffer->lock);
-		sti();
-		return;
+		goto end;
 	}
 	*val = &buffer->presses[buffer->read_index];
 	buffer->read_index = (buffer->read_index + 1) % KEYBOARD_BUFFER_SIZE;
+end:
 	spinlock_drop(&buffer->lock);
 	sti();
 }
