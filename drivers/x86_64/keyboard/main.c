@@ -325,6 +325,35 @@ void driver_exit(void) {
 	kprintf("Bye!\n");
 }
 
+static ssize_t keyboard_resource_read(struct resource *this,
+									  struct f_description *description,
+									  void *buf, off_t offset, size_t count) {
+	spinlock_acquire_or_wait(&this->lock);
+	char *a = (char *)buf;
+
+	if (description->flags & O_NONBLOCK) {
+ //       errno = EWOULDBLOCK;
+        return -1;
+    }
+
+	size_t i = 0;
+	while (i < count) {
+		struct event *events = {&this->event};
+		event_await(&events, 1, true);
+		struct key_press *press = NULL;
+		ringbuffer_read(&keyboard_buffer, &press);
+		if (!press) {
+			spinlock_drop(&this->lock);
+			return -1;	
+		}
+		a[i] = press->keycode; 
+		i++;
+	}
+
+	spinlock_drop(&this->lock);
+	return i;
+}
+
 uint64_t driver_entry(struct module *driver_module) {
 	strncpy(driver_module->name, "ps2keyboard", sizeof(driver_module->name));
 	driver_module->exit = driver_exit;
@@ -335,6 +364,7 @@ uint64_t driver_entry(struct module *driver_module) {
 	keyboard_resource->stat.st_blksize = 4096;
 	keyboard_resource->stat.st_rdev = resource_create_dev_id();
 	keyboard_resource->stat.st_mode = 0644 | S_IFCHR;
+	keyboard_resource->read = keyboard_resource_read;
 
 	devtmpfs_add_device(keyboard_resource, "keyboard");
 
