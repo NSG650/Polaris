@@ -18,6 +18,7 @@
  * limitations under the License.
  */
 
+#include "../fb/terminal/flanterm.h"
 #include <fs/devtmpfs.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -36,6 +37,9 @@ struct framebuffer {
 extern struct framebuffer framebuff;
 
 void framebuffer_init(struct framebuffer *fb);
+void framebuffer_set_callback(void (*callback)(struct flanterm_context *,
+											   uint64_t, uint64_t, uint64_t,
+											   uint64_t));
 void framebuffer_clear(uint32_t foreground, uint32_t background);
 void framebuffer_putchar(char c);
 void framebuffer_puts(char *string);

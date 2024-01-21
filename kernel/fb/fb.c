@@ -1,6 +1,5 @@
 #include "terminal/backends/fb.h"
 #include "debug/debug.h"
-#include "terminal/flanterm.h"
 #include <fb/fb.h>
 #include <klibc/mem.h>
 #include <locks/spinlock.h>
@@ -54,6 +53,14 @@ void framebuffer_init(struct framebuffer *fb) {
 	framebuffer_clear(fb->tex_color, fb->bg_color);
 
 	framebuffer_initialised = 1;
+}
+
+void framebuffer_set_callback(void (*callback)(struct flanterm_context *,
+											   uint64_t, uint64_t, uint64_t,
+											   uint64_t)) {
+	if (ctx) {
+		ctx->callback = callback;
+	}
 }
 
 static void ultoa_strcat(char *dest, uint64_t src, bool add_semicolon) {

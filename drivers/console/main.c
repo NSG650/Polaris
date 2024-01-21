@@ -97,6 +97,32 @@ static ssize_t console_write(struct resource *_this,
 	return count;
 }
 
+void dec_private(uint64_t esc_val_count, uint32_t *esc_values, uint64_t final) {
+	(void)esc_val_count;
+
+	switch (esc_values[0]) {
+		case 1:
+			switch (final) {
+				case 'h':
+					console_device->decckm = true;
+					break;
+				case 'l':
+					console_device->decckm = false;
+					break;
+			}
+	}
+}
+
+void term_callback(struct flanterm_context *term, uint64_t t, uint64_t a,
+				   uint64_t b, uint64_t c) {
+	(void)term;
+
+	switch (t) {
+		case 10:
+			dec_private(a, (void *)b, c);
+	}
+}
+
 uint64_t driver_entry(struct module *driver_module) {
 	strncpy(driver_module->name, "console", sizeof(driver_module->name));
 
@@ -104,6 +130,8 @@ uint64_t driver_entry(struct module *driver_module) {
 	if (!framebuff) {
 		return 2;
 	}
+
+	framebuffer_set_callback(term_callback);
 
 	framebuffer_clear(0x00eee8d5, 0);
 	kprintffos(0, "Bye bye!\n");
