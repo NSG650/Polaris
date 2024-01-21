@@ -49,7 +49,7 @@ void framebuffer_init(struct framebuffer *fb) {
 
 	ctx = flanterm_fb_init(kmalloc, kffree, (void *)fb->address, fb->width,
 						   fb->height, fb->pitch, NULL, NULL, NULL, NULL, NULL,
-						   NULL, NULL, NULL, 0, 0, 0, 1, 1, 0);
+						   NULL, NULL, NULL, 0, 0, 1, 1, 1, 0);
 
 	framebuffer_clear(fb->tex_color, fb->bg_color);
 

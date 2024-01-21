@@ -332,9 +332,9 @@ static ssize_t keyboard_resource_read(struct resource *this,
 	char *a = (char *)buf;
 
 	if (description->flags & O_NONBLOCK) {
- //       errno = EWOULDBLOCK;
-        return -1;
-    }
+		//       errno = EWOULDBLOCK;
+		return -1;
+	}
 
 	size_t i = 0;
 	while (i < count) {
@@ -344,9 +344,9 @@ static ssize_t keyboard_resource_read(struct resource *this,
 		ringbuffer_read(&keyboard_buffer, &press);
 		if (!press) {
 			spinlock_drop(&this->lock);
-			return -1;	
+			return -1;
 		}
-		a[i] = press->keycode; 
+		a[i] = press->keycode;
 		i++;
 	}
 
