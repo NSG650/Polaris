@@ -60,6 +60,7 @@ isr_common_format:
 	pushall
 	cld
 	mov rdi, rsp
+	xor rbp, rbp
 	call isr_handle
 	popall
 	add rsp, 24
