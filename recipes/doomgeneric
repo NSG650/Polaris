@@ -2,7 +2,7 @@ name=doomgeneric
 from_source=doomgeneric
 revision=1
 hostdeps="gcc automake pkg-config"
-deps="mlibc"
+deps="core-libs"
 
 build() {
 	cp -rp "${source_dir}"/doomgeneric ./

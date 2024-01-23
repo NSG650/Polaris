@@ -2,6 +2,7 @@
 c = 'x86_64-polaris-gcc'
 cpp = 'x86_64-polaris-g++'
 ar = 'x86_64-polaris-ar'
+nm = 'x86_64-polaris-nm'
 strip = 'x86_64-polaris-strip'
 pkg-config = 'x86_64-polaris-pkg-config'
 

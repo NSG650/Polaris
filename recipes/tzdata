@@ -50,4 +50,6 @@ package() {
 
     # Default to UTC for localtime
     ln -sf /usr/share/zoneinfo/UTC "${dest_dir}"/etc/localtime
+
+    post_package_strip
 }

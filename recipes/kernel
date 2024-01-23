@@ -1,6 +1,7 @@
 name=kernel
-from_source=kernel
+version=0.0
 revision=1
+source_dir="kernel"
 hostdeps="gcc autoconf automake libtool pkg-config"
 imagedeps="nasm git"
 deps="core-libs"

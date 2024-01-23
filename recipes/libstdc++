@@ -1,9 +1,8 @@
 name=libstdc++
-from_source=gcc-host
 revision=1
-hostdeps="gcc autoconf automake libtool pkg-config"
+hostdeps="gcc autoconf-2.69 automake libtool pkg-config"
 imagedeps="gcc"
-deps="mlibc-base libgcc"
+deps="mlibc libgcc"
 
 build() {
     cd "${base_dir}"/host-builds/gcc/build
@@ -17,14 +16,16 @@ package() {
     rm -rf tmp_libstdc++_dir
     mkdir tmp_libstdc++_dir
 
-    DESTDIR="$(realpath tmp_libstdc++_dir)" make install-strip-target-libstdc++-v3
+    DESTDIR="$(realpath tmp_libstdc++_dir)" make install-target-libstdc++-v3
+
+    # For some reason this also installs libgcc even though it shouldn't...
+    # Remove it.
+    rm -fv tmp_libstdc++_dir/usr/local/${OS_TRIPLET}/lib/libgcc*
 
     mkdir -p "${dest_dir}${prefix}"
 
     cp -r tmp_libstdc++_dir/usr/local/share "${dest_dir}${prefix}"/
     cp -r tmp_libstdc++_dir/usr/local/${OS_TRIPLET}/* "${dest_dir}${prefix}"/
-    # Remove static libraries
-    rm -rf "${dest_dir}${prefix}"/lib/*.a
 
     # Copy libstdc++ and headers into GCC's tree else it will complain.
     mkdir -p "${base_dir}"/host-pkgs/gcc/usr/local/${OS_TRIPLET}

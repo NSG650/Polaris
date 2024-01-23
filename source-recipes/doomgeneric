@@ -2,7 +2,3 @@ name=doomgeneric
 version=4.0
 tarball_url="https://github.com/NSG650/doomgeneric-polaris/archive/4fb357cc9535ae35144d107d5c854c7407d3eefc.tar.gz"
 tarball_blake2b="a3f620c7b5d3829c913aa691130f87f2e4232e09d657d000952c6d2346e04a5ba66f31c520bdfd03d07028f96fd51115490ea5f5e95cc3e5800583932cd7cae9"
-
-regenerate() {
-    true
-}

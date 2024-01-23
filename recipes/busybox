@@ -1,7 +1,7 @@
 name=busybox
 from_source=busybox
 revision=1
-hostdeps="gcc automake"
+hostdeps="gcc"
 deps="core-libs"
 imagedeps="gcc"
 

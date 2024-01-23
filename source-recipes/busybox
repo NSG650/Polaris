@@ -2,7 +2,6 @@ name=busybox
 version=1.36.1
 tarball_url="https://www.busybox.net/downloads/busybox-${version}.tar.bz2"
 tarball_blake2b="e515825cb3ab1c520e16b9c2512e9fc72947366a72a0466bff59b507fdffbc78fc9d16b44a26116175fc7a429d849ad944b1bc379d36c6d3a0eb20969997336e"
-allow_network="yes"
 
 regenerate() {
     cp ${base_dir}/build-support/busybox-config.txt .config

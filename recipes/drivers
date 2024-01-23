@@ -1,6 +1,7 @@
 name=drivers
-from_source=drivers
+version=0.0
 revision=1
+source_dir="drivers"
 hostdeps="gcc autoconf automake libtool pkg-config"
 deps="core-libs"
 

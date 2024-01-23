@@ -1,8 +1,4 @@
 name=micropython
 version=1.22.0
-tarball_url="https://github.com/Neptune650/micropython-polaris/archive/6536fba7751c6e5520ab5ac817e75c0de513fd6d.tar.gz"
-tarball_blake2b="43603381914c3c33b82cd3b34bb378cb9786a1a25d99ca202a895255f1aef5971608d2676b7e69986cd4669cfa83525f8ed53d41de7094ec7aa1b48a4c8a1298"
-
-regenerate() {
-	true
-}
+tarball_url="https://github.com/Neptune650/micropython-polaris/archive/e930e7f682d53199757b219bc4441aeeaffc707b.tar.gz"
+tarball_blake2b="de648a850623885b99571edfdd08c4c2384b76bcecebd4c1693593bd01cacc9c88596147de0bd6167a4a09705b22815e1a9e16759c34e12f87a645045e43bd6f"

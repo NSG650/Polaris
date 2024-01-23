@@ -3,7 +3,7 @@ from_source=micropython
 revision=1
 imagedeps="git python gcc"
 hostdeps="gcc automake pkg-config"
-deps="mlibc"
+deps="core-libs"
 
 build() {
 	cp -rp "${source_dir}"/. ./

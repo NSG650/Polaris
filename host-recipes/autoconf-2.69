@@ -1,5 +1,5 @@
-name=autoconf
-from_source=autoconf
+name=autoconf-2.69
+from_source=autoconf-2.69
 revision=1
 
 build() {
@@ -11,6 +11,6 @@ build() {
 package() {
     DESTDIR="${dest_dir}" make install
 
-        strip_command=strip \
+       strip_command=strip \
     post_package_strip
 }

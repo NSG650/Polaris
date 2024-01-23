@@ -2,13 +2,14 @@ name=binutils
 from_source=binutils
 revision=1
 imagedeps="gcc"
-hostdeps="autoconf automake libtool pkg-config"
+hostdeps="autoconf-2.69 automake libtool pkg-config"
 
 build() {
     "${source_dir}"/configure \
         --prefix="${prefix}" \
         --target=${OS_TRIPLET} \
         --with-sysroot="${sysroot_dir}" \
+        --enable-cet \
         --disable-nls \
         --disable-werror \
         --disable-dependency-tracking
@@ -17,5 +18,8 @@ build() {
 }
 
 package() {
-    DESTDIR="${dest_dir}" make install-strip
+    DESTDIR="${dest_dir}" make install
+
+        strip_command=strip \
+    post_package_strip
 }

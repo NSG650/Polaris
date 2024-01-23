@@ -1,6 +1,6 @@
 name=lua
 from_source=lua
-revision=5
+revision=1
 hostdeps="gcc automake pkg-config"
 deps="core-libs"
 

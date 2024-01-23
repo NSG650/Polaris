@@ -5,6 +5,5 @@ tarball_blake2b="ab0f03494c37659c18a882ff03e6bb746c3cfe0ad66b7a9d9d0b2de66bec892
 hostdeps="autoconf automake libtool"
 
 regenerate() {
-    sed -i 's/2.71/2.69/g' ${source_dir}/configure.ac
-    libtoolize -cfvi && autoreconf -fvi
+    autoreconf -fvi
 }

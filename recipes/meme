@@ -1,8 +1,8 @@
 name=meme
 from_source=meme
 revision=1
-hostdeps="gcc automake pkg-config"
-deps="mlibc"
+hostdeps="gcc pkg-config"
+deps="core-libs"
 
 build() {
 	cp -rp "${source_dir}"/. ./

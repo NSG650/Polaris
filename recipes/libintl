@@ -2,30 +2,24 @@ name=libintl
 from_source=libintl
 revision=1
 hostdeps="gcc automake autoconf libtool pkg-config"
-deps="mlibc-base libgcc libstdc++ libiconv"
+deps="mlibc libgcc libstdc++ libiconv"
 
 build() {
         ACLOCAL=true \
         AUTOCONF=true \
         AUTOMAKE=true \
         AUTOHEADER=true \
-    ${source_dir}/configure    \
-        --host=${OS_TRIPLET}    \
-        --prefix=${prefix}     \
-        --sysconfdir=/etc \
-        --localstatedir=/var \
-        --without-emacs        \
-        --without-lispdir      \
+    autotools_configure \
+        --without-emacs \
+        --without-lispdir \
         `# Normally this controls nls behavior in general, but the libintl` \
         `# subdir is skipped unless this is explicitly set.` \
-        --enable-nls           \
+        --enable-nls \
         `# This magic flag enables libintl.` \
         --with-included-gettext \
         --disable-c++ \
         --disable-libasprintf \
         --disable-java \
-        --enable-shared \
-        --disable-static \
         --enable-threads=posix \
         --disable-curses \
         --without-git \
@@ -39,7 +33,7 @@ build() {
 }
 
 package() {
-    DESTDIR="${dest_dir}" make -C gettext-runtime/intl install-strip
+    DESTDIR="${dest_dir}" make -C gettext-runtime/intl install
 
-    ${OS_TRIPLET}-strip "${dest_dir}${prefix}"/lib/libintl.so.8.4.0
+    post_package_strip
 }

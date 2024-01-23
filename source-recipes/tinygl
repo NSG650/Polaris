@@ -2,7 +2,3 @@ name=tinygl
 version=4.0
 tarball_url="https://github.com/NSG650/tinygl-polaris/archive/d5b7e5b2dcf5e94cf2e210ba755762b6a7097520.tar.gz"
 tarball_blake2b="825bb7b16f2a485c3843f3000b6a8fc253efdf366521f5a3fb28121eb103a559f2a0e207b7c933f2942945af540675a55a922a2e9c12d233c739c71f216367ed"
-
-regenerate() {
-    true
-}

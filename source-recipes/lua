@@ -2,7 +2,3 @@ name=lua
 version=5.4.6
 tarball_url="https://www.lua.org/ftp/lua-${version}.tar.gz"
 tarball_blake2b="b5d8dbc4b3ec1708b715be438c1a1f48d4f5f226885992af147c1aa6a8823bed318f77ef7cc92b265dadd26cf6088f0f39784fbfd2f9887c35de8e9def2c0558"
-
-regenerate() {
-	true
-}

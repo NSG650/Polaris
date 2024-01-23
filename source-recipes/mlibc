@@ -2,7 +2,3 @@ name=mlibc
 version=b30d60c3bc660511d05e1ab860b3311c3513439f
 tarball_url="https://github.com/Neptune650/mlibc/archive/${version}.tar.gz"
 tarball_blake2b="5ec248b12b13f5cbbab83d610a33d79e0680a9ae759428edae19513010f7be2c295585d1455b43bb752b42d5441eee5b6b220fcb9ec876f48cad129bd12479ed"
-
-regenerate() {
-    true
-}
