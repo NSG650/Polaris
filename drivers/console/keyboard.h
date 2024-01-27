@@ -121,7 +121,7 @@
 #define KEYCODE_INSERT 110
 #define KEYCODE_DELETE 111
 
-#define KEYBOARD_BUFFER_SIZE 100
+#define KEYBOARD_BUFFER_SIZE 1024
 
 struct key_press {
 	char ascii;
@@ -227,25 +227,26 @@ static char codes[128] = {KEYCODE_RESERVED,
 						  KEYCODE_F12};
 
 static char extendedcodes[128] = {
-	[0x1C] = KEYCODE_KEYPADENTER, [0x1D] = KEYCODE_RIGHTCTRL,
-	[0x35] = KEYCODE_KEYPADSLASH, // k/
-	[0x38] = KEYCODE_RIGHTALT,	  // altgr
-	[0x47] = KEYCODE_HOME,		  // home
-	[0x48] = KEYCODE_UP,		  // up
-	[0x49] = KEYCODE_PAGEUP,	  // page up
-	[0x4B] = KEYCODE_LEFT,		  // left
-	[0x4D] = KEYCODE_RIGHT,		  // right
-	[0x4F] = KEYCODE_END,		  // end
-	[0x50] = KEYCODE_DOWN,		  // down
-	[0x51] = KEYCODE_PAGEDOWN,	  // page down
-	[0x52] = KEYCODE_INSERT,	  // insert
-	[0x53] = KEYCODE_DELETE		  // delete
+	[0x11] = KEYCODE_RIGHTALT,	  // altgr
+	[0x14] = KEYCODE_RIGHTCTRL,
+	[0x4A] = KEYCODE_KEYPADSLASH, // k/
+	[0x5A] = KEYCODE_KEYPADENTER,
+	[0x69] = KEYCODE_END,		  // end
+	[0x6B] = KEYCODE_LEFT,		  // left
+	[0x6C] = KEYCODE_HOME,		  // home
+	[0x70] = KEYCODE_INSERT,	  // insert
+	[0x71] = KEYCODE_DELETE,	  // delete
+	[0x72] = KEYCODE_DOWN,		  // down
+	[0x74] = KEYCODE_RIGHT,		  // right
+	[0x75] = KEYCODE_UP,		  // up
+	[0x7A] = KEYCODE_PAGEDOWN,	  // page down
+	[0x7D] = KEYCODE_PAGEUP	  // page up
 };
 
 static char ascii_table[] = {
 	0,	  '\033', '1', '2',	 '3', '4', '5', '6', '7', '8', '9', '0', '-',  '=',
 	'\b', '\t',	  'q', 'w',	 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[',  ']',
-	'\r', 0,	  'a', 's',	 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'', '`',
+	'\n', 0,	  'a', 's',	 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'', '`',
 	0,	  '\\',	  'z', 'x',	 'c', 'v', 'b', 'n', 'm', ',', '.', '/', 0,	   '*',
 	0,	  ' ',	  0,   0,	 0,	  0,   0,	0,	 0,	  0,   0,	0,	 0,	   0,
 	0,	  '7',	  '8', '9',	 '-', '4', '5', '6', '+', '1', '2', '3', '0',  '.',
@@ -255,7 +256,7 @@ static char ascii_table[] = {
 static char ascii_table_upper[] = {
 	0,	  '\033', '!', '@',	 '#', '$', '%', '^', '&', '*', '(', ')', '_',  '+',
 	'\b', '\t',	  'Q', 'W',	 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{',  '}',
-	'\r', 0,	  'A', 'S',	 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', '\"', '~',
+	'\n', 0,	  'A', 'S',	 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', '\"', '~',
 	0,	  '|',	  'Z', 'X',	 'C', 'V', 'B', 'N', 'M', '<', '>', '?', 0,	   '*',
 	0,	  ' ',	  0,   0,	 0,	  0,   0,	0,	 0,	  0,   0,	0,	 0,	   0,
 	0,	  '7',	  '8', '9',	 '-', '4', '5', '6', '+', '1', '2', '3', '0',  '.',
