@@ -10,6 +10,10 @@
 #include <x86_64/sys/apic.h>
 #include <x86_64/sys/isr.h>
 
+#define POLLIN 0x0001
+#define POLLOUT 0x0004
+
+lock_t term_lock = {0};
 struct framebuffer *framebuff = NULL;
 
 struct console_info {
@@ -25,6 +29,28 @@ struct console {
 	struct console_info info;
 	bool decckm;
 };
+
+void *memset(void *b, int c, size_t len) {
+	size_t i = 0;
+	unsigned char *p = b;
+	while (len > 0) {
+		*p = c;
+		p++;
+		len--;
+	}
+	return b;
+}
+
+static bool is_printable(uint8_t c) {
+	return c >= 0x20 && c <= 0x7e;
+}
+
+static int toupper(int c) {
+	if (c >= 'a' && c <= 'z') {
+		c -= 0x20;
+	}
+	return c;
+}
 
 struct console *console_device;
 
@@ -92,7 +118,11 @@ static void keyboard_write_config(uint8_t value) {
 	keyboard_write(0x60, value);
 }
 
-static void keyboard_add_to_buffer(struct key_press *press) {
+static ssize_t console_write(struct resource *_this,
+							 struct f_description *description, const void *buf,
+							 off_t offset, size_t count);
+
+static void keyboard_add_to_buffer_char(struct key_press *press, bool echo) {
 	bool released = press->flags & KEY_PRESS_RELEASED;
 
 	switch (press->keycode) {
@@ -119,6 +149,10 @@ static void keyboard_add_to_buffer(struct key_press *press) {
 			break;
 	}
 
+	if (released == true) {
+		return;
+	}
+
 	press->flags |= keyboard_flags;
 
 	char *table = ascii_table;
@@ -128,9 +162,73 @@ static void keyboard_add_to_buffer(struct key_press *press) {
 
 	press->ascii = table[press->keycode];
 
-	if (ringbuffer_write(&keyboard_buffer, press)) {
-		event_trigger(&console_device->res.event, false);
+	if ((press->flags & KEY_LCTRL_DOWN) || (press->flags & KEY_RCTL_DOWN)) {
+		press->ascii = toupper(press->ascii) - 0x40;
 	}
+
+	if (press->ascii == '\n' &&
+		(console_device->info.termios.c_iflag & ICRNL) == 0) {
+		press->ascii = '\r';
+	}
+
+	if (console_device->info.termios.c_lflag & ICANON) {
+		if (press->ascii == '\b') {
+			if (keyboard_buffer.write_index == 0) {
+				return;
+			}
+
+			keyboard_buffer.write_index--;
+			if (keyboard_buffer.read_index == keyboard_buffer.write_index + 1) {
+				keyboard_buffer.read_index = keyboard_buffer.write_index;
+			}
+
+			char key =
+				keyboard_buffer.presses[keyboard_buffer.write_index].ascii;
+
+			uint8_t to_backspace = 0;
+			if (key >= 0x01 && key <= 0x1a) {
+				to_backspace = 2;
+			} else {
+				to_backspace = 1;
+			}
+
+			if (echo && (console_device->info.termios.c_lflag & ECHO) != 0) {
+				for (uint8_t i = 0; i < to_backspace; i++) {
+					console_write(NULL, NULL, "\b \b", 0, 3);
+				}
+			}
+			return;
+		}
+
+		ringbuffer_write(&keyboard_buffer, press);
+	} else {
+		if ((console_device->res.status & POLLIN) == 0) {
+			console_device->res.status |= POLLIN;
+			event_trigger(&console_device->res.event, false);
+		}
+		ringbuffer_write(&keyboard_buffer, press);
+	}
+
+	if (echo && (console_device->info.termios.c_lflag & ECHO) != 0) {
+		if (is_printable(press->ascii)) {
+			console_write(NULL, NULL, &press->ascii, 0, 1);
+		} else if (press->ascii >= 0x01 && press->ascii <= 0x1a) {
+			char caret[2];
+			caret[0] = '^';
+			caret[1] = press->ascii + 0x40;
+			console_write(NULL, NULL, caret, 0, 2);
+		}
+	}
+}
+
+static void keyboard_add_to_buffer(struct key_press **presses, size_t count,
+								   bool echo) {
+	for (size_t i = 0; i < count; i++) {
+		struct key_press *press = presses[i];
+		keyboard_add_to_buffer_char(press, echo);
+	}
+
+	event_trigger(&console_device->res.event, false);
 }
 
 static bool release = false;
@@ -169,33 +267,41 @@ void keyboard_handle(registers_t *reg) {
 		goto end;
 	}
 
-	keyboard_add_to_buffer(&press);
+	keyboard_add_to_buffer_char(&press, true);
 end:
 	apic_eoi();
 }
 
 static ssize_t console_read(struct resource *this,
-							struct f_description *description, void *buf,
+							struct f_description *description, void *_buf,
 							off_t offset, size_t count) {
 	spinlock_acquire_or_wait(&this->lock);
-	char *a = (char *)buf;
+	char *buf = (char *)_buf;
 
 	if (description->flags & O_NONBLOCK) {
-		//       errno = EWOULDBLOCK;
+		// errno = EWOULDBLOCK;
 		return -1;
 	}
 
+	while (spinlock_acquire(&this->lock) == false) {
+		struct event *events = {&console_device->res.event};
+		if (event_await(&events, 1, true) != -1) {
+			// errno = EINTR;
+			return -1;
+		}
+	}
+
+	bool wait = true;
+
 	size_t i = 0;
 	while (i < count) {
-		struct event *events = {&this->event};
-		event_await(&events, 1, true);
 		struct key_press *press = NULL;
 		ringbuffer_read(&keyboard_buffer, &press);
 		if (!press) {
 			spinlock_drop(&this->lock);
 			return -1;
 		}
-		a[i] = press->keycode;
+		buf[i] = press->ascii;
 		i++;
 	}
 
@@ -252,19 +358,20 @@ static ssize_t console_write(struct resource *_this,
 							 off_t offset, size_t count) {
 	(void)description;
 	(void)offset;
+	(void)_this;
+
 	if (!buf) {
 		return -1;
 	}
-	spinlock_acquire_or_wait(&_this->lock);
+
+	spinlock_acquire_or_wait(&term_lock);
+
 	char *r = (char *)buf;
-	if (!r) {
-		spinlock_drop(&_this->lock);
-		return -1;
-	}
 	for (size_t i = 0; i < count; i++) {
 		framebuffer_putchar(r[i]);
 	}
-	spinlock_drop(&_this->lock);
+
+	spinlock_drop(&term_lock);
 	return count;
 }
 
@@ -373,6 +480,8 @@ uint64_t driver_entry(struct module *driver_module) {
 
 	console_device->info.termios.ibaud = 38400;
 	console_device->info.termios.obaud = 38400;
+
+	console_device->res.status |= POLLOUT;
 
 	console_device->res.read = console_read;
 	console_device->res.write = console_write;
