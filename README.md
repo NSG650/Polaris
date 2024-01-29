@@ -1,7 +1,67 @@
-# Polaris
-Polaris is another UNIX-like kernel.
+<img width="1400" src=".github/polaris_logo.png">
 
-### Credits
+---
+
+<div align="center">
+
+[![GitHub issues](https://img.shields.io/github/issues/nsg650/polaris?label=Issues&style=flat-square)](https://github.com/NSG650/Polaris/issues)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr/nsg650/polaris?label=Pull%20Requests&style=flat-square)](https://github.com/NSG650/Polaris/pulls)
+[![GitHub](https://img.shields.io/github/license/nsg650/polaris?label=License&style=flat-square)](https://github.com/NSG650/Polaris/blob/master/LICENSE)
+[![GitHub commit activity (branch)](https://img.shields.io/github/commit-activity/m/nsg650/polaris/master?label=Commit%20Activity&style=flat-square)](https://github.com/NSG650/Polaris/graphs/commit-activity)
+[![GitHub contributors](https://img.shields.io/github/contributors/nsg650/polaris?style=flat-square&label=Contributors)](https://github.com/NSG650/Polaris/graphs/contributors)
+[![GitHub Repo stars](https://img.shields.io/github/stars/nsg650/polaris?label=Stargazers&style=flat-square)](https://github.com/NSG650/Polaris/stargazers)
+
+</div>
+
+Polaris is another UNIX-like kernel written in C, which uses [Limine](https://github.com/limine-bootloader/limine) as its default bootloader and boot protocol.  
+Its goal is to be simple to build and understand, while also acting as a learning experience.
+
+> [!WARNING]  
+> Polaris is under active development and is not suitable for real usage.
+
+# :video_camera: Demo Video
+
+Here's a demo video of Polaris running DOOM and glx-gears at the same time, while also replying to network pings.
+
+https://user-images.githubusercontent.com/51860844/221930175-4f7fedad-e020-470f-96cf-06a506d6f4a8.mp4
+
+## :package: Building
+
+Building requires a Linux environment, Windows users may use WSL without issues.
+
+> [!NOTE]  
+> Building the userspace is currently broken. Sorry!
+
+1. Clone the repository.
+2. Install **gcc**, **nasm**, **make** and **xorriso**.
+3. Run make on the repository's root.
+4. Wait for the build to finish.
+
+## :running: Running
+
+It is recommended to use QEMU for ease of use. An example command to run Polaris would be as follows:
+
+```
+qemu-system-x86_64 -M q35 -m 512M -cdrom [ISO path] -monitor stdio -boot d -vga std
+```
+
+Here are some additional options:
+
+- `-smp [core number]`: Tests SMP support.
+- `-cpu qemu64,+la57`: Tests level 5 paging support.
+- `-accel kvm -cpu host`: Enables KVM (requires host support).
+
+## :handshake: Contributing
+
+We would appreciate issues and pull requests, any help is appreciated!  
+A detailed contribution guide will be added later into development.
+
+# :balance_scale: License
+Polaris is licensed under the **Apache License 2.0** which you can read [here](LICENSE).
+
+# :heart: Credits
+- Logo by [Analog Feelings](https://github.com/AnalogFeelings).
+
 - [Lyre](https://github.com/lyre-os/lyre): Heavy inspiration for VFS and some other bits of code.
 ```
 Copyright 2022 mintsuki and contributors.
@@ -62,6 +122,3 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
-
-### Demo
-https://user-images.githubusercontent.com/51860844/221930175-4f7fedad-e020-470f-96cf-06a506d6f4a8.mp4
