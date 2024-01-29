@@ -13,10 +13,10 @@
 
 </div>
 
-Polaris is another UNIX-like kernel written in C, which uses [Limine](https://github.com/limine-bootloader/limine) as its default bootloader and boot protocol.  
+Polaris is another UNIX-like kernel written in C, which uses [Limine](https://github.com/limine-bootloader/limine) as its default bootloader and boot protocol.
 Its goal is to be simple to build and understand, while also acting as a learning experience.
 
-> [!WARNING]  
+> [!WARNING]
 > Polaris is under active development and is not suitable for real usage.
 
 # :video_camera: Demo Video
@@ -27,13 +27,10 @@ https://user-images.githubusercontent.com/51860844/221930175-4f7fedad-e020-470f-
 
 ## :package: Building
 
-Building requires a Linux environment, Windows users may use WSL without issues.
-
-> [!NOTE]  
-> Building the userspace is currently broken. Sorry!
+Building requires a Linux environment, Windows users may use WSL2 without issues.
 
 1. Clone the repository.
-2. Install **gcc**, **nasm**, **make** and **xorriso**.
+2. Install **make**.
 3. Run make on the repository's root.
 4. Wait for the build to finish.
 
@@ -53,7 +50,7 @@ Here are some additional options:
 
 ## :handshake: Contributing
 
-We would appreciate issues and pull requests, any help is appreciated!  
+We would appreciate issues and pull requests, any help is appreciated!
 A detailed contribution guide will be added later into development.
 
 # :balance_scale: License
