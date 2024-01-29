@@ -172,6 +172,16 @@ static void keyboard_add_to_buffer_char(struct key_press *press, bool echo) {
 	}
 
 	if (console_device->info.termios.c_lflag & ICANON) {
+		if (press->ascii == '\n') {
+			keyboard_buffer.write_index = 0;
+			keyboard_buffer.read_index = 0;
+			ringbuffer_write(&keyboard_buffer, press);
+			if (echo && (console_device->info.termios.c_lflag & ECHO)) {
+                console_write(NULL, NULL, "\n", 0, 1);
+            }
+			return;
+		}
+
 		if (press->ascii == '\b') {
 			if (keyboard_buffer.write_index == 0) {
 				return;
@@ -315,6 +325,10 @@ static ssize_t console_read(struct resource *this,
 				return i;
 			}
 		} else {
+			// Lazy hack. Will work for now.
+			if (press->ascii == '\n') {
+				break;
+			}
 			buf[i] = press->ascii;
 			i++;
 		}
