@@ -1,3 +1,14 @@
+<div align="center">
+
+[![GitHub issues](https://img.shields.io/github/issues/nsg650/polaris?label=Issues&style=flat-square)](https://github.com/NSG650/Polaris/issues)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr/nsg650/polaris?label=Pull%20Requests&style=flat-square)](https://github.com/NSG650/Polaris/pulls)
+[![GitHub](https://img.shields.io/github/license/nsg650/polaris?label=License&style=flat-square)](https://github.com/NSG650/Polaris/blob/master/LICENSE)
+[![GitHub commit activity (branch)](https://img.shields.io/github/commit-activity/m/nsg650/polaris/master?label=Commit%20Activity&style=flat-square)](https://github.com/NSG650/Polaris/graphs/commit-activity)
+[![GitHub contributors](https://img.shields.io/github/contributors/nsg650/polaris?style=flat-square&label=Contributors)](https://github.com/NSG650/Polaris/graphs/contributors)
+[![GitHub Repo stars](https://img.shields.io/github/stars/nsg650/polaris?label=Stargazers&style=flat-square)](https://github.com/NSG650/Polaris/stargazers)
+
+</div>
+
 # Polaris
 
 Polaris is another UNIX-like kernel written in C, which uses [Limine](https://github.com/limine-bootloader/limine) as its default bootloader and boot protocol.
@@ -16,8 +27,8 @@ https://user-images.githubusercontent.com/51860844/221930175-4f7fedad-e020-470f-
 
 Building requires a Linux environment, Windows users may use WSL2 without issues.
 
-1. Clone the repository.
-2. Install **make**.
+1. Clone the repository **with submodules**.
+2. Install **make** and **xorriso**.
 3. Run make on the repository's root.
 4. Wait for the build to finish.
 
@@ -26,7 +37,7 @@ Building requires a Linux environment, Windows users may use WSL2 without issues
 It is recommended to use QEMU for ease of use. An example command to run Polaris would be as follows:
 
 ```
-qemu-system-x86_64 -M q35 -m 512M -cdrom [ISO path] -serial stdio -smp [core count]
+qemu-system-x86_64 -M q35 -m 512M -cdrom [ISO path] -serial stdio -boot d -smp [core count]
 ```
 
 Here are some additional options:
