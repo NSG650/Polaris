@@ -267,7 +267,8 @@ void keyboard_handle(registers_t *reg) {
 		goto end;
 	}
 
-	keyboard_add_to_buffer_char(&press, true);
+	struct key_press *arg = &press;
+	keyboard_add_to_buffer(&arg, 1, true);
 end:
 	apic_eoi();
 }
@@ -275,7 +276,6 @@ end:
 static ssize_t console_read(struct resource *this,
 							struct f_description *description, void *_buf,
 							off_t offset, size_t count) {
-	spinlock_acquire_or_wait(&this->lock);
 	char *buf = (char *)_buf;
 
 	if (description->flags & O_NONBLOCK) {
@@ -284,8 +284,8 @@ static ssize_t console_read(struct resource *this,
 	}
 
 	while (spinlock_acquire(&this->lock) == false) {
-		struct event *events = {&console_device->res.event};
-		if (event_await(&events, 1, true) != -1) {
+		struct event *events[] = {&console_device->res.event};
+		if (event_await(events, 1, true) == -1) {
 			// errno = EINTR;
 			return -1;
 		}
@@ -298,11 +298,26 @@ static ssize_t console_read(struct resource *this,
 		struct key_press *press = NULL;
 		ringbuffer_read(&keyboard_buffer, &press);
 		if (!press) {
-			spinlock_drop(&this->lock);
-			return -1;
+			if (wait == true) {
+				spinlock_drop(&this->lock);
+				for (;;) {
+					struct event *events[] = {&console_device->res.event};
+					if (event_await(events, 1, true) == -1) {
+						// errno = EINTR;
+						return -1;
+					}
+					if (spinlock_acquire(&this->lock) == true) {
+						break;
+					}
+				}
+			} else {
+				spinlock_drop(&this->lock);
+				return i;
+			}
+		} else {
+			buf[i] = press->ascii;
+			i++;
 		}
-		buf[i] = press->ascii;
-		i++;
 	}
 
 	spinlock_drop(&this->lock);
