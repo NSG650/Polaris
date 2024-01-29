@@ -1,17 +1,4 @@
-<img width="1400" src=".github/polaris_logo.png">
-
----
-
-<div align="center">
-
-[![GitHub issues](https://img.shields.io/github/issues/nsg650/polaris?label=Issues&style=flat-square)](https://github.com/NSG650/Polaris/issues)
-[![GitHub pull requests](https://img.shields.io/github/issues-pr/nsg650/polaris?label=Pull%20Requests&style=flat-square)](https://github.com/NSG650/Polaris/pulls)
-[![GitHub](https://img.shields.io/github/license/nsg650/polaris?label=License&style=flat-square)](https://github.com/NSG650/Polaris/blob/master/LICENSE)
-[![GitHub commit activity (branch)](https://img.shields.io/github/commit-activity/m/nsg650/polaris/master?label=Commit%20Activity&style=flat-square)](https://github.com/NSG650/Polaris/graphs/commit-activity)
-[![GitHub contributors](https://img.shields.io/github/contributors/nsg650/polaris?style=flat-square&label=Contributors)](https://github.com/NSG650/Polaris/graphs/contributors)
-[![GitHub Repo stars](https://img.shields.io/github/stars/nsg650/polaris?label=Stargazers&style=flat-square)](https://github.com/NSG650/Polaris/stargazers)
-
-</div>
+# Polaris
 
 Polaris is another UNIX-like kernel written in C, which uses [Limine](https://github.com/limine-bootloader/limine) as its default bootloader and boot protocol.
 Its goal is to be simple to build and understand, while also acting as a learning experience.
@@ -19,13 +6,13 @@ Its goal is to be simple to build and understand, while also acting as a learnin
 > [!WARNING]
 > Polaris is under active development and is not suitable for real usage.
 
-# :video_camera: Demo Video
+# Demo Video
 
 Here's a demo video of Polaris running DOOM and glx-gears at the same time, while also replying to network pings.
 
 https://user-images.githubusercontent.com/51860844/221930175-4f7fedad-e020-470f-96cf-06a506d6f4a8.mp4
 
-## :package: Building
+## Building
 
 Building requires a Linux environment, Windows users may use WSL2 without issues.
 
@@ -34,31 +21,28 @@ Building requires a Linux environment, Windows users may use WSL2 without issues
 3. Run make on the repository's root.
 4. Wait for the build to finish.
 
-## :running: Running
+## Running
 
 It is recommended to use QEMU for ease of use. An example command to run Polaris would be as follows:
 
 ```
-qemu-system-x86_64 -M q35 -m 512M -cdrom [ISO path] -monitor stdio -boot d -vga std
+qemu-system-x86_64 -M q35 -m 512M -cdrom [ISO path] -serial stdio -smp [core count]
 ```
 
 Here are some additional options:
 
-- `-smp [core number]`: Tests SMP support.
 - `-cpu qemu64,+la57`: Tests level 5 paging support.
 - `-accel kvm -cpu host`: Enables KVM (requires host support).
 
-## :handshake: Contributing
+## Contributing
 
 We would appreciate issues and pull requests, any help is appreciated!
 A detailed contribution guide will be added later into development.
 
-# :balance_scale: License
+# License
 Polaris is licensed under the **Apache License 2.0** which you can read [here](LICENSE).
 
-# :heart: Credits
-- Logo by [Analog Feelings](https://github.com/AnalogFeelings).
-
+# Credits
 - [Lyre](https://github.com/lyre-os/lyre): Heavy inspiration for VFS and some other bits of code.
 ```
 Copyright 2022 mintsuki and contributors.
@@ -93,29 +77,4 @@ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
 CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-```
-- [Zydis](https://github.com/zyantific/zydis): For x86_64 disassembly. Precompiled library is included in `kernel/arch/x86_64-pc/debug`.
-```
-The MIT License (MIT)
-
-Copyright (c) 2014-2021 Florian Bernd
-Copyright (c) 2014-2021 Joel Höner
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
 ```
