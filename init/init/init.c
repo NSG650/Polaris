@@ -277,7 +277,7 @@ void main(void) {
 
 	int fork_ret = fork();
 	if (fork_ret == 0) {
-		char *argv[] = {"/usr/bin/lua", NULL};
+		char *argv[] = {"/usr/bin/busybox", "ash", NULL};
 		char *envp[] = {"USER=ROOT", "HOME=/root",
 						"PATH=/bin:/usr/bin:/usr/local/bin", "TERM=linux",
 						NULL};

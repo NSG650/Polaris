@@ -6,7 +6,7 @@ override KERNEL := polaris.elf
 
 # User controllable CFLAGS.
 GIT_VERSION := $(shell git --no-pager describe --tags --always --dirty)
-CFLAGS ?= -Wvla -Wshadow -g -Og -pipe -DGIT_VERSION=\"$(GIT_VERSION)\"
+CFLAGS ?= -Wvla -Wshadow -g -Og -pipe
 
 # User controllable linker flags. We set none by default.
 LDFLAGS ?=
@@ -81,6 +81,9 @@ $(KERNEL): $(OBJ)
 
 ../../fb/terminal/backends/fb.o: override INTERNALCFLAGS += \
 	-DFLANTERM_FB_DISABLE_BUMP_ALLOC
+
+../../sched/sched.o: override INTERNALCFLAGS += \
+	-DGIT_VERSION=\"$(GIT_VERSION)\"
 
 # Compilation rules for *.c files.
 -include $(HEADER_DEPS)

@@ -2,9 +2,6 @@
 #include <mm/vmm.h>
 
 void backtrace(uintptr_t *bp) {
-	kprintf("Kernel base: 0x%p Mem phys base: 0x%p\n", KERNEL_BASE,
-			MEM_PHYS_OFFSET);
-
 	kprintf("Stack trace:\n");
 	uintptr_t *rbp = (uintptr_t *)bp;
 
@@ -19,11 +16,16 @@ void backtrace(uintptr_t *bp) {
 		uintptr_t *rip = (uintptr_t *)rbp[1];
 
 		if (rip == NULL || old_rbp == NULL ||
-			((uintptr_t)rip) < 0xffffffff80000000)
+			((uintptr_t)rip) < MEM_PHYS_OFFSET)
 			break;
 
 		kprintf("0x%p\n", rip);
 
 		rbp = old_rbp;
 	}
+
+	kprintf("Kernel base: 0x%p Mem phys base: 0x%p\n", KERNEL_BASE,
+			MEM_PHYS_OFFSET);
+
+	module_dump();
 }

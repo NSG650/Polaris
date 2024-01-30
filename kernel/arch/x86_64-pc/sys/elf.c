@@ -333,6 +333,7 @@ uint64_t module_load(const char *path) {
 	kfree(elf_section_headers);
 
 	if (run_func != NULL) {
+		m->entry_point = run_func;
 		vec_push(&modules_list, m);
 		return run_func(m);
 	} else {
@@ -362,6 +363,20 @@ bool module_unload(const char *name) {
 		}
 	}
 	return false;
+}
+
+void module_dump(void) {
+	kprintf("Loaded drivers\n");
+	for (int i = 0; i < modules_list.length; i++) {
+		struct module *mod = modules_list.data[i];
+		kprintf("\t%s with entry point at 0x%p\n", mod->name, mod->entry_point);
+		for (int j = 0; j < mod->mappings_count; j++) {
+			kprintf("\t\t0x%p - 0x%p with protections 0x%p\n",
+					mod->mappings[j].addr,
+					mod->mappings[j].addr + mod->mappings[j].size,
+					mod->mappings[j].prot);
+		}
+	}
 }
 
 bool elf_load(struct pagemap *pagemap, struct resource *res, uint64_t load_base,

@@ -67,6 +67,23 @@ static struct process *sched_pid_to_process(int64_t p) {
 	return NULL;
 }
 
+static struct dead_process *
+sched_return_recently_dead_child_process(struct process *parent_process) {
+	for (int i = dead_processes.length - 1; i >= 0; i--) {
+		if (dead_processes.data[i]->parent_process == parent_process)
+			return dead_processes.data[i];
+	}
+	return NULL;
+}
+
+static struct dead_process *sched_pid_to_dead_child_process(int64_t p) {
+	for (int i = 0; i < dead_processes.length; i++) {
+		if (dead_processes.data[i]->pid == p)
+			return dead_processes.data[i];
+	}
+	return NULL;
+}
+
 void sched_add_thread_to_list(struct thread **thrd_list, struct thread *thrd) {
 	struct thread *this = *thrd_list;
 
@@ -222,6 +239,82 @@ void syscall_uname(struct syscall_arguments *args) {
 	args->ret = 0;
 }
 
+void syscall_waitpid(struct syscall_arguments *args) {
+#define WNOHANG 1
+	int pid_to_wait_on = (int)args->args0;
+	int *status = (int *)args->args1;
+	int mode = (int)args->args2;
+
+	struct process *waiter_proc =
+		prcb_return_current_cpu()->running_thread->mother_proc;
+
+	if (!waiter_proc->child_processes.length) {
+		errno = ECHILD;
+		args->ret = -1;
+		return;
+	}
+
+	if (pid_to_wait_on < -1 || pid_to_wait_on == 0) {
+		errno = EINVAL;
+		args->ret = -1;
+		return;
+	}
+
+	struct process *waitee_proc = NULL;
+	struct event **events = NULL;
+	size_t event_count = 0;
+
+	if (pid_to_wait_on == -1) {
+		events = kmalloc(sizeof(struct event *) *
+						 waiter_proc->child_processes.length);
+		event_count = waiter_proc->child_processes.length;
+		for (int i = 0; i < waiter_proc->child_processes.length; i++) {
+			events[i] = &waiter_proc->child_processes.data[i]->death_event;
+		}
+	}
+
+	else {
+		events = kmalloc(sizeof(struct event *));
+		for (int i = 0; i < waiter_proc->child_processes.length; i++) {
+			if (waiter_proc->child_processes.data[i]->pid == pid_to_wait_on) {
+				waitee_proc = waiter_proc->child_processes.data[i]->pid;
+				break;
+			}
+		}
+		if (waitee_proc == NULL) {
+			errno = ECHILD;
+			args->ret = -1;
+			return;
+		}
+		event_count = 1;
+		events[0] = &waitee_proc->death_event;
+	}
+
+	bool block = (mode & WNOHANG) == 0;
+	ssize_t which = event_await(events, event_count, block);
+
+	if (which == -1) {
+		if (block) {
+			args->ret = 0;
+			return;
+		} else {
+			errno = EINTR;
+			args->ret = -1;
+			return;
+		}
+	}
+
+	struct dead_process *dead_proc = NULL;
+	if (pid_to_wait_on == -1) {
+		dead_proc = sched_return_recently_dead_child_process(waiter_proc);
+	} else {
+		dead_proc = sched_pid_to_dead_child_process(pid_to_wait_on);
+	}
+
+	*status = dead_proc->exit_code;
+	args->ret = dead_proc->pid;
+}
+
 void sched_init(uint64_t args) {
 	vec_init(&dead_processes);
 
@@ -235,6 +328,7 @@ void sched_init(uint64_t args) {
 	syscall_register_handler(0x39, syscall_fork);
 	syscall_register_handler(0x3b, syscall_execve);
 	syscall_register_handler(0x3f, syscall_uname);
+	syscall_register_handler(0x72, syscall_waitpid);
 
 	futex_init();
 
@@ -519,6 +613,8 @@ void process_kill(struct process *proc, bool crash) {
 
 	vec_deinit(&proc->child_processes);
 	sched_remove_process_from_list(&process_list, proc);
+
+	event_trigger(&proc->death_event, false);
 
 	kfree(proc);
 
