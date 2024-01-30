@@ -294,6 +294,7 @@ void syscall_waitpid(struct syscall_arguments *args) {
 	ssize_t which = event_await(events, event_count, block);
 
 	if (which == -1) {
+		kfree(events);
 		if (block) {
 			args->ret = 0;
 			return;
@@ -311,6 +312,7 @@ void syscall_waitpid(struct syscall_arguments *args) {
 		dead_proc = sched_pid_to_dead_child_process(pid_to_wait_on);
 	}
 
+	kfree(events);
 	*status = dead_proc->exit_code;
 	args->ret = dead_proc->pid;
 }
