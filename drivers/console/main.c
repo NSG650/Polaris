@@ -177,8 +177,8 @@ static void keyboard_add_to_buffer_char(struct key_press *press, bool echo) {
 			keyboard_buffer.read_index = 0;
 			ringbuffer_write(&keyboard_buffer, press);
 			if (echo && (console_device->info.termios.c_lflag & ECHO)) {
-                console_write(NULL, NULL, "\n", 0, 1);
-            }
+				console_write(NULL, NULL, "\n", 0, 1);
+			}
 			return;
 		}
 
