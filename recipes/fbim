@@ -2,8 +2,8 @@ name=fbim
 from_source=fbim
 revision=1
 hostdeps="gcc pkg-config"
-source_allow_network=yes
-source_imagedeps="curl"
+allow_network=yes
+imagedeps="curl"
 deps="core-libs"
 
 build() {
