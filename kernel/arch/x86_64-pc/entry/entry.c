@@ -105,7 +105,14 @@ void arch_entry(void) {
 	fb.tex_x = 0;
 	fb.tex_y = 0;
 	fb.bg_color = 0x00124560;
+	fb.color_masks[0].offset = framebuffer->red_mask_shift;
+	fb.color_masks[0].length = framebuffer->red_mask_size;
+	fb.color_masks[1].offset = framebuffer->green_mask_shift;
+	fb.color_masks[1].length = framebuffer->green_mask_size;
+	fb.color_masks[2].offset = framebuffer->blue_mask_shift;
+	fb.color_masks[2].length = framebuffer->blue_mask_size;
 	framebuffer_init(&fb);
+
 	print_now = true;
 	serial_init();
 

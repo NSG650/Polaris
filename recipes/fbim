@@ -1,0 +1,21 @@
+name=fbim
+from_source=fbim
+revision=1
+hostdeps="gcc pkg-config"
+source_allow_network=yes
+source_imagedeps="curl"
+deps="core-libs"
+
+build() {
+	cp -rp "${source_dir}"/. ./
+	cd stb
+	curl -LO https://raw.githubusercontent.com/nothings/stb/aa89970d6be59d6cc0f18f49f392b3f58f145c7d/stb_image_resize.h
+	curl -LO https://raw.githubusercontent.com/nothings/stb/aa89970d6be59d6cc0f18f49f392b3f58f145c7d/stb_image.h
+	cd ..
+	make CC=${OS_TRIPLET}-gcc -j${parallelism}
+}
+
+package() {
+	mkdir -p "${dest_dir}/usr/bin"
+	cp ./fbim "${dest_dir}/usr/bin"
+}

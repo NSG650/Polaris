@@ -46,6 +46,10 @@ void framebuffer_init(struct framebuffer *fb) {
 	framebuff.back_address = kmalloc(framebuff.pitch * framebuff.height);
 	framebuff.bg_color = fb->bg_color;
 
+	framebuff.color_masks[0] = fb->color_masks[0];
+	framebuff.color_masks[1] = fb->color_masks[1];
+	framebuff.color_masks[2] = fb->color_masks[2];
+
 	ctx = flanterm_fb_init(kmalloc, kffree, (void *)fb->address, fb->width,
 						   fb->height, fb->pitch, NULL, NULL, NULL, NULL, NULL,
 						   NULL, NULL, NULL, 0, 0, 1, 1, 1, 0);
