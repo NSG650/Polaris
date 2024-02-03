@@ -334,7 +334,7 @@ void sched_init(uint64_t args) {
 
 	futex_init();
 
-	process_create("kernel_tasks", PROCESS_READY_TO_RUN, 100000,
+	process_create("kernel_tasks", PROCESS_READY_TO_RUN, 200000,
 				   (uintptr_t)kernel_main, args, false, NULL);
 	sched_runit = true;
 }
@@ -504,7 +504,7 @@ bool process_execve(char *path, char **argv, char **envp) {
 
 	struct auxval auxv, ld_aux;
 	struct vfs_node *node = vfs_get_node(proc->cwd, path, true);
-	const char *ld_path;
+	const char *ld_path = NULL;
 
 	if (!node) {
 		spinlock_drop(&process_lock);

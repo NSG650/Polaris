@@ -1,0 +1,27 @@
+name=nasm
+version=2.16.01
+revision=1
+tarball_url="https://www.nasm.us/pub/nasm/releasebuilds/${version}/nasm-${version}.tar.xz"
+tarball_blake2b="0f7e96648e3db6fa4a8e10a89885f61cab7d79af25adbcc9d4706b3af61206c3cae024b7f873d636f5c1b2cb34ce5e7fbecc16af9b59086e9a1f49fb37c59670"
+source_hostdeps="automake autoconf libtool pkg-config"
+hostdeps="gcc automake autoconf libtool pkg-config"
+deps="core-libs"
+
+regenerate() {
+    autotools_recursive_regen -I$(realpath ./autoconf)
+}
+
+build() {
+    cp -rp "${source_dir}"/. ./
+
+        configure_script_path=./configure \
+    autotools_configure
+
+    make
+}
+
+package() {
+    DESTDIR="${dest_dir}" make install
+
+    post_package_strip
+}

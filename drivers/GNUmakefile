@@ -5,7 +5,7 @@ ifeq ($(CONFIG_ARCH),x86_64)
 	AS := nasm
 	CC := x86_64-polaris-gcc
 	ASFLAGS := -felf64 -static
-	CFLAGS := -c -fsanitize=undefined -mcmodel=large -fno-asynchronous-unwind-tables -ffreestanding -masm=intel -Isdk -Isdk/x86_64
+	CFLAGS := -c -fsanitize=undefined -mgeneral-regs-only -mno-red-zone -mcmodel=large -fno-asynchronous-unwind-tables -ffreestanding -masm=intel -Isdk -Isdk/x86_64
 endif
 
 .PHONY: all
