@@ -17,6 +17,7 @@
 
 #include <asm/asm.h>
 #include <debug/debug.h>
+#include <debug/printf.h>
 #include <fb/fb.h>
 #include <klibc/mem.h>
 #include <locks/spinlock.h>
@@ -55,9 +56,14 @@ void syscall_puts(struct syscall_arguments *args) {
 	spinlock_drop(&write_lock);
 }
 
-static void kprintf_(char *fmt, va_list args) {
+void kprintffos(bool fos, char *fmt, ...) {
+	spinlock_acquire_or_wait(&write_lock);
+	if (!fos)
+		put_to_fb = 0;
+	va_list args;
+	va_start(args, fmt);
 	if (!print_now) {
-		return;
+		goto end;
 	}
 	if (in_panic) {
 		kputs("*** PANIC:\t");
@@ -72,76 +78,8 @@ static void kprintf_(char *fmt, va_list args) {
 		kputs(string);
 		kputs("] ");
 	}
-	for (;;) {
-		while (*fmt && *fmt != '%')
-			kputchar(*fmt++);
-
-		if (!*fmt++) {
-			return;
-		}
-
-		switch (*fmt++) {
-			case '%':
-				kputchar('%');
-				break;
-			case 's': {
-				char *str = (char *)va_arg(args, const char *);
-				if (!str)
-					kputs("(null)");
-				else
-					kputs(str);
-				break;
-			}
-			case 'S': {
-				char *str = (char *)va_arg(args, const char *);
-				size_t len = va_arg(args, size_t);
-				if (!str)
-					kputs("(null)");
-				else
-					for (size_t i = 0; i < len; i++)
-						kputchar(str[i]);
-				break;
-			}
-			case 'x':
-			case 'p': {
-				char string[20] = {0};
-				uint64_t number = va_arg(args, size_t);
-				ultoa(number, string, 16);
-				kputs(string);
-				break;
-			}
-			case 'i':
-			case 'd': {
-				char string[21] = {0};
-				int64_t number = (int64_t)va_arg(args, size_t);
-				ltoa(number, string, 10);
-				kputs(string);
-				break;
-			}
-			case 'u': {
-				char string[21] = {0};
-				uint64_t number = va_arg(args, size_t);
-				ultoa(number, string, 10);
-				kputs(string);
-				break;
-			}
-			case 'c':
-				kputchar((char)va_arg(args, int));
-				break;
-			default:
-				kputchar('?');
-				break;
-		}
-	}
-}
-
-void kprintffos(bool fos, char *fmt, ...) {
-	spinlock_acquire_or_wait(&write_lock);
-	if (!fos)
-		put_to_fb = 0;
-	va_list args;
-	va_start(args, fmt);
-	kprintf_(fmt, args);
+	vprintf_(fmt, args);
+end:
 	va_end(args);
 	spinlock_drop(&write_lock);
 }
@@ -186,7 +124,8 @@ void panic_(size_t *ip, size_t *bp, char *fmt, ...) {
 		kprintf("Pretty bad kernel panic here\n");
 		va_list args;
 		va_start(args, fmt);
-		kprintf_(fmt, args);
+		kputs("*** PANIC:\t");
+		vprintf_(fmt, args);
 		va_end(args);
 		halt_current_cpu();
 	}
@@ -198,7 +137,8 @@ void panic_(size_t *ip, size_t *bp, char *fmt, ...) {
 	}
 	va_list args;
 	va_start(args, fmt);
-	kprintf_(fmt, args);
+	kputs("*** PANIC:\t");
+	vprintf_(fmt, args);
 	va_end(args);
 	kprintf("Crashed at 0x%p\n", ip);
 	backtrace(bp);

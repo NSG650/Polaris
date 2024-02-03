@@ -49,4 +49,4 @@ format:
 		-not -ipath "*./sources*" -not -ipath "*./host-pkgs*" \
 		-not -ipath "*./pkgs*" -not -ipath "*./builds*" -not -ipath "*./host-builds*" \
 		-not -ipath "*./kernel/fb/terminal*" -not -ipath "*./.jinx-cache*" \
-		-not -ipath "*./sysroot*")
+		-not -ipath "*./sysroot*" -not -iname "printf.c" -not -iname "printf.h")

@@ -85,6 +85,9 @@ $(KERNEL): $(OBJ)
 ../../sched/sched.o: override INTERNALCFLAGS += \
 	-DGIT_VERSION=\"$(GIT_VERSION)\"
 
+../../debug/printf.o: override INTERNALCFLAGS += \
+	-DPRINTF_INCLUDE_CONFIG_H=1
+
 # Compilation rules for *.c files.
 -include $(HEADER_DEPS)
 %.o: %.c limine.h
