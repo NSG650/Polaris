@@ -369,10 +369,9 @@ void module_dump(void) {
 	kprintf("Loaded drivers\n");
 	for (int i = 0; i < modules_list.length; i++) {
 		struct module *mod = modules_list.data[i];
-		kprintf("\t%s with entry point at 0x%p\n", mod->name, mod->entry_point);
+		kprintf("\t%s with entry point at %p\n", mod->name, mod->entry_point);
 		for (size_t j = 0; j < mod->mappings_count; j++) {
-			kprintf("\t\t0x%p - 0x%p with protections 0x%p\n",
-					mod->mappings[j].addr,
+			kprintf("\t\t%p - %p with protections %p\n", mod->mappings[j].addr,
 					mod->mappings[j].addr + mod->mappings[j].size,
 					mod->mappings[j].prot);
 		}

@@ -47,6 +47,6 @@ void debug_hex_dump(const void *data, size_t size);
 
 // printf debugging best debugging
 #define crash_or_not() kprintf("Do we crash? %s:%d\n", __FILE__, __LINE__)
-#define print_var_hex(var) kprintffos(0, #var ": 0x%p\n", var);
+#define print_var_hex(var) kprintffos(0, #var ": %p\n", var);
 
 #endif

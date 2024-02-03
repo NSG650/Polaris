@@ -19,11 +19,11 @@ void acpi_init(acpi_xsdp_t *rsdp) {
 	if (rsdp->revision >= 2 && rsdp->xsdt) {
 		use_xsdt = true;
 		rsdt = (struct rsdt *)((uintptr_t)rsdp->xsdt + MEM_PHYS_OFFSET);
-		kprintf("ACPI: Using XSDT at 0x%p\n", (uintptr_t)rsdt);
+		kprintf("ACPI: Using XSDT at %p\n", (uintptr_t)rsdt);
 	} else {
 		use_xsdt = false;
 		rsdt = (struct rsdt *)((uintptr_t)rsdp->rsdt + MEM_PHYS_OFFSET);
-		kprintf("ACPI: Using RSDT at 0x%p\n", (uintptr_t)rsdt);
+		kprintf("ACPI: Using RSDT at %p\n", (uintptr_t)rsdt);
 	}
 	pci_init();
 	madt_init();

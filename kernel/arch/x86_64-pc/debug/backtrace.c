@@ -19,12 +19,12 @@ void backtrace(uintptr_t *bp) {
 			((uintptr_t)rip) < MEM_PHYS_OFFSET)
 			break;
 
-		kprintf("0x%p\n", rip);
+		kprintf("%p\n", rip);
 
 		rbp = old_rbp;
 	}
 
-	kprintf("Kernel base: 0x%p Mem phys base: 0x%p\n", KERNEL_BASE,
+	kprintf("Kernel base: %p Mem phys base: %p\n", KERNEL_BASE,
 			MEM_PHYS_OFFSET);
 
 	module_dump();

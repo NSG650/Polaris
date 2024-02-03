@@ -90,7 +90,7 @@ void kernel_main(void *args) {
 
 	if (args != NULL) {
 		uint64_t *module_info = (uint64_t *)args;
-		kprintf("Ramdisk located at 0x%p\n", module_info[0]);
+		kprintf("Ramdisk located at %p\n", module_info[0]);
 		ramdisk_install(module_info[0], module_info[1]);
 	}
 
@@ -98,7 +98,7 @@ void kernel_main(void *args) {
 	for (size_t i = 0; i < MODULE_LIST_SIZE; i++) {
 		mod_ret = module_load(module_list[i]);
 		if (mod_ret) {
-			panic("Failed to load kernel module %s. Return value: 0x%p\n",
+			panic("Failed to load kernel module %s. Return value: %p\n",
 				  module_list[i], mod_ret);
 			break;
 		}

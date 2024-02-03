@@ -326,7 +326,7 @@ void isr_handle(registers_t *r) {
 					"%s\n",
 					thrd->tid, thrd->mother_proc->name,
 					isr_exception_messages[r->isrNumber]);
-			kprintf("User thread crashed at address: 0x%p\n", r->rip);
+			kprintf("User thread crashed at address: %p\n", r->rip);
 			sched_display_crash_message(r->rip, thrd->mother_proc,
 										isr_exception_messages[r->isrNumber]);
 			if (thrd == thrd->mother_proc->process_threads.data[0])

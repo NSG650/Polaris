@@ -8,7 +8,7 @@
 static void backtrace_dump(registers_t *reg) {
 	kprintffos(0, "============   Backtrace  ==========\n");
 
-	kprintffos(0, "-> 0x%p\n", reg->rip);
+	kprintffos(0, "-> %p\n", reg->rip);
 
 	uintptr_t *rbp = (uintptr_t *)reg->rbp;
 
@@ -25,7 +25,7 @@ static void backtrace_dump(registers_t *reg) {
 		if (rip == NULL || old_rbp == NULL)
 			break;
 
-		kprintffos(0, "0x%p\n", rip);
+		kprintffos(0, "%p\n", rip);
 
 		rbp = old_rbp;
 	}
@@ -35,21 +35,16 @@ static void backtrace_dump(registers_t *reg) {
 
 static void register_dump(registers_t *reg) {
 	kprintffos(0, "========= Register dumps =========\n");
-	kprintffos(0, "RIP: 0x%p RBP: 0x%p RSP: 0x%p\n", reg->rip, reg->rbp,
-			   reg->rsp);
-	kprintffos(0, "RAX: 0x%p RBX: 0x%p RCX: 0x%p\n", reg->rax, reg->rbx,
-			   reg->rcx);
-	kprintffos(0, "RDX: 0x%p RDI: 0x%p RSI: 0x%p\n", reg->rdx, reg->rdi,
-			   reg->rsi);
-	kprintffos(0, "R8 : 0x%p R9 : 0x%p R10: 0x%p\n", reg->r8, reg->r9,
-			   reg->r10);
-	kprintffos(0, "R11: 0x%p R12: 0x%p R13: 0x%p\n", reg->r11, reg->r12,
-			   reg->r13);
-	kprintffos(0, "R14: 0x%p R15: 0x%p\n", reg->r14, reg->r15);
-	kprintffos(0, "CS : 0x%p SS : 0x%p RFLAGS: 0x%p\n", reg->cs, reg->ss,
+	kprintffos(0, "RIP: %p RBP: %p RSP: %p\n", reg->rip, reg->rbp, reg->rsp);
+	kprintffos(0, "RAX: %p RBX: %p RCX: %p\n", reg->rax, reg->rbx, reg->rcx);
+	kprintffos(0, "RDX: %p RDI: %p RSI: %p\n", reg->rdx, reg->rdi, reg->rsi);
+	kprintffos(0, "R8 : %p R9 : %p R10: %p\n", reg->r8, reg->r9, reg->r10);
+	kprintffos(0, "R11: %p R12: %p R13: %p\n", reg->r11, reg->r12, reg->r13);
+	kprintffos(0, "R14: %p R15: %p\n", reg->r14, reg->r15);
+	kprintffos(0, "CS : %p SS : %p RFLAGS: %p\n", reg->cs, reg->ss,
 			   reg->rflags);
-	kprintffos(0, "FS: 0x%p UGS: 0x%p KGS: 0x%p\n", read_fs_base(),
-			   read_user_gs(), read_kernel_gs());
+	kprintffos(0, "FS: %p UGS: %p KGS: %p\n", read_fs_base(), read_user_gs(),
+			   read_kernel_gs());
 
 	kprintffos(0, "============ End of dumps ==========\n");
 }
@@ -57,19 +52,19 @@ static void register_dump(registers_t *reg) {
 static void tss_dump(void) {
 	kprintffos(0, "============   TSS Dumps  ==========\n");
 
-	kprintffos(0, "tss.rsp0: 0x%p\n", prcb_return_current_cpu()->cpu_tss.rsp0);
-	kprintffos(0, "tss.rsp1: 0x%p\n", prcb_return_current_cpu()->cpu_tss.rsp1);
-	kprintffos(0, "tss.rsp2: 0x%p\n", prcb_return_current_cpu()->cpu_tss.rsp2);
+	kprintffos(0, "tss.rsp0: %p\n", prcb_return_current_cpu()->cpu_tss.rsp0);
+	kprintffos(0, "tss.rsp1: %p\n", prcb_return_current_cpu()->cpu_tss.rsp1);
+	kprintffos(0, "tss.rsp2: %p\n", prcb_return_current_cpu()->cpu_tss.rsp2);
 
-	kprintffos(0, "tss.ist1: 0x%p\n", prcb_return_current_cpu()->cpu_tss.ist1);
-	kprintffos(0, "tss.ist2: 0x%p\n", prcb_return_current_cpu()->cpu_tss.ist2);
-	kprintffos(0, "tss.ist3: 0x%p\n", prcb_return_current_cpu()->cpu_tss.ist3);
-	kprintffos(0, "tss.ist4: 0x%p\n", prcb_return_current_cpu()->cpu_tss.ist4);
-	kprintffos(0, "tss.ist5: 0x%p\n", prcb_return_current_cpu()->cpu_tss.ist5);
-	kprintffos(0, "tss.ist6: 0x%p\n", prcb_return_current_cpu()->cpu_tss.ist6);
-	kprintffos(0, "tss.ist7: 0x%p\n", prcb_return_current_cpu()->cpu_tss.ist7);
+	kprintffos(0, "tss.ist1: %p\n", prcb_return_current_cpu()->cpu_tss.ist1);
+	kprintffos(0, "tss.ist2: %p\n", prcb_return_current_cpu()->cpu_tss.ist2);
+	kprintffos(0, "tss.ist3: %p\n", prcb_return_current_cpu()->cpu_tss.ist3);
+	kprintffos(0, "tss.ist4: %p\n", prcb_return_current_cpu()->cpu_tss.ist4);
+	kprintffos(0, "tss.ist5: %p\n", prcb_return_current_cpu()->cpu_tss.ist5);
+	kprintffos(0, "tss.ist6: %p\n", prcb_return_current_cpu()->cpu_tss.ist6);
+	kprintffos(0, "tss.ist7: %p\n", prcb_return_current_cpu()->cpu_tss.ist7);
 
-	kprintffos(0, "tss.iomap_base: 0x%p\n",
+	kprintffos(0, "tss.iomap_base: %p\n",
 			   prcb_return_current_cpu()->cpu_tss.iomap_base);
 
 	kprintffos(0, "============ End of dumps ==========\n");
@@ -80,21 +75,20 @@ static void prcb_dump(void) {
 
 	kprintffos(0, "prcb->cpu_number: %u\n",
 			   prcb_return_current_cpu()->cpu_number);
-	kprintffos(0, "prcb->kernel_stack: 0x%p\n",
+	kprintffos(0, "prcb->kernel_stack: %p\n",
 			   prcb_return_current_cpu()->kernel_stack);
-	kprintffos(0, "prcb->user_stack: 0x%p\n",
+	kprintffos(0, "prcb->user_stack: %p\n",
 			   prcb_return_current_cpu()->user_stack);
-	kprintffos(0, "prcb->running_thread: 0x%p\n",
+	kprintffos(0, "prcb->running_thread: %p\n",
 			   prcb_return_current_cpu()->running_thread);
-	kprintffos(0, "prcb->sched_ticks: 0x%p\n",
+	kprintffos(0, "prcb->sched_ticks: %p\n",
 			   prcb_return_current_cpu()->user_stack);
 
 	kprintffos(0, "prcb->lapic_id: %u\n", prcb_return_current_cpu()->lapic_id);
-	kprintffos(0, "prcb->fpu_storage_size: 0x%p\n",
+	kprintffos(0, "prcb->fpu_storage_size: %p\n",
 			   prcb_return_current_cpu()->fpu_storage_size);
-	kprintffos(0, "prcb->fpu_save: 0x%p\n",
-			   prcb_return_current_cpu()->fpu_save);
-	kprintffos(0, "prcb->fpu_restore: 0x%p\n",
+	kprintffos(0, "prcb->fpu_save: %p\n", prcb_return_current_cpu()->fpu_save);
+	kprintffos(0, "prcb->fpu_restore: %p\n",
 			   prcb_return_current_cpu()->fpu_restore);
 
 	kprintffos(0, "============ End of dumps ==========\n");
@@ -112,21 +106,16 @@ void breakpoint_handler(registers_t *reg) {
 		kprintffos(0, "Breakpoint hit in kernel!\n");
 	}
 	kprintffos(0, "========= Register dumps =========\n");
-	kprintffos(0, "RIP: 0x%p RBP: 0x%p RSP: 0x%p\n", reg->rip, reg->rbp,
-			   reg->rsp);
-	kprintffos(0, "RAX: 0x%p RBX: 0x%p RCX: 0x%p\n", reg->rax, reg->rbx,
-			   reg->rcx);
-	kprintffos(0, "RDX: 0x%p RDI: 0x%p RSI: 0x%p\n", reg->rdx, reg->rdi,
-			   reg->rsi);
-	kprintffos(0, "R8 : 0x%p R9 : 0x%p R10: 0x%p\n", reg->r8, reg->r9,
-			   reg->r10);
-	kprintffos(0, "R11: 0x%p R12: 0x%p R13: 0x%p\n", reg->r11, reg->r12,
-			   reg->r13);
-	kprintffos(0, "R14: 0x%p R15: 0x%p\n", reg->r14, reg->r15);
-	kprintffos(0, "CS : 0x%p SS : 0x%p RFLAGS: 0x%p\n", reg->cs, reg->ss,
+	kprintffos(0, "RIP: %p RBP: %p RSP: %p\n", reg->rip, reg->rbp, reg->rsp);
+	kprintffos(0, "RAX: %p RBX: %p RCX: %p\n", reg->rax, reg->rbx, reg->rcx);
+	kprintffos(0, "RDX: %p RDI: %p RSI: %p\n", reg->rdx, reg->rdi, reg->rsi);
+	kprintffos(0, "R8 : %p R9 : %p R10: %p\n", reg->r8, reg->r9, reg->r10);
+	kprintffos(0, "R11: %p R12: %p R13: %p\n", reg->r11, reg->r12, reg->r13);
+	kprintffos(0, "R14: %p R15: %p\n", reg->r14, reg->r15);
+	kprintffos(0, "CS : %p SS : %p RFLAGS: %p\n", reg->cs, reg->ss,
 			   reg->rflags);
-	kprintffos(0, "FS: 0x%p UGS: 0x%p KGS: 0x%p\n", read_fs_base(),
-			   read_user_gs(), read_kernel_gs());
+	kprintffos(0, "FS: %p UGS: %p KGS: %p\n", read_fs_base(), read_user_gs(),
+			   read_kernel_gs());
 
 	kprintffos(0, "============ End of dumps ==========\n");
 
