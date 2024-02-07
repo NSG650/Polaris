@@ -340,7 +340,7 @@ size_t strsplit(const char *txt, char delim, char ***tokens) {
 	while (*p != '\0')
 		if (*p++ == delim)
 			count += 1;
-	t = tklen = kcalloc(count, sizeof(int));
+	t = tklen = kcalloc(count, sizeof(size_t));
 	for (p = (char *)txt; *p != '\0'; p++)
 		*p == delim ? *t++ : (*t)++;
 	*tokens = arr = kmalloc(count * sizeof(char *));

@@ -496,7 +496,14 @@ int64_t process_fork(struct process *proc, struct thread *thrd) {
 	return fproc->pid;
 }
 
+// So a funny bug. If we reschedule in middle of the execve and we get
+// rescheduled again then the process pagemap loaded is the new one. Then we
+// will try to read from the existing addresses which aren't mapped at all lol.
+// Easy fix here disable interrupts for a while.
+
 bool process_execve(char *path, char **argv, char **envp) {
+	cli();
+
 	spinlock_acquire(&process_lock);
 
 	struct thread *thread = prcb_return_current_cpu()->running_thread;
@@ -563,6 +570,7 @@ bool process_execve(char *path, char **argv, char **envp) {
 
 	vmm_switch_pagemap(kernel_pagemap);
 
+	sti();
 	sched_resched_now();
 	return false;
 }

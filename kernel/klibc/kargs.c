@@ -5,9 +5,9 @@ struct kernel_args kernel_arguments = {0};
 
 void kargs_init(char *args) {
 	char **tokens = NULL;
-	int count = strsplit(args, ' ', &tokens);
+	size_t count = strsplit(args, ' ', &tokens);
 
-	for (int i = 0; i < count; i++) {
+	for (size_t i = 0; i < count; i++) {
 		if (!strncmp(tokens[i], "cpus", 4)) {
 			char *cpu_count = &tokens[i][5];
 			kernel_arguments.kernel_args |= KERNEL_ARGS_CPU_COUNT_GIVEN;
