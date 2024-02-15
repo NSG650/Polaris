@@ -17,7 +17,8 @@
 #include <sys/prcb.h>
 #include <sys/timer.h>
 
-const char *module_list[] = {"/usr/lib/modules/console.ko"};
+const char *module_list[] = {"/usr/lib/modules/nvme.ko",
+							 "/usr/lib/modules/console.ko"};
 
 #define MODULE_LIST_SIZE (sizeof(module_list) / sizeof(module_list[0]))
 #define ONE_SECOND (uint64_t)(1000 * 1000 * 1000)

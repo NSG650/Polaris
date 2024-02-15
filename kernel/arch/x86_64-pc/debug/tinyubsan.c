@@ -128,7 +128,7 @@ void __ubsan_handle_type_mismatch_v1(struct tu_type_mismatch_v1_data *data,
 	}
 
 	else if (ptr & ((1 << data->log_alignment) - 1)) {
-		tu_print_location("use of misaligned pointer", data->location);
+		//		tu_print_location("use of misaligned pointer", data->location);
 	} else {
 		tu_print_location("no space for object", data->location);
 	}

@@ -132,3 +132,5 @@ root/usr
 */.vscode/
 
 /iso_root
+
+*.img

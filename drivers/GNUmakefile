@@ -1,16 +1,18 @@
 CONFIG_ARCH ?= x86_64
 CCONSOLEFILES := $(wildcard console/*.c)
+CNVMEFILES := $(wildcard x86_64/nvme/*.c)
 
 ifeq ($(CONFIG_ARCH),x86_64)
 	AS := nasm
 	CC := x86_64-polaris-gcc
 	ASFLAGS := -felf64 -static
-	CFLAGS := -c -fsanitize=undefined -mgeneral-regs-only -mno-red-zone -mcmodel=large -fno-asynchronous-unwind-tables -ffreestanding -masm=intel -Isdk -Isdk/x86_64
+	CFLAGS := -c -fsanitize=undefined -mgeneral-regs-only -mno-red-zone -mcmodel=large -fno-asynchronous-unwind-tables -ffreestanding -masm=intel -I../kernel/include -I../kernel/arch/x86_64-pc/include -I../kernel/arch/x86_64-pc/fw/lai/include
 endif
 
 .PHONY: all
 all:
 	$(CC) $(CFLAGS) $(CCONSOLEFILES) -o console.ko
+	$(CC) $(CFLAGS) $(CNVMEFILES) -o nvme.ko
 
 .PHONY: clean
 clean:

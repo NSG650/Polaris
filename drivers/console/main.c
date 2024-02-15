@@ -4,17 +4,16 @@
 #include <debug/debug.h>
 #include <fb/fb.h>
 #include <fs/devtmpfs.h>
+#include <io/ports.h>
 #include <klibc/mem.h>
 #include <klibc/module.h>
-#include <x86_64/io/ports.h>
-#include <x86_64/sys/apic.h>
-#include <x86_64/sys/isr.h>
+#include <sys/apic.h>
+#include <sys/isr.h>
 
 #define POLLIN 0x0001
 #define POLLOUT 0x0004
 
 lock_t term_lock = {0};
-struct framebuffer *framebuff = NULL;
 
 struct console_info {
 	uint16_t width, height;
@@ -371,8 +370,8 @@ int console_ioctl(struct resource *this, struct f_description *description,
 			}
 			w->ws_row = console_device->info.width;
 			w->ws_col = console_device->info.height;
-			w->ws_xpixel = framebuff->width;
-			w->ws_ypixel = framebuff->height;
+			w->ws_xpixel = framebuff.width;
+			w->ws_ypixel = framebuff.height;
 			spinlock_drop(&this->lock);
 			return 0;
 		}
@@ -472,12 +471,6 @@ static void keyboard_init(void) {
 
 uint64_t driver_entry(struct module *driver_module) {
 	strncpy(driver_module->name, "console", sizeof(driver_module->name));
-
-	framebuff = framebuffer_info();
-	if (!framebuff) {
-		return 2;
-	}
-
 	framebuffer_set_callback(term_callback);
 
 	framebuffer_clear(0x00eee8d5, 0);
@@ -491,8 +484,8 @@ uint64_t driver_entry(struct module *driver_module) {
 	console_device->res.stat.st_rdev = resource_create_dev_id();
 	console_device->res.stat.st_mode = 0644 | S_IFCHR;
 
-	console_device->info.height = framebuff->height / 16;
-	console_device->info.width = framebuff->width / 8;
+	console_device->info.height = framebuff.height / 16;
+	console_device->info.width = framebuff.width / 8;
 	console_device->info.tex_x = 0;
 	console_device->info.tex_y = 0;
 

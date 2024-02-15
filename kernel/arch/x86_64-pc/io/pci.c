@@ -20,6 +20,7 @@
 #include <io/mmio.h>
 #include <io/pci.h>
 #include <io/ports.h>
+#include <klibc/misc.h>
 #include <mm/slab.h>
 #include <mm/vmm.h>
 #include <stdbool.h>
@@ -298,6 +299,77 @@ void pci_init(void) {
 		}
 	}
 	kprintf("PCI: Total number of devices on PCI: %d\n", dev_count);
+}
+
+static bool pci_map_bar(struct pci_bar *bar) {
+	uintptr_t start = ALIGN_DOWN(bar->base, PAGE_SIZE);
+	uintptr_t end = ALIGN_UP(bar->base + bar->size, PAGE_SIZE);
+	bool mapped = true;
+
+	for (uintptr_t offset = 0; offset < end - start && mapped;
+		 offset += PAGE_SIZE) {
+		if (vmm_virt_to_phys(kernel_pagemap, start + offset) == INVALID_PHYS) {
+			mapped = false;
+		}
+	}
+
+	if (mapped == false) {
+		for (uintptr_t offset = 0; offset < end - start; offset += PAGE_SIZE) {
+			vmm_unmap_page(kernel_pagemap,
+						   start +
+							   offset); // without this vmm_map_page will fail
+										// if a part of the bar was mapped
+			vmm_unmap_page(kernel_pagemap, start + offset + MEM_PHYS_OFFSET);
+			if (vmm_map_page(kernel_pagemap, start + offset, start + offset,
+							 PAGE_READ | PAGE_WRITE, Size4KiB) == false ||
+				vmm_map_page(kernel_pagemap, start + offset + MEM_PHYS_OFFSET,
+							 start + offset, PAGE_READ | PAGE_WRITE,
+							 Size4KiB) == false) {
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+bool pci_get_bar_n(struct pci_device *device, struct pci_bar *bar, uint8_t n) {
+	if (n > 5)
+		return false;
+
+	uint16_t offset = 0x10 + n * sizeof(uint32_t);
+
+	uint32_t base_low = pci_read(0, device->bus, device->device, 0, offset, 4);
+	pci_write(0, device->bus, device->device, 0, offset, (uint32_t)(~0), 4);
+	uint32_t size_low = pci_read(0, device->bus, device->device, 0, offset, 4);
+	pci_write(0, device->bus, device->device, 0, offset, base_low, 4);
+
+	if (base_low & 1) {
+		bar->base = base_low & ~0b11;
+		bar->size = (~size_low & ~0b11) + 1;
+		bar->is_mmio = false;
+	}
+
+	else {
+		int type = (base_low >> 1) & 3;
+		uint32_t base_high =
+			pci_read(0, device->bus, device->device, 0, offset + 4, 4);
+
+		bar->base = base_low & 0xfffffff0;
+
+		if (type == 2) {
+			bar->base |= ((uint64_t)base_high << 32);
+		}
+
+		bar->size = ~(size_low & ~0b1111) + 1;
+		bar->is_mmio = true;
+
+		if (!pci_map_bar(bar)) {
+			return false;
+		}
+	}
+
+	return true;
 }
 
 uint32_t pci_read(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t function,

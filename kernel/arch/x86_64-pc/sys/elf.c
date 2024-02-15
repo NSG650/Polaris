@@ -94,7 +94,18 @@ void elf_init_function_table(uint8_t *binary) {
 			kmalloc(sizeof(struct function_symbol) * num_symbols);
 
 		for (size_t i = 0; i < num_symbols; i++) {
-			if (ELF64_ST_TYPE(sym_entries[i].st_info) == STT_FUNC &&
+			if ((ELF64_ST_TYPE(sym_entries[i].st_info) == STT_OBJECT) &&
+				ELF64_ST_BIND(sym_entries[i].st_info) == STB_GLOBAL) {
+				if (((uint64_t)strtab + sym_entries[i].st_name)) {
+					char *dupped = strdup(
+						(char *)((uint64_t)strtab + sym_entries[i].st_name));
+
+					function_to_name[function_table_size].address =
+						sym_entries[i].st_value;
+					function_to_name[function_table_size++].name = dupped;
+				}
+			}
+			if ((ELF64_ST_TYPE(sym_entries[i].st_info) == STT_FUNC) &&
 				ELF64_ST_BIND(sym_entries[i].st_info) == STB_GLOBAL) {
 
 				// We need a better hash function for the addresses since there
@@ -118,6 +129,7 @@ void elf_init_function_table(uint8_t *binary) {
 uint64_t module_load(const char *path) {
 	struct vfs_node *node = vfs_get_node(vfs_root, path, true);
 	if (!node) {
+		kprintf("Module not found\n");
 		return 1;
 	}
 
@@ -179,7 +191,7 @@ uint64_t module_load(const char *path) {
 				res->read(res, NULL, mem, section->sh_offset, section->sh_size);
 			} else if (section->sh_type == SHT_NOBITS) {
 				// Section is empty, so fill with zeros
-				memset(mem, '\0', section->sh_size);
+				memzero(mem, section->sh_size);
 			}
 			section->sh_addr = (uintptr_t)mem;
 		}

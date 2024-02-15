@@ -21,6 +21,7 @@
 
 #include <fw/acpi.h>
 #include <klibc/vec.h>
+#include <stdbool.h>
 #include <stdint.h>
 
 struct mcfg_entry {
@@ -50,6 +51,12 @@ struct pci_device {
 	uint8_t device;
 };
 
+struct pci_bar {
+	uintptr_t base;
+	size_t size;
+	bool is_mmio;
+};
+
 typedef vec_t(struct mcfg_entry) mcfg_vec_t;
 
 extern mcfg_vec_t mcfg_entries;
@@ -61,5 +68,6 @@ void pci_write(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t function,
 uint32_t pci_read(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t function,
 				  uint16_t offset, uint8_t access_size);
 struct pci_device *pci_get_pci_device(uint16_t vendor_id, uint16_t device_id);
+bool pci_get_bar_n(struct pci_device *device, struct pci_bar *bar, uint8_t n);
 
 #endif
