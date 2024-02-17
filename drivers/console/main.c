@@ -470,7 +470,6 @@ static void keyboard_init(void) {
 }
 
 uint64_t driver_entry(struct module *driver_module) {
-	strncpy(driver_module->name, "console", sizeof(driver_module->name));
 	framebuffer_set_callback(term_callback);
 
 	framebuffer_clear(0x00eee8d5, 0);

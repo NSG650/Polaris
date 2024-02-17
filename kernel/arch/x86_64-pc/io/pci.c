@@ -24,6 +24,7 @@
 #include <mm/slab.h>
 #include <mm/vmm.h>
 #include <stdbool.h>
+#include <sys/prcb.h>
 
 mcfg_vec_t mcfg_entries;
 struct pci_device *pci_devices[256] = {0};
@@ -225,13 +226,46 @@ struct pci_device *pci_get_device_info(uint8_t bus, uint8_t device) {
 	device_struct->subclass = pci_read(0, bus, device, 0, 0xa, 1);
 	device_struct->progintf = pci_read(0, bus, device, 0, 0x9, 1);
 	device_struct->device_id = pci_get_device(bus, device);
+
+	// Checking for capabilities;
+	uint16_t sreg = PCI_READ_W(device_struct, 6);
+
+	if (sreg & (1 << 4)) {
+		uint8_t next_offset = PCI_READ_B(device_struct, 0x34);
+
+		while (next_offset) {
+			uint8_t identifier = PCI_READ_B(device_struct, next_offset);
+
+			switch (identifier) {
+				case 5: // MSI
+					device_struct->msi_supported = true;
+					device_struct->msi_offset = next_offset;
+					break;
+				case 16: // PCIe compatible
+					device_struct->pcie_supported = true;
+					device_struct->pcie_supported = next_offset;
+					break;
+				case 17: // MSI-X
+					device_struct->msix_supported = true;
+					device_struct->msix_offset = next_offset;
+					break;
+			}
+
+			next_offset = PCI_READ_B(device_struct, next_offset + 1);
+		}
+	}
+
 	kprintf("PCI: Got Device at %x:%x vendor id: %x classcode: "
 			"\"%s\" subclass: %x "
-			"progintf: %x device_id: %x\n",
+			"progintf: %x device_id: %x msi_supported: %c msix_supported: %c "
+			"pcie_supported: %c\n",
 			bus, device, device_struct->vendor_id,
 			pci_get_classcode_name(device_struct->classcode),
 			device_struct->subclass, device_struct->progintf,
-			device_struct->device_id);
+			device_struct->device_id, device_struct->msi_supported ? 'T' : 'F',
+			device_struct->msix_supported ? 'T' : 'F',
+			device_struct->pcie_supported ? 'T' : 'F');
+
 	return device_struct;
 }
 
@@ -337,7 +371,7 @@ bool pci_get_bar_n(struct pci_device *device, struct pci_bar *bar, uint8_t n) {
 	if (n > 5)
 		return false;
 
-	uint16_t offset = 0x10 + n * sizeof(uint32_t);
+	uint16_t offset = PCI_OFFSET_BAR0 + n * sizeof(uint32_t);
 
 	uint32_t base_low = pci_read(0, device->bus, device->device, 0, offset, 4);
 	pci_write(0, device->bus, device->device, 0, offset, (uint32_t)(~0), 4);
@@ -370,6 +404,106 @@ bool pci_get_bar_n(struct pci_device *device, struct pci_bar *bar, uint8_t n) {
 	}
 
 	return true;
+}
+
+bool pci_setup_irq(struct pci_device *dev, size_t index, uint8_t vector) {
+	union msi_address addr = {.dest_id = prcb_return_current_cpu()->lapic_id,
+							  .base_address = 0xfee};
+	union msi_data data = {.vector = vector, .delivery = 0};
+
+	if (dev->msix_supported) {
+		uint16_t control = PCI_READ_W(dev, dev->msix_offset + 2);
+		control |= (0b11 << 14);
+		PCI_WRITE_W(dev, dev->msix_offset + 2, control);
+
+		uint16_t n_irqs = (control & ((1 << 11) - 1)) + 1;
+		uint32_t info = PCI_READ_D(dev, dev->msix_offset + 4);
+		if (index > n_irqs) {
+			return false;
+		}
+
+		struct pci_bar bar = {0};
+
+		if (!pci_get_bar_n(dev, &bar, info & 0b111)) {
+			return false;
+		}
+
+		if (!bar.is_mmio || !bar.base) {
+			return false;
+		}
+
+		uintptr_t target = bar.base + (info & ~0b111) + MEM_PHYS_OFFSET;
+		target += index * 16;
+		((volatile uint64_t *)target)[0] = addr.raw;
+		((volatile uint32_t *)target)[2] = data.raw;
+
+		// Clear both global/local masks, and put MSI-X back in operation
+		((volatile uint32_t *)target)[3] = 0;
+		PCI_WRITE_W(dev, dev->msix_offset + 2, control & ~(1 << 14));
+
+		return true;
+	}
+
+	if (dev->msi_supported) {
+		uint16_t control = PCI_READ_W(dev, dev->msi_offset + 2) | 1;
+		uint8_t data_off = (control & (1 << 7)) ? 0xc : 0x8;
+		if ((control >> 1) & 0b111) {
+			control &= ~(0b111 << 4); // Set MME to 0 (enable only 1 IRQ)
+		}
+
+		PCI_WRITE_D(dev, dev->msi_offset + 4, addr.raw);
+		PCI_WRITE_W(dev, dev->msi_offset + data_off, data.raw);
+		PCI_WRITE_W(dev, dev->msi_offset + 2, control);
+
+		return true;
+	}
+
+	return false;
+}
+
+bool pci_mask(struct pci_device *dev, size_t index, bool mask) {
+	if (dev->msix_supported) {
+		uint16_t control = PCI_READ_W(dev, dev->msix_offset + 2);
+		control |= (0b11 << 14);
+		PCI_WRITE_W(dev, dev->msix_offset + 2, control);
+
+		uint16_t n_irqs = (control & ((1 << 11) - 1)) + 1;
+		uint32_t info = PCI_READ_D(dev, dev->msix_offset + 4);
+		if (index > n_irqs) {
+			return false;
+		}
+
+		struct pci_bar bar = {0};
+
+		if (!pci_get_bar_n(dev, &bar, info & 0b111)) {
+			return false;
+		}
+
+		if (!bar.is_mmio || !bar.base) {
+			return false;
+		}
+
+		uintptr_t target = bar.base + (info & ~0b111) + MEM_PHYS_OFFSET;
+		target += index * 16;
+
+		((volatile uint32_t *)target)[3] = (int)mask;
+
+		return true;
+	}
+
+	if (dev->msi_supported) {
+		uint16_t control = PCI_READ_W(dev, dev->msi_offset + 2) | 1;
+
+		if (mask) {
+			PCI_WRITE_W(dev, dev->msi_offset + 2, control & ~1);
+		} else {
+			PCI_WRITE_W(dev, dev->msi_offset + 2, control | 1);
+		}
+
+		return true;
+	}
+
+	return false;
 }
 
 uint32_t pci_read(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t function,

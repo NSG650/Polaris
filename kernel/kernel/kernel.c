@@ -17,8 +17,8 @@
 #include <sys/prcb.h>
 #include <sys/timer.h>
 
-const char *module_list[] = {"/usr/lib/modules/nvme.ko",
-							 "/usr/lib/modules/console.ko"};
+const char *module_list[] = {"/usr/lib/modules/console.ko",
+							 "/usr/lib/modules/nvme.ko"};
 
 #define MODULE_LIST_SIZE (sizeof(module_list) / sizeof(module_list[0]))
 #define ONE_SECOND (uint64_t)(1000 * 1000 * 1000)
@@ -61,6 +61,7 @@ void syscall_sysinfo(struct syscall_arguments *args) {
 	args->ret = 0;
 }
 
+#ifdef KERNEL_ABUSE
 void kernel_dummy_sleeping_thread(void) {
 	for (;;) {
 		thread_sleep(prcb_return_current_cpu()->running_thread, ONE_SECOND * 5);
@@ -75,6 +76,7 @@ void kernel_dummy_threads(uint64_t id) {
 		sched_resched_now();
 	}
 }
+#endif
 
 void kernel_main(void *args) {
 	vfs_init();
@@ -99,9 +101,8 @@ void kernel_main(void *args) {
 	for (size_t i = 0; i < MODULE_LIST_SIZE; i++) {
 		mod_ret = module_load(module_list[i]);
 		if (mod_ret) {
-			panic("Failed to load kernel module %s. Return value: %p\n",
-				  module_list[i], mod_ret);
-			break;
+			kprintf("Failed to load kernel module %s. Return value: %p\n",
+					module_list[i], mod_ret);
 		}
 	}
 
@@ -130,8 +131,6 @@ void kernel_main(void *args) {
 	syscall_register_handler(0x125, syscall_pipe);
 	syscall_register_handler(0x63, syscall_sysinfo);
 
-	kprintffos(0, "Bye framebuffer kernel console!\n");
-
 	std_console_device =
 		(vfs_get_node(vfs_root, "/dev/console", true))->resource;
 
@@ -147,6 +146,7 @@ void kernel_main(void *args) {
 			prcb_return_current_cpu()->running_thread->mother_proc))
 		panic("Failed to run init binary!\n");
 
+#ifdef KERNEL_ABUSE
 	for (uint64_t i = 0; i < prcb_return_installed_cpus(); i++) {
 		thread_create((uintptr_t)kernel_dummy_threads, i, false,
 					  prcb_return_current_cpu()->running_thread->mother_proc);
@@ -154,6 +154,7 @@ void kernel_main(void *args) {
 
 	thread_create((uintptr_t)kernel_dummy_sleeping_thread, 0, false,
 				  prcb_return_current_cpu()->running_thread->mother_proc);
+#endif
 
 	for (;;) {
 		halt();

@@ -56,6 +56,8 @@ void syscall_puts(struct syscall_arguments *args) {
 	spinlock_drop(&write_lock);
 }
 
+bool disable_prefix = false;
+
 void kprintffos(bool fos, char *fmt, ...) {
 	spinlock_acquire_or_wait(&write_lock);
 	if (!fos)
@@ -65,18 +67,20 @@ void kprintffos(bool fos, char *fmt, ...) {
 	if (!print_now) {
 		goto end;
 	}
-	if (in_panic) {
-		kputs("*** PANIC:\t");
-	} else {
-		uint64_t timer_tick = 0;
-		if (timer_installed()) {
-			timer_tick = timer_count();
+	if (!disable_prefix) {
+		if (in_panic) {
+			kputs("*** PANIC:\t");
+		} else {
+			uint64_t timer_tick = 0;
+			if (timer_installed()) {
+				timer_tick = timer_count();
+			}
+			char string[21] = {0};
+			ltoa(timer_tick, string, 10);
+			kputs("[");
+			kputs(string);
+			kputs("] ");
 		}
-		char string[21] = {0};
-		ltoa(timer_tick, string, 10);
-		kputs("[");
-		kputs(string);
-		kputs("] ");
 	}
 	vprintf_(fmt, args);
 end:
@@ -85,6 +89,7 @@ end:
 }
 
 void debug_hex_dump(const void *data, size_t size) {
+	disable_prefix = true;
 	char ascii[17];
 	size_t i, j;
 	ascii[16] = '\0';
@@ -112,6 +117,7 @@ void debug_hex_dump(const void *data, size_t size) {
 			}
 		}
 	}
+	disable_prefix = false;
 }
 
 void panic_(size_t *ip, size_t *bp, char *fmt, ...) {
