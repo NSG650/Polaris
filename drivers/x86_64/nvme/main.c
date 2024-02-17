@@ -1,7 +1,6 @@
 #include "nvme.h"
 #include <asm/asm.h>
 #include <debug/debug.h>
-#include <io/pci.h>
 #include <klibc/mem.h>
 #include <klibc/module.h>
 #include <mm/pmm.h>

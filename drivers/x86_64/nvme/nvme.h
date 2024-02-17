@@ -2,6 +2,7 @@
 #define NVME_H
 
 #include <fs/devtmpfs.h>
+#include <io/pci.h>
 #include <klibc/resource.h>
 #include <stddef.h>
 #include <stdint.h>
