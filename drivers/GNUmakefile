@@ -1,6 +1,7 @@
 CONFIG_ARCH ?= x86_64
 CCONSOLEFILES := $(wildcard console/*.c)
 CNVMEFILES := $(wildcard x86_64/nvme/*.c)
+CVIRTIOGPUFILES := $(wildcard x86_64/virtiogpu/*.c)
 
 ifeq ($(CONFIG_ARCH),x86_64)
 	AS := nasm
@@ -13,6 +14,7 @@ endif
 all:
 	$(CC) $(CFLAGS) $(CCONSOLEFILES) -o console.ko
 	$(CC) $(CFLAGS) $(CNVMEFILES) -o nvme.ko
+	$(CC) $(CFLAGS) $(CVIRTIOGPUFILES) -o virtiogpu.ko
 
 .PHONY: clean
 clean:
