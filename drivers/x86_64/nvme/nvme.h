@@ -229,6 +229,17 @@ struct nvme_queue {
 	uint64_t *phys_regpgs; // pointer to the PRPs
 };
 
+struct nvme_block_cache {
+	uint8_t *cache;
+	size_t lba;
+	uint8_t status;
+	uint64_t hit_count;
+	uint64_t last_hit;
+};
+
+#define CACHE_FREE 0
+#define CACHE_USED 1
+
 struct nvme_namespace_device;
 
 struct nvme_device {
@@ -255,6 +266,7 @@ struct nvme_namespace_device {
 	size_t lba_size;
 	size_t lba_count;
 	size_t max_prps;
+	struct nvme_block_cache cache[512];
 };
 
 #define VERSION_MAJOR(v) (((v) >> 16) & 0xffff)

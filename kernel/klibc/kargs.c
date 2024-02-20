@@ -30,6 +30,9 @@ void kargs_init(char *args) {
 		if (!strncmp(tokens[i], "suppress-ubsan", 14)) {
 			kernel_arguments.kernel_args |= KERNEL_ARGS_SUPPRESS_UBSAN;
 		}
+		if (!strncmp(tokens[i], "allow-writes-to-disks", 21)) {
+			kernel_arguments.kernel_args |= KERNEL_ARGS_ALLOW_WRITES_TO_DISKS;
+		}
 	}
 
 	for (int i = 0; i < count; i++)

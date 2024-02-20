@@ -106,6 +106,8 @@ void kernel_main(void *args) {
 					module_list[i], mod_ret);
 		}
 	}
+	// Done so that gcc will stop REMOVING this function
+	partition_enumerate(NULL, NULL);
 
 	fbdev_init();
 

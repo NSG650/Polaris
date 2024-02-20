@@ -1,7 +1,11 @@
 #include "nvme.h"
 #include <asm/asm.h>
 #include <debug/debug.h>
+#include <errno.h>
+#include <fs/partition.h>
+#include <klibc/kargs.h>
 #include <klibc/mem.h>
+#include <klibc/misc.h>
 #include <klibc/module.h>
 #include <mm/pmm.h>
 #include <mm/slab.h>
@@ -9,6 +13,7 @@
 #include <sys/apic.h>
 #include <sys/isr.h>
 #include <sys/prcb.h>
+#include <sys/timer.h>
 
 struct nvme_device *nvme_devices[MAX_NVME_DRIVE_COUNT] = {0};
 size_t total_device_count = 0;
@@ -284,8 +289,82 @@ nvme_namespace_read_or_write_block(struct nvme_namespace_device *this,
 	return (status == 0);
 }
 
+static int nvme_cache_fetch(struct nvme_namespace_device *this, uint64_t lba) {
+	for (int i = 0; i < 512; i++) {
+		if (this->cache[i].lba == lba && this->cache[i].status == CACHE_USED) {
+			this->cache[i].hit_count++;
+			this->cache[i].last_hit = timer_count();
+			return i;
+		}
+	}
+	return -1;
+}
+
+static int nvme_cache_cleanup(struct nvme_namespace_device *this) {
+	int last_hit_index = -1;
+
+	struct nvme_block_cache *to_be_freed = &this->cache[0];
+
+	for (int i = 0; i < 512; i++) {
+		struct nvme_block_cache *c = &this->cache[i];
+		if (c->status != CACHE_USED) {
+			continue;
+		}
+		if (c->hit_count < to_be_freed->hit_count) {
+			last_hit_index = i;
+			to_be_freed = c;
+		}
+		if (c->hit_count == to_be_freed->hit_count) {
+			if (c->last_hit > to_be_freed->last_hit) {
+				last_hit_index = i;
+				to_be_freed = c;
+			}
+		}
+	}
+
+	to_be_freed->status = CACHE_FREE;
+	pmm_free((void *)((uintptr_t)to_be_freed->cache - MEM_PHYS_OFFSET),
+			 (((this->lba_size) / PAGE_SIZE) + 1));
+
+	return last_hit_index;
+}
+
+static int nvme_cache_it(struct nvme_namespace_device *this, uint64_t lba) {
+	int target = -1;
+look_again:
+	for (int i = 0; i < 512; i++) {
+		if (this->cache[i].status == CACHE_FREE) {
+			target = i;
+			break;
+		}
+	}
+	if (target == -1) {
+		nvme_cache_cleanup(this);
+		goto look_again;
+	}
+
+	struct nvme_block_cache *t = &this->cache[target];
+	t->cache = (uint8_t *)((uintptr_t)pmm_allocz(
+							   (((this->lba_size) / PAGE_SIZE) + 1)) +
+						   MEM_PHYS_OFFSET);
+	t->hit_count = 0;
+	t->status = CACHE_USED;
+	t->last_hit = timer_count();
+	t->lba = lba;
+
+	if (!nvme_namespace_read_or_write_block(this, lba, 1, t->cache, false)) {
+		kprintf("Failed to read\n");
+		pmm_free((void *)((uintptr_t)t->cache - MEM_PHYS_OFFSET),
+				 (((this->lba_size) / PAGE_SIZE) + 1));
+		t->status = CACHE_FREE;
+		target = -1;
+	}
+
+	return target;
+}
+
 static ssize_t nvme_read(struct resource *_this,
-						 struct f_description *description, void *buf,
+						 struct f_description *description, void *buffer,
 						 off_t loc, size_t count) {
 	struct nvme_namespace_device *this =
 		(struct nvme_namespace_device *)(_this);
@@ -293,37 +372,79 @@ static ssize_t nvme_read(struct resource *_this,
 
 	size_t block_size = this->lba_size;
 
-	int ret = count;
+	ssize_t ret = count;
+	size_t i = 0;
+	for (i = 0; i < count;) {
+		uint64_t lba = (loc + i) / this->lba_size;
+		int cache_index = nvme_cache_fetch(this, lba);
+		if (cache_index == -1) { // time to cache it
+			cache_index = nvme_cache_it(this, lba);
+			if (cache_index == -1) {
+				ret = -1;
+				break;
+			}
+		}
+		uint64_t chunk = count - i;
+		size_t offset = (loc + i) % this->lba_size;
+		if (chunk > this->lba_size - offset) {
+			chunk = this->lba_size - offset;
+		}
 
-	void *block = (void *)syscall_helper_user_to_kernel_address((uintptr_t)buf);
-
-	if (!nvme_namespace_read_or_write_block(
-			this, (loc / block_size), (count / block_size), block, false)) {
-		ret = -1;
+		memcpy((void *)((uintptr_t)buffer + i),
+			   &this->cache[cache_index].cache[offset], chunk);
+		i += chunk;
 	}
-
+end:
 	spinlock_drop(&this->res.lock);
 	return ret;
 }
 
 static ssize_t nvme_write(struct resource *_this,
-						  struct f_description *description, const void *buf,
+						  struct f_description *description, const void *buffer,
 						  off_t loc, size_t count) {
+	if (!(kernel_arguments.kernel_args & KERNEL_ARGS_ALLOW_WRITES_TO_DISKS)) {
+		return -1;
+	}
+
 	struct nvme_namespace_device *this =
 		(struct nvme_namespace_device *)(_this);
 	spinlock_acquire_or_wait(&this->res.lock);
 
 	size_t block_size = this->lba_size;
 
-	int ret = count;
+	ssize_t ret = count;
 
-	void *block = (void *)syscall_helper_user_to_kernel_address((uintptr_t)buf);
+	for (size_t i = 0; i < count;) {
+		uint64_t lba = (loc + i) / this->lba_size;
+		int cache_index = nvme_cache_fetch(this, lba);
+		if (cache_index == -1) { // time to cache it
+			cache_index = nvme_cache_it(this, lba);
+			if (cache_index == -1) {
+				ret = -1;
+				break;
+			}
+		}
+		uint64_t chunk = count - i;
+		size_t offset = (loc + i) % this->lba_size;
+		if (chunk > this->lba_size - offset) {
+			chunk = this->lba_size - offset;
+		}
 
-	if (!nvme_namespace_read_or_write_block(
-			this, (loc / block_size), (count / block_size), block, true)) {
-		ret = -1;
+		memcpy(&this->cache[cache_index].cache[offset],
+			   (void *)((uintptr_t)buffer + i), chunk);
+		this->cache[cache_index].status = CACHE_USED;
+
+		if (!nvme_namespace_read_or_write_block(
+				this, lba, 1, this->cache[cache_index].cache, true)) {
+			kprintf("Failed to write\n");
+			ret = -1;
+			break;
+		}
+
+		i += chunk;
 	}
 
+end:
 	spinlock_drop(&this->res.lock);
 	return ret;
 }
@@ -385,6 +506,8 @@ bool nvme_init_namespace(size_t namespace_id,
 	strcat(name, num);
 
 	devtmpfs_add_device((struct resource *)this, name);
+
+	partition_enumerate((struct resource *)this, name);
 	return true;
 }
 

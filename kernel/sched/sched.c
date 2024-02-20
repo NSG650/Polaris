@@ -277,7 +277,7 @@ void syscall_waitpid(struct syscall_arguments *args) {
 		events = kmalloc(sizeof(struct event *));
 		for (int i = 0; i < waiter_proc->child_processes.length; i++) {
 			if (waiter_proc->child_processes.data[i]->pid == pid_to_wait_on) {
-				waitee_proc = waiter_proc->child_processes.data[i]->pid;
+				waitee_proc = waiter_proc->child_processes.data[i];
 				break;
 			}
 		}

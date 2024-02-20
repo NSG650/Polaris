@@ -304,6 +304,9 @@ uint64_t vmm_virt_to_phys(struct pagemap *pagemap, uint64_t virt_addr) {
 uint64_t vmm_virt_to_kernel(struct pagemap *pagemap, uint64_t virt_addr) {
 	uint64_t aligned_virtual_address = ALIGN_DOWN(virt_addr, PAGE_SIZE);
 	uint64_t phys_addr = vmm_virt_to_phys(pagemap, virt_addr);
+	if (phys_addr == INVALID_PHYS) {
+		return 0;
+	}
 	return (phys_addr + MEM_PHYS_OFFSET + virt_addr - aligned_virtual_address);
 }
 

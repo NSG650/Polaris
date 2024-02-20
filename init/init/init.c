@@ -278,7 +278,10 @@ void main(void) {
 	int fork_ret = fork();
 	if (fork_ret == 0) {
 		chdir("/root");
-		char *argv[] = {"/usr/bin/busybox", "ash", NULL};
+		char *argv[] = {"/usr/bin/xxd",
+						"-l"
+						"1024",
+						"/dev/nvme0n1", NULL};
 		char *envp[] = {"USER=ROOT", "HOME=/root",
 						"PATH=/bin:/usr/bin:/usr/local/bin", "TERM=linux",
 						NULL};

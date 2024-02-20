@@ -94,7 +94,7 @@ void debug_hex_dump(const void *data, size_t size) {
 	size_t i, j;
 	ascii[16] = '\0';
 	for (i = 0; i < size; ++i) {
-		kprintffos(0, "%x ", ((unsigned char *)data)[i]);
+		kprintffos(0, "%02X ", ((unsigned char *)data)[i]);
 		if (((unsigned char *)data)[i] >= ' ' &&
 			((unsigned char *)data)[i] <= '~') {
 			ascii[i % 16] = ((unsigned char *)data)[i];

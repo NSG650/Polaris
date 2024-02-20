@@ -57,7 +57,8 @@ void syscall_helper_copy_to_user(uintptr_t user_addr, void *buffer,
 
 	uint64_t kernel_addr = vmm_virt_to_kernel(target_pagemap, user_addr);
 
-	memcpy((void *)kernel_addr, buffer, count);
+	if (kernel_addr)
+		memcpy((void *)kernel_addr, buffer, count);
 
 	vmm_switch_pagemap(target_pagemap);
 }
