@@ -281,7 +281,7 @@ void main(void) {
 		char *argv[] = {"/usr/bin/xxd",
 						"-l"
 						"1024",
-						"/dev/nvme0n1", NULL};
+						"/dev/nvme0n1p1", NULL};
 		char *envp[] = {"USER=ROOT", "HOME=/root",
 						"PATH=/bin:/usr/bin:/usr/local/bin", "TERM=linux",
 						NULL};

@@ -1,5 +1,6 @@
 #include <debug/debug.h>
 #include <devices/console.h>
+#include <errno.h>
 #include <fb/fb.h>
 #include <fs/devtmpfs.h>
 #include <fs/ramdisk.h>
@@ -19,7 +20,7 @@
 
 const char *module_list[] = {"/usr/lib/modules/console.ko",
 							 "/usr/lib/modules/nvme.ko",
-							 "/usr/lib/modules/virtiogpu.ko"};
+							 "/usr/lib/modules/fat32.ko"};
 
 #define MODULE_LIST_SIZE (sizeof(module_list) / sizeof(module_list[0]))
 #define ONE_SECOND (uint64_t)(1000 * 1000 * 1000)
@@ -109,6 +110,12 @@ void kernel_main(void *args) {
 	// Done so that gcc will stop REMOVING this function
 	partition_enumerate(NULL, NULL);
 
+	vfs_create(vfs_root, "/boot", 0775 | S_IFDIR);
+	if (!vfs_mount(vfs_root, "/dev/nvme0n1p1", "/boot", "fat32")) {
+		kprintf("mount failed due to %u\n", errno);
+	}
+
+#if 0
 	fbdev_init();
 
 	syscall_register_handler(0x0, syscall_read);
@@ -156,6 +163,8 @@ void kernel_main(void *args) {
 			"init", PROCESS_READY_TO_RUN, 200000, argv[0],
 			prcb_return_current_cpu()->running_thread->mother_proc))
 		panic("Failed to run init binary!\n");
+
+#endif
 
 #ifdef KERNEL_ABUSE
 	for (uint64_t i = 0; i < prcb_return_installed_cpus(); i++) {

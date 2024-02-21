@@ -76,7 +76,7 @@ static bool partition_enumerate_gpt(struct resource *res, char *root_name) {
 		char num[21] = {0};
 		strncpy(name, root_name, 32);
 		strcat(name, "p");
-		ultoa(i, num, 10);
+		ultoa(i + 1, num, 10);
 		strcat(name, num);
 		kprintf("%s: Starting from %u to %u\n", name, entry.start, entry.end);
 		devtmpfs_add_device((struct resource *)part_dev, name);

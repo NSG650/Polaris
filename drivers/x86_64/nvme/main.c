@@ -224,6 +224,11 @@ static bool
 nvme_namespace_read_or_write_block(struct nvme_namespace_device *this,
 								   uint64_t start, uint64_t count, void *buffer,
 								   bool rw) {
+	if (rw &&
+		!(kernel_arguments.kernel_args & KERNEL_ARGS_ALLOW_WRITES_TO_DISKS)) {
+		return false;
+	}
+
 	uint32_t command_id = this->queue.cmd_id;
 
 	if (start + count > this->lba_count) {
@@ -402,10 +407,6 @@ end:
 static ssize_t nvme_write(struct resource *_this,
 						  struct f_description *description, const void *buffer,
 						  off_t loc, size_t count) {
-	if (!(kernel_arguments.kernel_args & KERNEL_ARGS_ALLOW_WRITES_TO_DISKS)) {
-		return -1;
-	}
-
 	struct nvme_namespace_device *this =
 		(struct nvme_namespace_device *)(_this);
 	spinlock_acquire_or_wait(&this->res.lock);
