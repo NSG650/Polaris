@@ -1,8 +1,85 @@
+// Yet another rip out from lyre
+// ofc I implemented or fixed 1 or 2 things while porting
+// Istfg I learnt about FAT32 by debugging this driver more than implementing
+// one by myself
+
 #include "fat32.h"
 #include <debug/debug.h>
 #include <fs/vfs.h>
 #include <klibc/mem.h>
 #include <klibc/module.h>
+
+static inline bool isalphabet(char c) {
+	return ((c > 64 && c < 91) || (c > 96 && c < 123));
+}
+
+static inline char tolower(char c) {
+	if (isalphabet(c)) {
+		c |= 0x20;
+	}
+	return c;
+}
+
+// I lost my braincells in this
+static char *fat32_get_resonable_name(struct fat32_dir_entry *entry,
+									  char *str) {
+	strncpy(str, entry->name, 11);
+	for (int i = 0; i < 11; i++) {
+		str[i] = tolower(str[i]);
+	}
+	str[11] = str[10];
+	str[10] = str[9];
+	str[9] = str[8];
+
+	// get rid of the spaces
+	off_t offset = 7;
+	while (str[offset] == ' ') {
+		offset--;
+	}
+	// extension is empty? lets end it here
+	if (str[9] == ' ') {
+		str[offset + 1] = '\0';
+		return str;
+	}
+	str[offset + 1] = '.';
+	for (int i = 2; i < 5; i++) {
+		// copy the extension and remove the space in the end
+		if (str[i + 7] == ' ') {
+			str[offset + i] = '\0';
+			return str;
+		}
+		str[offset + i] = str[i + 7];
+	}
+	str[offset + 5] = '\0';
+	return str;
+}
+
+static void fat32_get_string_from_lfn(struct fat32_lfn_dir_entry *entry,
+									  char *str) {
+	for (int i = 0; i < 5; ++i) {
+		*str++ = entry->name1[i];
+	}
+	for (int i = 0; i < 6; ++i) {
+		*str++ = entry->name2[i];
+	}
+	for (int i = 0; i < 2; ++i) {
+		*str++ = entry->name3[i];
+	}
+}
+
+// checksum function was ripped from here http://elm-chan.org/docs/fat_e.html
+static uint8_t fat32_lfn_checksum(char *short_name) {
+	uint8_t sum = 0;
+	for (int i = 0; i < 11; i++) {
+		sum = (sum >> 1) + (sum << 7) + short_name[i];
+	}
+	return sum;
+}
+
+static inline off_t fat32_cluster_to_disk_offset(struct fat32_fs *fs,
+												 uint32_t cluster) {
+	return fs->data_offset + fs->cluster_size * (cluster - 2);
+}
 
 static void fat32_update_fs_info(struct fat32_fs *fs) {
 	struct resource *res = fs->device->resource;
@@ -66,12 +143,186 @@ static size_t fat32_get_chain_size(struct fat32_fs *fs, uint32_t *cluster) {
 	return count;
 }
 
+static ssize_t fat32_cluster_read_or_write(struct fat32_fs *fs, void *buffer,
+										   uint32_t cluster, size_t count,
+										   uint32_t *ending_cluster, bool rw) {
+	size_t i = 0;
+	for (i = 0; i < count; i++) {
+		if (!cluster) {
+			return -1;
+		}
+		if (IS_FINAL_CLUSTER(cluster)) {
+			break;
+		}
+		if (cluster > fs->cluster_count) {
+			return -1;
+		}
+
+		off_t disk_offset = fat32_cluster_to_disk_offset(fs, cluster);
+		ssize_t status = -1;
+		if (rw) {
+			status = fs->device->resource->write(
+				fs->device->resource, NULL,
+				(void *)((uintptr_t)buffer + fs->cluster_size * i), disk_offset,
+				fs->cluster_size);
+		} else {
+			status = fs->device->resource->read(
+				fs->device->resource, NULL,
+				(void *)((uintptr_t)buffer + fs->cluster_size * i), disk_offset,
+				fs->cluster_size);
+		}
+
+		if (status < 0) {
+			return -1;
+		}
+		if (!fat32_get_next_cluster(fs, &cluster)) {
+			return -1;
+		}
+	}
+
+	if (ending_cluster) {
+		*ending_cluster = cluster;
+	}
+
+	return i;
+}
+
+static void fat32_populate(struct vfs_filesystem *_this,
+						   struct vfs_node *node) {
+	struct fat32_fs *this = (struct fat32_fs *)_this;
+	struct fat32_resource *res = (struct fat32_resource *)(node->resource);
+
+	struct fat32_dir_entry *pluhhh = kmalloc(res->res.stat.st_size);
+	if (!pluhhh) {
+		kprintf("fat32: failed to allocate buffer. out of memory?!\n");
+		return;
+	}
+
+	if (fat32_cluster_read_or_write(this, pluhhh, res->cluster,
+									res->res.stat.st_blocks, NULL, false) < 0) {
+		kfree(pluhhh);
+		kprintf("fat32: failed to read clusters\n");
+		return;
+	}
+
+	size_t entry_count = res->res.stat.st_size / sizeof(struct fat32_dir_entry);
+	bool is_lfn = false;
+
+	char *name_buffer = kmalloc(256);
+	if (!name_buffer) {
+		kprintf("fat32: failed to allocate name buffer. out of memory?!\n");
+		kfree(pluhhh);
+		return;
+	}
+	for (size_t i = 0; i < entry_count; i++) {
+		uint8_t checksum = 0;
+		struct fat32_dir_entry *entry = &pluhhh[i];
+		if (entry->name[0] == '\0') { // end of a dir
+			break;
+		}
+
+		if (entry->name[0] == 0xe5) { // unused
+			break;
+		}
+
+		if (entry->attributes & FAT32_ATTRIBUTES_VOLUME_ID) {
+			continue;
+		}
+
+		if (entry->attributes & FAT32_ATTRIBUTES_LFN) {
+			struct fat32_lfn_dir_entry *lfn =
+				(struct fat32_lfn_dir_entry *)entry;
+			lfn->order &= 0x1f;
+
+			if (is_lfn == false) {
+				// get directory entry these LFNs belong to for checksum
+				// calculation
+				struct fat32_dir_entry *dent = entry + lfn->order;
+				checksum = fat32_lfn_checksum(dent->name);
+				is_lfn = true;
+			} else if (lfn->checksum != checksum) {
+				kprintf(
+					"fat32: bad checksum for this file. skipping this over\n");
+				continue;
+			}
+
+			fat32_get_string_from_lfn(lfn, name_buffer + (lfn->order - 1) * 13);
+			continue;
+		}
+
+		if (is_lfn == false) {
+			fat32_get_resonable_name(entry, name_buffer);
+		}
+
+		is_lfn = false;
+
+		if (!strcmp(name_buffer, ".") || strcmp(name_buffer, "..")) {
+			continue;
+		}
+
+		uint16_t mode = 0751 | (entry->attributes & FAT32_ATTRIBUTES_DIRECTORY)
+							? S_IFDIR
+							: S_IFREG;
+
+		struct fat32_resource *res =
+			resource_create(sizeof(struct fat32_resource));
+		if (!res) {
+			continue;
+		}
+
+		struct vfs_node *fnode = vfs_create_node(
+			(struct vfs_filesystem *)this, node, name_buffer, S_ISDIR(mode));
+		if (!fnode) {
+			kfree(res);
+			continue;
+		}
+
+		if (S_ISREG(mode)) {
+			res->res.can_mmap = true;
+		}
+
+		res->cluster = DIR_GET_CLUSTER(entry);
+
+		res->res.stat.st_uid = 0;
+		res->res.stat.st_gid = 0;
+		res->res.stat.st_mode = mode;
+		res->res.stat.st_ino = this->current_inode++;
+		res->res.stat.st_blksize = this->cluster_size;
+
+		res->res.stat.st_size =
+			S_ISDIR(mode) ? fat32_get_next_cluster(this, res->cluster) *
+								res->res.stat.st_blksize
+						  : entry->size;
+		res->res.stat.st_nlink = 1;
+
+		res->res.refcount = 1;
+		res->dir_offset = (uintptr_t)entry - (uintptr_t)pluhhh;
+		res->mount_dir = (struct resource *)res;
+
+		fnode->filesystem = _this;
+		fnode->resource = (struct resource *)res;
+
+		HASHMAP_SINSERT(&fnode->parent->children, name_buffer, fnode);
+
+		if (S_ISDIR(mode)) {
+			fnode->populated = false;
+			vfs_create_dotentries(fnode, fnode->parent);
+		}
+	}
+
+	node->populated = true;
+
+	kfree(name_buffer);
+	kfree(pluhhh);
+}
+
 static struct fat32_fs *fat32_instantiate(void) {
 	struct fat32_fs *f = kmalloc(sizeof(struct fat32_fs));
 	if (f == NULL) {
 		return f;
 	}
-	f->fs.create = NULL;
+
+	f->fs.populate = fat32_populate;
 	f->fs.symlink = NULL;
 	f->fs.link = NULL;
 
@@ -135,6 +386,7 @@ static struct vfs_node *fat32_mount(struct vfs_node *parent, const char *name,
 	fs->data_offset = data_sector * device->resource->stat.st_blksize;
 	fs->cluster_count = (device->resource->stat.st_blocks - data_sector) /
 						fs->bpb.sectors_per_cluster;
+	fs->current_inode = 3;
 
 	// create the node before we touch the disk
 	node = vfs_create_node((struct vfs_filesystem *)fs, parent, name, true);

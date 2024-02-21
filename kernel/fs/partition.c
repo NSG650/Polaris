@@ -63,7 +63,7 @@ static bool partition_enumerate_gpt(struct resource *res, char *root_name) {
 		part_dev->root = res;
 		part_dev->lba_size = block_size;
 		part_dev->start = entry.start;
-		part_dev->sectors = (entry.end - entry.start) / block_size;
+		part_dev->sectors = entry.end - entry.start;
 		part_dev->res.stat.st_blksize = block_size;
 		part_dev->res.stat.st_size = entry.end - entry.start;
 		part_dev->res.stat.st_blocks = (entry.end - entry.start) / block_size;

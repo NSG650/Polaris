@@ -80,6 +80,7 @@ struct fat32_fs {
 	size_t cluster_count;
 	off_t fat_offset;
 	off_t data_offset;
+	ino_t current_inode;
 };
 
 struct fat32_resource {
@@ -109,9 +110,9 @@ struct fat32_resource {
 #define FAT32_FINAL_CLUSTER 0xffffff8
 #define IS_FINAL_CLUSTER(c) (c >= FAT32_FINAL_CLUSTER)
 #define DIR_GET_CLUSTER(d) \
-	((uint32_t)d->cluster_low | ((uint32_t)d->cluster_low << 16));
+	((uint32_t)d->cluster_low | ((uint32_t)d->cluster_low << 16))
 #define DIR_SET_CLUSTER(d, val)      \
 	(d)->cluster_low = val & 0xffff; \
-	(d)->cluster_low = (val >> 16) & 0xffff;
+	(d)->cluster_low = (val >> 16) & 0xffff
 
 #endif

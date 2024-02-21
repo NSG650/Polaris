@@ -115,7 +115,6 @@ void kernel_main(void *args) {
 		kprintf("mount failed due to %u\n", errno);
 	}
 
-#if 0
 	fbdev_init();
 
 	syscall_register_handler(0x0, syscall_read);
@@ -163,8 +162,6 @@ void kernel_main(void *args) {
 			"init", PROCESS_READY_TO_RUN, 200000, argv[0],
 			prcb_return_current_cpu()->running_thread->mother_proc))
 		panic("Failed to run init binary!\n");
-
-#endif
 
 #ifdef KERNEL_ABUSE
 	for (uint64_t i = 0; i < prcb_return_installed_cpus(); i++) {
