@@ -18,7 +18,7 @@
 #include <sys/prcb.h>
 #include <sys/timer.h>
 
-const char *module_list[] = {"/usr/lib/modules/console.ko",
+const char *module_list[] = {"/usr/lib/modules/serial.ko",
 							 "/usr/lib/modules/nvme.ko",
 							 "/usr/lib/modules/fat32.ko"};
 
@@ -140,8 +140,7 @@ void kernel_main(void *args) {
 	syscall_register_handler(0x125, syscall_pipe);
 	syscall_register_handler(0x63, syscall_sysinfo);
 
-	std_console_device =
-		(vfs_get_node(vfs_root, "/dev/console", true))->resource;
+	std_console_device = (vfs_get_node(vfs_root, "/dev/stty", true))->resource;
 
 	if (!std_console_device) {
 		kprintf("Failed to get a console device\n");

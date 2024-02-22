@@ -9,6 +9,28 @@
 #include <klibc/mem.h>
 #include <klibc/module.h>
 
+void *memcpy(void *dest, const void *src, size_t n) {
+	uint8_t *pdest = (uint8_t *)dest;
+	const uint8_t *psrc = (const uint8_t *)src;
+
+	for (size_t i = 0; i < n; i++) {
+		pdest[i] = psrc[i];
+	}
+
+	return dest;
+}
+
+void *memset(void *b, int c, size_t len) {
+	size_t i = 0;
+	unsigned char *p = b;
+	while (len > 0) {
+		*p = c;
+		p++;
+		len--;
+	}
+	return b;
+}
+
 static inline bool isalphabet(char c) {
 	return ((c > 64 && c < 91) || (c > 96 && c < 123));
 }

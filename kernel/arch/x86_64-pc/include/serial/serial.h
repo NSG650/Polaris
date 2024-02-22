@@ -23,6 +23,7 @@
 void serial_init(void);
 void serial_putchar(char ch);
 void serial_puts(char *str);
+char serial_get_byte(void);
 char serial_getchar(void);
 
 #endif
