@@ -383,7 +383,8 @@ void module_dump(void) {
 		struct module *mod = modules_list.data[i];
 		kprintf("\t%s with entry point at %p\n", mod->name, mod->entry_point);
 		for (size_t j = 0; j < mod->mappings_count; j++) {
-			kprintf("\t\t%p - %p with protections %p\n", mod->mappings[j].addr,
+			kprintf("\t\t%p - %p with protections 0x%x\n",
+					mod->mappings[j].addr,
 					mod->mappings[j].addr + mod->mappings[j].size,
 					mod->mappings[j].prot);
 		}

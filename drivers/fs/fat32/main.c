@@ -5,6 +5,7 @@
 
 #include "fat32.h"
 #include <debug/debug.h>
+#include <errno.h>
 #include <fs/vfs.h>
 #include <klibc/mem.h>
 #include <klibc/module.h>
@@ -152,6 +153,37 @@ static bool fat32_get_next_cluster(struct fat32_fs *fs, uint32_t *cluster) {
 	return true;
 }
 
+static uint32_t fat32_get_next_free_cluster(struct fat32_fs *fs,
+											uint32_t cluster) {
+	while (cluster) {
+		uint32_t this = cluster;
+		if (fat32_get_next_cluster(fs, &this) == false || this == 0) {
+			break;
+		}
+		cluster++;
+	}
+	return cluster;
+}
+
+static uint32_t fat32_skip(struct fat32_fs *fs, uint32_t cluster, size_t count,
+						   bool *end) {
+	*end = false;
+	for (size_t i = 0; i < count; i++) {
+		uint32_t next = 0;
+		if (!fat32_get_next_cluster(fs, &next)) {
+			return 0;
+		}
+
+		if (IS_FINAL_CLUSTER(next)) {
+			*end = true;
+			break;
+		}
+
+		cluster = next;
+	}
+	return cluster;
+}
+
 static size_t fat32_get_chain_size(struct fat32_fs *fs, uint32_t *cluster) {
 	size_t count = 0;
 
@@ -209,6 +241,166 @@ static ssize_t fat32_cluster_read_or_write(struct fat32_fs *fs, void *buffer,
 	return i;
 }
 
+static bool fat32_read_or_write_bytes(struct fat32_fs *fs, uint32_t cluster,
+									  void *buffer, off_t offset, size_t count,
+									  bool write) {
+	bool end = false;
+	cluster = fat32_skip(fs, cluster, offset / fs->cluster_size, &end);
+
+	if (!end)
+		return false;
+
+	// r/w the first cluster
+	off_t cluster_offset = offset % fs->cluster_size;
+	if (cluster_offset > 0) {
+		size_t rcount = count > fs->cluster_size
+							? fs->cluster_size - cluster_offset
+							: count;
+		if (fat32_cluster_read_or_write(fs, buffer, cluster, rcount,
+										&cluster_offset, write) == -1) {
+			return false;
+		}
+		fat32_get_next_cluster(fs, &cluster);
+		buffer = (void *)((uintptr_t)buffer + rcount);
+		count -= rcount;
+	}
+
+	// r/w the middle of the chain
+	size_t clusters_remaining = count / fs->cluster_size;
+	if (clusters_remaining &&
+		fat32_cluster_read_or_write(fs, buffer, cluster, clusters_remaining,
+									&cluster, write) == -1) {
+		return false;
+	}
+
+	// r/w the final cluster
+	count -= clusters_remaining * fs->cluster_size;
+	if (count > 0) {
+		buffer =
+			(void *)((uintptr_t)buffer + clusters_remaining * fs->cluster_size);
+		if (fat32_cluster_read_or_write(fs, buffer, cluster, count, NULL,
+										write) == -1) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+static ssize_t fat32_res_read(struct resource *_this,
+							  struct f_description *desc, void *buffer,
+							  off_t offset, size_t count) {
+	(void)desc;
+	struct fat32_resource *this = (struct fat32_resource *)_this;
+
+	kprintf("fat32: resource read called\n");
+	spinlock_acquire_or_wait(&this->res.lock);
+
+	off_t end = offset + count;
+	if (end > this->res.stat.st_size) {
+		end = this->res.stat.st_size;
+		count = offset >= end ? 0 : end;
+	}
+
+	if (count != 0) {
+		if (!fat32_read_or_write_bytes(this->fs, this->cluster, buffer, offset,
+									   count, false)) {
+			count = -1;
+		}
+		debug_hex_dump(buffer, count);
+	}
+
+	spinlock_drop(&this->res.lock);
+	return count;
+}
+
+static ssize_t fat32_res_write(struct resource *_this,
+							   struct f_description *desc, const void *buffer,
+							   off_t offset, size_t count) {
+	return -1;
+}
+
+static bool fat32_res_truncate(struct resource *_this,
+							   struct f_description *description,
+							   size_t length) {
+	return false;
+}
+
+static void *fat32_res_mmap(struct resource *_this, size_t file_page,
+							int flags) {
+	return NULL;
+}
+
+static bool fat32_res_unref(struct resource *_this,
+							struct f_description *description) {
+	(void)description;
+
+	struct fat32_resource *this = (struct fat32_resource *)_this;
+	spinlock_acquire_or_wait(&this->res.lock);
+
+	this->res.refcount--;
+
+	spinlock_drop(&this->res.lock);
+	return true;
+}
+
+static struct vfs_node *fat32_create(struct vfs_filesystem *_this,
+									 struct vfs_node *parent, const char *name,
+									 int mode) {
+	struct fat32_fs *this = (struct fat32_fs *)_this;
+	size_t length = strlen(name);
+
+	if (length > 255) {
+		errno = ENAMETOOLONG;
+		return NULL;
+	}
+
+	if (!S_ISDIR(mode) && !S_ISREG(mode)) {
+		errno = EPERM;
+		return NULL;
+	}
+
+	struct fat32_resource *res = resource_create(sizeof(struct fat32_resource));
+	struct vfs_node *node = vfs_create_node(_this, parent, name, S_ISDIR(mode));
+
+	if (node == NULL || res == NULL) {
+		return NULL;
+	}
+
+	if (S_ISREG(mode)) {
+		res->res.can_mmap = true;
+	}
+
+	res->res.read = fat32_res_read;
+	res->res.write = fat32_res_write;
+	res->res.truncate = fat32_res_truncate;
+	res->res.mmap = fat32_res_mmap;
+	res->res.unref = fat32_res_unref;
+
+	res->res.stat.st_uid = 0;
+	res->res.stat.st_gid = 0;
+
+	res->res.stat.st_size = S_ISDIR(mode) ? this->cluster_size : 0;
+	res->res.stat.st_blocks = S_ISDIR(mode) ? 1 : 0;
+	res->res.stat.st_blksize = this->cluster_size;
+	res->res.stat.st_dev = this->device->resource->stat.st_rdev;
+	res->res.stat.st_mode = mode;
+	res->res.stat.st_nlink = 1;
+	res->res.stat.st_ino = this->current_inode++;
+	res->res.refcount = 1;
+
+	res->mount_dir = parent->resource;
+	res->fs = this;
+	res->dir_offset = -1;
+
+	node->filesystem = _this;
+	node->resource = (struct resource *)res;
+
+	res->cluster = 0;
+
+	return node;
+}
+
 static void fat32_populate(struct vfs_filesystem *_this,
 						   struct vfs_node *node) {
 	struct fat32_fs *this = (struct fat32_fs *)_this;
@@ -216,7 +408,6 @@ static void fat32_populate(struct vfs_filesystem *_this,
 
 	struct fat32_dir_entry *pluhhh = kmalloc(res->res.stat.st_size);
 	if (!pluhhh) {
-		kprintf("fat32: failed to allocate buffer. out of memory?!\n");
 		return;
 	}
 
@@ -232,7 +423,6 @@ static void fat32_populate(struct vfs_filesystem *_this,
 
 	char *name_buffer = kmalloc(256);
 	if (!name_buffer) {
-		kprintf("fat32: failed to allocate name buffer. out of memory?!\n");
 		kfree(pluhhh);
 		return;
 	}
@@ -243,8 +433,8 @@ static void fat32_populate(struct vfs_filesystem *_this,
 			break;
 		}
 
-		if (entry->name[0] == 0xe5) { // unused
-			break;
+		if (entry->name[0] == 0xe5) {
+			continue;
 		}
 
 		if (entry->attributes & FAT32_ATTRIBUTES_VOLUME_ID) {
@@ -278,7 +468,7 @@ static void fat32_populate(struct vfs_filesystem *_this,
 
 		is_lfn = false;
 
-		if (!strcmp(name_buffer, ".") || strcmp(name_buffer, "..")) {
+		if (!strcmp(name_buffer, ".") || !strcmp(name_buffer, "..")) {
 			continue;
 		}
 
@@ -288,12 +478,14 @@ static void fat32_populate(struct vfs_filesystem *_this,
 
 		struct fat32_resource *res =
 			resource_create(sizeof(struct fat32_resource));
+
 		if (!res) {
 			continue;
 		}
 
 		struct vfs_node *fnode = vfs_create_node(
 			(struct vfs_filesystem *)this, node, name_buffer, S_ISDIR(mode));
+
 		if (!fnode) {
 			kfree(res);
 			continue;
@@ -303,6 +495,12 @@ static void fat32_populate(struct vfs_filesystem *_this,
 			res->res.can_mmap = true;
 		}
 
+		res->res.read = fat32_res_read;
+		res->res.write = fat32_res_write;
+		res->res.truncate = fat32_res_truncate;
+		res->res.mmap = fat32_res_mmap;
+		res->res.unref = fat32_res_unref;
+
 		res->cluster = DIR_GET_CLUSTER(entry);
 
 		res->res.stat.st_uid = 0;
@@ -310,16 +508,24 @@ static void fat32_populate(struct vfs_filesystem *_this,
 		res->res.stat.st_mode = mode;
 		res->res.stat.st_ino = this->current_inode++;
 		res->res.stat.st_blksize = this->cluster_size;
+		res->res.stat.st_size = entry->size;
 
-		res->res.stat.st_size =
-			S_ISDIR(mode) ? fat32_get_next_cluster(this, res->cluster) *
-								res->res.stat.st_blksize
-						  : entry->size;
+		if (S_ISDIR(mode)) {
+			uint32_t clust = res->cluster;
+			if (!fat32_get_next_cluster(this, &clust)) {
+				kfree(res);
+				kfree(fnode);
+				continue;
+			}
+			res->res.stat.st_size = clust * res->res.stat.st_blksize;
+		}
+
 		res->res.stat.st_nlink = 1;
 
 		res->res.refcount = 1;
 		res->dir_offset = (uintptr_t)entry - (uintptr_t)pluhhh;
 		res->mount_dir = (struct resource *)res;
+		res->fs = this;
 
 		fnode->filesystem = _this;
 		fnode->resource = (struct resource *)res;
@@ -344,9 +550,8 @@ static struct fat32_fs *fat32_instantiate(void) {
 		return f;
 	}
 
+	f->fs.create = fat32_create;
 	f->fs.populate = fat32_populate;
-	f->fs.symlink = NULL;
-	f->fs.link = NULL;
 
 	return f;
 }
@@ -423,6 +628,9 @@ static struct vfs_node *fat32_mount(struct vfs_node *parent, const char *name,
 	fat32_update_fs_info(fs);
 
 	uint32_t root_director_cluster = fs->bpb.root_directory_cluster;
+
+	res->res.read = fat32_res_read;
+	res->res.write = fat32_res_write;
 
 	res->res.stat.st_blocks = fat32_get_chain_size(fs, &root_director_cluster);
 	res->res.stat.st_size = res->res.stat.st_blocks * fs->cluster_size;

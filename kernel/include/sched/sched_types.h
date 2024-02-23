@@ -90,6 +90,6 @@ struct process {
 	struct process *next;
 };
 
-#define STACK_SIZE 32768
+#define STACK_SIZE (32768 * 2)
 
 #endif

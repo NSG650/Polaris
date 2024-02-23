@@ -6,7 +6,7 @@ rm -rf sysroot
 ./jinx sysroot
 ./jinx host-build limine
 
-( cd sysroot && tar -cvf ../ramdisk.tar * )
+( cd sysroot && tar -cf ../ramdisk.tar * )
 
 rm -rf iso_root
 mkdir -v iso_root
