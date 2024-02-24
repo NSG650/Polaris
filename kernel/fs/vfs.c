@@ -7,6 +7,7 @@
 #include <mm/slab.h>
 #include <sched/sched.h>
 #include <stdbool.h>
+#include <sys/prcb.h>
 #include <types.h>
 
 #define PATH_MAX 4096

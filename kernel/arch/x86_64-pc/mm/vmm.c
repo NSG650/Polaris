@@ -5,7 +5,6 @@
 #include <mm/pmm.h>
 #include <mm/slab.h>
 #include <mm/vmm.h>
-#include <sched/crash.h>
 #include <sched/sched.h>
 #include <sys/isr.h>
 #include <sys/prcb.h>
@@ -338,8 +337,6 @@ void vmm_page_fault_handler(registers_t *reg) {
 				faulting_address, present ? "P" : "NP", read_write ? "R" : "RW",
 				user_supervisor ? "U" : "S", reserved ? "R" : "NR",
 				execute ? "X" : "NX");
-		sched_display_crash_message(reg->rip, thrd->mother_proc, "Page fault");
-
 		if (thrd == thrd->mother_proc->process_threads.data[0])
 			process_kill(thrd->mother_proc, 1);
 		else
