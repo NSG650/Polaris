@@ -20,7 +20,7 @@
 
 const char *module_list[] = {"/usr/lib/modules/serial.ko",
 							 "/usr/lib/modules/nvme.ko",
-							 "/usr/lib/modules/fat32.ko"};
+							 "/usr/lib/modules/tarfs.ko"};
 
 #define MODULE_LIST_SIZE (sizeof(module_list) / sizeof(module_list[0]))
 #define ONE_SECOND (uint64_t)(1000 * 1000 * 1000)
@@ -110,8 +110,8 @@ void kernel_main(void *args) {
 	// Done so that gcc will stop REMOVING this function
 	partition_enumerate(NULL, NULL);
 
-	vfs_create(vfs_root, "/boot", 0775 | S_IFDIR);
-	if (!vfs_mount(vfs_root, "/dev/nvme0n1p1", "/boot", "fat32")) {
+	vfs_create(vfs_root, "/mnt", 0775 | S_IFDIR);
+	if (!vfs_mount(vfs_root, "/dev/nvme0n1", "/mnt", "tarfs")) {
 		kprintf("mount failed due to %u\n", errno);
 	}
 

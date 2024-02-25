@@ -4,6 +4,7 @@ CNVMEFILES := $(wildcard x86_64/nvme/*.c)
 CVIRTIOGPUFILES := $(wildcard x86_64/virtiogpu/*.c)
 CFAT32FILES := $(wildcard fs/fat32/*.c)
 CSERIALFILES := $(wildcard x86_64/serial/*.c)
+CTARFILES := $(wildcard fs/tarfs/*.c)
 
 ifeq ($(CONFIG_ARCH),x86_64)
 	AS := nasm
@@ -19,7 +20,8 @@ all:
 	$(CC) $(CFLAGS) $(CVIRTIOGPUFILES) -o virtiogpu.ko
 	$(CC) $(CFLAGS) $(CFAT32FILES) -o fat32.ko
 	$(CC) $(CFLAGS) $(CSERIALFILES) -o serial.ko
-
+	$(CC) $(CFLAGS) $(CTARFILES) -o tarfs.ko
+	
 .PHONY: clean
 clean:
 	rm -rf *.ko
