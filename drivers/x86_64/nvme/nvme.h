@@ -271,7 +271,7 @@ struct nvme_namespace_device {
 
 #define VERSION_MAJOR(v) (((v) >> 16) & 0xffff)
 #define VERSION_MINOR(v) (((v) >> 8) & 0xff)
-#define VERSION_PATCH(v) ((v)&0xff)
+#define VERSION_PATCH(v) ((v) & 0xff)
 
 #define CC_ENABLE(cc) cc = (cc) | 1
 #define CC_DISABLE(cc) cc = (cc) & ~1
@@ -287,7 +287,7 @@ struct nvme_namespace_device {
 #define CC_COMMANDSET_NVM 0
 #define CC_ARBITRATION_ROUNDROBIN 0
 
-#define CAP_MAX_ENTRIES(cap) ((cap)&0xff)
+#define CAP_MAX_ENTRIES(cap) ((cap) & 0xff)
 #define CAP_DOORBELL_STRIDE(cap) (((cap) >> 32) & 0xf)
 #define CAP_COMMAND_SET(cap) (((cap) >> 37) & 0xff)
 #define CAP_MAX_PAGE_SIZE(cap) (((cap) >> 52) & 0xf)

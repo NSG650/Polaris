@@ -28,7 +28,7 @@ https://user-images.githubusercontent.com/51860844/221930175-4f7fedad-e020-470f-
 Building requires a Linux environment, Windows users may use WSL2 without issues.
 
 1. Clone the repository **with submodules**.
-2. Install **make** and **xorriso**.
+2. Install **make**, **xorriso**, **bsdtar** and **rsync**.
 3. Run make on the repository's root.
 4. Wait for the build to finish.
 

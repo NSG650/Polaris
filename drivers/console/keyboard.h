@@ -227,20 +227,20 @@ static char codes[128] = {KEYCODE_RESERVED,
 						  KEYCODE_F12};
 
 static char extendedcodes[128] = {
-	[0x11] = KEYCODE_RIGHTALT,	  // altgr
+	[0x11] = KEYCODE_RIGHTALT, // altgr
 	[0x14] = KEYCODE_RIGHTCTRL,
 	[0x4A] = KEYCODE_KEYPADSLASH, // k/
 	[0x5A] = KEYCODE_KEYPADENTER,
-	[0x69] = KEYCODE_END,		  // end
-	[0x6B] = KEYCODE_LEFT,		  // left
-	[0x6C] = KEYCODE_HOME,		  // home
-	[0x70] = KEYCODE_INSERT,	  // insert
-	[0x71] = KEYCODE_DELETE,	  // delete
-	[0x72] = KEYCODE_DOWN,		  // down
-	[0x74] = KEYCODE_RIGHT,		  // right
-	[0x75] = KEYCODE_UP,		  // up
-	[0x7A] = KEYCODE_PAGEDOWN,	  // page down
-	[0x7D] = KEYCODE_PAGEUP	  // page up
+	[0x69] = KEYCODE_END,	   // end
+	[0x6B] = KEYCODE_LEFT,	   // left
+	[0x6C] = KEYCODE_HOME,	   // home
+	[0x70] = KEYCODE_INSERT,   // insert
+	[0x71] = KEYCODE_DELETE,   // delete
+	[0x72] = KEYCODE_DOWN,	   // down
+	[0x74] = KEYCODE_RIGHT,	   // right
+	[0x75] = KEYCODE_UP,	   // up
+	[0x7A] = KEYCODE_PAGEDOWN, // page down
+	[0x7D] = KEYCODE_PAGEUP	   // page up
 };
 
 static char ascii_table[] = {

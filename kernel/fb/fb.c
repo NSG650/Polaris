@@ -51,8 +51,11 @@ void framebuffer_init(struct framebuffer *fb) {
 	framebuff.color_masks[2] = fb->color_masks[2];
 
 	ctx = flanterm_fb_init(kmalloc, kffree, (void *)fb->address, fb->width,
-						   fb->height, fb->pitch, NULL, NULL, NULL, NULL, NULL,
-						   NULL, NULL, NULL, 0, 0, 1, 1, 1, 0);
+						   fb->height, fb->pitch, fb->color_masks[0].length,
+						   fb->color_masks[0].offset, fb->color_masks[1].length,
+						   fb->color_masks[1].offset, fb->color_masks[2].length,
+						   fb->color_masks[2].offset, NULL, NULL, NULL, NULL,
+						   NULL, NULL, NULL, NULL, 0, 0, 1, 1, 1, 0);
 
 	framebuffer_clear(fb->tex_color, fb->bg_color);
 

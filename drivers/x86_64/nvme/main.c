@@ -564,14 +564,15 @@ void nvme_init_controller(struct pci_device *pci_dev) {
 	}
 
 	this->stride = CAP_DOORBELL_STRIDE(this->nvme_bar0->capabilities);
-    this->queue_slots = CAP_MAX_ENTRIES(this->nvme_bar0->capabilities);
+	this->queue_slots = CAP_MAX_ENTRIES(this->nvme_bar0->capabilities);
 
-    nvme_create_admin_queue(this, &this->admin_queue, this->queue_slots, 0); // intialise first queue
+	nvme_create_admin_queue(this, &this->admin_queue, this->queue_slots,
+							0); // intialise first queue
 
-    uint32_t admin_queue_attrs = this->queue_slots - 1;
-    admin_queue_attrs |= admin_queue_attrs << 16;
-    admin_queue_attrs |= admin_queue_attrs << 16;
-    this->nvme_bar0->admin_queue_attrs = admin_queue_attrs;
+	uint32_t admin_queue_attrs = this->queue_slots - 1;
+	admin_queue_attrs |= admin_queue_attrs << 16;
+	admin_queue_attrs |= admin_queue_attrs << 16;
+	this->nvme_bar0->admin_queue_attrs = admin_queue_attrs;
 
 	CC_SET_COMMAND_SET(conf, CC_COMMANDSET_NVM);
 	CC_SET_ARBITRATION(conf, CC_ARBITRATION_ROUNDROBIN);
@@ -585,22 +586,23 @@ void nvme_init_controller(struct pci_device *pci_dev) {
 
 	this->nvme_bar0->admin_submit_queue =
 		(uint64_t)this->admin_queue.submit - MEM_PHYS_OFFSET;
-	this->nvme_bar0->admin_completion_attrs = (uint64_t)this->admin_queue.completion - MEM_PHYS_OFFSET;
+	this->nvme_bar0->admin_completion_attrs =
+		(uint64_t)this->admin_queue.completion - MEM_PHYS_OFFSET;
 
 	CC_ENABLE(conf);
 
 	this->nvme_bar0->controller_config = conf;
 
 	while (true) {
-        uint32_t status = this->nvme_bar0->controller_status;
-        if (status & (1 << 0)) {
-            break; // ready
-        }
-        if(!(status & (1 << 1))) {
-            kprintf("\tError: Controller status is fatal\n");
-            return;
-        }
-    }
+		uint32_t status = this->nvme_bar0->controller_status;
+		if (status & (1 << 0)) {
+			break; // ready
+		}
+		if (!(status & (1 << 1))) {
+			kprintf("\tError: Controller status is fatal\n");
+			return;
+		}
+	}
 
 	this->id =
 		(struct nvme_id *)((uintptr_t)pmm_allocz(
