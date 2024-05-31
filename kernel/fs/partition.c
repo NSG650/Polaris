@@ -1,4 +1,5 @@
 #include <debug/debug.h>
+#include <fs/devtmpfs.h>
 #include <fs/partition.h>
 #include <klibc/mem.h>
 #include <mm/slab.h>
@@ -141,10 +142,9 @@ void partition_enumerate(struct resource *res, char *root_name) {
 	}
 	if (partition_enumerate_mbr(res, root_name)) {
 		kprintf("%s is a MBR drive!\n", root_name);
-		kprintf("Expect it to not work since I haven't tested this proper "
+		kprintf("Expect it to not work since I haven't tested this properly "
 				":upside_down:\n");
 		return;
 	}
 	kprintf("Lost cause: %s\n", root_name);
-	return;
 }

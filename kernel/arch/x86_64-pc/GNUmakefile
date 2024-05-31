@@ -61,6 +61,7 @@ override INTERNALCFLAGS += 				\
 	-I include/debug       				\
 	-fsanitize=undefined   				\
 	-Wall -Wextra 		   				\
+	-Wno-error					\
 	-Wno-builtin-declaration-mismatch	\
 	-mno-red-zone
 

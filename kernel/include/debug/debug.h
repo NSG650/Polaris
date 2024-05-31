@@ -38,6 +38,7 @@ void kprintffos(bool fos, char *fmt, ...);
 void panic_(size_t *ip, size_t *bp, char *fmt, ...);
 void syscall_puts(struct syscall_arguments *args);
 void backtrace(uintptr_t *bp);
+void backtrace_unsafe(uintptr_t *bp);
 void debug_hex_dump(const void *data, size_t size);
 extern bool put_to_fb;
 extern bool print_now;

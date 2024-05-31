@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <fb/fb.h>
 #include <fs/devtmpfs.h>
+#include <fs/partition.h>
 #include <fs/ramdisk.h>
 #include <fs/streams.h>
 #include <fs/tmpfs.h>

@@ -331,7 +331,7 @@ void vmm_page_fault_handler(registers_t *reg) {
 		kprintf("Killing user thread tid %d under process %s for Page Fault\n",
 				thrd->tid, thrd->mother_proc->name);
 		kprintf("User thread crashed at address: %p\n", reg->rip);
-		// backtrace((void *)reg->rbp);
+		//		backtrace_unsafe((void *)reg->rbp);
 		kprintf("Page fault at %p present: %s, read/write: %s, "
 				"user/supervisor: %s, reserved: %s, execute: %s\n",
 				faulting_address, present ? "P" : "NP", read_write ? "R" : "RW",

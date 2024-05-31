@@ -19,6 +19,7 @@
 #include <debug/debug.h>
 #include <debug/printf.h>
 #include <fb/fb.h>
+#include <klibc/kargs.h>
 #include <klibc/mem.h>
 #include <locks/spinlock.h>
 #include <stdarg.h>
@@ -50,6 +51,10 @@ void kputs(char *string) {
 }
 
 void syscall_puts(struct syscall_arguments *args) {
+	if (kernel_arguments.kernel_args &
+		KERNEL_ARGS_SUPPRESS_USER_DEBUG_MESSAGES) {
+		return;
+	}
 	spinlock_acquire_or_wait(&write_lock);
 	if (args->args0)
 		kputs((char *)args->args0);

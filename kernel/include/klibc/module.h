@@ -31,4 +31,6 @@ extern module_list_t modules_list;
 uint64_t module_load(const char *path);
 bool module_unload(const char *name);
 
+void module_dump(void);
+
 #endif

@@ -197,11 +197,11 @@ int execve(char *path, char **argv, char **envp) {
 }
 
 int waitpid(int pid_to_wait_on, int *status, int mode) {
-	return syscall3(0x72, pid_to_wait_on, status, mode);
+	return syscall3(0x72, pid_to_wait_on, (uint64_t)status, mode);
 }
 
 int pipe(int *pipe_fds, int flags) {
-	return syscall2(0x125, pipe_fds, flags);
+	return syscall2(0x125, (uint64_t)pipe_fds, flags);
 }
 
 int dup3(int old_fd, int new_fd, int flags) {
@@ -217,7 +217,7 @@ void puts_to_console_with_length(char *string, size_t length) {
 }
 
 int sysinfo(struct sysinfo *info) {
-	syscall1(0x63, (uint64_t)info);
+	return syscall1(0x63, (uint64_t)info);
 }
 
 int msleep(long msec) {

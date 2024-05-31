@@ -6,7 +6,7 @@ tarball_blake2b="7efd6574b8bca081de6e31480ec0565c6d7fb773383e8e1fdcc17e35bba2bf4
 source_hostdeps="automake autoconf-2.69 libtool pkg-config"
 source_imagedeps="git"
 hostdeps="gcc autoconf-2.69 automake libtool pkg-config"
-deps="core-libs binutils zlib gmp mpfr mpc"
+deps="core-libs binutils zlib gmp mpfr mpc gettext"
 imagedeps="gcc"
 
 regenerate() {
