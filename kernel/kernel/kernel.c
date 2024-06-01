@@ -12,6 +12,7 @@
 #include <kernel.h>
 #include <klibc/kargs.h>
 #include <klibc/module.h>
+#include <klibc/random.h>
 #include <mm/mmap.h>
 #include <mm/pmm.h>
 #include <net/net.h>
@@ -20,8 +21,7 @@
 #include <sys/timer.h>
 
 const char *module_list[] = {"/usr/lib/modules/serial.ko",
-							 "/usr/lib/modules/nvme.ko",
-							 "/usr/lib/modules/tarfs.ko"};
+							 "/usr/lib/modules/nvme.ko"};
 
 #define MODULE_LIST_SIZE (sizeof(module_list) / sizeof(module_list[0]))
 #define ONE_SECOND (uint64_t)(1000 * 1000 * 1000)
@@ -89,6 +89,7 @@ void kernel_main(void *args) {
 	vfs_create(vfs_root, "/dev", 0755 | S_IFDIR);
 	vfs_mount(vfs_root, NULL, "/dev", "devtmpfs");
 	streams_init();
+	randdev_init();
 
 	kprintf("Hello I am %s running on CPU%u\n",
 			prcb_return_current_cpu()->running_thread->mother_proc->name,
@@ -110,11 +111,6 @@ void kernel_main(void *args) {
 	}
 	// Done so that gcc will stop REMOVING this function
 	partition_enumerate(NULL, NULL);
-
-	vfs_create(vfs_root, "/mnt", 0775 | S_IFDIR);
-	if (!vfs_mount(vfs_root, "/dev/nvme0n1", "/mnt", "tarfs")) {
-		kprintf("mount failed due to %u\n", errno);
-	}
 
 	fbdev_init();
 

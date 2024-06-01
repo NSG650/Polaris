@@ -17,11 +17,13 @@
 
 #include <asm/asm.h>
 #include <cpu/smp.h>
+#include <cpuid.h>
 #include <debug/debug.h>
 #include <fb/fb.h>
 #include <fw/acpi.h>
 #include <klibc/kargs.h>
 #include <klibc/module.h>
+#include <klibc/random.h>
 #include <klibc/time.h>
 #include <limine.h>
 #include <mm/pmm.h>
@@ -83,6 +85,31 @@ void nmi_vector(registers_t *reg) {
 }
 
 void breakpoint_handler(registers_t *reg);
+
+static uint64_t rdseed(void) {
+	uint64_t r = 0;
+	asm volatile("rdseed %0" : "=r"(r));
+	return r;
+}
+
+static uint64_t rdrand(void) {
+	uint64_t r = 0;
+	asm volatile("rdrand %0" : "=r"(r));
+	return r;
+}
+
+void random_setup_seed_source(void) {
+	uint32_t a = 0, b = 0, c = 0, d = 0;
+	__get_cpuid(7, &a, &b, &c, &d);
+	if (b & bit_RDSEED) {
+		kprintf("Using RDSEED as seed source\n");
+		random_get_seed = rdseed;
+	}
+	if (c & bit_RDRND) {
+		kprintf("Using RDRAND as seed source\n");
+		random_get_seed = rdrand;
+	}
+}
 
 void arch_entry(void) {
 	cli();
@@ -149,6 +176,9 @@ void arch_entry(void) {
 	apic_init();
 
 	smp_init(smp_request.response);
+
+	random_setup_seed_source();
+	random_set_seed(random_get_seed());
 
 	size_t module_info[2] = {0};
 	struct limine_file *module = module_request.response->modules[0];
