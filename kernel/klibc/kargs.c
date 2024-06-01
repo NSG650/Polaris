@@ -37,6 +37,10 @@ void kargs_init(char *args) {
 			kernel_arguments.kernel_args |=
 				KERNEL_ARGS_SUPPRESS_USER_DEBUG_MESSAGES;
 		}
+		if (!strncmp(tokens[i], "dont-trust-cpu-random-seed", 21)) {
+			kernel_arguments.kernel_args |=
+				KERNEL_ARGS_DONT_TRUST_CPU_RANDOM_SEED;
+		}
 	}
 
 	for (int i = 0; i < count; i++)

@@ -177,7 +177,13 @@ void arch_entry(void) {
 
 	smp_init(smp_request.response);
 
-	random_setup_seed_source();
+	// The NSA has also forced hardware manufacturers to backdoor their 'Random
+	// Number Generators' to allow them to break RSA encryption
+
+	if (!(kernel_arguments.kernel_args &
+		  KERNEL_ARGS_DONT_TRUST_CPU_RANDOM_SEED)) {
+		random_setup_seed_source();
+	}
 	random_set_seed(random_get_seed());
 
 	size_t module_info[2] = {0};

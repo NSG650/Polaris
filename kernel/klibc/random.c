@@ -28,8 +28,12 @@
 static uint64_t state[N] = {0};
 static uint32_t index = N + 1;
 
+// :god:
 static uint64_t _random_get_seed(void) {
-	return timer_get_abs_count();
+	int *k = kmalloc(sizeof(int));
+	int dk = *k;
+	kfree(k);
+	return (timer_get_abs_count() ^ dk);
 }
 
 uint64_t (*random_get_seed)(void) = _random_get_seed;

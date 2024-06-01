@@ -13,10 +13,11 @@ enum kernel_args_enum_t {
 	KERNEL_ARGS_SUPPRESS_UBSAN = 1 << 4,
 	KERNEL_ARGS_ALLOW_WRITES_TO_DISKS = 1 << 5,
 	KERNEL_ARGS_SUPPRESS_USER_DEBUG_MESSAGES = 1 << 6,
+	KERNEL_ARGS_DONT_TRUST_CPU_RANDOM_SEED = 1 << 7
 };
 
 struct kernel_args {
-	uint16_t kernel_args;
+	uint32_t kernel_args;
 	uint32_t cpu_count;
 	char *init_binary_path;
 };
