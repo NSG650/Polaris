@@ -1,7 +1,7 @@
 #ifndef SERIAL_TTY_H
 #define SERIAL_TTY_H
 
-#include "../../console/termios.h"
+#include "termios.h"
 #include <fs/devtmpfs.h>
 #include <klibc/resource.h>
 #include <stddef.h>
