@@ -183,4 +183,3 @@ struct termios {
 #define CTRL(x) ((x) & 037)
 
 #endif
-

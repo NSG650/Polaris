@@ -21,7 +21,11 @@
 #include <sys/timer.h>
 
 const char *module_list[] = {"/usr/lib/modules/serial.ko",
-							 "/usr/lib/modules/nvme.ko"};
+							 "/usr/lib/modules/nvme.ko",
+#if defined(__x86_64__)
+							 "/usr/lib/modules/ps2.ko"
+#endif
+};
 
 #define MODULE_LIST_SIZE (sizeof(module_list) / sizeof(module_list[0]))
 #define ONE_SECOND (uint64_t)(1000 * 1000 * 1000)
@@ -58,7 +62,8 @@ void syscall_sysinfo(struct syscall_arguments *args) {
 	from_user->bufferram = 0;
 	from_user->totalswap = 0;
 	from_user->freeswap = 0;
-	from_user->procs = (uint16_t)prcb_return_installed_cpus();
+	extern int64_t pid;
+	from_user->procs = (uint16_t)(pid - dead_processes.length);
 	from_user->mem_unit = 0;
 
 	args->ret = 0;

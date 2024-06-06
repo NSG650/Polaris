@@ -269,11 +269,7 @@ void main(void) {
 	memset(number, 0, 21);
 	ltoa(info.freeram / (1024 * 1024), number, 10);
 	puts_to_console(number);
-	puts_to_console(" MB of memory free along with ");
-	memset(number, 0, 21);
-	ltoa(info.procs, number, 10);
-	puts_to_console(number);
-	puts_to_console(" CPUs installed\n");
+	puts_to_console(" MB of memory free\n");
 
 	int fork_ret = fork();
 	if (fork_ret == 0) {
