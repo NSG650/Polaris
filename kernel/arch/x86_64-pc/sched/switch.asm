@@ -18,4 +18,5 @@ resched_context_switch:
 	pop rbx
 	pop rax
 	add rsp, 24
+	swapgs
 	iretq

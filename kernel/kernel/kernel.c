@@ -114,6 +114,9 @@ void kernel_main(void *args) {
 					module_list[i], mod_ret);
 		}
 	}
+
+	module_dump();
+
 	// Done so that gcc will stop REMOVING this function
 	partition_enumerate(NULL, NULL);
 
@@ -160,7 +163,7 @@ void kernel_main(void *args) {
 	kprintf("Running init binary %s\n", argv[0]);
 
 	if (!process_create_elf(
-			"init", PROCESS_READY_TO_RUN, 200000, argv[0],
+			"init", PROCESS_READY_TO_RUN, 400000, argv[0],
 			prcb_return_current_cpu()->running_thread->mother_proc))
 		panic("Failed to run init binary!\n");
 

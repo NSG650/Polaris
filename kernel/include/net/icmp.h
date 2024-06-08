@@ -14,6 +14,7 @@ struct icmp_header {
 } __attribute__((packed));
 
 void icmp_echo_reply(struct ip_packet *ip_pack, uint32_t length,
-					 uint8_t *dest_mac);
+					 uint8_t *dest_mac,
+					 struct net_nic_interfaces *nic_interfaces);
 
 #endif

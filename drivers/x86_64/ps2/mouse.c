@@ -71,8 +71,10 @@ static struct mouse_dev *mouse_resource = NULL;
 static struct event mouse_interrupt_event = {0};
 
 static void mouse_interrupt_handle(registers_t *r) {
+	cli();
 	event_trigger(&mouse_interrupt_event, false);
 	apic_eoi();
+	sti();
 }
 
 static _Noreturn void mouse_thread(void) {

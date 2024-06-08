@@ -51,6 +51,7 @@ void resched(registers_t *reg) {
 	if (running_thrd) {
 		running_thrd->reg = *reg;
 		running_thrd->fs_base = read_fs_base();
+		prcb_return_current_cpu()->fpu_save(running_thrd->fpu_storage);
 
 		running_thrd->stack = prcb_return_current_cpu()->user_stack;
 
@@ -80,15 +81,16 @@ void resched(registers_t *reg) {
 	prcb_return_current_cpu()->user_stack = running_thrd->stack;
 	prcb_return_current_cpu()->kernel_stack = running_thrd->kernel_stack;
 	prcb_return_current_cpu()->running_thread->state = THREAD_NORMAL;
+	prcb_return_current_cpu()->fpu_restore(running_thrd->fpu_storage);
 
 	set_fs_base(running_thrd->fs_base);
+
+	vmm_switch_pagemap(running_thrd->mother_proc->process_pagemap);
+	write_cr("3", read_cr("3"));
 
 	apic_eoi();
 	timer_sched_oneshot(48, running_thrd->runtime);
 	sti();
-
-	vmm_switch_pagemap(running_thrd->mother_proc->process_pagemap);
-	write_cr("3", read_cr("3"));
 
 	resched_context_switch(&running_thrd->reg);
 }

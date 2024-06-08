@@ -334,7 +334,7 @@ void sched_init(uint64_t args) {
 
 	futex_init();
 
-	process_create("kernel_tasks", PROCESS_READY_TO_RUN, 200000,
+	process_create("kernel_tasks", PROCESS_READY_TO_RUN, 400000,
 				   (uintptr_t)kernel_main, args, false, NULL);
 	sched_runit = true;
 }

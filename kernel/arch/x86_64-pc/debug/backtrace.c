@@ -10,7 +10,7 @@ void backtrace(uintptr_t *bp) {
 	if (rbp == NULL)
 		asm volatile("mov %%rbp, %0" : "=g"(rbp)::"memory");
 
-	if (rbp == NULL)
+	if (rbp == NULL || (uintptr_t)(rbp) < MEM_PHYS_OFFSET)
 		return;
 
 	for (;;) {

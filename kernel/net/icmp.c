@@ -6,7 +6,8 @@
 #include <net/net.h>
 
 void icmp_echo_reply(struct ip_packet *ip_pack, uint32_t length,
-					 uint8_t *dest_mac) {
+					 uint8_t *dest_mac,
+					 struct net_nic_interfaces *nic_interfaces) {
 	uint8_t source_protocol_addr[4] = {0};
 	memcpy(source_protocol_addr, ip_pack->source_protocol_addr, 4);
 
@@ -21,5 +22,5 @@ void icmp_echo_reply(struct ip_packet *ip_pack, uint32_t length,
 	icmp_pack->checksum = ip_calculate_checksum(
 		icmp_pack, length - ip_pack->internet_header_length * 4);
 
-	ip_send(ip_pack, length, source_protocol_addr, dest_mac);
+	ip_send(ip_pack, length, source_protocol_addr, dest_mac, nic_interfaces);
 }

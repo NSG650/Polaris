@@ -1,5 +1,6 @@
 #include "serial.h"
 #include <debug/debug.h>
+#include <errno.h>
 #include <klibc/mem.h>
 #include <klibc/module.h>
 #include <serial/serial.h>
@@ -41,21 +42,19 @@ static ssize_t serial_read(struct resource *_this,
 int serial_ioctl(struct resource *this, struct f_description *description,
 				 uint64_t request, uint64_t arg) {
 	spinlock_acquire_or_wait(&this->lock);
-
+	int ret = 0;
 	switch (request) {
 		case TCGETS: {
 			struct termios *t = (struct termios *)arg;
 			*t = ser->info.termios_info;
-			spinlock_drop(&this->lock);
-			return 0;
+			break;
 		}
 		case TCSETS:
 		case TCSETSW:
 		case TCSETSF: {
 			struct termios *t = (struct termios *)arg;
 			ser->info.termios_info = *t;
-			spinlock_drop(&this->lock);
-			return 0;
+			break;
 		}
 		case TIOCGWINSZ: {
 			struct winsize *w = (struct winsize *)arg;
@@ -63,13 +62,16 @@ int serial_ioctl(struct resource *this, struct f_description *description,
 			w->ws_col = 25;
 			w->ws_xpixel = 80 * 8;
 			w->ws_ypixel = 25 * 16;
-			spinlock_drop(&this->lock);
-			return 0;
+			break;
 		}
-		default:
-			spinlock_drop(&this->lock);
-			return resource_default_ioctl(this, description, request, arg);
+		default: {
+			errno = EINVAL;
+			ret = -1;
+			break;
+		}
 	}
+	spinlock_drop(&this->lock);
+	return ret;
 }
 
 static ssize_t serial_write(struct resource *_this,

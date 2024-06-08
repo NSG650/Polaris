@@ -1,6 +1,7 @@
 #ifndef IP_H
 #define IP_H
 
+#include <net/net.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -22,7 +23,9 @@ struct ip_packet {
 
 uint16_t ip_calculate_checksum(void *addr, int count);
 void ip_send(struct ip_packet *packet, uint16_t length,
-			 uint8_t *destination_protocol_addr, uint8_t *dest_mac);
-void ip_handle(struct ip_packet *packet, uint32_t length, uint8_t *dest_mac);
+			 uint8_t *destination_protocol_addr, uint8_t *dest_mac,
+			 struct net_nic_interfaces *nic_interfaces);
+void ip_handle(struct ip_packet *packet, uint32_t length, uint8_t *dest_mac,
+			   struct net_nic_interfaces *nic_interfaces);
 
 #endif

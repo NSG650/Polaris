@@ -228,7 +228,6 @@ void thread_destroy_context(struct thread *thrd) {
 	if (thrd->reg.cs & 0x3) {
 		kfree((void *)(thrd->kernel_stack - STACK_SIZE));
 		kfree((void *)(thrd->pf_stack - STACK_SIZE));
-		// TODO: Free the stack as well
 	} else {
 		kfree((void *)(thrd->kernel_stack - STACK_SIZE));
 	}
@@ -251,6 +250,9 @@ void process_fork_context(struct process *proc, struct process *fproc) {
 
 void process_destroy_context(struct process *proc) {
 	(void)proc;
-	// This is broken and needs to be fixed asap
-	// vmm_destroy_pagemap(proc->process_pagemap);
+	//	if
+	//(prcb_return_current_cpu()->running_thread->mother_proc->process_pagemap
+	//== proc->process_pagemap) { 		vmm_switch_pagemap(kernel_pagemap);
+	//	}
+	//	vmm_destroy_pagemap(proc->process_pagemap);
 }

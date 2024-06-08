@@ -33,7 +33,8 @@ uint16_t ip_calculate_checksum(void *addr, int count) {
 }
 
 void ip_send(struct ip_packet *packet, uint16_t length,
-			 uint8_t *destination_protocol_addr, uint8_t *dest_mac) {
+			 uint8_t *destination_protocol_addr, uint8_t *dest_mac,
+			 struct net_nic_interfaces *nic_interfaces) {
 	packet->version = 4;
 	packet->internet_header_length = 5;
 	packet->length = BSWAP16(length);
@@ -50,18 +51,22 @@ void ip_send(struct ip_packet *packet, uint16_t length,
 
 	packet->checksum = ip_calculate_checksum(packet, sizeof(struct ip_packet));
 
-	net_send_packet(dest_mac, packet, length, REQ_TYPE_IP);
+	nic_interfaces->send_packet(dest_mac, packet, length, REQ_TYPE_IP);
 }
 
-void ip_handle(struct ip_packet *packet, uint32_t length, uint8_t *dest_mac) {
+void ip_handle(struct ip_packet *packet, uint32_t length, uint8_t *dest_mac,
+			   struct net_nic_interfaces *nic_interfaces) {
 	if (packet->protocol == 1) {
 		void *clone = kmalloc(length);
 		memcpy(clone, packet, length);
 		uint8_t *clone_mac = kmalloc(6);
 		memcpy(clone_mac, dest_mac, 6);
 
-		icmp_echo_reply(clone, length, dest_mac);
+		icmp_echo_reply(clone, length, dest_mac, nic_interfaces);
+
+		kfree(clone);
+		kfree(clone_mac);
 	} else if (packet->protocol == 17) {
-		udp_handle(packet, length, dest_mac);
+		udp_handle(packet, length, dest_mac, nic_interfaces);
 	}
 }
