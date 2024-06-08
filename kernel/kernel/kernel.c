@@ -78,8 +78,8 @@ void kernel_dummy_sleeping_thread(void) {
 
 void kernel_dummy_threads(uint64_t id) {
 	for (;;) {
-		//        kputchar_('0' + id);
-		//        kputchar_('A' + prcb_return_current_cpu()->cpu_number);
+		kputchar_('0' + id);
+		kputchar_('A' + prcb_return_current_cpu()->cpu_number);
 		halt();
 		sched_resched_now();
 	}

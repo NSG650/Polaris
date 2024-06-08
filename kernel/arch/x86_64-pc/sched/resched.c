@@ -90,7 +90,6 @@ void resched(registers_t *reg) {
 
 	apic_eoi();
 	timer_sched_oneshot(48, running_thrd->runtime);
-	sti();
 
 	resched_context_switch(&running_thrd->reg);
 }

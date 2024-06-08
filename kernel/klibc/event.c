@@ -110,12 +110,13 @@ cleanup:
 }
 
 size_t event_trigger(struct event *event, bool drop) {
-	uint64_t flags;
 #if defined(__x86_64__)
+	uint64_t flags = 0;
 	asm volatile("pushfq; pop %0" : "=rm"(flags));
-#endif
-	cli();
 	bool old_state = flags & (1 << 9);
+#endif
+
+	cli();
 
 	spinlock_acquire_or_wait(&event->lock);
 
