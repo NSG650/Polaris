@@ -41,6 +41,7 @@ void sched_wake_up_sleeping_threads(void) {
 
 void resched(registers_t *reg) {
 	cli();
+
 	vmm_switch_pagemap(kernel_pagemap);
 	prcb_return_current_cpu()->sched_ticks++;
 	timer_stop_sched();
@@ -51,6 +52,7 @@ void resched(registers_t *reg) {
 	if (running_thrd) {
 		running_thrd->reg = *reg;
 		running_thrd->fs_base = read_fs_base();
+		running_thrd->gs_base = read_user_gs();
 		prcb_return_current_cpu()->fpu_save(running_thrd->fpu_storage);
 
 		running_thrd->stack = prcb_return_current_cpu()->user_stack;
@@ -70,8 +72,9 @@ void resched(registers_t *reg) {
 		timer_sched_oneshot(48, 20000);
 		prcb_return_current_cpu()->running_thread = NULL;
 		sti();
-		for (;;)
+		for (;;) {
 			halt();
+		}
 	}
 
 	prcb_return_current_cpu()->running_thread = running_thrd;
@@ -84,6 +87,7 @@ void resched(registers_t *reg) {
 	prcb_return_current_cpu()->fpu_restore(running_thrd->fpu_storage);
 
 	set_fs_base(running_thrd->fs_base);
+	// set_user_gs(running_thrd->gs_base);
 
 	vmm_switch_pagemap(running_thrd->mother_proc->process_pagemap);
 	write_cr("3", read_cr("3"));

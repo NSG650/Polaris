@@ -310,9 +310,6 @@ uint64_t vmm_virt_to_kernel(struct pagemap *pagemap, uint64_t virt_addr) {
 }
 
 void vmm_page_fault_handler(registers_t *reg) {
-	if (reg->cs & 0x3)
-		swapgs();
-
 	if (mmap_handle_pf(reg)) {
 		if (reg->cs & 0x3)
 			swapgs();

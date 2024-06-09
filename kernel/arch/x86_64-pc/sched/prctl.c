@@ -14,13 +14,12 @@ void syscall_prctl(struct syscall_arguments *args) {
 	uint64_t value = args->args1;
 	switch (option) {
 		case ARCH_SET_GS: {
-			//			prcb_return_current_cpu()->running_thread->gs_base =
-			// value;
-			//			set_user_gs(prcb_return_current_cpu()->running_thread->gs_base);
+			prcb_return_current_cpu()->running_thread->gs_base = value;
+			set_user_gs(prcb_return_current_cpu()->running_thread->gs_base);
 			break;
 		}
 		case ARCH_GET_GS:
-			//			args->ret = read_user_gs();
+			args->ret = read_user_gs();
 			break;
 		case ARCH_SET_FS: {
 			prcb_return_current_cpu()->running_thread->fs_base = value;

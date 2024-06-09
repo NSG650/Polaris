@@ -48,6 +48,9 @@ void thread_setup_context(struct thread *thrd, uintptr_t pc_address,
 		thrd->stack = thrd->kernel_stack;
 		thrd->pf_stack = thrd->kernel_stack;
 		thrd->reg.rsp = thrd->stack;
+
+		thrd->fs_base = read_fs_base();
+		thrd->gs_base = read_kernel_gs();
 	}
 
 	thrd->reg.rflags = 0x202;
@@ -250,9 +253,10 @@ void process_fork_context(struct process *proc, struct process *fproc) {
 
 void process_destroy_context(struct process *proc) {
 	(void)proc;
-	//	if
-	//(prcb_return_current_cpu()->running_thread->mother_proc->process_pagemap
-	//== proc->process_pagemap) { 		vmm_switch_pagemap(kernel_pagemap);
-	//	}
-	//	vmm_destroy_pagemap(proc->process_pagemap);
+#if 0
+	if (prcb_return_current_cpu()->running_thread->mother_proc->process_pagemap == proc->process_pagemap) { 
+		vmm_switch_pagemap(kernel_pagemap);
+	}
+	vmm_destroy_pagemap(proc->process_pagemap);
+#endif
 }

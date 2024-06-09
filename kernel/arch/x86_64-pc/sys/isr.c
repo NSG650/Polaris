@@ -308,8 +308,9 @@ void isr_register_handler(int n, void *handler) {
 }
 
 void isr_handle(registers_t *r) {
-	if (r->cs & 0x3)
+	if (r->cs & 0x3) {
 		swapgs();
+	}
 
 	if (r->isrNumber < 256 && event_handlers[r->isrNumber] != NULL)
 		return event_handlers[r->isrNumber](r);
@@ -317,10 +318,6 @@ void isr_handle(registers_t *r) {
 	if (r->isrNumber < 32) {
 		if (r->cs & 0x3) {
 			struct thread *thrd = prcb_return_current_cpu()->running_thread;
-			if (!thrd) {
-				swapgs();
-				return;
-			}
 			kprintf("Killing user thread tid %d under process %s for exception "
 					"%s\n",
 					thrd->tid, thrd->mother_proc->name,
@@ -349,6 +346,7 @@ void isr_handle(registers_t *r) {
 		}
 	}
 
-	if (r->cs & 0x3)
+	if (r->cs & 0x3) {
 		swapgs();
+	}
 }

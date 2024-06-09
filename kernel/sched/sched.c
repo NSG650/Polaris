@@ -592,6 +592,8 @@ void process_kill(struct process *proc, bool crash) {
 		are_we_killing_ourselves = true;
 	}
 
+	process_destroy_context(proc);
+
 	for (int i = 0; i < proc->process_threads.length; i++) {
 		thread_kill(proc->process_threads.data[i], false);
 	}
@@ -616,8 +618,6 @@ void process_kill(struct process *proc, bool crash) {
 		dead_proc->exit_code = -1;
 		dead_proc->was_it_killed = true;
 	}
-
-	process_destroy_context(proc);
 
 	vec_push(&dead_processes, dead_proc);
 
