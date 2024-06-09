@@ -27,6 +27,7 @@ void process_destroy_context(struct process *proc);
 extern struct thread *thread_list;
 extern struct process *process_list;
 extern struct thread *sleeping_threads;
+extern struct thread *waiting_on_event_threads;
 extern dead_process_vec_t dead_processes;
 extern struct resource *std_console_device;
 

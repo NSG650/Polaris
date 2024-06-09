@@ -1,3 +1,4 @@
-xxd -l 1024 /dev/nvme0
-xxd -l 1024 /dev/nvme0n1
+gears &
+gcc hello.c -o hello
+./hello
 

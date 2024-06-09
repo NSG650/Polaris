@@ -1,0 +1,20 @@
+name=tinygl
+from_source=tinygl
+revision=1
+hostdeps="gcc automake pkg-config"
+deps="core-libs"
+
+build() {
+	cp -rp "${source_dir}"/. ./
+	cd ./src
+	make -j${parallelism}
+	cd ../gears
+	make -j${parallelism}
+}
+
+package() {
+	cd ./gears
+	mkdir -p "${dest_dir}/usr/bin"
+	cp ./gears "${dest_dir}/usr/bin"
+}
+

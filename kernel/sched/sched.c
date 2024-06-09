@@ -16,6 +16,7 @@ bool sched_runit = false;
 struct thread *thread_list = NULL;
 struct process *process_list = NULL;
 struct thread *sleeping_threads = NULL;
+struct thread *waiting_on_event_threads = NULL;
 dead_process_vec_t dead_processes = {0};
 
 int64_t tid = 0;
@@ -245,6 +246,8 @@ void syscall_waitpid(struct syscall_arguments *args) {
 	int *status = (int *)args->args1;
 	int mode = (int)args->args2;
 
+	kprintf("syscall_waitpid(%d, %p, %d)\n", pid_to_wait_on, status, mode);
+
 	struct process *waiter_proc =
 		prcb_return_current_cpu()->running_thread->mother_proc;
 
@@ -334,7 +337,7 @@ void sched_init(uint64_t args) {
 
 	futex_init();
 
-	process_create("kernel_tasks", PROCESS_READY_TO_RUN, 400000,
+	process_create("kernel_tasks", PROCESS_READY_TO_RUN, 200000,
 				   (uintptr_t)kernel_main, args, false, NULL);
 	sched_runit = true;
 }
@@ -576,12 +579,14 @@ bool process_execve(char *path, char **argv, char **envp) {
 }
 
 void process_kill(struct process *proc, bool crash) {
-	spinlock_acquire_or_wait(&process_lock);
 	cli();
+	spinlock_acquire_or_wait(&process_lock);
 
 	if (proc->pid < 2) {
 		panic("Attempted to kill init!\n");
 	}
+
+	event_trigger(&proc->death_event, false);
 
 	struct dead_process *dead_proc = kmalloc(sizeof(struct dead_process));
 	dead_proc->parent_process = proc->parent_process;
@@ -624,12 +629,10 @@ void process_kill(struct process *proc, bool crash) {
 	vec_deinit(&proc->child_processes);
 	sched_remove_process_from_list(&process_list, proc);
 
-	event_trigger(&proc->death_event, false);
-
 	kfree(proc);
 
-	sti();
 	spinlock_drop(&process_lock);
+	sti();
 
 	if (are_we_killing_ourselves) {
 		prcb_return_current_cpu()->running_thread = NULL;

@@ -72,11 +72,11 @@ static void unlock_events(struct event **events, size_t num_events) {
 }
 
 ssize_t event_await(struct event **events, size_t num_events, bool block) {
+	cli();
 	ssize_t ret = -1;
 
 	struct thread *thread = prcb_return_current_cpu()->running_thread;
 
-	cli();
 	lock_events(events, num_events);
 
 	ssize_t i = check_for_pending(events, num_events);
@@ -94,12 +94,13 @@ ssize_t event_await(struct event **events, size_t num_events, bool block) {
 	attach_listeners(events, num_events, thread);
 	thread->state = THREAD_WAITING_FOR_EVENT;
 	sched_remove_thread_from_list(&thread_list, thread);
+	sched_add_thread_to_list(&waiting_on_event_threads, thread);
 	unlock_events(events, num_events);
 	sched_resched_now();
 
+	cli();
 	ret = thread->which_event;
 
-	cli();
 	lock_events(events, num_events);
 	detach_listeners(thread);
 	unlock_events(events, num_events);
@@ -132,9 +133,9 @@ size_t event_trigger(struct event *event, bool drop) {
 	for (size_t i = 0; i < event->listeners_i; i++) {
 		struct event_listener *listener = &event->listeners[i];
 		struct thread *thread = listener->thread;
-
 		thread->which_event = listener->which;
 		thread->state = THREAD_READY_TO_RUN;
+		sched_remove_thread_from_list(&waiting_on_event_threads, thread);
 		sched_add_thread_to_list(&thread_list, thread);
 	}
 

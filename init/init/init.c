@@ -276,7 +276,7 @@ void main(void) {
 		chdir("/root");
 		char *argv[] = {"/usr/bin/busybox", "ash", NULL};
 		char *envp[] = {"USER=ROOT", "HOME=/root",
-						"PATH=/bin:/usr/bin:/usr/local/bin", "TERM=linux",
+						"PATH=/usr/bin:/usr/local/bin:/bin", "TERM=linux",
 						NULL};
 
 		if (execve(argv[0], argv, envp) == -1)
