@@ -272,6 +272,7 @@ void main(void) {
 	puts_to_console(" MB of memory free\n");
 
 	int fork_ret = fork();
+
 	if (fork_ret == 0) {
 		chdir("/root");
 		char *argv[] = {"/usr/bin/busybox", "ash", NULL};
@@ -279,7 +280,7 @@ void main(void) {
 						"PATH=/usr/bin:/usr/local/bin:/bin", "TERM=linux",
 						NULL};
 
-		if (execve(argv[0], argv, envp) == -1)
+		if (execve(argv[0], argv, envp) < 0)
 			puts_to_console("Failed to execve :(\n");
 
 		syscall1(0x3c, 1);

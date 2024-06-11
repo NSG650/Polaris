@@ -1,0 +1,16 @@
+name=rwow
+version=0.0
+revision=1
+source_dir="rwow"
+hostdeps="gcc autoconf automake libtool pkg-config"
+deps="core-libs"
+
+build() {
+    cp -rp "${source_dir}"/. ./
+    ${OS_TRIPLET}-gcc rwow.c -o rwow
+}
+
+package() {
+    mkdir -p "${dest_dir}/usr/bin"
+    cp ./rwow "${dest_dir}/usr/bin/rwow"
+}

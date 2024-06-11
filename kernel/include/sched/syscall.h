@@ -18,9 +18,12 @@ struct syscall_arguments {
 typedef void (*syscall_handler_t)(struct syscall_arguments *);
 
 extern syscall_handler_t syscalls[];
+extern char *syscalls_name[];
 
 void syscall_install_handler(void);
-#define syscall_register_handler(A, B) syscalls[A] = B;
+#define syscall_register_handler(A, B) \
+	syscalls[A] = B;                   \
+	syscalls_name[A] = #B
 void syscall_handle(struct syscall_arguments *args);
 uint64_t syscall_helper_user_to_kernel_address(uintptr_t user_addr);
 void syscall_helper_copy_to_user(uintptr_t user_addr, void *buffer,

@@ -15,7 +15,7 @@ void syscall_prctl(struct syscall_arguments *args) {
 	switch (option) {
 		case ARCH_SET_GS: {
 			prcb_return_current_cpu()->running_thread->gs_base = value;
-			set_user_gs(prcb_return_current_cpu()->running_thread->gs_base);
+			// set_user_gs(prcb_return_current_cpu()->running_thread->gs_base);
 			break;
 		}
 		case ARCH_GET_GS:

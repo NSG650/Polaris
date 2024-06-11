@@ -190,6 +190,60 @@ level4:
 	return true;
 }
 
+bool vmm_remap_page(struct pagemap *pagemap, uintptr_t virt, uint64_t flags) {
+	spinlock_acquire_or_wait(&pagemap->lock);
+
+	size_t pml5_entry = (virt & ((uint64_t)0x1FF << 48)) >> 48;
+	size_t pml4_entry = (virt & ((uint64_t)0x1FF << 39)) >> 39;
+	size_t pml3_entry = (virt & ((uint64_t)0x1FF << 30)) >> 30;
+	size_t pml2_entry = (virt & ((uint64_t)0x1FF << 21)) >> 21;
+	size_t pml1_entry = (virt & ((uint64_t)0x1FF << 12)) >> 12;
+
+	uint64_t *pml5, *pml4, *pml3, *pml2, *pml1;
+
+	if (paging_mode_request.response->mode == LIMINE_PAGING_MODE_X86_64_5LVL) {
+		pml5 = pagemap->top_level;
+		goto level5;
+	} else {
+		pml4 = pagemap->top_level;
+		goto level4;
+	}
+
+level5:
+	pml4 = get_next_level(pml5, pml5_entry, false);
+	if (pml4 == NULL) {
+		goto die;
+	}
+level4:
+	pml3 = get_next_level(pml4, pml4_entry, false);
+	if (pml3 == NULL) {
+		goto die;
+	}
+
+	pml2 = get_next_level(pml3, pml3_entry, false);
+	if (pml2 == NULL) {
+		goto die;
+	}
+
+	pml1 = get_next_level(pml2, pml2_entry, false);
+	if (pml1 == NULL) {
+		goto die;
+	}
+
+	if ((pml1[pml1_entry] & 1) == 0) {
+	die:
+		spinlock_drop(&pagemap->lock);
+		return false;
+	}
+
+	pml1[pml1_entry] = (((pml1[pml1_entry]) & ~0xffffffffff000)) | flags;
+
+	asm volatile("invlpg [%0]" : : "r"(virt) : "memory");
+
+	spinlock_drop(&pagemap->lock);
+	return true;
+}
+
 bool vmm_unmap_page(struct pagemap *pagemap, uintptr_t virt) {
 	spinlock_acquire_or_wait(&pagemap->lock);
 

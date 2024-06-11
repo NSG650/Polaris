@@ -246,8 +246,6 @@ void syscall_waitpid(struct syscall_arguments *args) {
 	int *status = (int *)args->args1;
 	int mode = (int)args->args2;
 
-	kprintf("syscall_waitpid(%d, %p, %d)\n", pid_to_wait_on, status, mode);
-
 	struct process *waiter_proc =
 		prcb_return_current_cpu()->running_thread->mother_proc;
 
@@ -671,6 +669,7 @@ void thread_fork(struct thread *pthrd, struct process *fproc) {
 	thrd->state = THREAD_READY_TO_RUN;
 	thrd->runtime = pthrd->runtime;
 	thrd->mother_proc = fproc;
+	thrd->next = NULL;
 	spinlock_init(thrd->lock);
 
 	thread_fork_context(pthrd, thrd);
@@ -687,6 +686,7 @@ void thread_execve(struct process *proc, struct thread *thrd,
 				   uintptr_t pc_address, char **argv, char **envp) {
 	spinlock_acquire_or_wait(&thread_lock);
 
+	sched_remove_thread_from_list(&thread_list, thrd);
 	memzero(thrd, sizeof(struct thread));
 
 	thrd->tid = tid++;
@@ -696,6 +696,8 @@ void thread_execve(struct process *proc, struct thread *thrd,
 	thrd->mother_proc = proc;
 
 	thread_setup_context_for_execve(thrd, pc_address, argv, envp);
+
+	sched_add_thread_to_list(&thread_list, thrd);
 
 	spinlock_drop(&thread_lock);
 }
