@@ -622,6 +622,13 @@ void process_kill(struct process *proc, bool crash) {
 		dead_proc->was_it_killed = true;
 	}
 
+	for (int i = 0; i < MAX_FDS; i++) {
+		if (proc->fds[i] == NULL) {
+			continue;
+		}
+		fdnum_close(proc, i);
+	}
+
 	vec_push(&dead_processes, dead_proc);
 
 	vec_deinit(&proc->child_processes);
@@ -684,9 +691,7 @@ void thread_fork(struct thread *pthrd, struct process *fproc) {
 
 void thread_execve(struct process *proc, struct thread *thrd,
 				   uintptr_t pc_address, char **argv, char **envp) {
-	spinlock_acquire_or_wait(&thread_lock);
-
-	sched_remove_thread_from_list(&thread_list, thrd);
+	void *save_nex = thrd->next;
 	memzero(thrd, sizeof(struct thread));
 
 	thrd->tid = tid++;
@@ -694,10 +699,9 @@ void thread_execve(struct process *proc, struct thread *thrd,
 	thrd->runtime = proc->runtime;
 	spinlock_init(thrd->lock);
 	thrd->mother_proc = proc;
+	thrd->next = save_nex;
 
 	thread_setup_context_for_execve(thrd, pc_address, argv, envp);
-
-	sched_add_thread_to_list(&thread_list, thrd);
 
 	spinlock_drop(&thread_lock);
 }
