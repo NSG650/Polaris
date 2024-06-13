@@ -12,6 +12,7 @@ void syscall_handle(struct syscall_arguments *args) {
 		errno = ENOSYS;
 		return;
 	}
-	//	kprintf("%s called\n", syscalls_name[args->syscall_nr]);
+	//	kprintf("%s called by pid %ld\n", syscalls_name[args->syscall_nr],
+	//prcb_return_current_cpu()->running_thread->mother_proc->pid);
 	syscalls[args->syscall_nr](args);
 }

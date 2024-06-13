@@ -5,6 +5,13 @@
 #include <sched/syscall.h>
 #include <sys/prcb.h>
 
+static bool pipe_unref(struct resource *this,
+					   struct f_description *description) {
+	(void)description;
+	event_trigger(&this->event, false);
+	return true;
+}
+
 static ssize_t pipe_read(struct resource *this,
 						 struct f_description *description, void *buf,
 						 off_t offset, size_t count) {
@@ -97,6 +104,7 @@ struct pipe *pipe_create(void) {
 	p->res.stat.st_mode = S_IFIFO;
 	p->res.write = pipe_write;
 	p->res.read = pipe_read;
+	p->res.unref = pipe_unref;
 	return p;
 }
 
