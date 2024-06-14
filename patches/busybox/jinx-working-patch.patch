@@ -1,0 +1,14 @@
+diff --color -ur busybox-clean/include/libbb.h busybox-workdir/include/libbb.h
+--- busybox-clean/include/libbb.h	2023-01-03 19:44:43.000000000 +0530
++++ busybox-workdir/include/libbb.h	2024-06-14 16:55:27.746070968 +0530
+@@ -2635,10 +2635,6 @@
+ 	} while (0)
+ 
+ 
++
++void herror(const char *s);
++const char *hstrerror(int err);
++
+ POP_SAVED_FUNCTION_VISIBILITY
+ 
+ #endif

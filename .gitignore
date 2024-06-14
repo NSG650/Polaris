@@ -134,3 +134,6 @@ root/usr
 /iso_root
 
 *.img
+
+base-files/root/kernel/
+
