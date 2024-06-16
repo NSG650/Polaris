@@ -153,20 +153,17 @@ static ssize_t mouse_dev_read(struct resource *this,
 		return -1;
 	}
 
-	spinlock_acquire_or_wait(&mouse_resource->res.lock);
+	if (description->flags & O_NONBLOCK) {
+		errno = EAGAIN;
+		return -1;
+	}
 
 	while (!mouse_resource->new_packet) {
-		spinlock_drop(&mouse_resource->res.lock);
-
-		if (description->flags & O_NONBLOCK) {
-			errno = EAGAIN;
-			return -1;
-		}
-
 		struct event *events[] = {&mouse_resource->res.event};
 		event_await(events, 1, true);
-		spinlock_acquire_or_wait(&mouse_resource->res.lock);
 	}
+
+	spinlock_acquire_or_wait(&mouse_resource->res.lock);
 
 	memcpy(buf, &mouse_resource->packet, sizeof(struct mouse_packet));
 	mouse_resource->new_packet = false;

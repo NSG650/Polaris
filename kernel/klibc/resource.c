@@ -84,6 +84,8 @@ void *resource_create(size_t size) {
 		return NULL;
 	}
 
+	memzero(res, size);
+
 	res->read = stub_read;
 	res->write = stub_write;
 	res->ioctl = resource_default_ioctl;

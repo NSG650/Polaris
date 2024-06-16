@@ -1,77 +1,96 @@
+#include <debug/debug.h>
 #include <errno.h>
 #include <sched/futex.h>
 #include <sched/sched.h>
+#include <sys/prcb.h>
 
-futex_entry_t futexes;
-extern lock_t sched_lock;
+static lock_t futex_lock = {0};
+static HASHMAP_TYPE(struct futex_entry *) futex_hashmap = HASHMAP_INIT(256);
 
 bool futex_wait(uint32_t value, uint32_t *futex, struct thread *thrd) {
-	if (value != *futex)
+	if (*futex != value) {
+		errno = EAGAIN;
 		return false;
-	struct futex_entry *f = kmalloc(sizeof(struct futex_entry));
-	f->address = futex;
-	f->thrd = thrd;
-	f->value = value;
-	spinlock_acquire_or_wait(&sched_lock);
-	thrd->state = THREAD_WAITING_FOR_FUTEX;
-	spinlock_drop(&sched_lock);
+	}
 
-	// resched NOW!
-	sched_resched_now();
+	struct futex_entry *entry = NULL;
 
-	// won't make it here anyways
+	if (HASHMAP_GET(&futex_hashmap, entry, &futex, sizeof(uint32_t *))) {
+		goto wait;
+	}
+
+	entry = kmalloc(sizeof(struct futex_entry));
+	struct event *futex_event = kmalloc(sizeof(struct event));
+	memzero(futex_event, sizeof(struct event));
+
+	entry->value = value;
+	entry->address = futex;
+	entry->thrd = thrd;
+	entry->event = futex_event;
+
+	spinlock_acquire_or_wait(&futex_lock);
+	HASHMAP_INSERT(&futex_hashmap, &futex, sizeof(uint32_t *), entry);
+	spinlock_drop(&futex_lock);
+
+wait:
+	if (event_await(&entry->event, 1, true) == -1) {
+		errno = EINTR;
+		return false;
+	}
+
 	return true;
 }
 
-bool futex_wake(uint32_t *futex) {
-	struct futex_entry *match = NULL;
-	for (int i = 0; i < futexes.length; i++) {
-		match = futexes.data[i];
-		if (match->address == futex) {
-			spinlock_acquire_or_wait(&sched_lock);
-			match->thrd->state = THREAD_READY_TO_RUN;
-			spinlock_drop(&sched_lock);
-			vec_remove(&futexes, match);
-			return true;
-		}
+int futex_wake(uint32_t *futex) {
+	spinlock_acquire_or_wait(&futex_lock);
+	struct futex_entry *entry = NULL;
+
+	if (HASHMAP_GET(&futex_hashmap, entry, &futex, sizeof(uint32_t *))) {
+		event_trigger(entry->event, false);
 	}
-	return false;
+
+	spinlock_drop(&futex_lock);
+
+	return 0;
 }
 
 void syscall_futex(struct syscall_arguments *args) {
 	uint32_t *raw_user_addr = (uint32_t *)args->args0;
 	int opcode = args->args1;
 	uint32_t value = args->args2;
-	uint32_t *from_kernel_address =
+	uint32_t *raw_kernel_addr =
 		(uint32_t *)syscall_helper_user_to_kernel_address(
 			(uintptr_t)raw_user_addr);
-
 	struct thread *thrd = prcb_return_current_cpu()->running_thread;
 
-	if (!from_kernel_address) {
+	if (!raw_kernel_addr || !raw_user_addr) {
 		errno = EFAULT;
+		args->ret = -1;
 		return;
 	}
 
 	switch (opcode) {
 		case FUTEX_WAIT:
 		case FUTEX_WAIT_BITSET:
-			if (!futex_wait(value, from_kernel_address, thrd)) {
-				errno = EFAULT;
-				return;
-			}
-			return;
+			errno = 0;
+			args->ret = -1;
+			futex_wait(value, raw_kernel_addr, thrd);
+			break;
 		case FUTEX_WAKE:
 		case FUTEX_WAKE_BITSET:
-			futex_wake(from_kernel_address);
-			return;
+			*(volatile uint32_t *)
+				raw_user_addr; // Ensure the page isn't demand paged
+			args->ret = futex_wake(raw_user_addr);
+			break;
 		default:
+			args->ret = -1;
 			errno = EINVAL;
-			return;
+			break;
 	}
 }
 
 void futex_init(void) {
-	vec_init(&futexes);
+	uintptr_t phys = 0;
+	HASHMAP_INSERT(&futex_hashmap, &phys, sizeof(uintptr_t), NULL);
 	syscall_register_handler(0xca, syscall_futex);
 }
