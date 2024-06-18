@@ -1,2 +1,3 @@
-meme
+meme &
+busybox ash
 

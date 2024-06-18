@@ -68,78 +68,59 @@ struct mouse_dev {
 };
 
 static struct mouse_dev *mouse_resource = NULL;
-static struct event mouse_interrupt_event = {0};
+static uint64_t ignore_till = 0;
+static uint8_t mouse_cycle = 0;
+static struct mouse_packet packet = {0};
+static bool discard_packet = false;
 
 static void mouse_interrupt_handle(registers_t *r) {
 	cli();
-	event_trigger(&mouse_interrupt_event, false);
-	apic_eoi();
-	sti();
-}
-
-static _Noreturn void mouse_thread(void) {
-	// Apparently during startup there is some garbage mouse data usually
-	// 250-300 ms from boot and trips the mouse cycle. Ignore those.
-	uint64_t sleep_till = timer_get_sleep_ns(300 * 1000);
-	while (timer_get_abs_count() <= sleep_till) {
+	if (timer_get_abs_count() <= ignore_till) {
 		inb(0x60);
+		goto end;
 	}
+	switch (mouse_cycle) {
+		case 0: {
+			packet.flags = inb(0x60);
+			mouse_cycle++;
+			if (packet.flags & (1 << 6) || packet.flags & (1 << 7))
+				discard_packet = true; // discard rest of packet
+			if (!(packet.flags & (1 << 3)))
+				discard_packet = true; // discard rest of packet
+			break;
+		}
+		case 1: {
+			packet.delta_x = mouse_read();
+			mouse_cycle++;
+			break;
+		}
 
-	uint8_t mouse_cycle = 0;
-	struct mouse_packet packet = {0};
-	bool discard_packet = false;
+		case 2: {
+			packet.delta_y = mouse_read();
+			mouse_cycle = 0;
 
-	for (;;) {
-		struct event *events[] = {&mouse_interrupt_event};
-		event_await(events, 1, true);
-
-		switch (mouse_cycle) {
-			case 0: {
-				packet.flags = inb(0x60);
-				mouse_cycle++;
-				if (packet.flags & (1 << 6) || packet.flags & (1 << 7))
-					discard_packet = true; // discard rest of packet
-				if (!(packet.flags & (1 << 3)))
-					discard_packet = true; // discard rest of packet
-
-				continue;
-			}
-
-			case 1: {
-				packet.delta_x = mouse_read();
-				mouse_cycle++;
-				continue;
-			}
-
-			case 2: {
-				packet.delta_y = mouse_read();
-				mouse_cycle = 0;
-
-				if (discard_packet) {
-					discard_packet = !discard_packet;
-					continue;
-				}
+			if (discard_packet) {
+				discard_packet = !discard_packet;
 				break;
 			}
+			if (packet.flags & (1 << 4)) {
+				packet.delta_x = (int8_t)(uint8_t)packet.delta_x;
+			}
+
+			if (packet.flags & (1 << 5)) {
+				packet.delta_y = (int8_t)(uint8_t)packet.delta_y;
+			}
+
+			memcpy(&mouse_resource->packet, &packet,
+				   sizeof(struct mouse_packet));
+			mouse_resource->new_packet = true;
+			event_trigger(&mouse_resource->res.event, false);
+			break;
 		}
-
-		if (packet.flags & (1 << 4)) {
-			packet.delta_x = (int8_t)(uint8_t)packet.delta_x;
-		}
-
-		if (packet.flags & (1 << 5)) {
-			packet.delta_y = (int8_t)(uint8_t)packet.delta_y;
-		}
-
-		spinlock_acquire_or_wait(&mouse_resource->res.lock);
-		memcpy(&mouse_resource->packet, &packet, sizeof(struct mouse_packet));
-		mouse_resource->new_packet = true;
-		spinlock_drop(&mouse_resource->res.lock);
-
-		//       mouse_resource->res.status |= POLLIN;
-
-		event_trigger(&mouse_resource->res.event, false);
 	}
+end:
+	apic_eoi();
+	sti();
 }
 
 static ssize_t mouse_dev_read(struct resource *this,
@@ -148,7 +129,7 @@ static ssize_t mouse_dev_read(struct resource *this,
 	(void)this;
 	(void)offset;
 
-	if (count != sizeof(struct mouse_packet)) {
+	if (count < sizeof(struct mouse_packet)) {
 		errno = EINVAL;
 		return -1;
 	}
@@ -193,9 +174,7 @@ void mouse_init(void) {
 
 	devtmpfs_add_device((struct resource *)mouse_resource, "mouse");
 
+	ignore_till = timer_get_sleep_ns(300 * 1000);
 	isr_register_handler(60, mouse_interrupt_handle);
 	ioapic_redirect_irq(12, 60);
-
-	// the first process is always the kernel process
-	thread_create((uintptr_t)mouse_thread, 0, false, process_list);
 }
