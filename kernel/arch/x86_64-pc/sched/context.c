@@ -204,8 +204,6 @@ void thread_setup_context_for_execve(struct thread *thrd, uintptr_t pc_address,
 }
 
 void thread_fork_context(struct thread *thrd, struct thread *fthrd) {
-	struct process *proc = fthrd->mother_proc;
-
 	fthrd->kernel_stack = (uint64_t)kmalloc(STACK_SIZE);
 	fthrd->kernel_stack += STACK_SIZE;
 	fthrd->pf_stack = (uint64_t)kmalloc(STACK_SIZE);
@@ -221,9 +219,8 @@ void thread_fork_context(struct thread *thrd, struct thread *fthrd) {
 				 MEM_PHYS_OFFSET);
 
 	fthrd->stack = (uint64_t)pmm_allocz(STACK_SIZE / PAGE_SIZE);
-	proc->stack_top -= STACK_SIZE;
 
-	memcpy(thrd->fpu_storage, thrd->fpu_storage,
+	memcpy(fthrd->fpu_storage, thrd->fpu_storage,
 		   prcb_return_current_cpu()->fpu_storage_size);
 }
 

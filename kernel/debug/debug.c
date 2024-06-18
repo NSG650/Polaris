@@ -131,6 +131,7 @@ void panic_(size_t *ip, size_t *bp, char *fmt, ...) {
 	halt_other_cpus();
 	put_to_fb = 1;
 	extern bool is_smp;
+	extern bool sched_runit;
 	if (in_panic) {
 		kprintf("Pretty bad kernel panic here\n");
 		va_list args;
@@ -146,6 +147,14 @@ void panic_(size_t *ip, size_t *bp, char *fmt, ...) {
 		kprintf("Panic called on CPU%d\n",
 				prcb_return_current_cpu()->cpu_number);
 	}
+
+	if (sched_runit && prcb_return_current_cpu()->running_thread) {
+		kprintf("Current thread id: %ld\n",
+				prcb_return_current_cpu()->running_thread->tid);
+		kprintf("Process name corresponding to the current thread: %s\n",
+				prcb_return_current_cpu()->running_thread->mother_proc->name);
+	}
+
 	va_list args;
 	va_start(args, fmt);
 	kputs("*** PANIC:\t");

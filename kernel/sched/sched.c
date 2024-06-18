@@ -466,6 +466,7 @@ int64_t process_fork(struct process *proc, struct thread *thrd) {
 	process_fork_context(proc, fproc);
 
 	fproc->mmap_anon_base = proc->mmap_anon_base;
+	fproc->stack_top = proc->stack_top;
 	fproc->cwd = proc->cwd;
 	fproc->umask = proc->umask;
 	fproc->pid = pid++;
@@ -505,7 +506,7 @@ int64_t process_fork(struct process *proc, struct thread *thrd) {
 bool process_execve(char *path, char **argv, char **envp) {
 	cli();
 
-	spinlock_acquire(&process_lock);
+	spinlock_acquire_or_wait(&process_lock);
 
 	struct thread *thread = prcb_return_current_cpu()->running_thread;
 	struct process *proc = thread->mother_proc;
@@ -691,6 +692,7 @@ void thread_fork(struct thread *pthrd, struct process *fproc) {
 
 void thread_execve(struct process *proc, struct thread *thrd,
 				   uintptr_t pc_address, char **argv, char **envp) {
+	spinlock_acquire_or_wait(&thread_lock);
 	void *save_nex = thrd->next;
 	memzero(thrd, sizeof(struct thread));
 
@@ -701,7 +703,10 @@ void thread_execve(struct process *proc, struct thread *thrd,
 	thrd->mother_proc = proc;
 	thrd->next = save_nex;
 
+	// Lock the thread so it does not get scheduled mid execve
+	spinlock_acquire_or_wait(&thrd->lock);
 	thread_setup_context_for_execve(thrd, pc_address, argv, envp);
+	spinlock_drop(&thrd->lock);
 
 	spinlock_drop(&thread_lock);
 }

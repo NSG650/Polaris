@@ -4,6 +4,7 @@
 #include <fs/vfs.h>
 #include <klibc/misc.h>
 #include <klibc/resource.h>
+#include <klibc/time.h>
 #include <locks/spinlock.h>
 #include <mm/mmap.h>
 #include <mm/pmm.h>
@@ -323,6 +324,10 @@ bool devtmpfs_add_device(struct resource *device, const char *name) {
 	device->stat.st_dev = fs->dev_id;
 	device->stat.st_ino = fs->inode_counter++;
 	device->stat.st_nlink = 1;
+
+	device->stat.st_atim = time_realtime;
+	device->stat.st_ctim = time_realtime;
+	device->stat.st_mtim = time_realtime;
 
 	spinlock_acquire_or_wait(&vfs_lock);
 	HASHMAP_SINSERT(&devtmpfs_root->children, name, new_node);

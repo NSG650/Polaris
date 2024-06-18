@@ -56,6 +56,7 @@ void resched(registers_t *reg) {
 		prcb_return_current_cpu()->fpu_save(running_thrd->fpu_storage);
 
 		running_thrd->stack = prcb_return_current_cpu()->user_stack;
+		running_thrd->kernel_stack = prcb_return_current_cpu()->kernel_stack;
 
 		if (running_thrd->state == THREAD_NORMAL)
 			running_thrd->state = THREAD_READY_TO_RUN;

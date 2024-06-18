@@ -4,6 +4,7 @@
 #include <fs/vfs.h>
 #include <klibc/misc.h>
 #include <klibc/resource.h>
+#include <klibc/time.h>
 #include <locks/spinlock.h>
 #include <mm/mmap.h>
 #include <mm/pmm.h>
@@ -179,10 +180,9 @@ static inline struct tmpfs_resource *create_tmpfs_resource(struct tmpfs *this,
 	resource->stat.st_mode = mode;
 	resource->stat.st_nlink = 1;
 
-	// TODO: Port time stuff in
-	// resource->stat.st_atim = realtime_clock;
-	// resource->stat.st_ctim = realtime_clock;
-	// resource->stat.st_mtim = realtime_clock;
+	resource->stat.st_atim = time_realtime;
+	resource->stat.st_ctim = time_realtime;
+	resource->stat.st_mtim = time_realtime;
 
 	return resource;
 }

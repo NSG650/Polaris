@@ -148,11 +148,9 @@ void kernel_main(void *args) {
 	std_console_device = (vfs_get_node(vfs_root, "/dev/stty", true))->resource;
 
 	if (!std_console_device) {
-		kprintf("Failed to get a console device\n");
-		for (;;) {
-			halt();
-			pause();
-		}
+		kprintf("Failed to get a console device using /dev/null instead\n");
+		std_console_device =
+			(vfs_get_node(vfs_root, "/dev/null", true))->resource;
 	}
 
 	char *argv[] = {"/usr/bin/init", NULL};
