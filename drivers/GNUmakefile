@@ -10,6 +10,7 @@ ifeq ($(CONFIG_ARCH),x86_64)
 	CNVMEFILES := $(wildcard x86_64/nvme/*.c)
 	CVIRTIOGPUFILES := $(wildcard x86_64/virtiogpu/*.c)
 	CSERIALFILES := $(wildcard x86_64/serial/*.c)
+	CCONSOLEFILES := $(wildcard x86_64/console/*.c)
 endif
 
 .PHONY: all
@@ -17,6 +18,7 @@ all:
 	$(CC) $(CFLAGS) $(CNVMEFILES) -o nvme.ko
 	$(CC) $(CFLAGS) $(CVIRTIOGPUFILES) -o virtiogpu.ko
 	$(CC) $(CFLAGS) $(CSERIALFILES) -o serial.ko
+	$(CC) $(CFLAGS) $(CCONSOLEFILES) -o console.ko
 
 ifeq ($(CONFIG_ARCH),x86_64)
 	# PS2 devices

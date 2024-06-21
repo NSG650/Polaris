@@ -1,7 +1,7 @@
 #include <debug/debug.h>
+#include <io/ports.h>
 #include <klibc/mem.h>
 #include <klibc/module.h>
-#include <x86_64/io/ports.h>
 
 static void beep_play_sound(uint32_t freq) {
 	uint32_t div = 0;

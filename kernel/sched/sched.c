@@ -177,7 +177,7 @@ void syscall_getpid(struct syscall_arguments *args) {
 }
 
 void syscall_getppid(struct syscall_arguments *args) {
-	args->ret = -1;
+	args->ret = 0;
 	if (prcb_return_current_cpu()
 			->running_thread->mother_proc->parent_process) {
 		args->ret = prcb_return_current_cpu()
@@ -566,13 +566,14 @@ bool process_execve(char *path, char **argv, char **envp) {
 
 	proc->auxv = auxv;
 
-	spinlock_drop(&process_lock);
+	spinlock_init(proc->fds_lock);
+	spinlock_init(proc->lock);
 
 	thread_execve(proc, thread, entry, argv, envp);
 
 	vmm_switch_pagemap(kernel_pagemap);
+	spinlock_drop(&process_lock);
 
-	sti();
 	sched_resched_now();
 	return false;
 }
