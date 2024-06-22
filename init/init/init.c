@@ -276,8 +276,11 @@ void main(void) {
 	if (fork_ret == 0) {
 		chdir("/root");
 		char *argv[] = {"/usr/bin/busybox", "ash", NULL};
-		char *envp[] = {"USER=ROOT", "HOME=/root",
-						"PATH=/usr/bin:/usr/local/bin:/bin", "TERM=linux",
+		char *envp[] = {"USER=ROOT",
+						"HOME=/root",
+						"PATH=/usr/bin:/usr/local/bin:/bin",
+						"TERM=linux",
+						"SHELL=/usr/bin/busybox ash",
 						NULL};
 
 		if (execve(argv[0], argv, envp) < 0)

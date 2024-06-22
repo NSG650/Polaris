@@ -102,6 +102,7 @@ struct framebuffer {
 	uint32_t tex_color;
 	uint32_t bg_color;
 	struct fb_bitfield color_masks[3];
+	struct flanterm_context *ctx;
 };
 
 extern struct framebuffer framebuff;

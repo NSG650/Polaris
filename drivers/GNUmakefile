@@ -10,7 +10,6 @@ ifeq ($(CONFIG_ARCH),x86_64)
 	CNVMEFILES := $(wildcard x86_64/nvme/*.c)
 	CVIRTIOGPUFILES := $(wildcard x86_64/virtiogpu/*.c)
 	CSERIALFILES := $(wildcard x86_64/serial/*.c)
-	CCONSOLEFILES := $(wildcard x86_64/console/*.c)
 endif
 
 .PHONY: all
@@ -18,7 +17,6 @@ all:
 	$(CC) $(CFLAGS) $(CNVMEFILES) -o nvme.ko
 	$(CC) $(CFLAGS) $(CVIRTIOGPUFILES) -o virtiogpu.ko
 	$(CC) $(CFLAGS) $(CSERIALFILES) -o serial.ko
-	$(CC) $(CFLAGS) $(CCONSOLEFILES) -o console.ko
 
 ifeq ($(CONFIG_ARCH),x86_64)
 	# PS2 devices
@@ -26,6 +24,12 @@ ifeq ($(CONFIG_ARCH),x86_64)
 	$(CC) $(CFLAGS) x86_64/ps2/mouse.c -o mouse.o
 	$(LD) -r ps2.o mouse.o -o ps2.ko
 	rm ps2.o mouse.o
+
+	# the console driver
+	$(CC) $(CFLAGS) x86_64/console/main.c -o console.o
+	$(CC) $(CFLAGS) x86_64/console/keyboard.c -o keyboard.o
+	$(LD) -r console.o keyboard.o -o console.ko
+	rm console.o keyboard.o
 endif
 
 .PHONY: clean

@@ -57,6 +57,8 @@ void framebuffer_init(struct framebuffer *fb) {
 						   fb->color_masks[2].offset, NULL, NULL, NULL, NULL,
 						   NULL, NULL, NULL, NULL, 0, 0, 1, 1, 1, 0);
 
+	framebuff.ctx = ctx;
+
 	framebuffer_clear(fb->tex_color, fb->bg_color);
 
 	framebuffer_initialised = 1;

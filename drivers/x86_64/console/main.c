@@ -1,4 +1,4 @@
-#include "../termios.h"
+#include "console.h"
 #include <debug/debug.h>
 #include <errno.h>
 #include <fb/fb.h>
@@ -6,14 +6,17 @@
 #include <klibc/module.h>
 #include <klibc/resource.h>
 
-#define POLLIN 0x0001
-#define POLLOUT 0x0004
+static char kbd_buffer[KBD_BUFFER_SIZE];
+static size_t kbd_buffer_i = 0;
+static char kbd_bigbuf[KBD_BIGBUF_SIZE];
+static size_t kbd_bigbuf_i = 0;
 
-struct console {
-	struct resource res;
-	struct termios term;
-	size_t width, height;
-};
+static struct event console_event = {0};
+static lock_t read_lock = {0};
+
+static bool is_printable(uint8_t c) {
+	return c >= 0x20 && c <= 0x7e;
+}
 
 void *memset(void *b, int c, size_t len) {
 	size_t i = 0;
@@ -26,24 +29,178 @@ void *memset(void *b, int c, size_t len) {
 	return b;
 }
 
-static bool is_printable(uint8_t c) {
-	return c >= 0x20 && c <= 0x7e;
-}
+static ssize_t console_write(struct resource *this,
+							 struct f_description *description, const void *buf,
+							 off_t offset, size_t count) {
+	(void)description;
+	(void)offset;
 
-static int toupper(int c) {
-	if (c >= 'a' && c <= 'z') {
-		c -= 0x20;
+	if (!buf) {
+		errno = EFAULT;
+		return -1;
 	}
-	return c;
+
+	spinlock_acquire_or_wait(&this->lock);
+
+	char *r = (char *)buf;
+	for (size_t i = 0; i < count; i++) {
+		framebuffer_putchar(r[i]);
+	}
+
+	spinlock_drop(&this->lock);
+	return count;
 }
 
-static struct console *console_device = NULL;
+static void add_to_buf_char(char c, bool echo) {
+	if (c == '\r' && (console_device->term.c_iflag & ICRNL) == 0) {
+		c = '\n';
+	}
+
+	if (console_device->term.c_lflag & ICANON) {
+		switch (c) {
+			case '\n': {
+				if (kbd_buffer_i == KBD_BUFFER_SIZE) {
+					return;
+				}
+				kbd_buffer[kbd_buffer_i++] = c;
+				if (echo && (console_device->term.c_lflag & ECHO)) {
+					framebuffer_puts("\n");
+				}
+				for (size_t i = 0; i < kbd_buffer_i; i++) {
+					if ((console_device->res.status & POLLIN) == 0) {
+						console_device->res.status |= POLLIN;
+						event_trigger(&console_device->res.event, false);
+					}
+					if (kbd_bigbuf_i == KBD_BIGBUF_SIZE) {
+						return;
+					}
+					kbd_bigbuf[kbd_bigbuf_i++] = kbd_buffer[i];
+				}
+				kbd_buffer_i = 0;
+				return;
+			}
+			case '\b': {
+				if (kbd_buffer_i == 0) {
+					return;
+				}
+				kbd_buffer_i--;
+				size_t to_backspace;
+				if (kbd_buffer[kbd_buffer_i] >= 0x01 &&
+					kbd_buffer[kbd_buffer_i] <= 0x1a) {
+					to_backspace = 2;
+				} else {
+					to_backspace = 1;
+				}
+				kbd_buffer[kbd_buffer_i] = 0;
+				if (echo && (console_device->term.c_lflag & ECHO) != 0) {
+					for (size_t i = 0; i < to_backspace; i++) {
+						framebuffer_putchar('\b');
+						framebuffer_putchar(' ');
+						framebuffer_putchar('\b');
+					}
+				}
+				return;
+			}
+		}
+
+		if (kbd_buffer_i == KBD_BUFFER_SIZE) {
+			return;
+		}
+		kbd_buffer[kbd_buffer_i++] = c;
+	} else {
+		if ((console_device->res.status & POLLIN) == 0) {
+			console_device->res.status |= POLLIN;
+			event_trigger(&console_device->res.event, false);
+		}
+		if (kbd_bigbuf_i == KBD_BIGBUF_SIZE) {
+			return;
+		}
+		kbd_bigbuf[kbd_bigbuf_i++] = c;
+	}
+
+	if (echo && (console_device->term.c_lflag & ECHO) != 0) {
+		if (is_printable(c)) {
+			framebuffer_putchar(c);
+		} else if (c >= 0x01 && c <= 0x1a) {
+			char caret[3] = {0};
+			caret[0] = '^';
+			caret[1] = c + 0x40;
+			framebuffer_puts(caret);
+		}
+	}
+}
+
+void add_to_buf(char *ptr, size_t count, bool echo) {
+	spinlock_acquire_or_wait(&read_lock);
+	for (size_t i = 0; i < count; i++) {
+		char c = ptr[i];
+#if 0
+        if ((console_res->termios.c_lflag & ISIG) != 0) {
+            if (c == (char)console_res->termios.c_cc[VINTR]) {
+                // Send signal
+            }
+        }
+#endif
+		add_to_buf_char(c, echo);
+	}
+
+	event_trigger(&console_event, false);
+	spinlock_drop(&read_lock);
+}
+
+struct console *console_device = NULL;
 
 static ssize_t console_read(struct resource *this,
 							struct f_description *description, void *_buf,
 							off_t offset, size_t count) {
-	errno = EIO;
-	return -1;
+	char *buf = _buf;
+
+	while (!spinlock_acquire(&read_lock)) {
+		struct event *events[] = {&console_event};
+		if (event_await(events, 1, true) == -1) {
+			errno = EINTR;
+			return -1;
+		}
+	}
+
+	bool wait = true;
+
+	for (size_t i = 0; i < count;) {
+		if (kbd_bigbuf_i != 0) {
+			buf[i] = kbd_bigbuf[0];
+			i++;
+			kbd_bigbuf_i--;
+			for (size_t j = 0; j < kbd_bigbuf_i; j++) {
+				kbd_bigbuf[j] = kbd_bigbuf[j + 1];
+			}
+			if (kbd_bigbuf_i == 0 &&
+				(console_device->res.status & POLLIN) != 0) {
+				console_device->res.status &= ~POLLIN;
+				event_trigger(&console_device->res.event, false);
+			}
+			wait = false;
+		} else {
+			if (wait == true) {
+				spinlock_drop(&read_lock);
+				for (;;) {
+					struct event *events[] = {&console_event};
+					if (event_await(events, 1, true) == -1) {
+						errno = EINTR;
+						return -1;
+					}
+					if (spinlock_acquire(&read_lock) == true) {
+						break;
+					}
+				}
+			} else {
+				spinlock_drop(&read_lock);
+				return i;
+			}
+		}
+	}
+
+	spinlock_drop(&read_lock);
+	return count;
 }
 
 int console_ioctl(struct resource *this, struct f_description *description,
@@ -74,10 +231,10 @@ int console_ioctl(struct resource *this, struct f_description *description,
 		case TIOCGWINSZ: {
 			struct winsize *w = (void *)arg;
 			if (w) {
-				w->ws_row = console_device->width;
-				w->ws_col = console_device->height;
-				w->ws_xpixel = w->ws_row * 8;
-				w->ws_ypixel = w->ws_col * 16;
+				w->ws_row = framebuff.ctx->rows;
+				w->ws_col = framebuff.ctx->cols;
+				w->ws_xpixel = framebuff.width;
+				w->ws_ypixel = framebuff.height;
 			}
 			break;
 		}
@@ -91,26 +248,31 @@ int console_ioctl(struct resource *this, struct f_description *description,
 	return ret;
 }
 
-static ssize_t console_write(struct resource *this,
-							 struct f_description *description, const void *buf,
-							 off_t offset, size_t count) {
-	(void)description;
-	(void)offset;
+static void dec_private(uint64_t esc_val_count, uint32_t *esc_values,
+						uint64_t final) {
+	(void)esc_val_count;
 
-	if (!buf) {
-		errno = EFAULT;
-		return -1;
+	switch (esc_values[0]) {
+		case 1:
+			switch (final) {
+				case 'h':
+					console_device->decckm = true;
+					break;
+				case 'l':
+					console_device->decckm = false;
+					break;
+			}
 	}
+}
 
-	spinlock_acquire_or_wait(&this->lock);
+static void term_callback(struct flanterm_context *term, uint64_t t, uint64_t a,
+						  uint64_t b, uint64_t c) {
+	(void)term;
 
-	char *r = (char *)buf;
-	for (size_t i = 0; i < count; i++) {
-		framebuffer_putchar(r[i]);
+	switch (t) {
+		case 10:
+			dec_private(a, (void *)b, c);
 	}
-
-	spinlock_drop(&this->lock);
-	return count;
 }
 
 uint64_t driver_entry(struct module *driver_module) {
@@ -125,15 +287,8 @@ uint64_t driver_entry(struct module *driver_module) {
 	console_device->width = framebuff.width / 8;
 	console_device->height = framebuff.height / 16;
 
-	console_device->term.c_iflag = BRKINT | IGNPAR | ICRNL | IXON | IMAXBEL;
-	console_device->term.c_oflag = OPOST | ONLCR;
-	console_device->term.c_cflag = CS8 | CREAD;
-	console_device->term.c_lflag =
-		ISIG | ICANON | ECHO | ECHOE | ECHOK | ECHOCTL | ECHOKE;
-
+	console_device->term.c_lflag = ISIG | ICANON | ECHO;
 	console_device->term.c_cc[VINTR] = CTRL('C');
-	console_device->term.c_cc[VEOF] = CTRL('D');
-	console_device->term.c_cc[VSUSP] = CTRL('Z');
 
 	console_device->term.ibaud = 38400;
 	console_device->term.obaud = 38400;
@@ -144,10 +299,15 @@ uint64_t driver_entry(struct module *driver_module) {
 	console_device->res.write = console_write;
 	console_device->res.ioctl = console_ioctl;
 
+	console_device->decckm = false;
+
 	devtmpfs_add_device((struct resource *)console_device, "console");
 
 	kprintffos(false, "Bye bye!\n");
 	framebuffer_clear(0x00eee8d5, 0);
+	framebuff.ctx->callback = term_callback;
+
+	keyboard_init();
 
 	return 0;
 }
