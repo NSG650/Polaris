@@ -6,9 +6,9 @@
 #include <klibc/module.h>
 #include <klibc/resource.h>
 
-static char kbd_buffer[KBD_BUFFER_SIZE];
+static char kbd_buffer[KBD_BUFFER_SIZE] = {0};
 static size_t kbd_buffer_i = 0;
-static char kbd_bigbuf[KBD_BIGBUF_SIZE];
+static char kbd_bigbuf[KBD_BIGBUF_SIZE] = {0};
 static size_t kbd_bigbuf_i = 0;
 
 static struct event console_event = {0};
@@ -52,8 +52,8 @@ static ssize_t console_write(struct resource *this,
 }
 
 static void add_to_buf_char(char c, bool echo) {
-	if (c == '\r' && (console_device->term.c_iflag & ICRNL) == 0) {
-		c = '\n';
+	if (c == '\n' && (console_device->term.c_iflag & ICRNL) == 0) {
+		c = '\r';
 	}
 
 	if (console_device->term.c_lflag & ICANON) {
@@ -261,6 +261,8 @@ static void dec_private(uint64_t esc_val_count, uint32_t *esc_values,
 				case 'l':
 					console_device->decckm = false;
 					break;
+				default:
+					break;
 			}
 	}
 }
@@ -287,8 +289,14 @@ uint64_t driver_entry(struct module *driver_module) {
 	console_device->width = framebuff.width / 8;
 	console_device->height = framebuff.height / 16;
 
-	console_device->term.c_lflag = ISIG | ICANON | ECHO;
+	console_device->term.c_iflag = BRKINT | IGNPAR | ICRNL | IXON | IMAXBEL;
+	console_device->term.c_oflag = OPOST | ONLCR;
+	console_device->term.c_cflag = CS8 | CREAD;
+	console_device->term.c_lflag =
+		ISIG | ICANON | ECHO | ECHOE | ECHOK | ECHOCTL | ECHOKE;
 	console_device->term.c_cc[VINTR] = CTRL('C');
+	console_device->term.c_cc[VEOF] = CTRL('D');
+	console_device->term.c_cc[VSUSP] = CTRL('Z');
 
 	console_device->term.ibaud = 38400;
 	console_device->term.obaud = 38400;

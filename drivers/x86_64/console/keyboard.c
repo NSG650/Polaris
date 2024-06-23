@@ -161,9 +161,6 @@ static void keyboard_interrupt_handle(registers_t *r) {
 	char c = 0;
 	if (d < SCANCODE_MAX) {
 		switch ((keymap_state >> 1) << 1) {
-			case 0:
-				c = convtab_nomod[d];
-				break;
 			case SHIFT_ACTIVE:
 				c = convtab_shift[d];
 				break;
