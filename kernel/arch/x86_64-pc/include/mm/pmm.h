@@ -23,21 +23,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-static inline bool bitmap_test(void *bitmap, size_t bit) {
-	uint8_t *bitmap_u8 = bitmap;
-	return bitmap_u8[bit / 8] & (1 << (bit % 8));
-}
-
-static inline void bitmap_set(void *bitmap, size_t bit) {
-	uint8_t *bitmap_u8 = bitmap;
-	bitmap_u8[bit / 8] |= (1 << (bit % 8));
-}
-
-static inline void bitmap_reset(void *bitmap, size_t bit) {
-	uint8_t *bitmap_u8 = bitmap;
-	bitmap_u8[bit / 8] &= ~(1 << (bit % 8));
-}
-
 void *pmm_alloc(size_t pages);
 void *pmm_allocz(size_t pages);
 void pmm_free(void *addr, size_t pages);

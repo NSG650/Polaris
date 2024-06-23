@@ -184,6 +184,10 @@ create_devtmpfs_resource(struct devtmpfs *this, int mode) {
 	resource->stat.st_mode = mode;
 	resource->stat.st_nlink = 1;
 
+	resource->stat.st_atim = time_realtime;
+	resource->stat.st_ctim = time_realtime;
+	resource->stat.st_mtim = time_realtime;
+
 	return resource;
 }
 

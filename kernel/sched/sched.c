@@ -307,11 +307,14 @@ void syscall_waitpid(struct syscall_arguments *args) {
 	}
 
 	struct dead_process *dead_proc = NULL;
+	
+	spinlock_acquire_or_wait(&process_lock);
 	if (pid_to_wait_on == -1) {
 		dead_proc = sched_return_recently_dead_child_process(waiter_proc);
 	} else {
 		dead_proc = sched_pid_to_dead_child_process(pid_to_wait_on);
 	}
+	spinlock_drop(&process_lock);
 
 	kfree(events);
 	*status = dead_proc->exit_code;
@@ -717,6 +720,7 @@ void thread_sleep(struct thread *thrd, uint64_t ns) {
 
 	thrd->state = THREAD_SLEEPING;
 	thrd->sleeping_till = timer_get_sleep_ns(ns);
+	spinlock_drop(&thrd->lock);
 
 	sched_remove_thread_from_list(&thread_list, thrd);
 	sched_add_thread_to_list(&sleeping_threads, thrd);

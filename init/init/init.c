@@ -275,7 +275,7 @@ void main(void) {
 
 	if (fork_ret == 0) {
 		chdir("/root");
-		char *argv[] = {"/usr/bin/busybox", "ash", NULL};
+		char *argv[] = {"/usr/bin/busybox", "ash", "test.sh", NULL};
 		char *envp[] = {"USER=ROOT",
 						"HOME=/root",
 						"PATH=/usr/bin:/usr/local/bin:/bin",

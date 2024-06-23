@@ -28,6 +28,21 @@ static uint64_t total_page_count = 0;
 static uint64_t last_used_index = 0;
 static uint64_t free_pages = 0;
 
+static inline bool bitmap_test(void *bitmap, size_t bit) {
+	uint8_t *bitmap_u8 = bitmap;
+	return bitmap_u8[bit / 8] & (1 << (bit % 8));
+}
+
+static inline void bitmap_set(void *bitmap, size_t bit) {
+	uint8_t *bitmap_u8 = bitmap;
+	bitmap_u8[bit / 8] |= (1 << (bit % 8));
+}
+
+static inline void bitmap_reset(void *bitmap, size_t bit) {
+	uint8_t *bitmap_u8 = bitmap;
+	bitmap_u8[bit / 8] &= ~(1 << (bit % 8));
+}
+
 void pmm_init(struct limine_memmap_entry **memmap, size_t memmap_entries) {
 	uint64_t highest_addr = 0;
 

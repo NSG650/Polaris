@@ -1,3 +1,2 @@
-meme &
+gears &
 busybox ash
-
