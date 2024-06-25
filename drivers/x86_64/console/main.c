@@ -205,10 +205,6 @@ static ssize_t console_read(struct resource *this,
 
 int console_ioctl(struct resource *this, struct f_description *description,
 				  uint64_t request, uint64_t arg) {
-	if (!arg) {
-		return -1;
-	}
-
 	spinlock_acquire_or_wait(&this->lock);
 
 	int ret = 0;
@@ -235,6 +231,9 @@ int console_ioctl(struct resource *this, struct f_description *description,
 				w->ws_col = framebuff.ctx->cols;
 				w->ws_xpixel = framebuff.width;
 				w->ws_ypixel = framebuff.height;
+			} else {
+				errno = EINVAL;
+				ret = -1;
 			}
 			break;
 		}
