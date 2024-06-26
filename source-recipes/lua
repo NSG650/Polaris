@@ -1,4 +1,4 @@
 name=lua
-version=5.4.6
+version=5.4.7
 tarball_url="https://www.lua.org/ftp/lua-${version}.tar.gz"
-tarball_blake2b="b5d8dbc4b3ec1708b715be438c1a1f48d4f5f226885992af147c1aa6a8823bed318f77ef7cc92b265dadd26cf6088f0f39784fbfd2f9887c35de8e9def2c0558"
+tarball_blake2b="151baed5c40ed117a26a4fb8d0b02f247eacacd98c3270c308a19e453eb647f6c3d5a6a5811fac7ec95db9866c2f06847d5c2be97c83b1e14e561ac8f7482d30"

@@ -12,7 +12,7 @@ polaris.iso: jinx
 	./build-support/makeiso.sh
 
 jinx:
-	curl -Lo jinx https://raw.githubusercontent.com/mintsuki/jinx/c8f5398422621cb1263d9e02ea0e2fbe5c978497/jinx
+	curl -Lo jinx https://raw.githubusercontent.com/mintsuki/jinx/e86d99f1156b33cd5b37a8bb25317949511a28d0/jinx
 	chmod +x jinx
 
 .PHONY: kernel-clean
