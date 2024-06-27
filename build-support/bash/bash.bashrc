@@ -11,13 +11,10 @@ HISTCONTROL=ignoredups
 HISTSIZE=-1
 HISTFILESIZE=-1
 
-NORMAL="\[\e[0m\]"
-RED="\[\e[1;31m\]"
-GREEN="\[\e[1;32m\]"
 if [[ $EUID == 0 ]] ; then
-  PS1="$RED\u@\h [ $NORMAL\w$RED ]# $NORMAL"
+  PS1="\[\e[m\][\t] \[\e[31m\]\u\[\e[m\]\[\e[31m\]@\[\e[m\]\[\e[31m\]\h\[\e[m\] \[\e[34m\]\w\[\e[m\]# "
 else
-  PS1="$GREEN\u@\h [ $NORMAL\w$GREEN ]\$ $NORMAL"
+  PS1="\[\e[m\][\t] \[\e[32m\]\u\[\e[m\]\[\e[32m\]@\[\e[m\]\[\e[32m\]\h\[\e[m\] \[\e[34m\]\w\[\e[m\]$ "
 fi
 
 unset RED GREEN NORMAL

@@ -47,6 +47,12 @@ struct f_descriptor {
 	int flags;
 };
 
+struct pollfd {
+	int fd;
+	short events;
+	short revents;
+};
+
 void *resource_create(size_t size);
 dev_t resource_create_dev_id(void);
 
@@ -78,5 +84,6 @@ void syscall_fcntl(struct syscall_arguments *args);
 void syscall_ioctl(struct syscall_arguments *args);
 void syscall_dup3(struct syscall_arguments *args);
 void syscall_fchmodat(struct syscall_arguments *args);
+void syscall_ppoll(struct syscall_arguments *args);
 
 #endif

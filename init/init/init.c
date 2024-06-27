@@ -275,10 +275,13 @@ void main(void) {
 
 	if (fork_ret == 0) {
 		chdir("/root");
-		char *argv[] = {"/usr/bin/bash", "-l", NULL};
-		char *envp[] = {
-			"USER=ROOT",  "HOME=/root",	   "PATH=/usr/bin:/usr/local/bin:/bin",
-			"TERM=linux", "SHELL=/bin/sh", NULL};
+		char *argv[] = {"/usr/bin/bash", NULL};
+		char *envp[] = {"USER=ROOT",
+						"HOME=/root",
+						"PATH=/usr/bin:/usr/local/bin:/bin",
+						"TERM=linux",
+						"SHELL=/usr/bin/bash",
+						NULL};
 
 		if (execve(argv[0], argv, envp) < 0)
 			puts_to_console("Failed to execve :(\n");

@@ -2,6 +2,7 @@
 #include <errno.h>
 #include <fs/vfs.h>
 #include <klibc/resource.h>
+#include <klibc/time.h>
 #include <mm/slab.h>
 #include <sched/sched.h>
 #include <stdbool.h>
@@ -507,4 +508,110 @@ void syscall_fchmodat(struct syscall_arguments *args) {
 	target->resource->stat.st_mode &= ~0777;
 	target->resource->stat.st_mode |= mode & 0777;
 	args->ret = 0;
+}
+
+void syscall_ppoll(struct syscall_arguments *args) {
+	struct process *proc =
+		prcb_return_current_cpu()->running_thread->mother_proc;
+	struct pollfd *pfds = (struct pollfd *)(args->args0);
+	uint32_t nfds = (uint32_t)(args->args1);
+	struct timespec *timeout = (struct timespec *)(args->args2);
+	// sigmask is unused rn since we dont implement signals
+
+	int ret = 0;
+	int fd_count = 0;
+	int event_count = 0;
+	struct timer *timer = NULL;
+
+	if (nfds == 0) {
+		goto end;
+	}
+
+	if (nfds > EVENT_MAX_LISTENERS) {
+		errno = EINVAL;
+		ret = -1;
+		goto end;
+	}
+
+	int fd_num_list[MAX_EVENTS] = {0};
+	struct f_description *fd_list[MAX_EVENTS] = {0};
+	struct event *events[MAX_EVENTS] = {0};
+
+	for (uint32_t i = 0; i < nfds; i++) {
+		struct pollfd *pfd = &pfds[i];
+		pfd->revents = 0;
+		if (pfd->fd < 0) {
+			continue;
+		}
+		struct f_descriptor *fd = fd_from_fdnum(proc, pfd->fd);
+		if (fd == NULL) {
+			pfd->revents = POLLNVAL;
+			ret++;
+			continue;
+		}
+		struct f_description *description = fd->description;
+		struct resource *res = description->res;
+		int status = res->status;
+		if (((uint16_t)status & pfd->events) != 0) {
+			pfd->revents = (uint16_t)status & pfd->events;
+			ret++;
+			description->refcount--;
+			continue;
+		}
+		fd_list[fd_count] = description;
+		fd_num_list[fd_count++] = i;
+		events[event_count++] = &res->event;
+	}
+
+	if (ret) {
+		goto end;
+	}
+
+	if (timeout != NULL) {
+		timer = timer_new(*timeout);
+		if (timer == NULL) {
+			errno = ENOMEM;
+			ret = -1;
+			goto end;
+		}
+
+		events[event_count++] = &timer->event;
+	}
+
+	for (;;) {
+		ssize_t which = event_await(events, event_count, true);
+		if (which == -1) {
+			ret = -1;
+			errno = EINTR;
+			goto end;
+		}
+
+		if (timer != NULL && which == event_count - 1) {
+			ret = 0;
+			goto end;
+		}
+
+		struct pollfd *pollfd = &pfds[fd_num_list[which]];
+		struct f_description *fd = fd_list[which];
+		struct resource *res = fd->res;
+
+		int status = res->status;
+		if (((uint16_t)status & pollfd->events) != 0) {
+			pollfd->revents = (uint16_t)status & pollfd->events;
+			ret++;
+			break;
+		}
+	}
+
+end:
+	for (int i = 0; i < fd_count; i++) {
+		fd_list[i]->refcount--;
+	}
+
+	if (timer != NULL) {
+		timer_disarm(timer);
+		kfree(timer);
+	}
+
+	args->ret = ret;
 }

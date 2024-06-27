@@ -34,9 +34,10 @@ build() {
             -DNON_INTERACTIVE_LOGIN_SHELLS \
         " \
     autotools_configure \
-		--with-curses \
-        --disable-readline \
-        --without-bash-malloc
+        --with-curses \
+        --enable-readline \
+        --without-bash-malloc \
+        --with-installed-readline="${sysroot}/usr/lib"
 
     make -j${parallelism}
 }

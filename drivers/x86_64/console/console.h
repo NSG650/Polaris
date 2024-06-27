@@ -4,9 +4,6 @@
 #include "../termios.h"
 #include <klibc/resource.h>
 
-#define POLLIN 0x0001
-#define POLLOUT 0x0004
-
 #define KBD_BUFFER_SIZE 1024
 #define KBD_BIGBUF_SIZE 4096
 

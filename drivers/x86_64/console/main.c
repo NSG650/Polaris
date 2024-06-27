@@ -300,7 +300,7 @@ uint64_t driver_entry(struct module *driver_module) {
 	console_device->term.ibaud = 38400;
 	console_device->term.obaud = 38400;
 
-	console_device->res.status |= POLLOUT;
+	console_device->res.status |= POLLPRI;
 
 	console_device->res.read = console_read;
 	console_device->res.write = console_write;

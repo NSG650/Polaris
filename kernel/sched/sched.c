@@ -86,6 +86,9 @@ static struct dead_process *sched_pid_to_dead_child_process(int64_t p) {
 }
 
 void sched_add_thread_to_list(struct thread **thrd_list, struct thread *thrd) {
+	if (!thrd) {
+		return;
+	}
 	struct thread *this = *thrd_list;
 
 	if (this == NULL) {
@@ -101,6 +104,9 @@ void sched_add_thread_to_list(struct thread **thrd_list, struct thread *thrd) {
 
 void sched_remove_thread_from_list(struct thread **thrd_list,
 								   struct thread *thrd) {
+	if (!thrd && !thrd_list) {
+		return;
+	}
 	struct thread *this = *thrd_list;
 	struct thread *next = NULL;
 
@@ -122,6 +128,9 @@ void sched_remove_thread_from_list(struct thread **thrd_list,
 
 void sched_add_process_to_list(struct process **proc_list,
 							   struct process *proc) {
+	if (!proc) {
+		return;
+	}
 	struct process *this = *proc_list;
 
 	if (this == NULL) {
@@ -137,6 +146,9 @@ void sched_add_process_to_list(struct process **proc_list,
 
 void sched_remove_process_from_list(struct process **proc_list,
 									struct process *proc) {
+	if (!proc && !proc_list) {
+		return;
+	}
 	struct process *this = *proc_list;
 	struct process *next = NULL;
 
@@ -589,8 +601,6 @@ void process_kill(struct process *proc, bool crash) {
 		panic("Attempted to kill init!\n");
 	}
 
-	event_trigger(&proc->death_event, false);
-
 	struct dead_process *dead_proc = kmalloc(sizeof(struct dead_process));
 	dead_proc->parent_process = proc->parent_process;
 	dead_proc->pid = proc->pid;
@@ -634,8 +644,9 @@ void process_kill(struct process *proc, bool crash) {
 		fdnum_close(proc, i);
 	}
 
-	vec_push(&dead_processes, dead_proc);
+	event_trigger(&proc->death_event, false);
 
+	vec_push(&dead_processes, dead_proc);
 	vec_deinit(&proc->child_processes);
 	sched_remove_process_from_list(&process_list, proc);
 

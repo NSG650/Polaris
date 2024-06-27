@@ -144,6 +144,7 @@ void kernel_main(void *args) {
 	syscall_register_handler(0x124, syscall_dup3);
 	syscall_register_handler(0x125, syscall_pipe);
 	syscall_register_handler(0x63, syscall_sysinfo);
+	syscall_register_handler(0x10f, syscall_ppoll);
 
 	std_console_device =
 		(vfs_get_node(vfs_root, "/dev/console", true))->resource;
