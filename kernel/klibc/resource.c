@@ -178,6 +178,7 @@ int fdnum_create_from_resource(struct process *proc, struct resource *res,
 							   int flags, int old_fdnum, bool specific) {
 	struct f_descriptor *fd = fd_create_from_resource(res, flags);
 	if (fd == NULL) {
+		errno = ENOMEM;
 		return -1;
 	}
 

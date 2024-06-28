@@ -9,6 +9,7 @@
 #include <fs/tmpfs.h>
 #include <fs/vfs.h>
 #include <ipc/pipe.h>
+#include <ipc/socket.h>
 #include <kernel.h>
 #include <klibc/kargs.h>
 #include <klibc/module.h>
@@ -145,6 +146,15 @@ void kernel_main(void *args) {
 	syscall_register_handler(0x125, syscall_pipe);
 	syscall_register_handler(0x63, syscall_sysinfo);
 	syscall_register_handler(0x10f, syscall_ppoll);
+
+	syscall_register_handler(0x29, syscall_socket);
+	syscall_register_handler(0x2a, syscall_connect);
+	syscall_register_handler(0x2b, syscall_accept);
+	syscall_register_handler(0x2f, syscall_recvmsg);
+	syscall_register_handler(0x31, syscall_bind);
+	syscall_register_handler(0x32, syscall_listen);
+	syscall_register_handler(0x34, syscall_getpeername);
+	syscall_register_handler(0x53, syscall_socketpair);
 
 	std_console_device =
 		(vfs_get_node(vfs_root, "/dev/console", true))->resource;

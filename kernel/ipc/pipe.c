@@ -129,7 +129,6 @@ void syscall_pipe(struct syscall_arguments *args) {
 	fds[1] = fdnum_create_from_resource(proc, p, flags | O_WRONLY, 0, false);
 
 	if (fds[0] == -1 || fds[1] == -1) {
-		errno = EFAULT;
 		args->ret = -1;
 	}
 }

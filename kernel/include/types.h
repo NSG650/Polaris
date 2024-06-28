@@ -23,6 +23,8 @@ typedef int32_t gid_t;
 typedef int64_t time_t;
 typedef int64_t clockid_t;
 
+typedef uint32_t socklen_t;
+
 struct timespec {
 	time_t tv_sec;
 	long tv_nsec;
@@ -182,5 +184,8 @@ struct stat {
 #define POLLRDNORM 0x100
 #define POLLWRBAND 0x200
 #define POLLRDBAND 0x400
+
+#define SOCK_CLOEXEC O_CLOEXEC
+#define SOCK_NONBLOCK O_NONBLOCK
 
 #endif
