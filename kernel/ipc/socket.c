@@ -1,9 +1,12 @@
+#include <debug/debug.h>
 #include <errno.h>
 #include <ipc/socket.h>
+#include <ipc/unix.h>
 
 struct socket *socket_create(int family, int type, int protocol) {
 	switch (family) {
 		case AF_UNIX:
+			return unix_sock_create(type, protocol);
 		default:
 			return NULL;
 	}
@@ -12,6 +15,7 @@ struct socket *socket_create(int family, int type, int protocol) {
 struct socket **socket_create_pair(int family, int type, int protocol) {
 	switch (family) {
 		case AF_UNIX:
+			return unix_sock_create_pair(type, protocol);
 		default:
 			return NULL;
 	}
@@ -41,7 +45,8 @@ void syscall_socket(struct syscall_arguments *args) {
 		flags |= SOCK_NONBLOCK;
 	}
 
-	int ret = fdnum_create_from_resource(proc, sock, flags, 0, false);
+	int ret = fdnum_create_from_resource(proc, (struct resource *)sock, flags,
+										 0, false);
 
 	if (ret == -1) {
 		args->ret = -1;
@@ -76,8 +81,10 @@ void syscall_socketpair(struct syscall_arguments *args) {
 		flags |= SOCK_NONBLOCK;
 	}
 
-	fds[0] = fdnum_create_from_resource(proc, sock[0], flags, 0, false);
-	fds[1] = fdnum_create_from_resource(proc, sock[1], flags, 0, false);
+	fds[0] = fdnum_create_from_resource(proc, (struct resource *)sock[0], flags,
+										0, false);
+	fds[1] = fdnum_create_from_resource(proc, (struct resource *)sock[1], flags,
+										0, false);
 
 	if (fds[0] == -1 || fds[1] == -1) {
 		args->ret = -1;
@@ -143,6 +150,8 @@ void syscall_connect(struct syscall_arguments *args) {
 	struct socket *sock = (struct socket *)(desc->res);
 
 	args->ret = sock->connect(sock, desc, addr, len) ? 0 : -1;
+
+	kprintf("syscall_connect: args->ret: %d errno: %d\n", args->ret, errno);
 }
 
 void syscall_getpeername(struct syscall_arguments *args) {
@@ -151,7 +160,7 @@ void syscall_getpeername(struct syscall_arguments *args) {
 
 	int fdnum = (int)(args->args0);
 	void *addr = (void *)(args->args1);
-	socklen_t len = (socklen_t)(args->args2);
+	socklen_t *len = (socklen_t *)(args->args2);
 
 	struct f_descriptor *fd = fd_from_fdnum(proc, fdnum);
 
@@ -231,7 +240,8 @@ void syscall_accept(struct syscall_arguments *args) {
 		return;
 	}
 
-	args->ret = fdnum_create_from_resource(proc, accep_sock, 0, 0, false);
+	args->ret = fdnum_create_from_resource(proc, (struct resource *)accep_sock,
+										   0, 0, false);
 }
 
 void syscall_recvmsg(struct syscall_arguments *args) {

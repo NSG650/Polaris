@@ -1,6 +1,20 @@
 #ifndef MISC_H
 #define MISC_H
 
+#define MIN(A, B)                      \
+	({                                 \
+		__auto_type MIN_a = A;         \
+		__auto_type MIN_b = B;         \
+		MIN_a < MIN_b ? MIN_a : MIN_b; \
+	})
+
+#define MAX(A, B)                      \
+	({                                 \
+		__auto_type MAX_a = A;         \
+		__auto_type MAX_b = B;         \
+		MAX_a > MAX_b ? MAX_a : MAX_b; \
+	})
+
 #define DIV_ROUNDUP(A, B)        \
 	({                           \
 		__auto_type _a_ = A;     \

@@ -1,0 +1,18 @@
+name=tests
+version=0.0
+revision=1
+source_dir="tests"
+hostdeps="gcc autoconf automake libtool pkg-config"
+deps="core-libs"
+
+build() {
+    cp -rp "${source_dir}"/. ./
+    ${OS_TRIPLET}-gcc client_sock.c -o c
+    ${OS_TRIPLET}-gcc server_sock.c -o s
+}
+
+package() {
+    mkdir -p "${dest_dir}/root"
+    cp ./c "${dest_dir}/root/c"
+    cp ./s "${dest_dir}/root/s"
+}

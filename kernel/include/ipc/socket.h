@@ -24,6 +24,9 @@ struct socket {
 	struct resource res;
 
 	int family;
+	int type;
+	int protocol;
+	struct event connect_event;
 
 	bool (*bind)(struct socket *this, struct f_description *description,
 				 void *addr, socklen_t len);
