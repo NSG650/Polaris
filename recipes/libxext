@@ -1,0 +1,25 @@
+name=libxext
+version=1.3.6
+revision=1
+tarball_url="https://www.x.org/archive/individual/lib/libXext-${version}.tar.gz"
+tarball_blake2b="1f137f06c237bafec737886484d990e686130e84c8af0db3f47a87e8970d953e8030872e3f0f8b4dff15cfd786fb15e13331fecc0b320f1cf75fbb1629ff970a"
+source_hostdeps="automake autoconf libtool pkg-config"
+source_deps="xorg-util-macros"
+hostdeps="gcc autoconf automake libtool pkg-config"
+deps="core-libs xorg-proto libx11"
+
+regenerate() {
+    autotools_recursive_regen
+}
+
+build() {
+    autotools_configure
+
+    make -j${parallelism}
+}
+
+package() {
+    DESTDIR="${dest_dir}" make install
+
+    post_package_strip
+}

@@ -1,0 +1,9 @@
+name=xorg-util-macros
+version=1.20.1
+tarball_url="https://www.x.org/archive/individual/util/util-macros-${version}.tar.gz"
+tarball_blake2b="f3b6063ba96e5ba12124c146a25407f47f75ec179e5a1b8192301fa1b6396d08963d7037b170b6b7be5e5d6fb114125939e412dd3ee81cc2806c2912b038b74e"
+hostdeps="automake autoconf libtool pkg-config"
+
+regenerate() {
+    libtoolize -cfvi && autoreconf -fvi
+}

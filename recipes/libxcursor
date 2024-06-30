@@ -1,0 +1,25 @@
+name=libxcursor
+version=1.2.2
+revision=1
+tarball_url="https://www.x.org/archive/individual/lib/libXcursor-${version}.tar.gz"
+tarball_blake2b="10411b272290763ce1884d39d850ef0e9e30f716ca29ac4290e2bdb45d7cba88b58a716e79c092d7e43d20ce9e13b45b40c646d92f4179df0e7067bf50ab8b8d"
+source_hostdeps="autoconf automake libtool pkg-config"
+source_deps="xorg-util-macros"
+hostdeps="gcc autoconf automake libtool pkg-config"
+deps="core-libs libxrender libxfixes libx11"
+
+regenerate() {
+    autotools_recursive_regen
+}
+
+build() {
+    autotools_configure
+
+    make -j${parallelism}
+}
+
+package() {
+    DESTDIR="${dest_dir}" make install
+
+    post_package_strip
+}

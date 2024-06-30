@@ -1,0 +1,24 @@
+name=libexpat
+version=2.6.2
+revision=1
+tarball_url="https://github.com/libexpat/libexpat/releases/download/R_2_6_2/expat-${version}.tar.xz"
+tarball_blake2b="aae019270e1ab233fe8480b7eaa77f648f23ef3383dc772dc946cb13163067431716dc5446862eb502315fd089f2f52f3d476589b74a97e462575cd54df44db4"
+source_hostdeps="automake autoconf libtool pkg-config"
+hostdeps="gcc autoconf automake libtool pkg-config"
+deps="core-libs"
+
+regenerate() {
+    ./buildconf.sh --force
+}
+
+build() {
+    autotools_configure
+
+    make -j${parallelism}
+}
+
+package() {
+    DESTDIR="${dest_dir}" make install
+
+    post_package_strip
+}

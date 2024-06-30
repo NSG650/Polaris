@@ -1,0 +1,25 @@
+name=xorg-xkbutils
+version=1.0.6
+revision=1
+tarball_url="https://www.x.org/archive/individual/app/xkbutils-${version}.tar.xz"
+tarball_blake2b="af97210ded0e5d1d5ce99e71c50c3ade19b5fe926596a3816a8fcbe7ea6b65f08d5216792a45cb4df3191b6f5fc3db059ee1b1b05ecf0fea408562088f6489e4"
+source_hostdeps="automake autoconf libtool pkg-config"
+source_deps="xorg-util-macros"
+hostdeps="gcc autoconf automake libtool pkg-config"
+deps="core-libs xorg-proto libx11 libxt libxaw"
+
+regenerate() {
+    autotools_recursive_regen
+}
+
+build() {
+    autotools_configure
+
+    make -j${parallelism}
+}
+
+package() {
+    DESTDIR="${dest_dir}" make install
+
+    post_package_strip
+}

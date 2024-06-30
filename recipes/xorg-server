@@ -1,0 +1,54 @@
+name=xorg-server
+version=21.1.13
+revision=1
+tarball_url="https://www.x.org/releases/individual/xserver/xorg-server-${version}.tar.xz"
+tarball_blake2b="f6b05439e54b9709ce7a5b5f3702053ebc586ac8f8976bb6de9955ab34eac7201e027e1076584cf5b6d8c2639703e3a908b9e38f5dc52d4897aac8650f462502"
+source_hostdeps="automake autoconf libtool pkg-config"
+source_deps="xtrans xorg-font-util xorg-util-macros"
+hostdeps="gcc autoconf automake libtool pkg-config"
+deps="core-libs xorg-util-macros xorg-proto xcb-proto xtrans libxinerama libxcvt libxshmfence libx11 libxaw libxkbfile libxmu libxfont2 libxi libxv libxdamage libxrender libxrandr libxcb libxfixes libxext xorg-xkbcomp xkeyboard-config pixman openssl"
+
+regenerate() {
+    autotools_recursive_regen
+}
+
+build() {
+   autotools_configure \
+        --with-xkb-bin-directory=/usr/bin \
+        --with-xkb-path=/usr/share/X11/xkb \
+        --with-xkb-output=/var/lib/xkb \
+        --with-fontrootdir=/usr/share/fonts/X11 \
+        --enable-xorg \
+        --enable-xv \
+        --enable-xvfb \
+        --disable-xephyr \
+        --disable-xnest \
+        --disable-suid-wrapper \
+        --disable-pciaccess \
+        --disable-dpms \
+        --enable-screensaver \
+        --disable-xres \
+        --disable-xvmc \
+        --disable-systemd-logind \
+        --disable-secure-rpc \
+        --disable-config-udev \
+        --disable-dri \
+        --disable-dri2 \
+        --disable-dri3 \
+        --disable-int10-module \
+        --disable-vgahw \
+        --disable-libdrm \
+        --disable-glamor \
+        --disable-glx
+        
+    make -j${parallelism}
+}
+
+package() {
+    DESTDIR="${dest_dir}" make install
+
+ #   mkdir -p "${dest_dir}"/etc/X11
+ #   cp -v "${base_dir}"/build-support/xorg-server/xorg.conf "${dest_dir}"/etc/X11/
+
+    post_package_strip
+}

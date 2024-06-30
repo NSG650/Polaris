@@ -271,21 +271,24 @@ void main(void) {
 	puts_to_console(number);
 	puts_to_console(" MB of memory free\n");
 
-	int fork_ret = fork();
+	for (;;) {
+		int fork_ret = fork();
+		if (fork_ret == 0) {
+			chdir("/root");
+			char *argv[] = {"/usr/bin/bash", NULL};
+			char *envp[] = {"USER=ROOT",
+							"HOME=/root",
+							"PATH=/usr/bin:/usr/local/bin:/bin",
+							"TERM=linux",
+							"SHELL=/usr/bin/bash",
+							NULL};
 
-	if (fork_ret == 0) {
-		chdir("/root");
-		char *argv[] = {"/usr/bin/bash", NULL};
-		char *envp[] = {"USER=ROOT",
-						"HOME=/root",
-						"PATH=/usr/bin:/usr/local/bin:/bin",
-						"TERM=linux",
-						"SHELL=/usr/bin/bash",
-						NULL};
+			if (execve(argv[0], argv, envp) < 0)
+				puts_to_console("Failed to execve :(\n");
 
-		if (execve(argv[0], argv, envp) < 0)
-			puts_to_console("Failed to execve :(\n");
-
-		syscall1(0x3c, 1);
+			syscall1(0x3c, 1);
+		}
+		int status = 0;
+		waitpid(fork_ret, &status, 0);
 	}
 }

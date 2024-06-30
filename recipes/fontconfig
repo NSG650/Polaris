@@ -1,0 +1,29 @@
+name=fontconfig
+version=2.15.0
+revision=1
+tarball_url="https://www.freedesktop.org/software/fontconfig/release/fontconfig-${version}.tar.xz"
+tarball_blake2b="17c85fddc4ab84111c4f50afb89ecd8792c3aeaa2690b38fd39fca6f6cece69e9ce0cd3af8a2e54968c79ad1f9bee1e444699a13c068d9dfd3dfe1212ff37533"
+source_hostdeps="automake autoconf libtool pkg-config"
+imagedeps="python gperf"
+hostdeps="gcc autoconf automake libtool pkg-config"
+deps="core-libs freetype2 libexpat libxml"
+
+regenerate() {
+    autotools_recursive_regen
+
+    # Make sure we regenerate this file
+    rm -f src/fcobjshash.h
+}
+
+build() {
+    autotools_configure \
+        --enable-libxml2
+
+    make -j${parallelism}
+}
+
+package() {
+    DESTDIR="${dest_dir}" make install
+
+    post_package_strip
+}

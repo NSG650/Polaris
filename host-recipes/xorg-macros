@@ -1,0 +1,15 @@
+name=xorg-macros
+from_source=xorg-util-macros
+hostdeps="gcc autoconf automake libtool pkg-config"
+deps="core-libs"
+revision=1
+
+build() {
+	"${source_dir}"/configure --prefix="${prefix}"
+    make -j${parallelism}
+}
+
+package() {
+    DESTDIR="${dest_dir}" make install
+	post_package_strip
+}

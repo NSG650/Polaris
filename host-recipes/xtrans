@@ -1,0 +1,16 @@
+name=xtrans
+from_source=libxtrans
+revision=1
+imagedeps="gcc"
+hostdeps="gcc autoconf-2.69 automake libtool pkg-config xorg-macros"
+deps="core-libs"
+
+build() {
+	"${source_dir}"/configure --prefix="${prefix}"
+    make -j${parallelism}
+}
+
+package() {
+    DESTDIR="${dest_dir}" make install
+	post_package_strip
+}
