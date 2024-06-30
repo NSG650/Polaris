@@ -115,7 +115,7 @@ index 0000000..b664773
 +}
 +
 +static const char *names[] = {
-+    "VinixMouseDev", NULL
++    "PolarisMouseDev", NULL
 +};
 +
 +static const char **protonames() {
@@ -123,7 +123,7 @@ index 0000000..b664773
 +}
 +
 +static const char *defaultproto() {
-+    return "VinixMouseDev";
++    return "PolarisMouseDev";
 +}
 +
 +static Bool isdefault(const char *protocol) {

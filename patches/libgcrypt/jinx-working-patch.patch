@@ -15,7 +15,7 @@ index fcb45b7..1e32242 100644
  #ifndef __QNX__
  #include <sys/shm.h>
  #include <signal.h>
-+#ifndef __vinix__
++#ifndef __polaris__
  #include <sys/signal.h>
 +#endif
  #endif				/* __QNX__ */
