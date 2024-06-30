@@ -150,8 +150,6 @@ void syscall_connect(struct syscall_arguments *args) {
 	struct socket *sock = (struct socket *)(desc->res);
 
 	args->ret = sock->connect(sock, desc, addr, len) ? 0 : -1;
-
-	kprintf("syscall_connect: args->ret: %d errno: %d\n", args->ret, errno);
 }
 
 void syscall_getpeername(struct syscall_arguments *args) {

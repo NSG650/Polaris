@@ -25,7 +25,6 @@ static ssize_t unix_sock_read(struct resource *_this,
 
 	struct unix_socket *this = (struct unix_socket *)_this;
 	ssize_t ret = -1;
-	spinlock_acquire_or_wait(&this->sock.res.lock);
 
 	while (this->capacity_used == 0) {
 		if ((description->flags & O_NONBLOCK)) {
@@ -33,7 +32,7 @@ static ssize_t unix_sock_read(struct resource *_this,
 			goto end;
 		}
 		spinlock_drop(&this->sock.res.lock);
-		struct event *events[] = {&this->sock.connect_event};
+		struct event *events[] = {&this->sock.res.event};
 
 		if (event_await(events, 1, true) == -1) {
 			errno = EINTR;
@@ -198,15 +197,17 @@ static bool unix_sock_connect(struct socket *_this,
 	}
 
 	spinlock_drop(&sock->sock.res.lock);
+	event_trigger(&sock->sock.res.event, false);
 
-	struct event *conn_event[] = {&_this->connect_event};
+	struct event *conn_event = &_this->connect_event;
+	memzero(conn_event, sizeof(struct event));
 
-	if (event_await(conn_event, 1, true) == -1) {
+	if (event_await(&conn_event, 1, true) == -1) {
 		errno = EINTR;
 		return false;
 	}
 
-	event_trigger(&sock->sock.res.event, false);
+	event_trigger(&sock->sock.connect_event, false);
 	this->sock.res.status |= POLLOUT;
 	event_trigger(&_this->res.event, false);
 
@@ -249,18 +250,16 @@ static struct socket *unix_sock_accept(struct socket *_this,
 		return NULL;
 	}
 
-	spinlock_acquire_or_wait(&_this->res.lock);
+	if ((description->flags & O_NONBLOCK)) {
+		errno = EAGAIN;
+		return NULL;
+	}
 
 	while (this->backlog_i == 0) {
 		_this->res.status &= ~POLLIN;
-		if ((description->flags & O_NONBLOCK)) {
-			errno = EAGAIN;
-			spinlock_drop(&_this->res.lock);
-			return NULL;
-		}
-		spinlock_drop(&_this->res.lock);
 		struct event *events[] = {&this->sock.res.event};
 
+		spinlock_drop(&this->sock.res.lock);
 		if (event_await(events, 1, true) == -1) {
 			errno = EINTR;
 			return NULL;
@@ -289,9 +288,6 @@ static struct socket *unix_sock_accept(struct socket *_this,
 		_this->res.status &= ~POLLIN;
 	}
 
-	spinlock_drop(&this->sock.res.lock);
-
-	// God knows why are we deadlocking on triggering an event
 	event_trigger(&peer->sock.connect_event, false);
 
 	struct event *events[] = {&this->sock.connect_event};
@@ -299,6 +295,9 @@ static struct socket *unix_sock_accept(struct socket *_this,
 		errno = EINTR;
 		return NULL;
 	}
+
+	kprintf("The unix socket has a connected succcessfully\n");
+	spinlock_drop(&this->sock.res.lock);
 
 	return (struct socket *)connection_sock;
 }
@@ -309,24 +308,27 @@ bool unix_sock_bind(struct socket *_this, struct f_description *description,
 	(void)len;
 
 	struct unix_socket *this = (struct unix_socket *)_this;
+	spinlock_acquire_or_wait(&this->sock.res.lock);
 	struct process *proc =
 		prcb_return_current_cpu()->running_thread->mother_proc;
 
 	struct sockaddr_un *addr = (struct sockaddr_un *)addr_;
 	if (addr->sun_family != AF_UNIX) {
 		errno = EINVAL;
+		spinlock_drop(&this->sock.res.lock);
 		return false;
 	}
 
 	struct vfs_node *node = vfs_create(proc->cwd, addr->sun_path, S_IFSOCK);
 	if (node == NULL) {
+		spinlock_drop(&this->sock.res.lock);
 		return false;
 	}
 
 	_this->res.stat = node->resource->stat;
 	node->resource = (struct resource *)this;
 	this->name = *addr;
-
+	spinlock_drop(&this->sock.res.lock);
 	return true;
 }
 
@@ -466,8 +468,14 @@ struct socket *unix_sock_create(int type, int protocol) {
 }
 
 struct socket **unix_sock_create_pair(int type, int protocol) {
-	struct socket **sockets = kmalloc(sizeof(struct socket) * 2);
-	sockets[0] = unix_sock_create(type, protocol);
-	sockets[1] = unix_sock_create(type, protocol);
-	return sockets;
+	struct unix_socket **sockets = kmalloc(sizeof(struct unix_socket) * 2);
+	sockets[0] = (struct unix_socket *)unix_sock_create(type, protocol);
+	sockets[1] = (struct unix_socket *)unix_sock_create(type, protocol);
+
+	sockets[0]->peer = sockets[1];
+	sockets[1]->peer = sockets[0];
+	sockets[0]->state = UNIX_SOCK_CONNECTED;
+	sockets[1]->state = UNIX_SOCK_CONNECTED;
+
+	return (struct socket **)sockets;
 }
