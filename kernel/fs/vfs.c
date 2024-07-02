@@ -511,7 +511,6 @@ void syscall_openat(struct syscall_arguments *args) {
 	const char *path = (char *)args->args1;
 	int flags = args->args2;
 	int mode = args->args3;
-
 	struct vfs_node *parent = NULL;
 	char *basename = NULL;
 	if (!vfs_fdnum_path_to_node(dir_fdnum, path, false, false, &parent, NULL,

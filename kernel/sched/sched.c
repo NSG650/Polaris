@@ -197,17 +197,6 @@ void syscall_getppid(struct syscall_arguments *args) {
 	}
 }
 
-void syscall_nanosleep(struct syscall_arguments *args) {
-	struct __kernel_timespec *from_user =
-		(struct __kernel_timespec *)args->args0;
-	uint64_t seconds_to_ns = from_user->tv_sec * 1000000000;
-	uint64_t total_sleep = seconds_to_ns + from_user->tv_nsec;
-
-	thread_sleep(prcb_return_current_cpu()->running_thread, total_sleep);
-
-	args->ret = 0;
-}
-
 void syscall_fork(struct syscall_arguments *args) {
 	struct thread *running_thread = prcb_return_current_cpu()->running_thread;
 	struct process *running_process = running_thread->mother_proc;
@@ -333,6 +322,40 @@ void syscall_waitpid(struct syscall_arguments *args) {
 	args->ret = dead_proc->pid;
 }
 
+void syscall_thread_new(struct syscall_arguments *args) {
+	struct process *proc =
+		prcb_return_current_cpu()->running_thread->mother_proc;
+
+	uintptr_t pc = (uintptr_t)args->args0;
+	uintptr_t sp = (uintptr_t)args->args1;
+
+	spinlock_acquire_or_wait(&thread_lock);
+
+	struct thread *thrd = kmalloc(sizeof(struct thread));
+	memzero(thrd, sizeof(struct thread));
+	thrd->tid = tid++;
+	thrd->runtime = proc->runtime;
+	thrd->mother_proc = proc;
+
+	thread_setup_context_from_user(thrd, pc, sp);
+
+	thrd->next = NULL;
+	spinlock_init(thrd->lock);
+	thrd->state = THREAD_READY_TO_RUN;
+
+	vec_push(&proc->process_threads, thrd);
+	sched_add_thread_to_list(&thread_list, thrd);
+
+	spinlock_drop(&thread_lock);
+
+	args->ret = thrd->tid;
+}
+
+void syscall_thread_exit(struct syscall_arguments *args) {
+	(void)args;
+	thread_kill(prcb_return_current_cpu()->running_thread, true);
+}
+
 void sched_init(uint64_t args) {
 	vec_init(&dead_processes);
 
@@ -342,11 +365,13 @@ void sched_init(uint64_t args) {
 	syscall_register_handler(0x3c, syscall_exit);
 	syscall_register_handler(0x3e, syscall_kill);
 	syscall_register_handler(0x9d, syscall_prctl);
-	syscall_register_handler(0x23, syscall_nanosleep);
 	syscall_register_handler(0x39, syscall_fork);
 	syscall_register_handler(0x3b, syscall_execve);
 	syscall_register_handler(0x3f, syscall_uname);
 	syscall_register_handler(0x72, syscall_waitpid);
+
+	syscall_register_handler(0x38, syscall_thread_new);
+	syscall_register_handler(0x3d, syscall_thread_exit);
 
 	futex_init();
 

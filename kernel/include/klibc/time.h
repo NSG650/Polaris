@@ -70,5 +70,6 @@ void time_nsleep(uint64_t ns);
 
 void time_init(void);
 void syscall_getclock(struct syscall_arguments *args);
+void syscall_nanosleep(struct syscall_arguments *args);
 
 #endif

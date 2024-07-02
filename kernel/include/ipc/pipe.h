@@ -8,11 +8,12 @@
 
 struct pipe {
 	struct resource res;
-	void *data;
+	uint8_t *data;
 	size_t data_length;
-	size_t capacity_used;
 	uintptr_t read_ptr;
 	uintptr_t write_ptr;
+	struct event read_event;
+	struct event write_event;
 };
 
 void syscall_pipe(struct syscall_arguments *args);

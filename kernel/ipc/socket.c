@@ -267,6 +267,5 @@ void syscall_recvmsg(struct syscall_arguments *args) {
 	}
 
 	struct socket *sock = (struct socket *)(desc->res);
-
-	args->ret = sock->recvmsg(sock, desc, msg, flags) ? 0 : -1;
+	args->ret = sock->recvmsg(sock, desc, msg, flags);
 }

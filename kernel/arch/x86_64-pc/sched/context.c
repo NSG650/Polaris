@@ -56,6 +56,38 @@ void thread_setup_context(struct thread *thrd, uintptr_t pc_address,
 	thrd->reg.rflags = 0x202;
 }
 
+void thread_setup_context_from_user(struct thread *thrd, uintptr_t pc_address,
+									uintptr_t sp) {
+	thrd->reg.rip = pc_address;
+	thrd->kernel_stack = (uint64_t)kmalloc(STACK_SIZE);
+	thrd->kernel_stack += STACK_SIZE;
+	thrd->fpu_storage =
+		(void *)((uintptr_t)pmm_allocz(DIV_ROUNDUP(
+					 prcb_return_current_cpu()->fpu_storage_size, PAGE_SIZE)) +
+				 MEM_PHYS_OFFSET);
+
+	struct process *proc = thrd->mother_proc;
+	thrd->reg.cs = 0x23;
+	thrd->reg.ss = 0x1b;
+	thrd->reg.rsp = sp;
+	thrd->stack = thrd->reg.rsp;
+
+	thrd->pf_stack = (uint64_t)kmalloc(STACK_SIZE);
+	thrd->pf_stack += STACK_SIZE;
+
+	prcb_return_current_cpu()->fpu_restore(thrd->fpu_storage);
+	uint16_t default_fcw = 0b1100111111;
+	asm volatile("fldcw %0" ::"m"(default_fcw) : "memory");
+	uint32_t default_mxcsr = 0b1111110000000;
+	asm volatile("ldmxcsr %0" ::"m"(default_mxcsr) : "memory");
+	prcb_return_current_cpu()->fpu_save(thrd->fpu_storage);
+
+	thrd->fs_base = 0;
+	thrd->gs_base = 0;
+
+	thrd->reg.rflags = 0x202;
+}
+
 // I am still surprised that I still know how this works.
 // I will properly document it sometime soon.
 void thread_setup_context_for_execve(struct thread *thrd, uintptr_t pc_address,

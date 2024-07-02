@@ -26,6 +26,8 @@ static ssize_t unix_sock_read(struct resource *_this,
 	struct unix_socket *this = (struct unix_socket *)_this;
 	ssize_t ret = -1;
 
+	spinlock_acquire_or_wait(&this->sock.res.lock);
+
 	while (this->capacity_used == 0) {
 		if ((description->flags & O_NONBLOCK)) {
 			errno = EAGAIN;
@@ -34,7 +36,7 @@ static ssize_t unix_sock_read(struct resource *_this,
 		spinlock_drop(&this->sock.res.lock);
 		struct event *events[] = {&this->sock.res.event};
 
-		if (event_await(events, 1, true) == -1) {
+		if (event_await(events, 1, true) < 0) {
 			errno = EINTR;
 			goto end;
 		}
@@ -67,7 +69,7 @@ static ssize_t unix_sock_read(struct resource *_this,
 
 	this->read_ptr = new_ptr;
 	this->capacity_used -= count;
-	this->peer->sock.res.status |= POLLOUT;
+	this->peer->sock.res.status |= POLLPRI;
 
 	event_trigger(&this->peer->sock.res.event, false);
 	this->sock.res.status &= ~POLLIN;
@@ -88,6 +90,21 @@ static ssize_t unix_sock_write(struct resource *_this,
 	struct unix_socket *peer = this->peer;
 	ssize_t ret = -1;
 	spinlock_acquire_or_wait(&peer->sock.res.lock);
+
+	while (peer->capacity_used == (ssize_t)peer->data_length) {
+		if ((description->flags & O_NONBLOCK)) {
+			errno = EAGAIN;
+			goto end;
+		}
+		spinlock_drop(&peer->sock.res.lock);
+		struct event *events[] = {&peer->sock.res.event};
+
+		if (event_await(events, 1, true) < 0) {
+			errno = EINTR;
+			goto end;
+		}
+		spinlock_acquire_or_wait(&peer->sock.res.lock);
+	}
 
 	if (peer->capacity_used + count > peer->data_length) {
 		count = peer->data_length - peer->capacity_used;
@@ -115,11 +132,11 @@ static ssize_t unix_sock_write(struct resource *_this,
 
 	peer->write_ptr = new_ptr;
 	peer->capacity_used += count;
-	this->peer->sock.res.status |= POLLIN;
+	peer->sock.res.status |= POLLIN;
 
-	event_trigger(&this->peer->sock.res.event, false);
+	event_trigger(&peer->sock.res.event, false);
 	ret = count;
-
+end:
 	spinlock_drop(&peer->sock.res.lock);
 	return ret;
 }
@@ -195,20 +212,18 @@ static bool unix_sock_connect(struct socket *_this,
 		spinlock_drop(&sock->sock.res.lock);
 		return false;
 	}
-
-	spinlock_drop(&sock->sock.res.lock);
 	event_trigger(&sock->sock.res.event, false);
+	spinlock_drop(&sock->sock.res.lock);
 
-	struct event *conn_event = &_this->connect_event;
-	memzero(conn_event, sizeof(struct event));
+	struct event *conn_event[] = {&_this->connect_event};
 
-	if (event_await(&conn_event, 1, true) == -1) {
+	if (event_await(conn_event, 1, true) < 0) {
 		errno = EINTR;
 		return false;
 	}
 
 	event_trigger(&sock->sock.connect_event, false);
-	this->sock.res.status |= POLLOUT;
+	this->sock.res.status |= POLLPRI;
 	event_trigger(&_this->res.event, false);
 
 	return true;
@@ -245,6 +260,7 @@ static struct socket *unix_sock_accept(struct socket *_this,
 									   struct f_description *description) {
 	(void)description;
 	struct unix_socket *this = (struct unix_socket *)_this;
+
 	if (!(this->state & UNIX_SOCK_LISTENING)) {
 		errno = EINVAL;
 		return NULL;
@@ -255,12 +271,13 @@ static struct socket *unix_sock_accept(struct socket *_this,
 		return NULL;
 	}
 
+	spinlock_acquire_or_wait(&this->sock.res.lock);
 	while (this->backlog_i == 0) {
 		_this->res.status &= ~POLLIN;
 		struct event *events[] = {&this->sock.res.event};
 
 		spinlock_drop(&this->sock.res.lock);
-		if (event_await(events, 1, true) == -1) {
+		if (event_await(events, 1, true) < 0) {
 			errno = EINTR;
 			return NULL;
 		}
@@ -296,9 +313,7 @@ static struct socket *unix_sock_accept(struct socket *_this,
 		return NULL;
 	}
 
-	kprintf("The unix socket has a connected succcessfully\n");
 	spinlock_drop(&this->sock.res.lock);
-
 	return (struct socket *)connection_sock;
 }
 
@@ -349,7 +364,7 @@ static ssize_t unix_sock_recvmsg(struct socket *_this,
 	}
 
 	while (this->capacity_used == 0) {
-		this->peer->sock.res.status |= POLLOUT;
+		this->peer->sock.res.status |= POLLPRI;
 
 		event_trigger(&this->peer->sock.res.event, false);
 		spinlock_drop(&this->sock.res.lock);
@@ -414,7 +429,7 @@ static ssize_t unix_sock_recvmsg(struct socket *_this,
 
 	this->read_ptr = new_ptr;
 	this->capacity_used -= transferred;
-	this->peer->sock.res.status |= POLLOUT;
+	this->peer->sock.res.status |= POLLPRI;
 
 	event_trigger(&this->peer->sock.res.event, false);
 
@@ -471,11 +486,6 @@ struct socket **unix_sock_create_pair(int type, int protocol) {
 	struct unix_socket **sockets = kmalloc(sizeof(struct unix_socket) * 2);
 	sockets[0] = (struct unix_socket *)unix_sock_create(type, protocol);
 	sockets[1] = (struct unix_socket *)unix_sock_create(type, protocol);
-
-	sockets[0]->peer = sockets[1];
-	sockets[1]->peer = sockets[0];
-	sockets[0]->state = UNIX_SOCK_CONNECTED;
-	sockets[1]->state = UNIX_SOCK_CONNECTED;
 
 	return (struct socket **)sockets;
 }

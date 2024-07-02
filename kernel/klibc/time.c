@@ -65,6 +65,7 @@ void time_init(void) {
 
 	time_realtime.tv_sec = boot_time_resp->boot_time;
 	syscall_register_handler(0x13a, syscall_getclock);
+	syscall_register_handler(0x23, syscall_nanosleep);
 }
 
 void timer_handler(void) {
@@ -129,15 +130,55 @@ void syscall_getclock(struct syscall_arguments *args) {
 			*out = time_monotonic;
 			ret = 0;
 			goto cleanup;
-		case CLOCK_PROCESS_CPUTIME_ID:
-		case CLOCK_THREAD_CPUTIME_ID:
-			*out = (struct timespec){.tv_sec = 0, .tv_nsec = 0};
-			ret = 0;
-			goto cleanup;
+		default:
+			break;
 	}
 
 	errno = EINVAL;
 
 cleanup:
 	args->ret = ret;
+}
+
+void syscall_nanosleep(struct syscall_arguments *args) {
+	struct timespec *duration = (struct timespec *)args->args0;
+	struct timespec *remaining = (struct timespec *)args->args1;
+	if (duration->tv_sec == 0 && duration->tv_nsec == 0) {
+		args->ret = 0;
+		return;
+	}
+
+	if (duration->tv_nsec < 0 || duration->tv_nsec < 0 ||
+		duration->tv_nsec > 1000000000) {
+		errno = EINVAL;
+		args->ret = -1;
+		return;
+	}
+
+	struct timer *timer = timer_new(*duration);
+	if (timer == NULL) {
+		errno = ENOMEM;
+		args->ret = -1;
+		return;
+	}
+
+	struct event *event = &timer->event;
+
+	ssize_t which = event_await(&event, 1, true);
+	if (which == -1) {
+		if (remaining != NULL) {
+			*remaining = timer->when;
+		}
+		errno = EINTR;
+		timer_disarm(timer);
+		kfree(timer);
+		args->ret = -1;
+		return;
+	}
+
+	timer_disarm(timer);
+	kfree(timer);
+
+	args->ret = 0;
+	return;
 }

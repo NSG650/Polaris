@@ -15,6 +15,8 @@
 void resched(registers_t *reg);
 void thread_setup_context(struct thread *thrd, uintptr_t pc_address,
 						  uint64_t arguments, bool user);
+void thread_setup_context_from_user(struct thread *thrd, uintptr_t pc_address,
+									uintptr_t sp);
 void thread_setup_context_for_execve(struct thread *thrd, uintptr_t pc_address,
 									 char **argv, char **envp);
 void thread_fork_context(struct thread *thrd, struct thread *fthrd);

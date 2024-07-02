@@ -16,11 +16,13 @@ struct unix_socket {
 	size_t backlog_max;
 	uint8_t state;
 	struct unix_socket *peer;
-	void *data;
+	uint8_t *data;
 	size_t data_length;
 	ssize_t capacity_used;
 	uintptr_t read_ptr;
 	uintptr_t write_ptr;
+	struct event read_event;
+	struct event write_event;
 };
 
 #define UNIX_SOCK_CONNECTED (1 << 0)

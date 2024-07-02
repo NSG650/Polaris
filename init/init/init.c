@@ -281,6 +281,7 @@ void main(void) {
 							"PATH=/usr/bin:/usr/local/bin:/bin",
 							"TERM=linux",
 							"SHELL=/usr/bin/bash",
+							"DISPLAY=:0",
 							NULL};
 
 			if (execve(argv[0], argv, envp) < 0)

@@ -5,6 +5,7 @@
 #include <fs/devtmpfs.h>
 #include <io/ports.h>
 #include <klibc/mem.h>
+#include <klibc/time.h>
 #include <sched/sched.h>
 #include <sys/apic.h>
 #include <sys/timer.h>
@@ -75,7 +76,7 @@ static bool discard_packet = false;
 
 static void mouse_interrupt_handle(registers_t *r) {
 	cli();
-	if (timer_get_abs_count() <= ignore_till) {
+	if (time_monotonic.tv_sec == 0 && time_monotonic.tv_nsec < 250000000) {
 		inb(0x60);
 		goto end;
 	}
@@ -110,10 +111,10 @@ static void mouse_interrupt_handle(registers_t *r) {
 			if (packet.flags & (1 << 5)) {
 				packet.delta_y = (int8_t)(uint8_t)packet.delta_y;
 			}
-
 			memcpy(&mouse_resource->packet, &packet,
 				   sizeof(struct mouse_packet));
 			mouse_resource->new_packet = true;
+			mouse_resource->res.status |= POLLIN;
 			event_trigger(&mouse_resource->res.event, false);
 			break;
 		}
@@ -128,31 +129,31 @@ static ssize_t mouse_dev_read(struct resource *this,
 							  off_t offset, size_t count) {
 	(void)this;
 	(void)offset;
-
 	if (count < sizeof(struct mouse_packet)) {
 		errno = EINVAL;
 		return -1;
 	}
-
-	if (description->flags & O_NONBLOCK) {
-		errno = EAGAIN;
-		return -1;
-	}
-
-	while (!mouse_resource->new_packet) {
-		struct event *events[] = {&mouse_resource->res.event};
-		event_await(events, 1, true);
-	}
-
 	spinlock_acquire_or_wait(&mouse_resource->res.lock);
 
+	if (!mouse_resource->new_packet) {
+		spinlock_drop(&mouse_resource->res.lock);
+		if (description->flags & O_NONBLOCK) {
+			errno = EAGAIN;
+			return -1;
+		}
+		struct event *events[] = {&mouse_resource->res.event};
+		event_await(events, 1, true);
+		spinlock_acquire_or_wait(&mouse_resource->res.lock);
+	}
+
+	kprintf("Mouse: flags: 0b%b dx: %d dx: %d\n", mouse_resource->packet.flags,
+			mouse_resource->packet.delta_x, mouse_resource->packet.delta_y);
 	memcpy(buf, &mouse_resource->packet, sizeof(struct mouse_packet));
 	mouse_resource->new_packet = false;
 
-	// mouse_res->status &= ~POLLIN;
+	mouse_resource->res.status &= ~POLLIN;
 
 	spinlock_drop(&mouse_resource->res.lock);
-
 	return sizeof(struct mouse_packet);
 }
 
@@ -171,10 +172,10 @@ void mouse_init(void) {
 	mouse_resource->res.stat.st_rdev = resource_create_dev_id();
 	mouse_resource->res.stat.st_mode = 0644 | S_IFCHR;
 	mouse_resource->res.read = mouse_dev_read;
+	mouse_resource->res.status |= POLLPRI;
 
 	devtmpfs_add_device((struct resource *)mouse_resource, "mouse");
 
-	ignore_till = timer_get_sleep_ns(300 * 1000);
 	isr_register_handler(60, mouse_interrupt_handle);
 	ioapic_redirect_irq(12, 60);
 }
