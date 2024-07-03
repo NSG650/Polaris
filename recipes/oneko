@@ -1,0 +1,23 @@
+name=oneko
+version=0.0
+revision=1
+tarball_url="http://www.daidouji.com/oneko/distfiles/oneko-1.2.sakura.5.tar.gz"
+tarball_blake2b=e6fbb02823a25e71b6b26d067ca898352d26971bd6595b2f8d33205bf268238e277f8a0a980178704857d50042acd0cb1663d9eb0549764934153864b3602ed1
+source_hostdeps="automake autoconf libtool pkg-config"
+source_deps="xorg-util-macros gettext"
+hostdeps="gcc autoconf automake libtool pkg-config"
+deps="core-libs libx11 libxext"
+
+regenerate() {
+	true
+}
+
+build() {
+	cp -rp "${source_dir}"/. ./
+	${OS_TRIPLET}-gcc -Wno-parentheses -std=c11 -pedantic -D_DEFAULT_SOURCE oneko.c -o oneko -lc -lm -lX11 -lXext
+}
+
+package() {
+	mkdir -vp "${dest_dir}/usr/bin"
+	cp -v oneko "${dest_dir}/usr/bin"
+}

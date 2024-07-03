@@ -146,8 +146,6 @@ static ssize_t mouse_dev_read(struct resource *this,
 		spinlock_acquire_or_wait(&mouse_resource->res.lock);
 	}
 
-	kprintf("Mouse: flags: 0b%b dx: %d dx: %d\n", mouse_resource->packet.flags,
-			mouse_resource->packet.delta_x, mouse_resource->packet.delta_y);
 	memcpy(buf, &mouse_resource->packet, sizeof(struct mouse_packet));
 	mouse_resource->new_packet = false;
 

@@ -11,6 +11,7 @@ static bool pipe_unref(struct resource *this,
 	struct pipe *p = (struct pipe *)this;
 	event_trigger(&p->write_event, false);
 	event_trigger(&p->read_event, false);
+	event_trigger(&this->event, false);
 	return true;
 }
 
@@ -33,11 +34,17 @@ static ssize_t pipe_read(struct resource *this,
 	size_t i = 0;
 	for (i = 0; i < count; i++) {
 		if (p->write_ptr == p->read_ptr) {
+			this->status &= ~POLLIN;
 			break;
 		}
 		d[i] = p->data[p->read_ptr++ % p->data_length];
 	}
 
+	if (p->read_ptr != p->write_ptr) {
+		this->status |= POLLPRI;
+	}
+
+	event_trigger(&this->event, false);
 	event_trigger(&p->write_event, false);
 	spinlock_drop(&this->lock);
 	return i;
@@ -68,6 +75,13 @@ static ssize_t pipe_write(struct resource *this,
 		p->data[p->write_ptr++ % p->data_length] = d[i];
 	}
 
+	if (p->write_ptr == p->read_ptr + p->data_length) {
+		this->status &= ~POLLPRI;
+	}
+
+	this->status |= POLLIN;
+
+	event_trigger(&this->event, false);
 	event_trigger(&p->read_event, false);
 	spinlock_drop(&this->lock);
 	return count;
