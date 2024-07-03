@@ -1,8 +1,8 @@
 name=oneko
 version=0.0
 revision=1
-tarball_url="http://www.daidouji.com/oneko/distfiles/oneko-1.2.sakura.5.tar.gz"
-tarball_blake2b=e6fbb02823a25e71b6b26d067ca898352d26971bd6595b2f8d33205bf268238e277f8a0a980178704857d50042acd0cb1663d9eb0549764934153864b3602ed1
+tarball_url="https://github.com/tie/oneko/archive/5bbb5113fb30eda4dc5ba74718b2de1979139587.tar.gz"
+tarball_blake2b="783d10363c2bc37381dc2d4f5bc8e28d7b471cd2b0e6eb2dbbe0b6f5b301595c5235549de8d8264aca3626b75c52ce946931727264042df59f9e5917068fdaa4"
 source_hostdeps="automake autoconf libtool pkg-config"
 source_deps="xorg-util-macros gettext"
 hostdeps="gcc autoconf automake libtool pkg-config"

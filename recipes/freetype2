@@ -24,4 +24,7 @@ package() {
     DESTDIR="${dest_dir}" make install
 
     post_package_strip
+
+    ln -sfv "${dest_dir}"/usr/include/freetype2/freetype "${dest_dir}"/usr/include/freetype
+    ln -sfv "${dest_dir}"/usr/include/freetype2/ft2build.h "${dest_dir}"/usr/include/ft2build.h
 }

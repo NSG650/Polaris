@@ -2,17 +2,15 @@ name=doomgeneric
 from_source=doomgeneric
 revision=1
 hostdeps="gcc automake pkg-config"
-deps="core-libs"
+deps="core-libs libx11 libxcb"
 
 build() {
-	cp -rp "${source_dir}"/doomgeneric ./
-	cd doomgeneric
-	make clean
+	cp -rp ${source_dir}/doomgeneric/* .
+	cp -vp Makefile.x11 Makefile
 	make -j${parallelism}
 }
 
 package() {
-	cd doomgeneric
 	mkdir -p "${dest_dir}/usr/bin"
 	cp -p ./doomgeneric "${dest_dir}/usr/bin/"
 }
