@@ -12,13 +12,14 @@ Building requires a Linux environment, Windows users may use WSL2 without issues
 
 1. Clone the repository **with submodules**.
 2. Install **make**, **xorriso**, **bsdtar** and **rsync**.
-3. Run make on the repository's root.
-4. Wait for the build to finish.
+3. Run `make userspace-base` on the repository's root to build a base system. Run `make userspace-full` on the repository's root to build all the packages ported.
+4. Run `make` to generate an ISO image.
 
 ## Running
 
 It is recommended to use QEMU for ease of use. An example command to run Polaris would be as follows:
-Since the entire rootfs is in the ramdisk atleast 8 gigabytes of memory is needed.
+Since the entire rootfs is in the ramdisk atleast 8 gigabytes of memory is needed for the entire userspace. userspace-base can be used if you don't have the required memory free.
+
 We intend to move the rootfs to disk later on but for now you need to allocate minimum 8 gigabytes.
 
 ```

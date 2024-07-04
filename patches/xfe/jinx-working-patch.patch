@@ -1,0 +1,1013 @@
+diff --git xfe-clean/configure.ac xfe-workdir/configure.ac
+index 0fa6dc9..4177935 100644
+--- xfe-clean/configure.ac
++++ xfe-workdir/configure.ac
+@@ -69,9 +69,9 @@ AC_FUNC_GETGROUPS
+ AC_FUNC_GETMNTENT
+ AC_FUNC_LSTAT
+ AC_FUNC_LSTAT_FOLLOWS_SLASHED_SYMLINK
+-AC_FUNC_MALLOC
++#AC_FUNC_MALLOC
+ AC_FUNC_MKTIME
+-AC_FUNC_REALLOC
++#AC_FUNC_REALLOC
+ AC_FUNC_STAT
+ AC_FUNC_UTIME_NULL
+ AC_CHECK_FUNCS([endgrent endpwent gethostname getmntent gettimeofday lchown memset mkdir mkfifo putenv rmdir setlocale sqrt strchr strdup strerror strstr strtol strtoul strtoull utime])
+@@ -87,25 +87,19 @@ AC_CHECK_LIB(FOX-1.6,fxfindfox,,AC_MSG_ERROR("libFOX-1.6 not found"))
+ 
+ # Check for FOX 1.6 header files
+ AC_LANG([C++])
+-AC_CHECK_HEADER(fox-1.6/fx.h,,AC_MSG_ERROR("fox-1.6/fx.h not found"))
++#AC_CHECK_HEADER(fox-1.6/fx.h,,AC_MSG_ERROR("fox-1.6/fx.h not found"))
+ 
+ 
+-# Check if fox-config exists
+-AC_CHECK_PROGS(FOX_CONFIG,fox-config-1.6 fox-1.6-config fox-config)
+-if test no"$FOX_CONFIG" = no ; then
+-	AC_MSG_ERROR("fox-config not found")               
+-fi
+-
+ 
+ # Include flags for the FOX library
+-FOXCFLAGS=`$FOX_CONFIG --cflags`
++FOXCFLAGS=`$PKG_CONFIG --cflags fox`
+ CXXFLAGS="${CXXFLAGS} $FOXCFLAGS"
+ 
+ 
+ # Check if FOX was compiled with xft support
+-TEST_XFT=`$FOX_CONFIG --libs | grep Xft`
++TEST_XFT=yes
+ if test "x$TEST_XFT" != "x" ; then
+-	
++
+ 	echo "checking whether FOX was compiled with Xft support... yes"
+ 
+ 	# Check for FreeType2
+@@ -135,7 +129,7 @@ if test "x$TEST_XFT" != "x" ; then
+ 			CXXFLAGS="$CXXFLAGS -DHAVE_XFT_H"
+ 		], AC_MSG_ERROR("Xft not found"))
+ 	fi
+-	AC_CHECK_HEADER(X11/Xft/Xft.h,,AC_MSG_ERROR("Xft.h not found"))
++	#AC_CHECK_HEADER(X11/Xft/Xft.h,,AC_MSG_ERROR("Xft.h not found"))
+ 
+ else
+ 	echo "checking whether FOX was compiled with Xft support... no"
+@@ -149,28 +143,28 @@ else
+ 	echo "   sudo make install"
+ 	echo "============================================================================================="
+ 	echo ""
+-	AC_MSG_ERROR("missing Xft support in FOX")               
++	AC_MSG_ERROR("missing Xft support in FOX")
+ fi
+ 
+ 
+ # Check for Xlib headers
+-AC_CHECK_HEADER(X11/Xlib.h,,AC_MSG_ERROR("Xlib.h not found"))
++#AC_CHECK_HEADER(X11/Xlib.h,,AC_MSG_ERROR("Xlib.h not found"))
+ 
+ # Check for XRandR support
+ AC_MSG_CHECKING(for xrandr extension)
+ AC_ARG_WITH(xrandr,[  --with-xrandr           compile with XRandR support])
+ AC_MSG_RESULT([$with_xrandr])
+-if test "x$with_xrandr" != "xno"; then
+-AC_CHECK_HEADERS(X11/extensions/Xrandr.h,CXXFLAGS="${CXXFLAGS} -DHAVE_XRANDR_H=1"; LIBS="${LIBS} -lXrandr")
+-fi
++#if test "x$with_xrandr" != "xno"; then
++#AC_CHECK_HEADERS(X11/extensions/Xrandr.h,CXXFLAGS="${CXXFLAGS} -DHAVE_XRANDR_H=1"; LIBS="${LIBS} -lXrandr")
++#fi
+ 
+ # Check for libPNG
+ AC_CHECK_LIB(png, png_read_info,,AC_MSG_ERROR("libPNG not found"))
+-AC_CHECK_HEADER(png.h,,AC_MSG_ERROR("png.h not found"))
++#AC_CHECK_HEADER(png.h,,AC_MSG_ERROR("png.h not found"))
+ 
+ # Check for fontconfig
+ AC_CHECK_LIB(fontconfig, FcInit,, AC_MSG_ERROR("fontconfig not found"))
+-AC_CHECK_HEADER(fontconfig/fontconfig.h,,AC_MSG_ERROR("fontconfig.h not found"))
++#AC_CHECK_HEADER(fontconfig/fontconfig.h,,AC_MSG_ERROR("fontconfig.h not found"))
+ 
+ # Check for startup notification support
+ AC_MSG_CHECKING(for startup notification)
+diff --git xfe-clean/src/ArchInputDialog.cpp xfe-workdir/src/ArchInputDialog.cpp
+index f0314bb..6410fb8 100644
+--- xfe-clean/src/ArchInputDialog.cpp
++++ xfe-workdir/src/ArchInputDialog.cpp
+@@ -1,5 +1,5 @@
+ // Input dialog for the add to archive command
+-
++#include <stdlib.h>
+ #include "config.h"
+ #include "i18n.h"
+ 
+diff --git xfe-clean/src/Bookmarks.cpp xfe-workdir/src/Bookmarks.cpp
+index 241ef32..46bcc56 100644
+--- xfe-clean/src/Bookmarks.cpp
++++ xfe-workdir/src/Bookmarks.cpp
+@@ -1,5 +1,5 @@
+ // Bookmarks list. Taken from the FOX library (FXRecentFiles) and slightly modified.
+-
++#include <stdlib.h>
+ #include "config.h"
+ #include "i18n.h"
+ 
+diff --git xfe-clean/src/BrowseInputDialog.cpp xfe-workdir/src/BrowseInputDialog.cpp
+index 4c64e68..f60e3a4 100644
+--- xfe-clean/src/BrowseInputDialog.cpp
++++ xfe-workdir/src/BrowseInputDialog.cpp
+@@ -1,5 +1,5 @@
+ // Input dialog with file browse icon
+-
++#include <stdlib.h>
+ #include "config.h"
+ #include "i18n.h"
+ 
+diff --git xfe-clean/src/CommandWindow.cpp xfe-workdir/src/CommandWindow.cpp
+index d9a9541..95b5fb2 100644
+--- xfe-clean/src/CommandWindow.cpp
++++ xfe-workdir/src/CommandWindow.cpp
+@@ -5,7 +5,7 @@
+ // The object deletes itself when the close button is pressed
+ // The command window can be a free-floating window or can be
+ // a window which will always float over the owner window
+-
++#include <stdlib.h>
+ #include "config.h"
+ #include "i18n.h"
+ 
+diff --git xfe-clean/src/DialogBox.cpp xfe-workdir/src/DialogBox.cpp
+index e5fad00..c2c6b0f 100644
+--- xfe-clean/src/DialogBox.cpp
++++ xfe-workdir/src/DialogBox.cpp
+@@ -1,4 +1,5 @@
+ // Dialog Box with additional toggle option
++#include <stdlib.h>
+ #include "config.h"
+ #include "i18n.h"
+ 
+diff --git xfe-clean/src/DirHistBox.cpp xfe-workdir/src/DirHistBox.cpp
+index 1708b05..958efcb 100644
+--- xfe-clean/src/DirHistBox.cpp
++++ xfe-workdir/src/DirHistBox.cpp
+@@ -1,6 +1,6 @@
+ // Display a history list box and allows the user to select a string
+ // This is based on FXChoiceBox
+-
++#include <stdlib.h>
+ #include "config.h"
+ #include "i18n.h"
+ 
+diff --git xfe-clean/src/DirList.cpp xfe-workdir/src/DirList.cpp
+index c750a49..7d07579 100644
+--- xfe-clean/src/DirList.cpp
++++ xfe-workdir/src/DirList.cpp
+@@ -1,7 +1,7 @@
+ // Directory list. Taken from the FOX library and slightly modified.
+ // The compare(), compare_nolocale() and compare_locale() functions are adapted from a patch
+ // submitted by Vladimir Támara Patiño
+-
++#include <stdlib.h>
+ #include "config.h"
+ #include "i18n.h"
+ 
+@@ -289,9 +289,9 @@ TreeItem* DirList::createItem(const FXString& text, FXIcon* oi, FXIcon* ci, void
+ /**
+  * Compares fields of p and q, supposing they are single byte strings
+  * without using the current locale.
+- * @param  igncase	Ignore upper/lower-case?
+- * @param  asc		Ascending?  If false is descending order
+- * @param  jmp		Field to compare (separated with \t)
++ * @param  igncase   Ignore upper/lower-case?
++ * @param  asc    Ascending?  If false is descending order
++ * @param  jmp    Field to compare (separated with \t)
+  *
+  * @return 0 if equal, negative if p<q, positive if p>q
+  * If jmp has an invalid value returns 0 and errno will be EINVAL
+@@ -342,9 +342,9 @@ static inline int compare_nolocale(char* p, char* q, FXbool igncase, FXbool asc)
+ /**
+  * Compares fields of p and q, supposing they are wide strings
+  * and using the current locale.
+- * @param  igncase	Ignore upper/lower-case?
+- * @param  asc		Ascending?  If false is descending order
+- * @param  jmp		Field to compare (separated with \t)
++ * @param  igncase   Ignore upper/lower-case?
++ * @param  asc    Ascending?  If false is descending order
++ * @param  jmp    Field to compare (separated with \t)
+  *
+  * @return 0 if equal, negative if p<q, positive if p>q
+  * If jmp has an invalid value returns 0 and errno will be EINVAL
+@@ -395,8 +395,8 @@ static inline int compare_locale(wchar_t* p, wchar_t* q, FXbool igncase, FXbool
+ /**
+  * Compares a field of pa with the same field of pb, if the fields are
+  * equal compare by name
+- * @param  igncase	Ignore upper/lower-case?
+- * @param  asc		Ascending?  If false is descending order
++ * @param  igncase   Ignore upper/lower-case?
++ * @param  asc    Ascending?  If false is descending order
+  *
+  * @return 0 if equal, negative if pa<pb, positive if pa>pb
+  * Requires to allocate some space, if there is no memory this
+diff --git xfe-clean/src/DirPanel.cpp xfe-workdir/src/DirPanel.cpp
+index 9c85e61..6fa88ee 100644
+--- xfe-clean/src/DirPanel.cpp
++++ xfe-workdir/src/DirPanel.cpp
+@@ -1,3 +1,4 @@
++#include <stdlib.h>
+ #include "config.h"
+ #include "i18n.h"
+ 
+@@ -1077,7 +1078,7 @@ long DirPanel::onCmdAddToArch(FXObject* o, FXSelector, void*)
+                 MessageBox::error(this, BOX_OK, _("Error"), _("Can't enter folder %s"), startlocation.text());
+             }
+ 
+-			delete f;
++         delete f;
+             return(0);
+         }
+ 
+@@ -2812,7 +2813,7 @@ long DirPanel::onCmdMount(FXObject*, FXSelector sel, void*)
+             MessageBox::error(this, BOX_OK, _("Error"), _("Can't enter folder %s"), startlocation.text());
+         }
+ 
+-		delete f;
++      delete f;
+         return(0);
+     }
+ 
+diff --git xfe-clean/src/ExecuteBox.cpp xfe-workdir/src/ExecuteBox.cpp
+index 83c201f..3b403aa 100644
+--- xfe-clean/src/ExecuteBox.cpp
++++ xfe-workdir/src/ExecuteBox.cpp
+@@ -1,3 +1,4 @@
++#include <stdlib.h>
+ #include "config.h"
+ #include "i18n.h"
+ 
+diff --git xfe-clean/src/File.cpp xfe-workdir/src/File.cpp
+index e42092a..a4d8a65 100644
+--- xfe-clean/src/File.cpp
++++ xfe-workdir/src/File.cpp
+@@ -1,5 +1,5 @@
+ // File management class with progress dialog
+-
++#include <stdlib.h>
+ #include "config.h"
+ #include "i18n.h"
+ 
+diff --git xfe-clean/src/FileDialog.cpp xfe-workdir/src/FileDialog.cpp
+index 65f6085..b8bfd72 100644
+--- xfe-clean/src/FileDialog.cpp
++++ xfe-workdir/src/FileDialog.cpp
+@@ -1,5 +1,5 @@
+ // File dialog. Taken from the FOX library and slightly modified.
+-
++#include <stdlib.h>
+ #include "config.h"
+ #include "i18n.h"
+ 
+@@ -994,7 +994,7 @@ long FileSelector::onCmdNewDir(FXObject*, FXSelector, void*)
+                 {
+                     MessageBox::error(getApp(), BOX_OK_SU, _("Error"), "Can't create folder %s", dirname.text());
+                 }
+-	            delete dialog;
++               delete dialog;
+                 return(0);
+             }
+         }
+@@ -1048,7 +1048,7 @@ long FileSelector::onCmdNewFile(FXObject*, FXSelector, void*)
+             if (existFile(filename))
+             {
+                 MessageBox::error(this, BOX_OK, _("Error"), _("File or folder %s already exists"), filename.text());
+-            	delete dialog;
++               delete dialog;
+                 return(0);
+             }
+             // Create the new file
+@@ -1063,7 +1063,7 @@ long FileSelector::onCmdNewFile(FXObject*, FXSelector, void*)
+                 {
+                     MessageBox::error(getApp(), BOX_OK_SU, _("Error"), "Can't create file %s", filename.text());
+                 }
+-            	delete dialog;
++               delete dialog;
+                 return(0);
+             }
+             // Change the file permissions according to the current umask
+@@ -1081,7 +1081,7 @@ long FileSelector::onCmdNewFile(FXObject*, FXSelector, void*)
+                 {
+                     MessageBox::error(getApp(), BOX_OK_SU, _("Error"), "Can't set permissions in %s", filename.text());
+                 }
+-            	delete dialog;
++               delete dialog;
+                 return(0);
+             }
+         }
+diff --git xfe-clean/src/FileDict.cpp xfe-workdir/src/FileDict.cpp
+index 8a0f915..3e33bfd 100644
+--- xfe-clean/src/FileDict.cpp
++++ xfe-workdir/src/FileDict.cpp
+@@ -1,5 +1,5 @@
+ // File association tables. Taken from the FOX library and slightly modified.
+-
++#include <stdlib.h>
+ #include "config.h"
+ #include "i18n.h"
+ 
+@@ -41,14 +41,14 @@ IconDict::IconDict(FXApp* a, const FXString& p) : path(p)
+ // Search for the icon name along the search path, and try to load it
+ void* IconDict::createData(const void* ptr)
+ {
+-	// Load icon
+-	FXIcon* icon = source->loadIconFile(FXPath::search(path, (const char*)ptr));
+-	
+-	// Scale icon
+-	if (icon)
+-	{
+-		icon->scale(scalefrac*icon->getWidth(), scalefrac*icon->getHeight());
+-	}
++   // Load icon
++   FXIcon* icon = source->loadIconFile(FXPath::search(path, (const char*)ptr));
++
++   // Scale icon
++   if (icon)
++   {
++      icon->scale(scalefrac*icon->getWidth(), scalefrac*icon->getHeight());
++   }
+ 
+     return(icon);
+ }
+diff --git xfe-clean/src/FileList.cpp xfe-workdir/src/FileList.cpp
+index 3cfa2fb..cd36a22 100644
+--- xfe-clean/src/FileList.cpp
++++ xfe-workdir/src/FileList.cpp
+@@ -2,7 +2,7 @@
+ // The compare(), compare_nolocale() and compare_locale() functions are adapted from a patch
+ // submitted by Vladimir Támara Patiño
+ 
+-
++#include <stdlib.h>
+ #include "config.h"
+ #include "i18n.h"
+ 
+@@ -2536,9 +2536,9 @@ long FileList::onUpdHeader(FXObject*, FXSelector, void*)
+ /**
+  * Compares fields of p and q, supposing they are single byte strings
+  * without using the current locale.
+- * @param  igncase	Ignore upper/lower-case?
+- * @param  asc		Ascending?  If false is descending order
+- * @param  jmp		Field to compare (separated with \t)
++ * @param  igncase   Ignore upper/lower-case?
++ * @param  asc    Ascending?  If false is descending order
++ * @param  jmp    Field to compare (separated with \t)
+  *
+  * @return 0 if equal, negative if p<q, positive if p>q
+  * If jmp has an invalid value returns 0 and errno will be EINVAL
+@@ -2678,9 +2678,9 @@ end:
+ /**
+  * Compares fields of p and q, supposing they are wide strings
+  * and using the current locale.
+- * @param  igncase	Ignore upper/lower-case?
+- * @param  asc		Ascending?  If false is descending order
+- * @param  jmp		Field to compare (separated with \t)
++ * @param  igncase   Ignore upper/lower-case?
++ * @param  asc    Ascending?  If false is descending order
++ * @param  jmp    Field to compare (separated with \t)
+  *
+  * @return 0 if equal, negative if p<q, positive if p>q
+  * If jmp has an invalid value returns 0 and errno will be EINVAL
+@@ -2821,10 +2821,10 @@ end:
+ /**
+  * Compares a field of pa with the same field of pb, if the fields are
+  * equal compare by name
+- * @param  igncase	Ignore upper/lower-case?
+- * @param  asc		Ascending?  If false is descending order
+- * @param  mixdir	Mix directories with files?
+- * @param  jmp		Field to compare (separated with \t)
++ * @param  igncase   Ignore upper/lower-case?
++ * @param  asc    Ascending?  If false is descending order
++ * @param  mixdir Mix directories with files?
++ * @param  jmp    Field to compare (separated with \t)
+  *
+  * @return 0 if equal, negative if pa<pb, positive if pa>pb
+  * Requires to allocate some space, if there is no memory this
+@@ -4171,21 +4171,21 @@ FXbool FileList::updateItems(FXbool force)
+             continue;
+         }
+         isLink = S_ISLNK(linfo.st_mode);
+-		
+-		// Find if it is a broken link or a link to a directory
+-		isBrokenLink = false;
+-		isLinkToDir = false;
+-		if (isLink)
+-		{
+-			if (statrep(pathname.text(), &info) != 0)
+-			{
+-				isBrokenLink = true;
+-			}
+-			else if (S_ISDIR(info.st_mode))
+-			{
+-				isLinkToDir = true;
+-			}
+-		}
++
++      // Find if it is a broken link or a link to a directory
++      isBrokenLink = false;
++      isLinkToDir = false;
++      if (isLink)
++      {
++         if (statrep(pathname.text(), &info) != 0)
++         {
++            isBrokenLink = true;
++         }
++         else if (S_ISDIR(info.st_mode))
++         {
++            isLinkToDir = true;
++         }
++      }
+ 
+         // File times
+         filemtime = linfo.st_mtime;
+@@ -4576,14 +4576,14 @@ FXbool FileList::updateItems(FXbool force)
+                 {
+                     if (isLinkToDir)
+                     {
+-						item->setBigIcon(bigfolderlinkicon);
+-						item->setMiniIcon(minifolderlinkicon);						
+-					}
+-					else
+-					{
+-						item->setBigIcon(biglinkicon);
+-						item->setMiniIcon(minilinkicon);												
+-					}
++                  item->setBigIcon(bigfolderlinkicon);
++                  item->setMiniIcon(minifolderlinkicon);
++               }
++               else
++               {
++                  item->setBigIcon(biglinkicon);
++                  item->setMiniIcon(minilinkicon);
++               }
+                 }
+             }
+         }
+@@ -5349,14 +5349,14 @@ fnd:
+                         {
+                             if (isLinkToDir)
+                             {
+-								item->setBigIcon(bigfolderlinkicon);
+-								item->setMiniIcon(minifolderlinkicon);								
+-							}
+-							else
+-							{
+-								item->setBigIcon(biglinkicon);
+-								item->setMiniIcon(minilinkicon);																
+-							}
++                        item->setBigIcon(bigfolderlinkicon);
++                        item->setMiniIcon(minifolderlinkicon);
++                     }
++                     else
++                     {
++                        item->setBigIcon(biglinkicon);
++                        item->setMiniIcon(minilinkicon);
++                     }
+                         }
+                     }
+                 }
+diff --git xfe-clean/src/FilePanel.cpp xfe-workdir/src/FilePanel.cpp
+index 5627dad..00166f0 100644
+--- xfe-clean/src/FilePanel.cpp
++++ xfe-workdir/src/FilePanel.cpp
+@@ -1,3 +1,4 @@
++#include <stdlib.h>
+ #include "config.h"
+ #include "i18n.h"
+ 
+@@ -1397,7 +1398,7 @@ long FilePanel::onCmdItemDoubleClicked(FXObject* sender, FXSelector sel, void* p
+                     getApp()->endWaitCursor();
+                     current->handle(this, FXSEL(SEL_COMMAND, ID_OPEN_WITH), NULL);
+                 }
+-                
++
+                 delete assocdict;
+             }
+         }
+@@ -1598,7 +1599,7 @@ long FilePanel::onCmdItemClicked(FXObject* sender, FXSelector sel, void* ptr)
+                         current->handle(this, FXSEL(SEL_COMMAND, ID_OPEN_WITH), NULL);
+                     }
+ 
+-					delete assocdict;
++               delete assocdict;
+                 }
+             }
+         }
+@@ -3340,7 +3341,7 @@ long FilePanel::onCmdEdit(FXObject*, FXSelector s, void*)
+             }
+         }
+     }
+-   
++
+ #ifdef STARTUP_NOTIFICATION
+     // Startup notification option and exceptions (if any)
+     FXbool usesn = getApp()->reg().readUnsignedEntry("OPTIONS", "use_startup_notification", true);
+@@ -5937,8 +5938,8 @@ long FilePanel::onCmdMount(FXObject*, FXSelector sel, void*)
+         {
+             MessageBox::error(this, BOX_OK, _("Error"), _("Can't enter folder %s"), startlocation.text());
+         }
+-		
+-		delete f;
++
++      delete f;
+         return(0);
+     }
+ 
+@@ -5948,7 +5949,7 @@ long FilePanel::onCmdMount(FXObject*, FXSelector sel, void*)
+         f->hide();
+         text = msg + _(" operation cancelled!");
+         MessageBox::error(this, BOX_OK, _("Warning"), "%s", text.text());
+-        
++
+         delete f;
+         return(0);
+     }
+diff --git xfe-clean/src/FontDialog.cpp xfe-workdir/src/FontDialog.cpp
+index 0fd78a1..9df1478 100644
+--- xfe-clean/src/FontDialog.cpp
++++ xfe-workdir/src/FontDialog.cpp
+@@ -1,5 +1,5 @@
+ // Font dialog. Taken from the FOX library and only modified for translation purpose
+-
++#include <stdlib.h>
+ #include "config.h"
+ #include "i18n.h"
+ 
+diff --git xfe-clean/src/HistInputDialog.cpp xfe-workdir/src/HistInputDialog.cpp
+index 7faadcc..3df5161 100644
+--- xfe-clean/src/HistInputDialog.cpp
++++ xfe-workdir/src/HistInputDialog.cpp
+@@ -1,5 +1,5 @@
+ // Input dialog with history list and an optional check box
+-
++#include <stdlib.h>
+ #include "config.h"
+ #include "i18n.h"
+ 
+diff --git xfe-clean/src/IconList.cpp xfe-workdir/src/IconList.cpp
+index 364fdf9..00ca802 100644
+--- xfe-clean/src/IconList.cpp
++++ xfe-workdir/src/IconList.cpp
+@@ -1,4 +1,5 @@
+ // Icon list. Taken from the FOX library and slightly modified.
++#include <stdlib.h>
+ #include "config.h"
+ #include "i18n.h"
+ 
+diff --git xfe-clean/src/InputDialog.cpp xfe-workdir/src/InputDialog.cpp
+index 27f4d77..fce88f5 100644
+--- xfe-clean/src/InputDialog.cpp
++++ xfe-workdir/src/InputDialog.cpp
+@@ -1,5 +1,5 @@
+ // Simple input dialog (without history)
+-
++#include <stdlib.h>
+ #include "config.h"
+ #include "i18n.h"
+ 
+diff --git xfe-clean/src/Keybindings.cpp xfe-workdir/src/Keybindings.cpp
+index e0850c8..250a659 100644
+--- xfe-clean/src/Keybindings.cpp
++++ xfe-workdir/src/Keybindings.cpp
+@@ -1,5 +1,5 @@
+ // Dialog used to modify key bindings
+-
++#include <stdlib.h>
+ #include "config.h"
+ #include "i18n.h"
+ 
+diff --git xfe-clean/src/KeybindingsDialog.cpp xfe-workdir/src/KeybindingsDialog.cpp
+index 0f7e279..156c4e2 100644
+--- xfe-clean/src/KeybindingsDialog.cpp
++++ xfe-workdir/src/KeybindingsDialog.cpp
+@@ -1,5 +1,5 @@
+ // Dialog to let the user enter a key binding
+-
++#include <stdlib.h>
+ #include "config.h"
+ #include "i18n.h"
+ 
+diff --git xfe-clean/src/MessageBox.cpp xfe-workdir/src/MessageBox.cpp
+index 768a62e..6516589 100644
+--- xfe-clean/src/MessageBox.cpp
++++ xfe-workdir/src/MessageBox.cpp
+@@ -1,6 +1,6 @@
+ // Message box. Taken from the FOX library and slightly modified for translation purpose.
+ // Also added a SU button
+-
++#include <stdlib.h>
+ #include "config.h"
+ #include "i18n.h"
+ 
+diff --git xfe-clean/src/OverwriteBox.cpp xfe-workdir/src/OverwriteBox.cpp
+index 2109677..7ec9f90 100644
+--- xfe-clean/src/OverwriteBox.cpp
++++ xfe-workdir/src/OverwriteBox.cpp
+@@ -1,3 +1,4 @@
++#include <stdlib.h>
+ #include "config.h"
+ #include "i18n.h"
+ 
+diff --git xfe-clean/src/Preferences.cpp xfe-workdir/src/Preferences.cpp
+index 488045f..cfba125 100644
+--- xfe-clean/src/Preferences.cpp
++++ xfe-workdir/src/Preferences.cpp
+@@ -1,5 +1,5 @@
+ // Preferences dialog box
+-
++#include <stdlib.h>
+ #include "config.h"
+ #include "i18n.h"
+ 
+@@ -755,7 +755,7 @@ long PreferencesBox::onCmdNormalFont(FXObject*, FXSelector, void*)
+         fontspec = nfont->getFont();
+         normalfont->setText(fontspec);
+     }
+-    
++
+     delete nfont;
+     return(1);
+ }
+diff --git xfe-clean/src/Properties.cpp xfe-workdir/src/Properties.cpp
+index d42a247..7947569 100644
+--- xfe-clean/src/Properties.cpp
++++ xfe-workdir/src/Properties.cpp
+@@ -1,5 +1,5 @@
+ // Properties box
+-
++#include <stdlib.h>
+ #include "config.h"
+ #include "i18n.h"
+ 
+diff --git xfe-clean/src/SearchPanel.cpp xfe-workdir/src/SearchPanel.cpp
+index cace5c4..2e04b0c 100644
+--- xfe-clean/src/SearchPanel.cpp
++++ xfe-workdir/src/SearchPanel.cpp
+@@ -1,4 +1,5 @@
+ // Search panel
++#include <stdlib.h>
+ #include "config.h"
+ #include "i18n.h"
+ 
+@@ -521,8 +522,8 @@ long SearchPanel::onCmdItemDoubleClicked(FXObject* sender, FXSelector sel, void*
+                     getApp()->endWaitCursor();
+                     handle(this, FXSEL(SEL_COMMAND, ID_OPEN_WITH), NULL);
+                 }
+-                
+-	            delete assocdict;
++
++               delete assocdict;
+             }
+         }
+     }
+@@ -1243,7 +1244,7 @@ long SearchPanel::onCmdOpen(FXObject*, FXSelector, void*)
+             }
+         }
+     }
+-    
++
+     delete assocdict;
+ 
+ #ifdef STARTUP_NOTIFICATION
+@@ -1599,7 +1600,7 @@ long SearchPanel::onCmdEdit(FXObject*, FXSelector s, void*)
+         }
+     }
+ 
+-	delete assocdict;
++   delete assocdict;
+     getApp()->endWaitCursor();
+ 
+     return(1);
+@@ -1853,19 +1854,19 @@ long SearchPanel::appendItem(FXString& pathname)
+         isLink = S_ISLNK(linfo.st_mode);
+         isBrokenLink = false;
+ 
+-		// Find if it is a broken link or a link to a directory
+-		isLinkToDir = false;
+-		if (isLink)
+-		{
+-			if (statrep(pathname.text(), &info) != 0)
+-			{
+-				isBrokenLink = true;
+-			}
+-			else if (S_ISDIR(info.st_mode))
+-			{
+-				isLinkToDir = true;
+-			}
+-		}
++      // Find if it is a broken link or a link to a directory
++      isLinkToDir = false;
++      if (isLink)
++      {
++         if (statrep(pathname.text(), &info) != 0)
++         {
++            isBrokenLink = true;
++         }
++         else if (S_ISDIR(info.st_mode))
++         {
++            isLinkToDir = true;
++         }
++      }
+ 
+         // File times
+         filemtime = linfo.st_mtime;
+@@ -2084,16 +2085,16 @@ long SearchPanel::appendItem(FXString& pathname)
+             {
+                 if (isLinkToDir)
+                 {
+-					big = bigfolderlinkicon;
+-					mini = minifolderlinkicon;					
+-				}
+-				else
+-				{
+-					
+-					big = biglinkicon;
+-					mini = minilinkicon;
+-				}
+-			}
++               big = bigfolderlinkicon;
++               mini = minifolderlinkicon;
++            }
++            else
++            {
++
++               big = biglinkicon;
++               mini = minilinkicon;
++            }
++         }
+         }
+ 
+         // Add item to the file list
+diff --git xfe-clean/src/SearchWindow.cpp xfe-workdir/src/SearchWindow.cpp
+index c46637d..3dd6731 100644
+--- xfe-clean/src/SearchWindow.cpp
++++ xfe-workdir/src/SearchWindow.cpp
+@@ -1,4 +1,5 @@
+ // Search files dialog and panel
++#include <stdlib.h>
+ #include "config.h"
+ #include "i18n.h"
+ 
+@@ -787,7 +788,7 @@ long SearchWindow::onCmdStart(FXObject*, FXSelector, void*)
+ 
+     // Search message
+     searchresults->setText(FXString(">>>> ") + _("Search started - Please wait...") + FXString(" <<<<"));
+-    
++
+     // Running flag and rotating cursor
+     running = true;
+     rotcur = "-";
+diff --git xfe-clean/src/TextWindow.cpp xfe-workdir/src/TextWindow.cpp
+index 0cb00ab..c9a4160 100644
+--- xfe-clean/src/TextWindow.cpp
++++ xfe-workdir/src/TextWindow.cpp
+@@ -1,4 +1,5 @@
+ // Text widget with a close button
++#include <stdlib.h>
+ #include "config.h"
+ #include "i18n.h"
+ 
+diff --git xfe-clean/src/WriteWindow.cpp xfe-workdir/src/WriteWindow.cpp
+index a45d151..3ee2067 100644
+--- xfe-clean/src/WriteWindow.cpp
++++ xfe-workdir/src/WriteWindow.cpp
+@@ -1,6 +1,6 @@
+ // This is adapted from 'adie', a text editor found
+ // in the FOX library and written by Jeroen van der Zijp.
+-
++#include <stdlib.h>
+ #include "config.h"
+ #include "i18n.h"
+ 
+@@ -988,12 +988,12 @@ WriteWindow::WriteWindow(XFileWrite* a, const FXString& file, const FXbool _read
+     xx = 0;
+     yy = 0;
+ 
+-	delete overstrike;
+-	delete numchars;
+-	delete columnno;
+-	delete rowno;
+-	delete sep1;
+-	delete sep2;
++   delete overstrike;
++   delete numchars;
++   delete columnno;
++   delete rowno;
++   delete sep1;
++   delete sep2;
+ }
+ 
+ 
+@@ -1532,7 +1532,7 @@ long WriteWindow::onCmdNew(FXObject*, FXSelector, void*)
+     window->create();
+     window->raise();
+     window->setFocus();
+-    
++
+     return(1);
+ }
+ 
+@@ -1622,7 +1622,7 @@ long WriteWindow::onCmdOpenRecent(FXObject*, FXSelector, void* ptr)
+     }
+     window->raise();
+     window->setFocus();
+-    
++
+     return(1);
+ }
+ 
+diff --git xfe-clean/src/XFileExplorer.cpp xfe-workdir/src/XFileExplorer.cpp
+index 455e19b..84abff5 100644
+--- xfe-clean/src/XFileExplorer.cpp
++++ xfe-workdir/src/XFileExplorer.cpp
+@@ -1,3 +1,4 @@
++#include <stdlib.h>
+ #include "config.h"
+ #include "i18n.h"
+ 
+@@ -221,7 +222,7 @@ XFileExplorer::XFileExplorer(FXApp* app, vector_FXString URIs, const FXbool icon
+     // Splitter containing the two panels
+     panelsplit = new FXSplitter(mainsplit, LAYOUT_SIDE_LEFT | LAYOUT_FILL_X | LAYOUT_FILL_Y | SPLITTER_TRACKING | FRAME_NONE);
+ 
+-    // Stack file panels horizontally or vertically	(directory panel is always vertical)
++    // Stack file panels horizontally or vertically   (directory panel is always vertical)
+     vertpanels = getApp()->reg().readUnsignedEntry("OPTIONS", "vert_panels", true);
+     if (vertpanels)
+     {
+@@ -3314,8 +3315,8 @@ long XFileExplorer::onUpdFileLocation(FXObject* sender, FXSelector, void*)
+ // Switch between vertical and horizontal panels
+ long XFileExplorer::onCmdHorzVertPanels(FXObject* sender, FXSelector sel, void* ptr)
+ {
+-	FXuint width, height;
+-	
++   FXuint width, height;
++
+     switch(FXSELID(sel))
+     {
+     case ID_VERT_PANELS:
+@@ -4435,7 +4436,7 @@ long XFileExplorer::onUpdFileMan(FXObject* o, FXSelector, void*)
+             else
+             {
+                 o->handle(this, FXSEL(SEL_COMMAND, FXWindow::ID_ENABLE), NULL);
+-                
++
+                 // Update copy names menu label when only one file is selected
+                 cpnmenu->setText(_("Cop&y name"));
+             }
+diff --git xfe-clean/src/XFileImage.cpp xfe-workdir/src/XFileImage.cpp
+index 01a045c..5d0f7d4 100644
+--- xfe-clean/src/XFileImage.cpp
++++ xfe-workdir/src/XFileImage.cpp
+@@ -1,6 +1,6 @@
+ // This code is adapted from 'imageviewer', a demo image viewer found
+ // in the FOX library and written by Jeroen van der Zijp.
+-
++#include <stdlib.h>
+ #include "config.h"
+ #include "i18n.h"
+ 
+diff --git xfe-clean/src/XFilePackage.cpp xfe-workdir/src/XFilePackage.cpp
+index 28cd76e..acf1eaf 100644
+--- xfe-clean/src/XFilePackage.cpp
++++ xfe-workdir/src/XFilePackage.cpp
+@@ -1,3 +1,4 @@
++#include <stdlib.h>
+ #include "config.h"
+ #include "i18n.h"
+ 
+diff --git xfe-clean/src/XFileWrite.cpp xfe-workdir/src/XFileWrite.cpp
+index 870eeeb..9bed875 100644
+--- xfe-clean/src/XFileWrite.cpp
++++ xfe-workdir/src/XFileWrite.cpp
+@@ -1,6 +1,6 @@
+ // This is adapted from 'adie', a demo text editor found
+ // in the FOX library and written by Jeroen van der Zijp.
+-
++#include <stdlib.h>
+ #include "config.h"
+ #include "i18n.h"
+ 
+diff --git xfe-clean/src/icons.cpp xfe-workdir/src/icons.cpp
+index 7754362..f8b74eb 100644
+--- xfe-clean/src/icons.cpp
++++ xfe-workdir/src/icons.cpp
+@@ -1,5 +1,5 @@
+ // Global icons for all applications
+-
++#include <stdlib.h>
+ #include "config.h"
+ #include "i18n.h"
+ 
+diff --git xfe-clean/src/main.cpp xfe-workdir/src/main.cpp
+index e8e58ea..46b5e0c 100644
+--- xfe-clean/src/main.cpp
++++ xfe-workdir/src/main.cpp
+@@ -1,3 +1,4 @@
++#include <stdlib.h>
+ #include "config.h"
+ #include "i18n.h"
+ 
+diff --git xfe-clean/src/startupnotification.cpp xfe-workdir/src/startupnotification.cpp
+index 27c0b7a..d16df00 100644
+--- xfe-clean/src/startupnotification.cpp
++++ xfe-workdir/src/startupnotification.cpp
+@@ -1,3 +1,4 @@
++#include <stdlib.h>
+ #include "config.h"
+ #include "i18n.h"
+ 
+diff --git xfe-clean/src/xfeutils.cpp xfe-workdir/src/xfeutils.cpp
+index ad7aeba..4572a12 100644
+--- xfe-clean/src/xfeutils.cpp
++++ xfe-workdir/src/xfeutils.cpp
+@@ -3,7 +3,7 @@
+ // Also supports a timeout on the stat and lstat function (this is the reason
+ // why some standard FOX function cannot be used and are rewritten here)
+ 
+-
++#include <stdlib.h>
+ #include "config.h"
+ #include "i18n.h"
+ 
+diff --git xfe-clean/st/st.c xfe-workdir/st/st.c
+index a80d8e9..4673220 100644
+--- xfe-clean/st/st.c
++++ xfe-workdir/st/st.c
+@@ -22,17 +22,22 @@
+ #include <termios.h>
+ #include <unistd.h>
+ #include <wchar.h>
++#include <sys/ttydefaults.h>
+ 
+ #include "st.h"
+ #include "win.h"
+ 
++/*
+ #if   defined(__linux)
++*/
+  #include <pty.h>
++/*
+ #elif defined(__OpenBSD__) || defined(__NetBSD__) || defined(__APPLE__)
+  #include <util.h>
+ #elif defined(__FreeBSD__) || defined(__DragonFly__)
+  #include <libutil.h>
+ #endif
++*/
+ 
+ /* Arbitrary sizes */
+ #define UTF_INVALID   0xFFFD
+@@ -792,8 +797,27 @@ ttynew(char *line, char *cmd, char *out, char **args)
+         return cmdfd;
+     }
+ 
++    // Create a pipe for stdout/stderr.
++    struct termios termios;
++    termios.c_iflag = BRKINT | IGNPAR | ICRNL | IXON | IMAXBEL;
++    termios.c_oflag = OPOST | ONLCR;
++    termios.c_cflag = CS8 | CREAD;
++    termios.c_lflag = ISIG | ICANON | ECHO | ECHOE | ECHOK;
++    termios.c_cc[VINTR] = CTRL('C');
++    termios.c_cc[VEOF] = CTRL('D');
++    termios.c_cc[VSUSP] = CTRL('Z');
++    termios.ibaud = 38400;
++    termios.obaud = 38400;
++
++    struct winsize win_size = {
++        .ws_row = 24,
++        .ws_col = 80,
++        .ws_xpixel = 24 * 16,
++        .ws_ypixel = 80 * 16
++    };
++
+     /* seems to work fine on linux, openbsd and freebsd */
+-    if (openpty(&m, &s, NULL, NULL, NULL) < 0)
++    if (openpty(&m, &s, NULL, &termios, &win_size) < 0)
+         die("openpty failed: %s\n", strerror(errno));
+ 
+     switch (pid = fork()) {
+@@ -806,8 +830,10 @@ ttynew(char *line, char *cmd, char *out, char **args)
+         dup2(s, 0);
+         dup2(s, 1);
+         dup2(s, 2);
++        /*
+         if (ioctl(s, TIOCSCTTY, NULL) < 0)
+             die("ioctl TIOCSCTTY failed: %s\n", strerror(errno));
++        */
+         close(s);
+         close(m);
+ #ifdef __OpenBSD__
+@@ -1145,7 +1171,7 @@ tnewline(int first_col)
+     } else {
+         y++;
+     }
+-    tmoveto(first_col ? 0 : term.c.x, y);
++    tmoveto(0, y);
+ }
+ 
+ void

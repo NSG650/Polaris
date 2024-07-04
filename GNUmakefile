@@ -7,13 +7,21 @@ all:
 	$(MAKE) polaris.iso
 
 polaris.iso: jinx
-	rm -f builds/kernel.* builds/drivers.* builds/init.*
-	./jinx build-all
 	./build-support/makeiso.sh
 
 jinx:
 	curl -Lo jinx https://raw.githubusercontent.com/mintsuki/jinx/e86d99f1156b33cd5b37a8bb25317949511a28d0/jinx
 	chmod +x jinx
+
+.PHONY: userspace-full
+userspace-full:
+	rm -f builds/kernel.* builds/drivers.* builds/init.*
+	./jinx build-all
+
+.PHONY: userspace-base
+userspace-base:
+	rm -f builds/kernel.* builds/drivers.* builds/init.*
+	./jinx build base-files kernel init bash coreutils lua nano ncurses readline tzdata xz zlib zstd
 
 .PHONY: kernel-clean
 kernel-clean:

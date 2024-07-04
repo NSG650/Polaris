@@ -5,6 +5,7 @@ ar = 'x86_64-polaris-ar'
 nm = 'x86_64-polaris-nm'
 strip = 'x86_64-polaris-strip'
 pkg-config = 'x86_64-polaris-pkg-config'
+llvm-config = '/base_dir/build-support/cross-llvm-config'
 
 [host_machine]
 system = 'polaris'

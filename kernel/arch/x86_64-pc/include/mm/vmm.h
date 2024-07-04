@@ -36,7 +36,7 @@ extern volatile struct limine_kernel_address_request kernel_address_request;
 
 #define PAGE_READ (0b1)
 #define PAGE_WRITE (0b10)
-#define PAGE_EXECUTE (1ull << 63ull)
+#define PAGE_NO_EXECUTE (1ull << 63ull)
 
 struct pagemap {
 	lock_t lock;

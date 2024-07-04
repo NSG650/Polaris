@@ -290,8 +290,6 @@ uint64_t module_load(const char *path) {
 			int prot = PAGE_READ;
 			if (section->sh_flags & SHF_WRITE)
 				prot |= PAGE_WRITE;
-			if (section->sh_flags & SHF_EXECINSTR)
-				prot |= PAGE_EXECUTE;
 
 			m->mappings[index].prot = prot;
 
