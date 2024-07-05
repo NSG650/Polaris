@@ -21,7 +21,7 @@ userspace-full:
 .PHONY: userspace-base
 userspace-base:
 	rm -f builds/kernel.* builds/drivers.* builds/init.*
-	./jinx build base-files kernel init bash coreutils lua nano ncurses readline tzdata xz zlib zstd
+	./jinx build base-files kernel drivers init bash coreutils lua nano ncurses readline tzdata xz zlib zstd
 
 .PHONY: kernel-clean
 kernel-clean:

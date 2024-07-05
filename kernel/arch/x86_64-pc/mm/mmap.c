@@ -366,6 +366,95 @@ bool munmap(struct pagemap *pagemap, uintptr_t addr, size_t length) {
 	return true;
 }
 
+bool mprotect(struct pagemap *pagemap, uintptr_t addr, size_t length,
+			  int prot) {
+	if (length == 0) {
+		errno = EINVAL;
+		return false;
+	}
+
+	length = ALIGN_UP(length, PAGE_SIZE);
+
+	for (uintptr_t i = addr; i < addr + length; i += PAGE_SIZE) {
+		struct mmap_range_local *local_range = addr2range(pagemap, i).range;
+
+		if (local_range->prot == prot) {
+			continue;
+		}
+
+		uintptr_t snip_begin = i;
+		for (;;) {
+			i += PAGE_SIZE;
+			if (i >= local_range->base + local_range->length ||
+				i >= addr + length) {
+				break;
+			}
+		}
+		uintptr_t snip_end = i;
+		uintptr_t snip_size = snip_end - snip_begin;
+
+		spinlock_acquire_or_wait(&pagemap->lock);
+		if (snip_begin > local_range->base &&
+			snip_end < local_range->base + local_range->length) {
+			struct mmap_range_local *postsplit_range =
+				kmalloc(sizeof(struct mmap_range_local));
+
+			postsplit_range->pagemap = local_range->pagemap;
+			postsplit_range->global = local_range->global;
+			postsplit_range->base = snip_end;
+			postsplit_range->length =
+				(local_range->base + local_range->length) - snip_end;
+			postsplit_range->offset =
+				local_range->offset + (off_t)(snip_end - local_range->base);
+			postsplit_range->prot = local_range->prot;
+			postsplit_range->flags = local_range->flags;
+
+			vec_push(&pagemap->mmap_ranges, postsplit_range);
+
+			local_range->length -= postsplit_range->length;
+		}
+
+		for (uintptr_t j = snip_begin; j < snip_end; j += PAGE_SIZE) {
+			uint64_t pt_flags = 0b1 | 0b100;
+
+			if ((prot & PROT_WRITE) != 0) {
+				pt_flags |= 0b10;
+			}
+			if ((prot & PROT_EXEC) == 0) {
+				pt_flags |= 1ull << 63ull;
+				;
+			}
+			vmm_remap_page(pagemap, j, pt_flags);
+		}
+
+		uintptr_t new_offset =
+			local_range->offset + (snip_begin - local_range->base);
+
+		if (snip_begin == local_range->base) {
+			local_range->offset += snip_size;
+			local_range->base = snip_end;
+		}
+		local_range->length -= snip_size;
+
+		struct mmap_range_local *new_range =
+			kmalloc(sizeof(struct mmap_range_local));
+
+		new_range->pagemap = local_range->pagemap;
+		new_range->global = local_range->global;
+		new_range->base = snip_begin;
+		new_range->length = snip_size;
+		new_range->offset = new_offset;
+		new_range->prot = prot;
+		new_range->flags = local_range->flags;
+
+		vec_push(&pagemap->mmap_ranges, new_range);
+
+		spinlock_drop(&pagemap->lock);
+	}
+
+	return true;
+}
+
 void syscall_mmap(struct syscall_arguments *args) {
 	uintptr_t hint = args->args0;
 	size_t length = args->args1;
@@ -405,4 +494,15 @@ void syscall_munmap(struct syscall_arguments *args) {
 	struct process *proc = thread->mother_proc;
 
 	args->ret = munmap(proc->process_pagemap, addr, length) ? 0 : -1;
+}
+
+void syscall_mprotect(struct syscall_arguments *args) {
+	uintptr_t addr = args->args0;
+	size_t length = args->args1;
+	int prot = args->args2;
+
+	struct thread *thread = prcb_return_current_cpu()->running_thread;
+	struct process *proc = thread->mother_proc;
+
+	args->ret = mprotect(proc->process_pagemap, addr, length, prot) ? 0 : -1;
 }

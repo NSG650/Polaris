@@ -26,7 +26,7 @@ void syscall_handler(registers_t *reg) {
 
 	syscall_handle(&args);
 
-	int ret = (int)args.ret;
+	int64_t ret = (int64_t)args.ret;
 	if (ret < 0) {
 		ret = -((int)errno);
 		reg->rax = ret;

@@ -136,6 +136,7 @@ root/usr
 *.img
 
 base-files/root/kernel/
-
+base-files/root/ClassicCube/
 to_be_worked_on/
+
 

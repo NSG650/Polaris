@@ -92,6 +92,8 @@ void kernel_main(void *args) {
 	tmpfs_init();
 	devtmpfs_init();
 	vfs_mount(vfs_root, NULL, "/", "tmpfs");
+	vfs_create(vfs_root, "/tmp", 0755 | S_IFDIR);
+	vfs_mount(vfs_root, NULL, "/tmp", "tmpfs");
 	vfs_create(vfs_root, "/dev", 0755 | S_IFDIR);
 	vfs_mount(vfs_root, NULL, "/dev", "devtmpfs");
 	streams_init();
@@ -129,6 +131,7 @@ void kernel_main(void *args) {
 	syscall_register_handler(0x3, syscall_close);
 	syscall_register_handler(0x8, syscall_seek);
 	syscall_register_handler(0x9, syscall_mmap);
+	syscall_register_handler(0xa, syscall_mprotect);
 	syscall_register_handler(0xb, syscall_munmap);
 	syscall_register_handler(0x10, syscall_ioctl);
 	syscall_register_handler(0x48, syscall_fcntl);

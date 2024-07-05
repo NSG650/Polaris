@@ -191,8 +191,6 @@ level4:
 }
 
 bool vmm_remap_page(struct pagemap *pagemap, uintptr_t virt, uint64_t flags) {
-	spinlock_acquire_or_wait(&pagemap->lock);
-
 	size_t pml5_entry = (virt & ((uint64_t)0x1FF << 48)) >> 48;
 	size_t pml4_entry = (virt & ((uint64_t)0x1FF << 39)) >> 39;
 	size_t pml3_entry = (virt & ((uint64_t)0x1FF << 30)) >> 30;
@@ -232,15 +230,12 @@ level4:
 
 	if ((pml1[pml1_entry] & 1) == 0) {
 	die:
-		spinlock_drop(&pagemap->lock);
 		return false;
 	}
 
-	pml1[pml1_entry] = (((pml1[pml1_entry]) & ~0xffffffffff000)) | flags;
+	pml1[pml1_entry] = (((pml1[pml1_entry]) & 0xffffffffff000)) | flags;
 
 	asm volatile("invlpg [%0]" : : "r"(virt) : "memory");
-
-	spinlock_drop(&pagemap->lock);
 	return true;
 }
 

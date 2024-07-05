@@ -75,5 +75,6 @@ bool munmap(struct pagemap *pagemap, uintptr_t addr, size_t length);
 
 void syscall_mmap(struct syscall_arguments *args);
 void syscall_munmap(struct syscall_arguments *args);
+void syscall_mprotect(struct syscall_arguments *args);
 
 #endif
