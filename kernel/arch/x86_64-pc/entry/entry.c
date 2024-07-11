@@ -190,9 +190,9 @@ void arch_entry(void) {
 	struct limine_file *module = module_request.response->modules[0];
 	module_info[0] = (size_t)module->address;
 	module_info[1] = (size_t)module->size;
-	sched_init((uint64_t)module_info);
 
 	time_init();
+	sched_init((uint64_t)module_info);
 
 	timer_sched_oneshot(48, 20000);
 	sti();

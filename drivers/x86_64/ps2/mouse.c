@@ -65,7 +65,6 @@ static inline uint8_t mouse_read(void) {
 struct mouse_dev {
 	struct resource res;
 	bool new_packet;
-	struct mouse_packet packet;
 };
 
 static struct mouse_dev *mouse_resource = NULL;
@@ -75,7 +74,6 @@ static struct mouse_packet packet = {0};
 static bool discard_packet = false;
 
 static void mouse_interrupt_handle(registers_t *r) {
-	cli();
 	if (time_monotonic.tv_sec == 0 && time_monotonic.tv_nsec < 250000000) {
 		inb(0x60);
 		goto end;
@@ -111,8 +109,6 @@ static void mouse_interrupt_handle(registers_t *r) {
 			if (packet.flags & (1 << 5)) {
 				packet.delta_y = (int8_t)(uint8_t)packet.delta_y;
 			}
-			memcpy(&mouse_resource->packet, &packet,
-				   sizeof(struct mouse_packet));
 			mouse_resource->new_packet = true;
 			mouse_resource->res.status |= POLLIN;
 			event_trigger(&mouse_resource->res.event, false);
@@ -121,7 +117,6 @@ static void mouse_interrupt_handle(registers_t *r) {
 	}
 end:
 	apic_eoi();
-	sti();
 }
 
 static ssize_t mouse_dev_read(struct resource *this,
@@ -146,7 +141,7 @@ static ssize_t mouse_dev_read(struct resource *this,
 		spinlock_acquire_or_wait(&mouse_resource->res.lock);
 	}
 
-	memcpy(buf, &mouse_resource->packet, sizeof(struct mouse_packet));
+	memcpy(buf, &packet, sizeof(struct mouse_packet));
 	mouse_resource->new_packet = false;
 
 	mouse_resource->res.status &= ~POLLIN;

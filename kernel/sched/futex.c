@@ -61,7 +61,7 @@ void syscall_futex(struct syscall_arguments *args) {
 			(uintptr_t)raw_user_addr);
 	struct thread *thrd = prcb_return_current_cpu()->running_thread;
 
-	if (!raw_kernel_addr || !raw_user_addr) {
+	if (!raw_kernel_addr) {
 		errno = EFAULT;
 		args->ret = -1;
 		return;
@@ -70,9 +70,9 @@ void syscall_futex(struct syscall_arguments *args) {
 	switch (opcode) {
 		case FUTEX_WAIT:
 		case FUTEX_WAIT_BITSET:
-			errno = 0;
-			args->ret = -1;
-			futex_wait(value, raw_kernel_addr, thrd);
+			if (futex_wait(value, raw_kernel_addr, thrd)) {
+				args->ret = 0;
+			}
 			break;
 		case FUTEX_WAKE:
 		case FUTEX_WAKE_BITSET:

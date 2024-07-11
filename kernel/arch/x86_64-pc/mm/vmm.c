@@ -386,11 +386,7 @@ void vmm_page_fault_handler(registers_t *reg) {
 				faulting_address, present ? "P" : "NP", read_write ? "R" : "RW",
 				user_supervisor ? "U" : "S", reserved ? "R" : "NR",
 				execute ? "X" : "NX");
-		if (thrd == thrd->mother_proc->process_threads.data[0])
-			process_kill(thrd->mother_proc, 1);
-		else
-			thread_kill(thrd, 1);
-
+		thread_kill(thrd, true);
 	} else {
 		kprintffos(0, "AH! UNHANDLED EXCEPTION!\n");
 		kprintffos(0, "RIP: %p RBP: %p RSP: %p\n", reg->rip, reg->rbp,

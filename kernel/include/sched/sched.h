@@ -11,6 +11,7 @@
 #include <mm/pmm.h>
 #include <mm/vmm.h>
 #include <reg.h>
+#include <sys/apic.h>
 #include <sys/elf.h>
 void resched(registers_t *reg);
 void thread_setup_context(struct thread *thrd, uintptr_t pc_address,
@@ -28,8 +29,9 @@ void process_destroy_context(struct process *proc);
 
 extern struct thread *thread_list;
 extern struct process *process_list;
+extern struct thread *threads_on_the_death_row;
 extern struct thread *sleeping_threads;
-extern struct thread *waiting_on_event_threads;
+extern struct process *processes_on_the_death_row;
 extern dead_process_vec_t dead_processes;
 extern struct resource *std_console_device;
 

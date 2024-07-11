@@ -16,7 +16,8 @@ bool sched_runit = false;
 struct thread *thread_list = NULL;
 struct process *process_list = NULL;
 struct thread *sleeping_threads = NULL;
-struct thread *waiting_on_event_threads = NULL;
+struct thread *threads_on_the_death_row = NULL;
+struct process *processes_on_the_death_row = NULL;
 dead_process_vec_t dead_processes = {0};
 
 int64_t tid = 0;
@@ -96,6 +97,10 @@ void sched_add_thread_to_list(struct thread **thrd_list, struct thread *thrd) {
 		return;
 	}
 
+	if (this == thrd) {
+		return;
+	}
+
 	while (this->next) {
 		this = this->next;
 	}
@@ -135,6 +140,10 @@ void sched_add_process_to_list(struct process **proc_list,
 
 	if (this == NULL) {
 		*proc_list = proc;
+		return;
+	}
+
+	if (this == proc) {
 		return;
 	}
 
@@ -225,13 +234,8 @@ void syscall_uname(struct syscall_arguments *args) {
 	strncpy(from_user->sysname, "Polaris", sizeof(from_user->sysname));
 	strncpy(from_user->nodename, "localhost", sizeof(from_user->nodename));
 	strncpy(from_user->release, "0.0.0", sizeof(from_user->release));
-
-#ifndef GIT_VERSION
-	strncpy(from_user->version, "unknown", sizeof(from_user->version));
-#else
-	strncpy(from_user->version, GIT_VERSION, sizeof(from_user->version));
-#endif
-
+	strncpy(from_user->version, "Built on " __DATE__ " " __TIME__,
+			sizeof(from_user->version));
 #if defined(__x86_64__)
 	strncpy(from_user->machine, "x86_64", sizeof(from_user->machine));
 #else
@@ -620,7 +624,6 @@ bool process_execve(char *path, char **argv, char **envp) {
 
 void process_kill(struct process *proc, bool crash) {
 	cli();
-	spinlock_acquire_or_wait(&process_lock);
 
 	if (proc->pid < 2) {
 		panic("Attempted to kill init!\n");
@@ -635,11 +638,16 @@ void process_kill(struct process *proc, bool crash) {
 		are_we_killing_ourselves = true;
 	}
 
-	process_destroy_context(proc);
+	spinlock_acquire_or_wait(&thread_lock);
 
 	for (int i = 0; i < proc->process_threads.length; i++) {
-		thread_kill(proc->process_threads.data[i], false);
+		sched_remove_thread_from_list(&thread_list,
+									  proc->process_threads.data[i]);
+		sched_add_thread_to_list(&threads_on_the_death_row,
+								 proc->process_threads.data[i]);
 	}
+
+	spinlock_drop(&thread_lock);
 
 	if (proc->parent_process) {
 		vec_remove(&proc->parent_process->child_processes, proc);
@@ -673,9 +681,12 @@ void process_kill(struct process *proc, bool crash) {
 
 	vec_push(&dead_processes, dead_proc);
 	vec_deinit(&proc->child_processes);
-	sched_remove_process_from_list(&process_list, proc);
+	vec_deinit(&proc->process_threads);
 
-	kfree(proc);
+	spinlock_acquire_or_wait(&process_lock);
+
+	sched_remove_process_from_list(&process_list, proc);
+	sched_add_process_to_list(&processes_on_the_death_row, proc);
 
 	spinlock_drop(&process_lock);
 	sti();
@@ -752,26 +763,31 @@ void thread_execve(struct process *proc, struct thread *thrd,
 }
 
 void thread_sleep(struct thread *thrd, uint64_t ns) {
-	spinlock_acquire_or_wait(&thread_lock);
-
 	thrd->state = THREAD_SLEEPING;
 	thrd->sleeping_till = timer_get_sleep_ns(ns);
-	spinlock_drop(&thrd->lock);
+
+	spinlock_acquire_or_wait(&thread_lock);
 
 	sched_remove_thread_from_list(&thread_list, thrd);
 	sched_add_thread_to_list(&sleeping_threads, thrd);
 
 	spinlock_drop(&thread_lock);
+
+	spinlock_drop(&thrd->lock);
 	sched_resched_now();
 }
 
 void thread_kill(struct thread *thrd, bool reschedule) {
+	struct process *mother_proc = thrd->mother_proc;
+	vec_remove(&mother_proc->process_threads, thrd);
+	if (mother_proc->process_threads.length < 1) {
+		process_kill(mother_proc, false);
+	}
+
 	spinlock_acquire_or_wait(&thread_lock);
 
-	vec_remove(&thrd->mother_proc->process_threads, thrd);
-	thread_destroy_context(thrd);
 	sched_remove_thread_from_list(&thread_list, thrd);
-	kfree(thrd);
+	sched_add_thread_to_list(&threads_on_the_death_row, thrd);
 
 	spinlock_drop(&thread_lock);
 

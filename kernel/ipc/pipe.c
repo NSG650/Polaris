@@ -8,9 +8,6 @@
 static bool pipe_unref(struct resource *this,
 					   struct f_description *description) {
 	(void)description;
-	struct pipe *p = (struct pipe *)this;
-	event_trigger(&p->write_event, false);
-	event_trigger(&p->read_event, false);
 	event_trigger(&this->event, false);
 	return true;
 }
@@ -25,7 +22,7 @@ static ssize_t pipe_read(struct resource *this,
 	uint8_t *d = buf;
 
 	if (p->read_ptr == p->write_ptr) {
-		event_trigger(&p->write_event, false);
+		event_trigger(&this->event, false);
 		return 0;
 	}
 
@@ -45,7 +42,6 @@ static ssize_t pipe_read(struct resource *this,
 	}
 
 	event_trigger(&this->event, false);
-	event_trigger(&p->write_event, false);
 	spinlock_drop(&this->lock);
 	return i;
 }
@@ -63,8 +59,8 @@ static ssize_t pipe_write(struct resource *this,
 
 	for (size_t i = 0; i < count; i++) {
 		while (p->write_ptr == p->read_ptr + p->data_length) {
-			event_trigger(&p->read_event, false);
-			struct event *events[] = {&p->write_event};
+			event_trigger(&this->event, false);
+			struct event *events[] = {&this->event};
 			spinlock_drop(&this->lock);
 			if (event_await(events, 1, true) < 0) {
 				errno = EINTR;
@@ -82,7 +78,6 @@ static ssize_t pipe_write(struct resource *this,
 	this->status |= POLLIN;
 
 	event_trigger(&this->event, false);
-	event_trigger(&p->read_event, false);
 	spinlock_drop(&this->lock);
 	return count;
 }
