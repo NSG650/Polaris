@@ -106,7 +106,7 @@ static bool partition_enumerate_mbr(struct resource *res, char *root_name) {
 			resource_create(sizeof(struct partition_device));
 		part_dev->root = res;
 		part_dev->lba_size = block_size;
-		part_dev->start = entries[i].lba_size;
+		part_dev->start = entries[i].lba_start;
 		part_dev->sectors = entries[i].lba_size;
 		part_dev->res.stat.st_blksize = block_size;
 		part_dev->res.stat.st_size = entries[i].lba_size * block_size;
