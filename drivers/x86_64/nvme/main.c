@@ -121,8 +121,6 @@ static uint16_t nvme_await_submit_cmd(struct nvme_queue *queue,
 		}
 	}
 
-	status >>= 1;
-
 	head++;
 	if (head == queue->elements) {
 		head = 0;
@@ -150,7 +148,8 @@ static bool nvme_identify(struct nvme_device *controller, struct nvme_id *id) {
 		cmd.identify.prp2 = addr;
 	}
 
-	uint16_t status = nvme_await_submit_cmd(&controller->admin_queue, cmd);
+	uint16_t status =
+		(nvme_await_submit_cmd(&controller->admin_queue, cmd) >> 1);
 	if (status != 0) {
 		return false;
 	}
@@ -176,7 +175,7 @@ static bool nvme_namespace_identify(struct nvme_namespace_device *namespace,
 	cmd.identify.cns = 0;
 	cmd.identify.prp1 = (uint64_t)namespace_id - MEM_PHYS_OFFSET;
 	uint16_t status =
-		nvme_await_submit_cmd(&namespace->controller->admin_queue, cmd);
+		(nvme_await_submit_cmd(&namespace->controller->admin_queue, cmd) >> 1);
 
 	return !(status != 0);
 }
@@ -188,18 +187,15 @@ static bool nvme_create_queues(struct nvme_device *ctrl,
 	// Create the completion queue
 	struct nvme_cmd cmd1 = {0};
 	cmd1.createcompq.opcode = NVME_OP_CREATE_CQ;
-	cmd1.createcompq.prp1 =
-		(uint64_t)ns->queue.completion -
-		MEM_PHYS_OFFSET; // any reference to something within the kernel must be
-						 // subtracted by our higher half (this is omitted here
-						 // as the queue initialisation code already handles
-						 // this)
+	cmd1.createcompq.prp1 = (uint64_t)ns->queue.completion - MEM_PHYS_OFFSET;
 	cmd1.createcompq.cqid = qid;
 	cmd1.createcompq.size = ctrl->queue_slots - 1;
-	cmd1.createcompq.cqflags = (1 << 0); // queue phys
+	cmd1.createcompq.cqflags = (1 << 0);
 	cmd1.createcompq.irqvec = 0;
-	uint16_t status = nvme_await_submit_cmd(&ctrl->admin_queue, cmd1);
+	uint16_t status = nvme_await_submit_cmd(&ctrl->admin_queue, cmd1) >> 1;
 	if (status != 0) {
+		kprintf("\t\t\tNVMe: Failed create completion queue. status: %b\n",
+				status);
 		return false;
 	}
 
@@ -212,8 +208,11 @@ static bool nvme_create_queues(struct nvme_device *ctrl,
 	cmd2.createsubq.size = ctrl->queue_slots - 1;
 	cmd2.createsubq.sqflags =
 		(1 << 0) | (2 << 1); // queue phys + medium priority
-	status = nvme_await_submit_cmd(&ctrl->admin_queue, cmd2);
+
+	status = nvme_await_submit_cmd(&ctrl->admin_queue, cmd2) >> 1;
 	if (status != 0) {
+		kprintf("\t\t\tNVMe: Failed to create submission queue. status %b\n",
+				status);
 		return false;
 	}
 
@@ -290,7 +289,7 @@ nvme_namespace_read_or_write_block(struct nvme_namespace_device *this,
 		}
 	}
 
-	uint16_t status = nvme_await_submit_cmd(&this->queue, cmd);
+	uint16_t status = (nvme_await_submit_cmd(&this->queue, cmd) >> 1);
 	return (status == 0);
 }
 
@@ -541,7 +540,7 @@ void nvme_init_controller(struct pci_device *pci_dev) {
 
 	uint32_t conf = this->nvme_bar0->controller_config;
 	if (conf & (1 << 0)) { // controller enabled?
-		CC_DISABLE(conf);  // disable controller
+		conf &= ~1;		   // disable controller
 		this->nvme_bar0->controller_config = conf;
 	}
 
@@ -574,22 +573,14 @@ void nvme_init_controller(struct pci_device *pci_dev) {
 	admin_queue_attrs |= admin_queue_attrs << 16;
 	this->nvme_bar0->admin_queue_attrs = admin_queue_attrs;
 
-	CC_SET_COMMAND_SET(conf, CC_COMMANDSET_NVM);
-	CC_SET_ARBITRATION(conf, CC_ARBITRATION_ROUNDROBIN);
-
-	// log2(PAGE_SIZE) where PAGE_SIZE is 4096 is 12
-	// If you don't get why please pay attention to your math classes.
-	// This is very bad assumption but since this is an x86_64 driver PAGE_SIZE
-	// will always be 4096
-
-	CC_SET_PAGE_SIZE(conf, 12 - 12);
+	conf = CC_COMMANDSET_NVM | CC_ARBITRATION_ROUNDROBIN |
+		   CC_SHUTDOWN_NOTIFICATIONS_NONE | CC_IO_SUBMISSION_QUEUE_SIZE |
+		   CC_IO_COMPLETION_QUEUE_SIZE | CC_ENABLE;
 
 	this->nvme_bar0->admin_submit_queue =
 		(uint64_t)this->admin_queue.submit - MEM_PHYS_OFFSET;
 	this->nvme_bar0->admin_completion_attrs =
 		(uint64_t)this->admin_queue.completion - MEM_PHYS_OFFSET;
-
-	CC_ENABLE(conf);
 
 	this->nvme_bar0->controller_config = conf;
 
@@ -602,6 +593,7 @@ void nvme_init_controller(struct pci_device *pci_dev) {
 			kprintf("\tError: Controller status is fatal\n");
 			return;
 		}
+		pause();
 	}
 
 	this->id =
@@ -645,7 +637,7 @@ void nvme_init_controller(struct pci_device *pci_dev) {
 	get_namespaces.identify.prp1 =
 		(uint64_t)this->namespace_ids - MEM_PHYS_OFFSET;
 
-	if (nvme_await_submit_cmd(&this->admin_queue, get_namespaces)) {
+	if ((nvme_await_submit_cmd(&this->admin_queue, get_namespaces) >> 1)) {
 		pmm_free((void *)((uintptr_t)this->id - MEM_PHYS_OFFSET),
 				 (sizeof(struct nvme_id) / PAGE_SIZE) + 1);
 		pmm_free((void *)((uintptr_t)this->namespace_ids - MEM_PHYS_OFFSET),
@@ -670,7 +662,7 @@ void nvme_init_controller(struct pci_device *pci_dev) {
 
 				kfree(this->namespace_devices);
 
-				kprintf("\tError: Failed to setip namespace id %lu for this "
+				kprintf("\tError: Failed to setup namespace id %lu for this "
 						"controller\n",
 						this->namespace_ids[i]);
 

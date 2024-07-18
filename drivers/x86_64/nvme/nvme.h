@@ -273,21 +273,14 @@ struct nvme_namespace_device {
 #define VERSION_MINOR(v) (((v) >> 8) & 0xff)
 #define VERSION_PATCH(v) ((v) & 0xff)
 
-#define CC_ENABLE(cc) cc = (cc) | 1
-#define CC_DISABLE(cc) cc = (cc) & ~1
-#define CC_SET_COMMAND_SET(cc, cmd) cc = ((cc) & ~0b1110000) | ((cmd) << 4)
-#define CC_SET_PAGE_SIZE(cc, pagesize) \
-	cc = ((cc) & ~0b11110000000) | ((pagesize) << 7)
-#define CC_SET_ARBITRATION(cc, arbitration) \
-	cc = ((cc) & ~0b11100000000000) | ((arbitration) << 11)
-#define CC_SET_SUBENTRY_SIZE(cc, size) \
-	cc = ((cc) & ~0b11110000000000000000) | ((size) << 16)
-#define CC_SET_COMPENTRY_SIZE(cc, size) \
-	cc = ((cc) & ~0b111100000000000000000000) | ((size) << 20)
-#define CC_COMMANDSET_NVM 0
-#define CC_ARBITRATION_ROUNDROBIN 0
+#define CC_COMMANDSET_NVM (0)
+#define CC_ARBITRATION_ROUNDROBIN (0)
+#define CC_SHUTDOWN_NOTIFICATIONS_NONE (0 << 14)
+#define CC_IO_SUBMISSION_QUEUE_SIZE (6 << 16)
+#define CC_IO_COMPLETION_QUEUE_SIZE (4 << 20)
+#define CC_ENABLE (1)
 
-#define CAP_MAX_ENTRIES(cap) ((cap) & 0xff)
+#define CAP_MAX_ENTRIES(cap) ((cap) & 0xffff)
 #define CAP_DOORBELL_STRIDE(cap) (((cap) >> 32) & 0xf)
 #define CAP_COMMAND_SET(cap) (((cap) >> 37) & 0xff)
 #define CAP_MAX_PAGE_SIZE(cap) (((cap) >> 52) & 0xf)
