@@ -12,7 +12,7 @@ Building requires a Linux environment, Windows users may use WSL2 without issues
 
 1. Clone the repository **with submodules**.
 2. Install **make**, **xorriso**, **bsdtar** and **rsync**.
-3. Run `make jinx` to download [this version of jinx](https://raw.githubusercontent.com/mintsuki/jinx/e86d99f1156b33cd5b37a8bb25317949511a28d0/jinx) (the tool needed for compiling)
+3. Run `make jinx` to download jinx (the tool needed for compiling)
 4. Run `make userspace-base` on the repository's root to build a base system. Run `make userspace-full` on the repository's root to build all the packages ported.
 5. Run `make` to generate an ISO image.
 
