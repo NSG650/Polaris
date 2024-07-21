@@ -32,6 +32,8 @@ ifeq ($(CONFIG_ARCH),x86_64)
 	rm console.o keyboard.o
 endif
 
+	$(CC) $(CFLAGS) fs/fat32/main.c -o fat32.ko
+
 .PHONY: clean
 clean:
 	rm -rf *.ko

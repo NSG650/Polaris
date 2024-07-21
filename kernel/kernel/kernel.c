@@ -23,6 +23,7 @@
 
 const char *module_list[] = {"/usr/lib/modules/console.ko",
 							 "/usr/lib/modules/nvme.ko",
+							 "/usr/lib/modules/fat32.ko",
 #if defined(__x86_64__)
 							 "/usr/lib/modules/ps2.ko"
 #endif
@@ -117,6 +118,9 @@ void kernel_main(void *args) {
 					module_list[i], mod_ret);
 		}
 	}
+
+	vfs_create(vfs_root, "/mnt", 0755 | S_IFDIR);
+	vfs_mount(vfs_root, "/dev/nvme0n1p1", "/mnt", "fat32");
 
 	module_dump();
 
