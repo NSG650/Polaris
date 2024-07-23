@@ -5,6 +5,8 @@
 #include <klibc/mem.h>
 #include <klibc/misc.h>
 #include <klibc/module.h>
+#include <mm/pmm.h>
+#include <mm/vmm.h>
 
 void *memcpy(void *dest, const void *src, size_t n) {
 	uint8_t *pdest = (uint8_t *)dest;
@@ -86,11 +88,13 @@ static void fat32_get_string_from_lfn(struct fat32_lfn_dir_entry *entry,
 	}
 }
 
-// checksum function was ripped from here http://elm-chan.org/docs/fat_e.html
+// checksum function was ripped from Microsoft Extensible Firmware Initiative
+// FAT32 File System Specification
+
 static uint8_t fat32_lfn_checksum(char *short_name) {
 	uint8_t sum = 0;
-	for (int i = 0; i < 11; i++) {
-		sum = (sum >> 1) + (sum << 7) + short_name[i];
+	for (int i = 11; i != 0; i--) {
+		sum = ((sum & 1) ? 0x80 : 0) + (sum >> 1) + *short_name++;
 	}
 	return sum;
 }
@@ -114,7 +118,7 @@ static void fat32_update_fs_info(struct fat32_fs *fs) {
 			if (res->read(res, NULL, fat_buffer,
 						  fs->fat_offset + sector * res->stat.st_blksize,
 						  res->stat.st_blksize) < 0) {
-				kprintf("Failed to read fat sector!\n");
+				kprintf("fat32: Failed to read fat sector!\n");
 				break;
 			}
 
@@ -133,7 +137,7 @@ static void fat32_update_fs_info(struct fat32_fs *fs) {
 	if (res->write(res, NULL, &fs->fs_info,
 				   res->stat.st_blksize * fs->bpb.fs_info_sector + 480 + 4,
 				   sizeof(struct fat32_fs_info)) < 0) {
-		kprintf("Failed to write updated fat32 fs info structure\n");
+		kprintf("fat32: Failed to write updated fat32 fs info structure\n");
 	}
 }
 
@@ -166,15 +170,12 @@ static uint32_t fat32_skip(struct fat32_fs *fs, uint32_t cluster, size_t count,
 	*end = false;
 	uint32_t next = 0;
 	for (size_t i = 0; i < count; i++) {
-		if (!fat32_get_next_cluster(fs, &next)) {
-			return 0;
-		}
-
+		fs->device->resource->read(fs->device->resource, NULL, &next,
+								   fs->fat_offset + cluster * 4, 4);
 		if (IS_FINAL_CLUSTER(next)) {
 			*end = true;
 			break;
 		}
-
 		cluster = next;
 	}
 	return cluster;
@@ -193,9 +194,9 @@ static size_t fat32_get_chain_size(struct fat32_fs *fs, uint32_t *cluster) {
 	return count;
 }
 
-static ssize_t fat32_cluster_read_or_write(struct fat32_fs *fs, void *buffer,
-										   uint32_t cluster, size_t count,
-										   uint32_t *ending_cluster, bool rw) {
+static ssize_t fat32_clusters_read_or_write(struct fat32_fs *fs, void *buffer,
+											uint32_t cluster, size_t count,
+											uint32_t *ending_cluster, bool rw) {
 	size_t i = 0;
 	for (i = 0; i < count; i++) {
 		if (!cluster) {
@@ -237,11 +238,88 @@ static ssize_t fat32_cluster_read_or_write(struct fat32_fs *fs, void *buffer,
 	return i;
 }
 
+static ssize_t fat32_cluster_read_or_write(struct fat32_fs *fs, void *buffer,
+										   uint32_t cluster, off_t offset,
+										   size_t count, bool write) {
+	return write
+			   ? fs->device->resource->write(
+					 fs->device->resource, NULL, buffer,
+					 fat32_cluster_to_disk_offset(fs, cluster) + offset, count)
+			   : fs->device->resource->read(
+					 fs->device->resource, NULL, buffer,
+					 fat32_cluster_to_disk_offset(fs, cluster) + offset, count);
+}
+
+static bool fat32_bytes_read_or_write(struct fat32_fs *fs, uint32_t cluster,
+									  void *buffer, off_t offset, size_t count,
+									  bool write) {
+	bool end = false;
+	cluster = fat32_skip(fs, cluster, offset / fs->cluster_size, &end);
+
+	// r/w the first cluster
+	off_t cluster_offset = offset % fs->cluster_size;
+	if (cluster_offset > 0) {
+		size_t rcount = count > fs->cluster_size
+							? fs->cluster_size - cluster_offset
+							: count;
+		if (fat32_cluster_read_or_write(fs, buffer, cluster, cluster_offset,
+										rcount, write) < 0) {
+			crash_or_not();
+			return false;
+		}
+		fat32_get_next_cluster(fs, &cluster);
+		buffer = (void *)((uintptr_t)buffer + rcount);
+		count -= rcount;
+	}
+
+	// r/w the middle of the chain
+	size_t clustersremaining = count / fs->cluster_size;
+	if (clustersremaining &&
+		fat32_clusters_read_or_write(fs, buffer, cluster, clustersremaining,
+									 &cluster, write) < 0) {
+		return false;
+	}
+
+	// r/w the final cluster
+	count -= clustersremaining * fs->cluster_size;
+	if (count > 0) {
+		buffer =
+			(void *)((uintptr_t)buffer + clustersremaining * fs->cluster_size);
+		if (fat32_cluster_read_or_write(fs, buffer, cluster, 0, count, write) <
+			0) {
+			crash_or_not();
+			return false;
+		}
+	}
+
+	return true;
+}
+
 static ssize_t fat32_res_read(struct resource *_this,
 							  struct f_description *desc, void *buffer,
 							  off_t offset, size_t count) {
-	errno = EINVAL;
-	return -1;
+	struct fat32_resource *this = (struct fat32_resource *)_this;
+	spinlock_acquire_or_wait(&this->res.lock);
+
+	off_t endoffset = offset + count;
+
+	if (endoffset > this->res.stat.st_size) {
+		endoffset = this->res.stat.st_size;
+		count = offset >= endoffset ? 0 : endoffset - offset;
+	}
+
+	if (count == 0) {
+		spinlock_drop(&this->res.lock);
+		return count;
+	}
+
+	if (fat32_bytes_read_or_write(this->fs, this->cluster, buffer, offset,
+								  count, false) == false) {
+		count = -1;
+	}
+
+	spinlock_drop(&this->res.lock);
+	return count;
 }
 
 static ssize_t fat32_res_write(struct resource *_this,
@@ -260,8 +338,21 @@ static bool fat32_res_truncate(struct resource *_this,
 
 static void *fat32_res_mmap(struct resource *_this, size_t file_page,
 							int flags) {
-	errno = EINVAL;
-	return NULL;
+	struct fat32_resource *this = (struct fat32_resource *)_this;
+	void *ret = NULL;
+
+	ret = pmm_allocz(1);
+	if (ret == NULL) {
+		return NULL;
+	}
+
+	if (this->res.read(_this, NULL, (void *)((uintptr_t)ret + MEM_PHYS_OFFSET),
+					   file_page * PAGE_SIZE, PAGE_SIZE) == -1) {
+		pmm_free(ret, 1);
+		return NULL;
+	}
+
+	return ret;
 }
 
 static bool fat32_res_unref(struct resource *_this,
@@ -344,8 +435,9 @@ static void fat32_populate(struct vfs_filesystem *_this,
 		return;
 	}
 
-	if (fat32_cluster_read_or_write(this, pluhhh, res->cluster,
-									res->res.stat.st_blocks, NULL, false) < 0) {
+	if (fat32_clusters_read_or_write(this, pluhhh, res->cluster,
+									 res->res.stat.st_blocks, NULL,
+									 false) < 0) {
 		kfree(pluhhh);
 		kprintf("fat32: failed to read clusters\n");
 		return;
@@ -369,28 +461,26 @@ static void fat32_populate(struct vfs_filesystem *_this,
 		if (entry->name[0] == 0xe5) {
 			continue;
 		}
-		/*
-				if (entry->attributes & FAT32_ATTRIBUTES_LFN) {
-					struct fat32_lfn_dir_entry *lfn =
-						(struct fat32_lfn_dir_entry *)entry;
-					lfn->order &= 0x1f;
 
-					if (is_lfn == false) {
-						// get directory entry these LFNs belong to for checksum
-						// calculation
-						struct fat32_dir_entry *dent = entry + lfn->order;
-						checksum = fat32_lfn_checksum(dent->name);
-						is_lfn = true;
-					} else if (lfn->checksum != checksum) {
-						kprintf(
-							"fat32: bad checksum for this file. skipping this
-		   over\n"); continue;
-					}
+		kprintf("fat32: entry->attributes 0b%b\n", entry->attributes);
+		if (entry->attributes & FAT32_ATTRIBUTES_LFN) {
+			struct fat32_lfn_dir_entry *lfn =
+				(struct fat32_lfn_dir_entry *)entry;
+			lfn->order &= 0x1f;
 
-					fat32_get_string_from_lfn(lfn, name_buffer + (lfn->order -
-		   1) * 13); continue;
-				}
-		*/
+			if (is_lfn == false) {
+				// get directory entry these LFNs belong to for checksum
+				// calculation
+				struct fat32_dir_entry *dent = entry + lfn->order;
+				checksum = fat32_lfn_checksum(dent->name);
+				is_lfn = true;
+			} else if (lfn->checksum != checksum) {
+				kprintf("fat32: warning bad checksum for this file.\n");
+			}
+			fat32_get_string_from_lfn(lfn, name_buffer + (lfn->order - 1) * 13);
+			continue;
+		}
+
 		if ((entry->attributes & FAT32_ATTRIBUTES_VOLUME_ID)) {
 			continue;
 		}
@@ -558,7 +648,7 @@ static struct vfs_node *fat32_mount(struct vfs_node *parent, const char *name,
 	uint32_t root_director_cluster = fs->bpb.root_directory_cluster;
 
 	res->res.read = fat32_res_read;
-	res->res.write = fat32_res_write;
+	res->res.mmap = fat32_res_mmap;
 
 	res->res.stat.st_blocks = fat32_get_chain_size(fs, &root_director_cluster);
 	res->res.stat.st_size = res->res.stat.st_blocks * fs->cluster_size;
