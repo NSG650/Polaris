@@ -16,6 +16,7 @@ extern struct thread *sleeping_threads;
 extern struct thread *thread_list;
 static lock_t wakeup_lock = {0};
 static lock_t electric_chair_lock = {0};
+extern lock_t thread_lock;
 
 extern void resched_context_switch(registers_t *reg);
 
@@ -84,21 +85,36 @@ void resched(registers_t *reg) {
 	sched_kill_processes_on_the_death_row();
 
 	struct thread *running_thrd = prcb_return_current_cpu()->running_thread;
+
 	if (running_thrd) {
-		running_thrd->reg = *reg;
-		running_thrd->fs_base = read_fs_base();
-		running_thrd->gs_base = read_user_gs();
-		prcb_return_current_cpu()->fpu_save(running_thrd->fpu_storage);
+		if (running_thrd->marked_for_execution) {
+			struct process *mother_proc = running_thrd->mother_proc;
+			vec_remove(&mother_proc->process_threads, running_thrd);
+			if (mother_proc->process_threads.length < 1) {
+				process_kill(mother_proc, false);
+			}
+			spinlock_acquire_or_wait(&thread_lock);
+			sched_remove_thread_from_list(&thread_list, running_thrd);
+			sched_add_thread_to_list(&threads_on_the_death_row, running_thrd);
+			spinlock_drop(&thread_lock);
+			running_thrd = NULL;
+		} else {
+			running_thrd->reg = *reg;
+			running_thrd->fs_base = read_fs_base();
+			running_thrd->gs_base = read_user_gs();
+			prcb_return_current_cpu()->fpu_save(running_thrd->fpu_storage);
 
-		running_thrd->stack = prcb_return_current_cpu()->user_stack;
-		running_thrd->kernel_stack = prcb_return_current_cpu()->kernel_stack;
+			running_thrd->stack = prcb_return_current_cpu()->user_stack;
+			running_thrd->kernel_stack =
+				prcb_return_current_cpu()->kernel_stack;
 
-		if (running_thrd->state == THREAD_NORMAL)
-			running_thrd->state = THREAD_READY_TO_RUN;
+			if (running_thrd->state == THREAD_NORMAL)
+				running_thrd->state = THREAD_READY_TO_RUN;
 
-		running_thrd->last_scheduled =
-			timer_count() - running_thrd->last_scheduled;
-		spinlock_drop(&running_thrd->lock);
+			running_thrd->last_scheduled =
+				timer_count() - running_thrd->last_scheduled;
+			spinlock_drop(&running_thrd->lock);
+		}
 	}
 
 	running_thrd = sched_get_next_thread(running_thrd);

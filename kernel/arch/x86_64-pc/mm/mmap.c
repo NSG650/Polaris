@@ -266,7 +266,9 @@ cleanup:
 
 bool munmap(struct pagemap *pagemap, uintptr_t addr, size_t length) {
 	if (length == 0) {
-		errno = EINVAL;
+		if (prcb_return_current_cpu()->running_thread) {
+			errno = EINVAL;
+		}
 		return false;
 	}
 	length = ALIGN_UP(length, PAGE_SIZE);
@@ -300,7 +302,9 @@ bool munmap(struct pagemap *pagemap, uintptr_t addr, size_t length) {
 				kmalloc(sizeof(struct mmap_range_local));
 			if (postsplit_range == NULL) {
 				// FIXME: Page map is in inconsistent state at this point!
-				errno = ENOMEM;
+				if (prcb_return_current_cpu()->running_thread) {
+					errno = ENOMEM;
+				}
 				spinlock_drop(&pagemap->lock);
 				return false;
 			}

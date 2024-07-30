@@ -282,10 +282,9 @@ void process_fork_context(struct process *proc, struct process *fproc) {
 
 void process_destroy_context(struct process *proc) {
 	(void)proc;
-#if 0
-	if (prcb_return_current_cpu()->running_thread->mother_proc->process_pagemap == proc->process_pagemap) { 
+	// We are killing the running proc time to switch
+	if (prcb_return_current_cpu()->running_thread == NULL) {
 		vmm_switch_pagemap(kernel_pagemap);
 	}
 	vmm_destroy_pagemap(proc->process_pagemap);
-#endif
 }

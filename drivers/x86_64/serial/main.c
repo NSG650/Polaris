@@ -36,6 +36,10 @@ static ssize_t serial_read(struct resource *_this,
 		c = serial_get_byte();
 		if (c == '\r') {
 			serial_putchar('\n');
+			if ((ser->res.status & POLLIN) != 0) {
+				ser->res.status &= ~POLLIN;
+				event_trigger(&ser->res.event, false);
+			}
 			break;
 		}
 		if (c == 0x7f) {
@@ -126,6 +130,8 @@ uint64_t driver_entry(struct module *driver_module) {
 	ser->info.termios_info.c_cflag = CS8 | CREAD;
 	ser->info.termios_info.c_lflag =
 		ISIG | ICANON | ECHO | ECHOE | ECHOK | ECHOCTL | ECHOKE;
+
+	ser->res.status |= POLLPRI;
 
 	devtmpfs_add_device((struct resource *)ser, "stty");
 

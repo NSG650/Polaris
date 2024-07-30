@@ -119,9 +119,6 @@ void kernel_main(void *args) {
 		}
 	}
 
-	vfs_create(vfs_root, "/mnt", 0755 | S_IFDIR);
-	vfs_mount(vfs_root, "/dev/nvme0n1p1", "/mnt", "fat32");
-
 	module_dump();
 
 	// Done so that gcc will stop REMOVING this function

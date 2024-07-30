@@ -137,7 +137,11 @@ void *pmm_allocz(size_t pages) {
 
 void pmm_free(void *addr, size_t pages) {
 	spinlock_acquire_or_wait(&memory_lock);
-	size_t page = (size_t)addr / PAGE_SIZE;
+	size_t page = (size_t)addr;
+	if (page > MEM_PHYS_OFFSET) {
+		page -= MEM_PHYS_OFFSET;
+	}
+	page /= PAGE_SIZE;
 	for (size_t i = page; i < page + pages; i++)
 		bitmap_reset(bitmap, i);
 	spinlock_drop(&memory_lock);

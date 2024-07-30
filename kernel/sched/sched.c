@@ -779,6 +779,13 @@ void thread_sleep(struct thread *thrd, uint64_t ns) {
 
 void thread_kill(struct thread *thrd, bool reschedule) {
 	struct process *mother_proc = thrd->mother_proc;
+
+	// A user thread should only be killed when it returns back to userspace.
+	if (mother_proc != process_list) {
+		thrd->marked_for_execution = true;
+		return;
+	}
+
 	vec_remove(&mother_proc->process_threads, thrd);
 	if (mother_proc->process_threads.length < 1) {
 		process_kill(mother_proc, false);
@@ -794,4 +801,24 @@ void thread_kill(struct thread *thrd, bool reschedule) {
 	if (reschedule) {
 		sched_resched_now();
 	}
+}
+
+void thread_kill_now(struct thread *thrd) {
+	cli();
+
+	struct process *mother_proc = thrd->mother_proc;
+
+	vec_remove(&mother_proc->process_threads, thrd);
+	if (mother_proc->process_threads.length < 1) {
+		process_kill(mother_proc, false);
+	}
+
+	spinlock_acquire_or_wait(&thread_lock);
+
+	sched_remove_thread_from_list(&thread_list, thrd);
+	sched_add_thread_to_list(&threads_on_the_death_row, thrd);
+
+	spinlock_drop(&thread_lock);
+
+	sched_resched_now();
 }

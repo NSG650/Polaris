@@ -58,6 +58,7 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 void thread_execve(struct process *proc, struct thread *thrd,
 				   uintptr_t pc_address, char **argv, char **envp);
 void thread_kill(struct thread *thrd, bool reschedule);
+void thread_kill_now(struct thread *thrd);
 void thread_sleep(struct thread *thrd, uint64_t ns);
 void thread_fork(struct thread *pthrd, struct process *fproc);
 void syscall_prctl(struct syscall_arguments *args);

@@ -462,7 +462,6 @@ static void fat32_populate(struct vfs_filesystem *_this,
 			continue;
 		}
 
-		kprintf("fat32: entry->attributes 0b%b\n", entry->attributes);
 		if (entry->attributes & FAT32_ATTRIBUTES_LFN) {
 			struct fat32_lfn_dir_entry *lfn =
 				(struct fat32_lfn_dir_entry *)entry;

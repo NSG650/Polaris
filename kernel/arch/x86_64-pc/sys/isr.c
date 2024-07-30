@@ -323,10 +323,7 @@ void isr_handle(registers_t *r) {
 					thrd->tid, thrd->mother_proc->name,
 					isr_exception_messages[r->isrNumber]);
 			kprintf("User thread crashed at address: %p\n", r->rip);
-			if (thrd == thrd->mother_proc->process_threads.data[0])
-				process_kill(thrd->mother_proc, 1);
-			else
-				thread_kill(thrd, 1);
+			thread_kill_now(thrd);
 		} else {
 			kprintffos(0, "AH! UNHANDLED EXCEPTION!\n");
 			kprintffos(0, "RIP: %p RBP: %p RSP: %p\n", r->rip, r->rbp, r->rsp);

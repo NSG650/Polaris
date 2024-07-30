@@ -52,6 +52,7 @@ struct thread {
 	size_t attached_events_i;
 	struct event *attached_events[MAX_EVENTS];
 	struct process *mother_proc;
+	bool marked_for_execution;
 	uint64_t gs_base;
 	uint64_t fs_base;
 	struct thread *next;
