@@ -1,0 +1,12 @@
+diff --color -ur gpicview-clean/config.sub gpicview-workdir/config.sub
+--- gpicview-clean/config.sub	2016-02-21 04:10:28.000000000 +0530
++++ gpicview-workdir/config.sub	2024-08-19 13:54:09.523182574 +0530
+@@ -1380,7 +1380,7 @@
+ 	      | -linux-newlib* | -linux-musl* | -linux-uclibc* \
+ 	      | -uxpv* | -beos* | -mpeix* | -udk* | -moxiebox* \
+ 	      | -interix* | -uwin* | -mks* | -rhapsody* | -darwin* | -opened* \
+-	      | -openstep* | -oskit* | -conix* | -pw32* | -nonstopux* \
++	      | -openstep* | -polaris* | -oskit* | -conix* | -pw32* | -nonstopux* \
+ 	      | -storm-chaos* | -tops10* | -tenex* | -tops20* | -its* \
+ 	      | -os2* | -vos* | -palmos* | -uclinux* | -nucleus* \
+ 	      | -morphos* | -superux* | -rtmk* | -rtmk-nova* | -windiss* \
