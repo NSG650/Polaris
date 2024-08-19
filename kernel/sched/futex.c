@@ -70,9 +70,7 @@ void syscall_futex(struct syscall_arguments *args) {
 	switch (opcode) {
 		case FUTEX_WAIT:
 		case FUTEX_WAIT_BITSET:
-			if (futex_wait(value, raw_kernel_addr, thrd)) {
-				args->ret = 0;
-			}
+			args->ret = futex_wait(value, raw_kernel_addr, thrd) ? 0 : -1;
 			break;
 		case FUTEX_WAKE:
 		case FUTEX_WAKE_BITSET:

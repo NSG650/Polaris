@@ -183,12 +183,15 @@ void thread_setup_context_for_execve(struct thread *thrd, uintptr_t pc_address,
 
 	// alignments
 
-	stack = (uintptr_t *)((uintptr_t)stack & ~(0b1111));
+	stack = (uintptr_t *)ALIGN_DOWN((uintptr_t)stack, 16);
 	if (((argv_len + envp_len + 1) & 1) != 0)
 		stack--;
 
 	*(--stack) = 0;
 	*(--stack) = 0;
+	stack -= 2;
+	stack[0] = 23; // AT_SECURE
+	stack[1] = 0;
 	stack -= 2;
 	stack[0] = 9;
 	stack[1] = auxv.at_entry;

@@ -95,16 +95,20 @@ static void prcb_dump(void) {
 }
 
 void breakpoint_handler(registers_t *reg) {
+	if (reg->cs & 0x3) {
+		kprintffos(0, "Breakpoint hit in user!\n");
+		thread_kill_now(prcb_return_current_cpu()->running_thread);
+		return;
+	} else {
+		kprintffos(0, "Breakpoint hit in kernel!\n");
+	}
+
 	pause_other_cpus();
 
 	kprintffos(0, "=========== Start of dumps =========\n");
 	kprintffos(0, "Breakpoint hit on CPU%u\n",
 			   prcb_return_current_cpu()->cpu_number);
-	if (reg->cs & 0x3) {
-		kprintffos(0, "Breakpoint hit in user!\n");
-	} else {
-		kprintffos(0, "Breakpoint hit in kernel!\n");
-	}
+
 	kprintffos(0, "========= Register dumps =========\n");
 	kprintffos(0, "RIP: %p RBP: %p RSP: %p\n", reg->rip, reg->rbp, reg->rsp);
 	kprintffos(0, "RAX: %p RBX: %p RCX: %p\n", reg->rax, reg->rbx, reg->rcx);

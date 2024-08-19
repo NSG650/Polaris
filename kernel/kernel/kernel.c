@@ -21,11 +21,9 @@
 #include <sys/prcb.h>
 #include <sys/timer.h>
 
-const char *module_list[] = {"/usr/lib/modules/console.ko",
-							 "/usr/lib/modules/nvme.ko",
-							 "/usr/lib/modules/fat32.ko",
+const char *module_list[] = {
 #if defined(__x86_64__)
-							 "/usr/lib/modules/ps2.ko"
+	"/usr/lib/modules/console.ko", "/usr/lib/modules/ps2.ko"
 #endif
 };
 
