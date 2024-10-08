@@ -1,0 +1,24 @@
+name=openbox
+version=3.6.1
+revision=1
+tarball_url="http://openbox.org/dist/openbox/openbox-${version}.tar.gz"
+tarball_blake2b="1c0288137d7b02d443c384f970cd9a3f4d5d5585989917ac6ae8cf492e045dc086650c245907e168bc7b6d0ce701339854a5d94ad510823141cc78e28c1e13c5"
+source_hostdeps="autoconf automake libtool pkg-config"
+hostdeps="gcc autoconf automake libtool pkg-config"
+deps="core-libs libxmu libxft pango"
+
+regenerate() {
+    autotools_recursive_regen
+}
+
+build() {
+    autotools_configure --disable-static
+
+    make -j${parallelism}
+}
+
+package() {
+    make DESTDIR=${dest_dir} install
+
+    post_package_strip
+}

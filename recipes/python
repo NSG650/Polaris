@@ -15,6 +15,7 @@ regenerate() {
 build() {
     echo "ac_cv_file__dev_ptmx=yes" > /tmp/configsite
     echo "ac_cv_file__dev_ptc=yes" >> /tmp/configsite
+    echo "ac_cv_func_sched_setscheduler=no" >> /tmp/configsite
 
         CONFIG_SITE=/tmp/configsite \
     ${source_dir}/configure \

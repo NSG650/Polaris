@@ -1,7 +1,7 @@
 name=gpicview
 version=0.2.5
 revision=1
-tarball_url="https://downloads.sourceforge.net/lxde/gpicview-0.2.5.tar.xz"
+tarball_url="https://downloads.sourceforge.net/lxde/gpicview-${version}.tar.xz"
 tarball_blake2b="c215e812693a30d55d3e606b9958d308b5d7f564ba0c3fc60e7606c492ec3ddd9997ae63f0865a6bebdf79c0a18e6a8b26a1e2c8d5dd7e2174d211130dbbe817"
 source_hostdeps="automake autoconf libtool pkg-config"
 source_deps="autoconf-archive"
