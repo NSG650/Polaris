@@ -55,6 +55,8 @@ bool spinlock_acquire(lock_t *spin) {
 	bool ret = __sync_bool_compare_and_swap(&spin->lock, 0, 1);
 	if (ret)
 		spin->last_owner = __builtin_return_address(0);
+	if (ret && is_smp)
+		spin->last_cpu = prcb_return_current_cpu()->cpu_number;
 	return ret;
 }
 

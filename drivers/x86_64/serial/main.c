@@ -34,12 +34,12 @@ static ssize_t serial_read(struct resource *_this,
 	char *buf = (char *)_buf;
 	while (bytes_read < count) {
 		c = serial_get_byte();
+		if ((ser->res.status & POLLIN) != 0) {
+			ser->res.status &= ~POLLIN;
+			event_trigger(&ser->res.event, false);
+		}
 		if (c == '\r') {
 			serial_putchar('\n');
-			if ((ser->res.status & POLLIN) != 0) {
-				ser->res.status &= ~POLLIN;
-				event_trigger(&ser->res.event, false);
-			}
 			break;
 		}
 		if (c == 0x7f) {
