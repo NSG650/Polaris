@@ -14,8 +14,8 @@
 extern uint32_t smp_bsp_lapic_id;
 extern struct thread *sleeping_threads;
 extern struct thread *thread_list;
-static lock_t wakeup_lock = {0};
-static lock_t electric_chair_lock = {0};
+extern lock_t wakeup_lock;
+extern lock_t electric_chair_lock;
 extern lock_t thread_lock;
 
 extern void resched_context_switch(registers_t *reg);
@@ -95,8 +95,10 @@ void resched(registers_t *reg) {
 			}
 			spinlock_acquire_or_wait(&thread_lock);
 			sched_remove_thread_from_list(&thread_list, running_thrd);
-			sched_add_thread_to_list(&threads_on_the_death_row, running_thrd);
 			spinlock_drop(&thread_lock);
+			spinlock_acquire_or_wait(&electric_chair_lock);
+			sched_add_thread_to_list(&threads_on_the_death_row, running_thrd);
+			spinlock_drop(&electric_chair_lock);
 			running_thrd = NULL;
 		} else {
 			running_thrd->reg = *reg;

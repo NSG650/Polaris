@@ -220,6 +220,10 @@ int sysinfo(struct sysinfo *info) {
 	return syscall1(0x63, (uint64_t)info);
 }
 
+int sethostname(char *name, int length) {
+	return syscall2(0xaa, (uint64_t)name, (uint64_t)length);
+}
+
 int msleep(long msec) {
 	struct timespec ts;
 	int res;
@@ -276,7 +280,7 @@ void main(void) {
 		if (fork_ret == 0) {
 			chdir("/root");
 			char *argv[] = {"/usr/bin/bash", NULL};
-			char *envp[] = {"USER=ROOT",
+			char *envp[] = {"USER=root",
 							"HOME=/root",
 							"PATH=/usr/bin:/usr/local/bin:/bin",
 							"TERM=linux",

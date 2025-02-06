@@ -25,8 +25,30 @@ int64_t pid = 0;
 
 lock_t thread_lock = {0};
 lock_t process_lock = {0};
+lock_t wakeup_lock = {0};
+lock_t electric_chair_lock = {0};
 
 struct resource *std_console_device = NULL;
+
+struct utsname {
+	char sysname[65];
+	char nodename[65];
+	char release[65];
+	char version[65];
+	char machine[65];
+	char domainname[65];
+};
+
+struct utsname system_uname = {
+	.sysname = "Polaris",
+	.nodename = "localhost",
+	.release = "0.0.0",
+	.version = "Built on " __DATE__ " " __TIME__,
+#if defined(__x86_64__)
+	.machine = "x86_64",
+#endif
+	.domainname = "",
+};
 
 struct thread *sched_get_next_thread(struct thread *thrd) {
 	struct thread *this = NULL;
@@ -220,36 +242,35 @@ void syscall_execve(struct syscall_arguments *args) {
 }
 
 void syscall_uname(struct syscall_arguments *args) {
-	struct utsname {
-		char sysname[65];
-		char nodename[65];
-		char release[65];
-		char version[65];
-		char machine[65];
-		char domainname[65];
-	};
+	args->ret = syscall_helper_copy_to_user(args->args0, &system_uname,
+											sizeof(struct utsname))
+					? 0
+					: -1;
+}
 
-	struct utsname *from_user = (struct utsname *)args->args0;
-
-	strncpy(from_user->sysname, "Polaris", sizeof(from_user->sysname));
-	strncpy(from_user->nodename, "localhost", sizeof(from_user->nodename));
-	strncpy(from_user->release, "0.0.0", sizeof(from_user->release));
-	strncpy(from_user->version, "Built on " __DATE__ " " __TIME__,
-			sizeof(from_user->version));
-#if defined(__x86_64__)
-	strncpy(from_user->machine, "x86_64", sizeof(from_user->machine));
-#else
-	strncpy(from_user->machine, "unknown", sizeof(from_user->machine));
-#endif
-
-	args->ret = 0;
+void syscall_sethostname(struct syscall_arguments *args) {
+	size_t count = args->args1;
+	if (count > 65) {
+		count = 65;
+	}
+	memzero(&system_uname.nodename, 65);
+	args->ret = syscall_helper_copy_from_user(args->args0,
+											  &system_uname.nodename, count)
+					? 0
+					: -1;
 }
 
 void syscall_waitpid(struct syscall_arguments *args) {
 #define WNOHANG 1
 	int pid_to_wait_on = (int)args->args0;
-	int *status = (int *)args->args1;
+	int *status = (int *)syscall_helper_user_to_kernel_address(args->args1);
 	int mode = (int)args->args2;
+
+	if (!status) {
+		errno = EFAULT;
+		args->ret = -1;
+		return;
+	}
 
 	struct process *waiter_proc =
 		prcb_return_current_cpu()->running_thread->mother_proc;
@@ -372,6 +393,7 @@ void sched_init(uint64_t args) {
 	syscall_register_handler(0x39, syscall_fork);
 	syscall_register_handler(0x3b, syscall_execve);
 	syscall_register_handler(0x3f, syscall_uname);
+	syscall_register_handler(0xaa, syscall_sethostname);
 	syscall_register_handler(0x72, syscall_waitpid);
 
 	syscall_register_handler(0x38, syscall_thread_new);
@@ -543,7 +565,7 @@ int64_t process_fork(struct process *proc, struct thread *thrd) {
 }
 
 // So a funny bug. If we reschedule in middle of the execve and we get
-// rescheduled again then the process pagemap loaded is the new one. Then we
+// scheduled again then the process pagemap loaded is the new one. Then we
 // will try to read from the existing addresses which aren't mapped at all lol.
 // Easy fix here disable interrupts for a while.
 
@@ -639,14 +661,14 @@ void process_kill(struct process *proc, bool crash) {
 	}
 
 	spinlock_acquire_or_wait(&thread_lock);
-
+	spinlock_acquire_or_wait(&electric_chair_lock);
 	for (int i = 0; i < proc->process_threads.length; i++) {
 		sched_remove_thread_from_list(&thread_list,
 									  proc->process_threads.data[i]);
 		sched_add_thread_to_list(&threads_on_the_death_row,
 								 proc->process_threads.data[i]);
 	}
-
+	spinlock_drop(&electric_chair_lock);
 	spinlock_drop(&thread_lock);
 
 	if (proc->parent_process) {
@@ -684,11 +706,13 @@ void process_kill(struct process *proc, bool crash) {
 	vec_deinit(&proc->process_threads);
 
 	spinlock_acquire_or_wait(&process_lock);
-
 	sched_remove_process_from_list(&process_list, proc);
-	sched_add_process_to_list(&processes_on_the_death_row, proc);
-
 	spinlock_drop(&process_lock);
+
+	spinlock_acquire_or_wait(&electric_chair_lock);
+	sched_add_process_to_list(&processes_on_the_death_row, proc);
+	spinlock_drop(&electric_chair_lock);
+
 	sti();
 
 	if (are_we_killing_ourselves) {
@@ -767,11 +791,12 @@ void thread_sleep(struct thread *thrd, uint64_t ns) {
 	thrd->sleeping_till = timer_get_sleep_ns(ns);
 
 	spinlock_acquire_or_wait(&thread_lock);
-
 	sched_remove_thread_from_list(&thread_list, thrd);
-	sched_add_thread_to_list(&sleeping_threads, thrd);
-
 	spinlock_drop(&thread_lock);
+
+	spinlock_acquire_or_wait(&wakeup_lock);
+	sched_add_thread_to_list(&sleeping_threads, thrd);
+	spinlock_drop(&wakeup_lock);
 
 	spinlock_drop(&thrd->lock);
 	sched_resched_now();
@@ -792,11 +817,12 @@ void thread_kill(struct thread *thrd, bool reschedule) {
 	}
 
 	spinlock_acquire_or_wait(&thread_lock);
-
 	sched_remove_thread_from_list(&thread_list, thrd);
-	sched_add_thread_to_list(&threads_on_the_death_row, thrd);
-
 	spinlock_drop(&thread_lock);
+
+	spinlock_acquire_or_wait(&electric_chair_lock);
+	sched_add_thread_to_list(&threads_on_the_death_row, thrd);
+	spinlock_drop(&electric_chair_lock);
 
 	if (reschedule) {
 		sched_resched_now();
@@ -814,11 +840,12 @@ void thread_kill_now(struct thread *thrd) {
 	}
 
 	spinlock_acquire_or_wait(&thread_lock);
-
 	sched_remove_thread_from_list(&thread_list, thrd);
-	sched_add_thread_to_list(&threads_on_the_death_row, thrd);
-
 	spinlock_drop(&thread_lock);
+
+	spinlock_acquire_or_wait(&electric_chair_lock);
+	sched_add_thread_to_list(&threads_on_the_death_row, thrd);
+	spinlock_drop(&electric_chair_lock);
 
 	sched_resched_now();
 }
