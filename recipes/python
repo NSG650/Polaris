@@ -16,15 +16,22 @@ build() {
     echo "ac_cv_file__dev_ptmx=yes" > /tmp/configsite
     echo "ac_cv_file__dev_ptc=yes" >> /tmp/configsite
     echo "ac_cv_func_sched_setscheduler=no" >> /tmp/configsite
+    echo "ac_cv_buggy_getaddrinfo=no" >> /tmp/configsite
 
         CONFIG_SITE=/tmp/configsite \
     ${source_dir}/configure \
         --prefix=${prefix} \
         --host=${OS_TRIPLET} \
+        --with-computed-gotos \
+        --enable-optimizations \
         --build=x86_64 \
+        --with-system-expat \
+        --enable-loadable-sqlite-extensions \
+        --without-ensurepip \
+        --with-tzpath=/usr/share/zoneinfo \
         --with-build-python=python3 \
         --disable-ipv6 \
-        --enable-shared
+        --without-static-libpython
 
     make -j${parallelism}
 }
