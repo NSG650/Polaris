@@ -11,6 +11,10 @@
 #include <sys/prcb.h>
 #include <types.h>
 
+#define FIONCLEX 0x5450
+#define FIOCLEX 0x5451
+#define FIOASYNC 0x5452
+
 int resource_default_ioctl(struct resource *this,
 						   struct f_description *description, uint64_t request,
 						   uint64_t arg) {
@@ -25,6 +29,10 @@ int resource_default_ioctl(struct resource *this,
 		case TIOCGWINSZ:
 			errno = ENOTTY;
 			return -1;
+		case FIONCLEX:
+		case FIOCLEX:
+		case FIOASYNC:
+			return 0;
 	}
 
 	errno = EINVAL;
