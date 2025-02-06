@@ -1,6 +1,7 @@
 #ifndef SYSCALL_H
 #define SYSCALL_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -26,7 +27,9 @@ void syscall_install_handler(void);
 	syscalls_name[A] = #B
 void syscall_handle(struct syscall_arguments *args);
 uint64_t syscall_helper_user_to_kernel_address(uintptr_t user_addr);
-void syscall_helper_copy_to_user(uintptr_t user_addr, void *buffer,
+bool syscall_helper_copy_to_user(uintptr_t user_addr, void *buffer,
 								 size_t count);
+bool syscall_helper_copy_from_user(uintptr_t user_addr, void *buffer,
+								   size_t count);
 
 #endif

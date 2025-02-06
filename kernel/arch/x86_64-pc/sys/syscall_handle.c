@@ -69,7 +69,7 @@ uint64_t syscall_helper_user_to_kernel_address(uintptr_t user_addr) {
 	return kernel_addr;
 }
 
-void syscall_helper_copy_to_user(uintptr_t user_addr, void *buffer,
+bool syscall_helper_copy_to_user(uintptr_t user_addr, void *buffer,
 								 size_t count) {
 	vmm_switch_pagemap(kernel_pagemap);
 
@@ -79,8 +79,31 @@ void syscall_helper_copy_to_user(uintptr_t user_addr, void *buffer,
 
 	uint64_t kernel_addr = vmm_virt_to_kernel(target_pagemap, user_addr);
 
-	if (kernel_addr)
-		memcpy((void *)kernel_addr, buffer, count);
+	if (!kernel_addr) {
+		errno = EFAULT;
+		return false;
+	}
 
+	memcpy((void *)kernel_addr, buffer, count);
 	vmm_switch_pagemap(target_pagemap);
+	return true;
+}
+
+bool syscall_helper_copy_from_user(uintptr_t user_addr, void *buffer,
+								   size_t count) {
+	vmm_switch_pagemap(kernel_pagemap);
+
+	struct process *proc =
+		prcb_return_current_cpu()->running_thread->mother_proc;
+	struct pagemap *target_pagemap = proc->process_pagemap;
+
+	uint64_t kernel_addr = vmm_virt_to_kernel(target_pagemap, user_addr);
+
+	if (!kernel_addr) {
+		errno = EFAULT;
+		return false;
+	}
+	memcpy(buffer, (void *)kernel_addr, count);
+	vmm_switch_pagemap(target_pagemap);
+	return true;
 }
