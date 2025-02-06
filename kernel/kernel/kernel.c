@@ -47,26 +47,29 @@ struct sysinfo {
 };
 
 void syscall_sysinfo(struct syscall_arguments *args) {
-	struct sysinfo *from_user = (struct sysinfo *)(args->args0);
+	struct sysinfo to_user = {0};
 
 	uint64_t page_info[2] = {0};
 	pmm_get_memory_info(page_info);
 
-	from_user->uptime = (long)timer_count() / 1000;
-	from_user->loads[0] = 0;
-	from_user->loads[1] = 0;
-	from_user->loads[2] = 0;
-	from_user->totalram = page_info[0] * PAGE_SIZE;
-	from_user->freeram = page_info[1] * PAGE_SIZE;
-	from_user->sharedram = 0;
-	from_user->bufferram = 0;
-	from_user->totalswap = 0;
-	from_user->freeswap = 0;
+	to_user.uptime = (long)timer_count() / 1000;
+	to_user.loads[0] = 0;
+	to_user.loads[1] = 0;
+	to_user.loads[2] = 0;
+	to_user.totalram = page_info[0] * PAGE_SIZE;
+	to_user.freeram = page_info[1] * PAGE_SIZE;
+	to_user.sharedram = 0;
+	to_user.bufferram = 0;
+	to_user.totalswap = 0;
+	to_user.freeswap = 0;
 	extern int64_t pid;
-	from_user->procs = (uint16_t)(pid - dead_processes.length);
-	from_user->mem_unit = 0;
+	to_user.procs = (uint16_t)(pid - dead_processes.length);
+	to_user.mem_unit = 0;
 
-	args->ret = 0;
+	args->ret = syscall_helper_copy_to_user(args->args0, &to_user,
+											sizeof(struct sysinfo))
+					? 0
+					: -1;
 }
 
 #ifdef KERNEL_ABUSE

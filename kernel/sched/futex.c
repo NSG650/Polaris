@@ -7,10 +7,10 @@
 static lock_t futex_lock = {0};
 static HASHMAP_TYPE(struct futex_entry *) futex_hashmap = HASHMAP_INIT(256);
 
-bool futex_wait(uint32_t value, uint32_t *futex, struct thread *thrd) {
+int futex_wait(uint32_t value, uint32_t *futex, struct thread *thrd) {
 	if (*futex != value) {
 		errno = EAGAIN;
-		return false;
+		return -1;
 	}
 
 	struct futex_entry *entry = NULL;
@@ -35,9 +35,9 @@ bool futex_wait(uint32_t value, uint32_t *futex, struct thread *thrd) {
 wait:
 	if (event_await(&entry->event, 1, true) < 0) {
 		errno = EINTR;
-		return false;
+		return -1;
 	}
-	return true;
+	return 0;
 }
 
 int futex_wake(uint32_t *futex) {
