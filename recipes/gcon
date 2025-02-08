@@ -1,0 +1,23 @@
+name=gcon
+version=2d3f7ad41e1b6a88cd4f2c142b8d485b93c529a0
+revision=1
+tarball_url="https://github.com/Ironclad-Project/gcon/archive/${version}.tar.gz"
+tarball_blake2b="0b01f28b60496c4416744f5176da9ea7821841a4239531894d4bc42ab2749280bc4c44b30bee628767092c4faf6276b227871d1361b30f72eb9e7c272441a73f"
+source_imagedeps="git"
+source_hostdeps="automake autoconf libtool pkg-config"
+source_allow_network="yes"
+hostdeps="gcc autoconf automake libtool pkg-config"
+deps="core-libs"
+
+regenerate() {
+    ./bootstrap
+}
+
+build() {
+    autotools_configure
+    make -j${parallelism}
+}
+
+package() {
+    DESTDIR="${dest_dir}" make install
+}

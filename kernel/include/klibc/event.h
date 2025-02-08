@@ -1,7 +1,6 @@
 #ifndef EVENT_H
 #define EVENT_H
 
-#include <debug/debug.h>
 #include <locks/spinlock.h>
 #include <stdbool.h>
 #include <stddef.h>

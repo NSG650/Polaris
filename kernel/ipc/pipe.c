@@ -9,6 +9,11 @@ static bool pipe_unref(struct resource *this,
 					   struct f_description *description) {
 	(void)description;
 	event_trigger(&this->event, false);
+	this->refcount--;
+	struct pipe *p = (struct pipe *)this;
+	if (!this->refcount) {
+		kfree(p->data);
+	}
 	return true;
 }
 
@@ -38,7 +43,7 @@ static ssize_t pipe_read(struct resource *this,
 	}
 
 	if (p->read_ptr != p->write_ptr) {
-		this->status |= POLLPRI;
+		this->status |= POLLOUT;
 	}
 
 	event_trigger(&this->event, false);
@@ -72,7 +77,7 @@ static ssize_t pipe_write(struct resource *this,
 	}
 
 	if (p->write_ptr == p->read_ptr + p->data_length) {
-		this->status &= ~POLLPRI;
+		this->status &= ~POLLOUT;
 	}
 
 	this->status |= POLLIN;
@@ -102,10 +107,16 @@ void syscall_pipe(struct syscall_arguments *args) {
 	struct process *proc =
 		prcb_return_current_cpu()->running_thread->mother_proc;
 
-	int *fds = (int *)(args->args0);
+	int *fds = (int *)(syscall_helper_user_to_kernel_address(args->args0));
 	int flags = (int)(args->args1);
 
 	args->ret = 0;
+
+	if (fds == NULL) {
+		errno = EFAULT;
+		args->ret = -1;
+		return;
+	}
 
 	struct resource *p = (struct resource *)pipe_create();
 

@@ -243,47 +243,14 @@ int msleep(long msec) {
 void *memset(void *d, int c, size_t n);
 
 void main(void) {
-	int motd_fd = open("/etc/motd", O_RDONLY, 0);
-	if (motd_fd > 0) {
-		struct stat motd_stat = {0};
-		fstatat(motd_fd, "", &motd_stat, AT_EMPTY_PATH);
-		char *motd_string =
-			mmap(0, motd_stat.st_size, PROT_READ, MAP_SHARED, motd_fd, 0);
-
-		if ((int)((uint64_t)(motd_string)) < 0) {
-			puts_to_console("mmap failed.\n");
-		} else {
-			puts_to_console_with_length(motd_string, motd_stat.st_size);
-			munmap(motd_string, motd_stat.st_size);
-		}
-	} else {
-		puts_to_console("Whoops can't find /etc/motd\n");
-	}
-
-	char number[21] = {0};
-
-	struct sysinfo info = {0};
-	sysinfo(&info);
-
-	memset(number, 0, 21);
-	puts_to_console("System has ");
-	ltoa(info.totalram / (1024 * 1024), number, 10);
-	puts_to_console(number);
-	puts_to_console(" MB of memory installed and ");
-	memset(number, 0, 21);
-	ltoa(info.freeram / (1024 * 1024), number, 10);
-	puts_to_console(number);
-	puts_to_console(" MB of memory free\n");
-
 	for (;;) {
 		int fork_ret = fork();
 		if (fork_ret == 0) {
 			chdir("/root");
-			char *argv[] = {"/usr/bin/bash", NULL};
+			char *argv[] = {"/usr/bin/gcon", NULL};
 			char *envp[] = {"USER=root",
 							"HOME=/root",
 							"PATH=/usr/bin:/usr/local/bin:/bin",
-							"TERM=linux",
 							"SHELL=/usr/bin/bash",
 							"DISPLAY=:0",
 							NULL};

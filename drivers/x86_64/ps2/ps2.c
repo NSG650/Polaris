@@ -1,3 +1,4 @@
+#include "keyboard.h"
 #include "mouse.h"
 #include <asm/asm.h>
 #include <debug/debug.h>
@@ -53,11 +54,12 @@ uint64_t driver_entry(struct module *driver_module) {
 	ps2_write(0x64, 0xae);
 
 	// Enable mouse port if any
-	if ((ps2_config & (1 << 5)) != 0) {
-		ps2_write(0x64, 0xa8);
-	}
+	// if ((ps2_config & (1 << 5)) != 0) {
+	//	ps2_write(0x64, 0xa8);
+	// }
 
-	mouse_init();
+	keyboard_init();
+	// mouse_init();
 
 	return 0;
 }

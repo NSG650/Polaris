@@ -131,7 +131,7 @@ uint64_t driver_entry(struct module *driver_module) {
 	ser->info.termios_info.c_lflag =
 		ISIG | ICANON | ECHO | ECHOE | ECHOK | ECHOCTL | ECHOKE;
 
-	ser->res.status |= POLLPRI;
+	ser->res.status |= POLLOUT;
 
 	devtmpfs_add_device((struct resource *)ser, "stty");
 

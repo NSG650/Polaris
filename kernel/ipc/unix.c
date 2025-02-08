@@ -69,7 +69,7 @@ static ssize_t unix_sock_read(struct resource *_this,
 
 	this->read_ptr = new_ptr;
 	this->capacity_used -= count;
-	this->peer->sock.res.status |= POLLPRI;
+	this->peer->sock.res.status |= POLLOUT;
 
 	event_trigger(&this->peer->sock.res.event, false);
 	this->sock.res.status &= ~POLLIN;
@@ -223,7 +223,7 @@ static bool unix_sock_connect(struct socket *_this,
 	}
 
 	event_trigger(&sock->sock.connect_event, false);
-	this->sock.res.status |= POLLPRI;
+	this->sock.res.status |= POLLOUT;
 	event_trigger(&_this->res.event, false);
 
 	return true;
@@ -364,7 +364,7 @@ static ssize_t unix_sock_recvmsg(struct socket *_this,
 	}
 
 	while (this->capacity_used == 0) {
-		this->peer->sock.res.status |= POLLPRI;
+		this->peer->sock.res.status |= POLLOUT;
 
 		event_trigger(&this->peer->sock.res.event, false);
 		spinlock_drop(&this->sock.res.lock);
@@ -429,7 +429,7 @@ static ssize_t unix_sock_recvmsg(struct socket *_this,
 
 	this->read_ptr = new_ptr;
 	this->capacity_used -= transferred;
-	this->peer->sock.res.status |= POLLPRI;
+	this->peer->sock.res.status |= POLLOUT;
 
 	event_trigger(&this->peer->sock.res.event, false);
 

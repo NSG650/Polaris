@@ -8,7 +8,7 @@ source_imagedeps="curl"
 source_hostdeps="autoconf automake libtool pkg-config"
 imagedeps="gcc"
 hostdeps="gcc autoconf automake libtool pkg-config"
-deps="core-libs ncurses readline"
+deps="core-libs ncurses"
 
 regenerate() {
     curl -Lo bash52-022 https://ftp.gnu.org/gnu/bash/bash-5.2-patches/bash52-022
@@ -36,8 +36,7 @@ build() {
     autotools_configure \
         --with-curses \
         --enable-readline \
-        --without-bash-malloc \
-        --with-installed-readline="${sysroot}/usr/lib"
+        --without-bash-malloc
 
     make -j${parallelism}
 }

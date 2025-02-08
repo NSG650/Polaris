@@ -1,5 +1,6 @@
 #include <debug/debug.h>
 #include <devices/console.h>
+#include <devices/tty/pty.h>
 #include <errno.h>
 #include <fb/fb.h>
 #include <fs/devtmpfs.h>
@@ -149,6 +150,7 @@ void kernel_main(void *args) {
 	syscall_register_handler(0x10c, syscall_fchmodat);
 	syscall_register_handler(0x124, syscall_dup3);
 	syscall_register_handler(0x125, syscall_pipe);
+	syscall_register_handler(0xff, syscall_openpty);
 	syscall_register_handler(0x63, syscall_sysinfo);
 	syscall_register_handler(0x10f, syscall_ppoll);
 

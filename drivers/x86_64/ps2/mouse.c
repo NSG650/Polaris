@@ -165,7 +165,7 @@ void mouse_init(void) {
 	mouse_resource->res.stat.st_rdev = resource_create_dev_id();
 	mouse_resource->res.stat.st_mode = 0644 | S_IFCHR;
 	mouse_resource->res.read = mouse_dev_read;
-	mouse_resource->res.status |= POLLPRI;
+	mouse_resource->res.status |= POLLOUT;
 
 	devtmpfs_add_device((struct resource *)mouse_resource, "mouse");
 
