@@ -1,0 +1,61 @@
+Only in gcon: aclocal.m4
+Only in gcon: autom4te.cache
+Only in gcon: build-aux
+Only in gcon: configure
+Only in gcon/src: flanterm
+diff --color -ur gcon-clean/src/main.c gcon/src/main.c
+--- gcon-clean/src/main.c	2025-01-28 00:16:46.000000000 +0530
++++ gcon/src/main.c	2025-02-10 14:19:22.479318268 +0530
+@@ -22,7 +22,6 @@
+ #include <fcntl.h>
+ #include <linux/fb.h>
+ #include <sys/ttydefaults.h>
+-#include <sys/syscall.h>
+ #include <flanterm/flanterm.h>
+ #include <flanterm/backends/fb.h>
+ #include <stdlib.h>
+@@ -35,7 +34,7 @@
+ #include <stdnoreturn.h>
+ #include <pty.h>
+ 
+-static char *const start_path = "/usr/bin/login";
++static char *const start_path = "/usr/bin/bash";
+ static char *const args[] = {start_path, NULL};
+ 
+ struct tty_info {
+@@ -99,7 +98,7 @@
+ 
+ static void locked_term_write(int tty_idx, const char *msg, size_t len) {
+     while (__atomic_test_and_set(&tty_mutex, __ATOMIC_SEQ_CST)) {
+-        sched_yield();
++        ;
+     }
+     flanterm_write(ttys[tty_idx].context, msg, len);
+     __atomic_clear(&tty_mutex, __ATOMIC_SEQ_CST);
+@@ -133,7 +132,7 @@
+ 
+ static void do_tty_switch(int tty_idx) {
+     while (__atomic_test_and_set(&tty_mutex, __ATOMIC_SEQ_CST)) {
+-        sched_yield();
++        ;
+     }
+ 
+     ttys[current_tty].context->autoflush = false;
+@@ -411,7 +410,7 @@
+ 
+     // Open devices.
+     pcspkr = open("/dev/pcspeaker", O_RDWR);
+-    kb = open("/dev/ps2keyboard", O_RDONLY);
++    kb = open("/dev/keyboard", O_RDONLY);
+     if (kb == -1) {
+         perror("Could not open keyboard");
+         return 1;
+@@ -447,7 +446,7 @@
+     termios.c_iflag = BRKINT | IGNPAR | ICRNL | IXON | IMAXBEL;
+     termios.c_oflag = OPOST | ONLCR;
+     termios.c_cflag = CS8 | CREAD;
+-    termios.c_lflag = ISIG | ICANON | ECHO | ECHOE | ECHOK | ECHOCTL | ECHOKE;
++    termios.c_lflag = ISIG | ICANON | ECHO | ECHOE | ECHOK;
+     termios.c_cc[VINTR] = CTRL('C');
+     termios.c_cc[VEOF] = CTRL('D');
+     termios.c_cc[VSUSP] = CTRL('Z');

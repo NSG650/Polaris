@@ -1,5 +1,4 @@
 #include <debug/debug.h>
-#include <devices/console.h>
 #include <devices/tty/pty.h>
 #include <errno.h>
 #include <fb/fb.h>
@@ -21,10 +20,11 @@
 #include <sched/sched.h>
 #include <sys/prcb.h>
 #include <sys/timer.h>
+#include <devices/tty/console.h>
 
 const char *module_list[] = {
 #if defined(__x86_64__)
-	"/usr/lib/modules/console.ko", "/usr/lib/modules/ps2.ko"
+	"/usr/lib/modules/ps2.ko"
 #endif
 };
 
@@ -163,14 +163,10 @@ void kernel_main(void *args) {
 	syscall_register_handler(0x34, syscall_getpeername);
 	syscall_register_handler(0x53, syscall_socketpair);
 
+	console_init();
+	
 	std_console_device =
 		(vfs_get_node(vfs_root, "/dev/console", true))->resource;
-
-	if (!std_console_device) {
-		kprintf("Failed to get a console device using /dev/null instead\n");
-		std_console_device =
-			(vfs_get_node(vfs_root, "/dev/null", true))->resource;
-	}
 
 	char *argv[] = {"/usr/bin/init", NULL};
 	if (kernel_arguments.kernel_args & KERNEL_ARGS_INIT_PATH_GIVEN) {

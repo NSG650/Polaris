@@ -25,9 +25,6 @@ ifeq ($(CONFIG_ARCH),x86_64)
 	$(CC) $(CFLAGS) x86_64/ps2/keyboard.c -o keyboard.o
 	$(LD) -r ps2.o mouse.o keyboard.o -o ps2.ko
 	rm ps2.o mouse.o keyboard.o
-
-	# the console driver
-	$(CC) $(CFLAGS) x86_64/console/main.c -o console.ko
 endif
 
 	$(CC) $(CFLAGS) fs/fat32/main.c -o fat32.ko
