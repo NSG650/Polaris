@@ -35,8 +35,6 @@ void ps2_write_config(uint8_t value) {
 uint64_t driver_entry(struct module *driver_module) {
 	driver_module->exit = driver_exit;
 
-	kprintf("Enabling PS2\n");
-
 	// Disable primary and secondary PS/2 ports
 	ps2_write(0x64, 0xad);
 	ps2_write(0x64, 0xa7);

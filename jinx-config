@@ -65,6 +65,7 @@ meson_configure() {
         --cross-file "${base_dir}/build-support/cross_file.txt" \
         --prefix=${prefix} \
         --sysconfdir=/etc \
+        --localstatedir=/var \
         --libdir=lib \
         --sbindir=bin \
         --buildtype=release \

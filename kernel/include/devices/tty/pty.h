@@ -12,6 +12,7 @@ struct ring_buffer {
 	size_t data_length;
 	uintptr_t read_ptr;
 	uintptr_t write_ptr;
+	size_t used;
 	struct event ev;
 };
 

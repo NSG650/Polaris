@@ -1,0 +1,14 @@
+name=freestnd-cxx-hdrs
+version=1cc6d4665e1e0ce4408c94616c8c4de4c19b9968
+revision=1
+tarball_url="https://github.com/osdev0/freestnd-cxx-hdrs/archive/${version}.tar.gz"
+tarball_blake2b="9de9e6f2abdf9df4009a2006a64126b97af66ded8297784bdcacda92b498ee42459adf56494fa480e78b8976c78b435d3493da7c2f07f50034e34b36599e8cea"
+
+
+build() {
+    cp -rp "${source_dir}"/. ./
+}
+
+package() {
+    DESTDIR="${dest_dir}" PREFIX="${prefix}" make install
+}
