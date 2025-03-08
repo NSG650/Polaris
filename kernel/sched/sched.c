@@ -63,8 +63,11 @@ struct thread *sched_get_next_thread(struct thread *thrd) {
 			this = this->next;
 			continue;
 		}
-		if (spinlock_acquire(&this->lock))
+
+		if (spinlock_acquire(&this->lock)) {
 			return this;
+		}
+
 		this = this->next;
 	}
 
@@ -210,26 +213,24 @@ void syscall_kill(struct syscall_arguments *args) {
 
 void syscall_exit(struct syscall_arguments *args) {
 	(void)args;
-	prcb_return_current_cpu()->running_thread->mother_proc->waitee.exit_code =
+	sched_get_running_thread()->mother_proc->waitee.exit_code =
 		(uint8_t)args->args0;
-	process_kill(prcb_return_current_cpu()->running_thread->mother_proc, false);
+	process_kill(sched_get_running_thread()->mother_proc, false);
 }
 
 void syscall_getpid(struct syscall_arguments *args) {
-	args->ret = prcb_return_current_cpu()->running_thread->mother_proc->pid;
+	args->ret = sched_get_running_thread()->mother_proc->pid;
 }
 
 void syscall_getppid(struct syscall_arguments *args) {
 	args->ret = 0;
-	if (prcb_return_current_cpu()
-			->running_thread->mother_proc->parent_process) {
-		args->ret = prcb_return_current_cpu()
-						->running_thread->mother_proc->parent_process->pid;
+	if (sched_get_running_thread()->mother_proc->parent_process) {
+		args->ret = sched_get_running_thread()->mother_proc->parent_process->pid;
 	}
 }
 
 void syscall_fork(struct syscall_arguments *args) {
-	struct thread *running_thread = prcb_return_current_cpu()->running_thread;
+	struct thread *running_thread = sched_get_running_thread();
 	struct process *running_process = running_thread->mother_proc;
 	args->ret = process_fork(running_process, running_thread);
 }
@@ -272,8 +273,7 @@ void syscall_waitpid(struct syscall_arguments *args) {
 		return;
 	}
 
-	struct process *waiter_proc =
-		prcb_return_current_cpu()->running_thread->mother_proc;
+	struct process *waiter_proc = sched_get_running_thread()->mother_proc;
 
 	if (!waiter_proc->child_processes.length) {
 		errno = ECHILD;
@@ -348,8 +348,7 @@ void syscall_waitpid(struct syscall_arguments *args) {
 }
 
 void syscall_thread_new(struct syscall_arguments *args) {
-	struct process *proc =
-		prcb_return_current_cpu()->running_thread->mother_proc;
+	struct process *proc = sched_get_running_thread()->mother_proc;
 
 	uintptr_t pc = (uintptr_t)args->args0;
 	uintptr_t sp = (uintptr_t)args->args1;
@@ -378,7 +377,7 @@ void syscall_thread_new(struct syscall_arguments *args) {
 
 void syscall_thread_exit(struct syscall_arguments *args) {
 	(void)args;
-	thread_kill(prcb_return_current_cpu()->running_thread, true);
+	thread_kill(sched_get_running_thread(), true);
 }
 
 void sched_init(uint64_t args) {
@@ -401,7 +400,7 @@ void sched_init(uint64_t args) {
 
 	futex_init();
 
-	process_create("kernel_tasks", PROCESS_READY_TO_RUN, 200000,
+	process_create("kernel_tasks", PROCESS_READY_TO_RUN, 20000,
 				   (uintptr_t)kernel_main, args, false, NULL);
 	sched_runit = true;
 }
@@ -574,7 +573,7 @@ bool process_execve(char *path, char **argv, char **envp) {
 
 	spinlock_acquire_or_wait(&process_lock);
 
-	struct thread *thread = prcb_return_current_cpu()->running_thread;
+	struct thread *thread = sched_get_running_thread();
 	struct process *proc = thread->mother_proc;
 
 	struct auxval auxv, ld_aux;
@@ -628,6 +627,7 @@ bool process_execve(char *path, char **argv, char **envp) {
 	proc->state = PROCESS_READY_TO_RUN;
 
 	// We no longer exist. There is no point in saving anything now.
+	cli();
 	prcb_return_current_cpu()->running_thread = NULL;
 
 	proc->auxv = auxv;
@@ -656,7 +656,7 @@ void process_kill(struct process *proc, bool crash) {
 	dead_proc->pid = proc->pid;
 
 	bool are_we_killing_ourselves = false;
-	if (prcb_return_current_cpu()->running_thread->mother_proc == proc) {
+	if (sched_get_running_thread()->mother_proc == proc) {
 		are_we_killing_ourselves = true;
 	}
 
@@ -716,6 +716,7 @@ void process_kill(struct process *proc, bool crash) {
 	sti();
 
 	if (are_we_killing_ourselves) {
+		cli();
 		prcb_return_current_cpu()->running_thread = NULL;
 		sched_resched_now();
 	}

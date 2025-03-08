@@ -317,7 +317,7 @@ void isr_handle(registers_t *r) {
 
 	if (r->isrNumber < 32) {
 		if (r->cs & 0x3) {
-			struct thread *thrd = prcb_return_current_cpu()->running_thread;
+			struct thread *thrd = sched_get_running_thread();
 			kprintf("Killing user thread tid %d under process %s for exception "
 					"%s\n",
 					thrd->tid, thrd->mother_proc->name,

@@ -9,11 +9,13 @@
 
 void syscall_handler(registers_t *reg) {
 	// Save original reg in case we're suspending the current thread
+	cli();
 	prcb_return_current_cpu()->running_thread->reg = *reg;
 	prcb_return_current_cpu()->running_thread->stack =
 		prcb_return_current_cpu()->user_stack;
 	prcb_return_current_cpu()->fpu_save(
 		prcb_return_current_cpu()->running_thread->fpu_storage);
+	sti();
 
 	struct syscall_arguments args = {.syscall_nr = reg->rax,
 									 .args0 = reg->rdi,
@@ -30,9 +32,9 @@ void syscall_handler(registers_t *reg) {
 	// This is done such that if the user thread is called to be killed while it
 	// is in kernel space due to a syscall It can do its entire work in kernel
 	// space finally cleaning up resources and freeing locks it held
-
+	
+	cli();
 	if (prcb_return_current_cpu()->running_thread->marked_for_execution) {
-		cli();
 		// risky put a lock here
 		struct process *mother_proc =
 			prcb_return_current_cpu()->running_thread->mother_proc;
@@ -47,6 +49,7 @@ void syscall_handler(registers_t *reg) {
 								 prcb_return_current_cpu()->running_thread);
 		sched_resched_now();
 	}
+	sti();
 
 	int64_t ret = (int64_t)args.ret;
 	if (ret < 0) {
@@ -62,7 +65,7 @@ void syscall_install_handler(void) {
 
 uint64_t syscall_helper_user_to_kernel_address(uintptr_t user_addr) {
 	struct process *proc =
-		prcb_return_current_cpu()->running_thread->mother_proc;
+		sched_get_running_thread()->mother_proc;
 	struct pagemap *target_pagemap = proc->process_pagemap;
 
 	uint64_t kernel_addr = vmm_virt_to_kernel(target_pagemap, user_addr);
@@ -74,7 +77,7 @@ bool syscall_helper_copy_to_user(uintptr_t user_addr, void *buffer,
 	vmm_switch_pagemap(kernel_pagemap);
 
 	struct process *proc =
-		prcb_return_current_cpu()->running_thread->mother_proc;
+		sched_get_running_thread()->mother_proc;
 	struct pagemap *target_pagemap = proc->process_pagemap;
 
 	uint64_t kernel_addr = vmm_virt_to_kernel(target_pagemap, user_addr);
@@ -94,7 +97,7 @@ bool syscall_helper_copy_from_user(uintptr_t user_addr, void *buffer,
 	vmm_switch_pagemap(kernel_pagemap);
 
 	struct process *proc =
-		prcb_return_current_cpu()->running_thread->mother_proc;
+		sched_get_running_thread()->mother_proc;
 	struct pagemap *target_pagemap = proc->process_pagemap;
 
 	uint64_t kernel_addr = vmm_virt_to_kernel(target_pagemap, user_addr);

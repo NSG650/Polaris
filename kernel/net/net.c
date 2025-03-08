@@ -13,7 +13,7 @@ void __attribute__((used)) net_handle_packet_thread(uint64_t *handover) {
 	net_handle_packet(packet, length, nic_interfaces);
 	kfree(packet);
 	kfree(handover);
-	thread_kill(prcb_return_current_cpu()->running_thread, true);
+	thread_kill(sched_get_running_thread(), true);
 }
 
 void __attribute__((used))

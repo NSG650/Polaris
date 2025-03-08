@@ -59,7 +59,7 @@ void syscall_futex(struct syscall_arguments *args) {
 	uint32_t *raw_kernel_addr =
 		(uint32_t *)syscall_helper_user_to_kernel_address(
 			(uintptr_t)raw_user_addr);
-	struct thread *thrd = prcb_return_current_cpu()->running_thread;
+	struct thread *thrd = sched_get_running_thread();
 
 	if (!raw_kernel_addr) {
 		errno = EFAULT;

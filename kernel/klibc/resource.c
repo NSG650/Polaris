@@ -115,7 +115,7 @@ dev_t resource_create_dev_id(void) {
 
 bool fdnum_close(struct process *proc, int fdnum) {
 	if (proc == NULL) {
-		proc = prcb_return_current_cpu()->running_thread->mother_proc;
+		proc = sched_get_running_thread()->mother_proc;
 	}
 
 	bool ok = false;
@@ -151,7 +151,7 @@ cleanup:
 int fdnum_create_from_fd(struct process *proc, struct f_descriptor *fd,
 						 int old_fdnum, bool specific) {
 	if (proc == NULL) {
-		proc = prcb_return_current_cpu()->running_thread->mother_proc;
+		proc = sched_get_running_thread()->mother_proc;
 	}
 
 	int res = -1;
@@ -196,11 +196,11 @@ int fdnum_create_from_resource(struct process *proc, struct resource *res,
 int fdnum_dup(struct process *old_proc, int old_fdnum, struct process *new_proc,
 			  int new_fdnum, int flags, bool specific, bool cloexec) {
 	if (old_proc == NULL) {
-		old_proc = prcb_return_current_cpu()->running_thread->mother_proc;
+		old_proc = sched_get_running_thread()->mother_proc;
 	}
 
 	if (new_proc == NULL) {
-		new_proc = prcb_return_current_cpu()->running_thread->mother_proc;
+		new_proc = sched_get_running_thread()->mother_proc;
 	}
 
 	if (specific && old_fdnum == new_fdnum && old_proc == new_proc) {
@@ -272,7 +272,7 @@ fail:
 
 struct f_descriptor *fd_from_fdnum(struct process *proc, int fdnum) {
 	if (proc == NULL) {
-		proc = prcb_return_current_cpu()->running_thread->mother_proc;
+		proc = sched_get_running_thread()->mother_proc;
 	}
 
 	struct f_descriptor *ret = NULL;
@@ -298,14 +298,14 @@ cleanup:
 
 void syscall_close(struct syscall_arguments *args) {
 	struct process *proc =
-		prcb_return_current_cpu()->running_thread->mother_proc;
+	sched_get_running_thread()->mother_proc;
 
 	args->ret = fdnum_close(proc, args->args0) ? 0 : -1;
 }
 
 void syscall_read(struct syscall_arguments *args) {
 	struct process *proc =
-		prcb_return_current_cpu()->running_thread->mother_proc;
+	sched_get_running_thread()->mother_proc;
 
 	int fdnum = args->args0;
 	void *buf = (void *)args->args1;
@@ -332,7 +332,7 @@ void syscall_read(struct syscall_arguments *args) {
 
 void syscall_write(struct syscall_arguments *args) {
 	struct process *proc =
-		prcb_return_current_cpu()->running_thread->mother_proc;
+	sched_get_running_thread()->mother_proc;
 
 	int fdnum = args->args0;
 	void *buf = (void *)args->args1;
@@ -360,7 +360,7 @@ void syscall_write(struct syscall_arguments *args) {
 
 void syscall_seek(struct syscall_arguments *args) {
 	struct process *proc =
-		prcb_return_current_cpu()->running_thread->mother_proc;
+	sched_get_running_thread()->mother_proc;
 
 	int fdnum = args->args0;
 	off_t offset = args->args1;
@@ -418,7 +418,7 @@ void syscall_seek(struct syscall_arguments *args) {
 
 void syscall_fcntl(struct syscall_arguments *args) {
 	struct process *proc =
-		prcb_return_current_cpu()->running_thread->mother_proc;
+	sched_get_running_thread()->mother_proc;
 
 	int fdnum = args->args0;
 	uint64_t request = args->args1;
@@ -469,7 +469,7 @@ void syscall_fcntl(struct syscall_arguments *args) {
 
 void syscall_ioctl(struct syscall_arguments *args) {
 	struct process *proc =
-		prcb_return_current_cpu()->running_thread->mother_proc;
+	sched_get_running_thread()->mother_proc;
 
 	int fdnum = args->args0;
 	uint64_t request = args->args1;
@@ -488,7 +488,7 @@ void syscall_ioctl(struct syscall_arguments *args) {
 
 void syscall_dup3(struct syscall_arguments *args) {
 	struct process *proc =
-		prcb_return_current_cpu()->running_thread->mother_proc;
+	sched_get_running_thread()->mother_proc;
 
 	int old_fdnum = args->args0;
 	int new_fdnum = args->args1;
@@ -521,7 +521,7 @@ void syscall_fchmodat(struct syscall_arguments *args) {
 
 void syscall_ppoll(struct syscall_arguments *args) {
 	struct process *proc =
-		prcb_return_current_cpu()->running_thread->mother_proc;
+	sched_get_running_thread()->mother_proc;
 	struct pollfd *pfds = (struct pollfd *)(args->args0);
 	uint32_t nfds = (uint32_t)(args->args1);
 	struct timespec *timeout = (struct timespec *)(args->args2);

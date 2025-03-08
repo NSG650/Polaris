@@ -381,7 +381,7 @@ void vmm_page_fault_handler(registers_t *reg) {
 	bool execute = reg->errorCode & 0x10;
 
 	if (reg->cs & 0x3) {
-		struct thread *thrd = prcb_return_current_cpu()->running_thread;
+		struct thread *thrd = sched_get_running_thread();
 		kprintf("Killing user thread tid %d under process %s for Page Fault\n",
 				thrd->tid, thrd->mother_proc->name);
 		kprintf("User thread crashed at address: %p\n", reg->rip);

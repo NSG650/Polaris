@@ -75,7 +75,7 @@ ssize_t event_await(struct event **events, size_t num_events, bool block) {
 	cli();
 	ssize_t ret = -1;
 
-	struct thread *thread = prcb_return_current_cpu()->running_thread;
+	struct thread *thread = sched_get_running_thread();
 
 	lock_events(events, num_events);
 

@@ -87,6 +87,7 @@ void resched(registers_t *reg) {
 	struct thread *running_thrd = prcb_return_current_cpu()->running_thread;
 
 	if (running_thrd) {
+		spinlock_drop(&running_thrd->lock);
 		if (running_thrd->marked_for_execution) {
 			struct process *mother_proc = running_thrd->mother_proc;
 			vec_remove(&mother_proc->process_threads, running_thrd);
@@ -113,9 +114,7 @@ void resched(registers_t *reg) {
 			if (running_thrd->state == THREAD_NORMAL)
 				running_thrd->state = THREAD_READY_TO_RUN;
 
-			running_thrd->last_scheduled =
-				timer_count() - running_thrd->last_scheduled;
-			spinlock_drop(&running_thrd->lock);
+			running_thrd->last_scheduled = timer_count();
 		}
 	}
 
@@ -123,8 +122,8 @@ void resched(registers_t *reg) {
 
 	if (running_thrd == NULL) {
 		apic_eoi();
-		timer_sched_oneshot(48, 20000);
 		prcb_return_current_cpu()->running_thread = NULL;
+		timer_sched_oneshot(48, 20000);
 		sti();
 		for (;;) {
 			halt();
@@ -148,6 +147,6 @@ void resched(registers_t *reg) {
 
 	apic_eoi();
 	timer_sched_oneshot(48, running_thrd->runtime);
-
+	sti();
 	resched_context_switch(&running_thrd->reg);
 }

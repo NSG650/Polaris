@@ -3,7 +3,7 @@
 
 #include <sys/prcb.h>
 
-#define errno prcb_return_current_cpu()->running_thread->errno
+#define errno sched_get_running_thread()->errno
 
 #define EPERM 1			 /* Not super-user */
 #define ENOENT 2		 /* No such file or directory */

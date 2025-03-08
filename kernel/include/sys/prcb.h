@@ -27,18 +27,7 @@ struct prcb {
 
 extern struct prcb *prcbs;
 
-#if defined(__x86_64__)
-#define prcb_return_current_cpu()               \
-	({                                          \
-		uint64_t cpu_number;                    \
-		asm volatile("mov %0, qword ptr gs:[0]" \
-					 : "=r"(cpu_number)         \
-					 :                          \
-					 : "memory");               \
-		&prcbs[cpu_number];                     \
-	})
-#endif
-
+struct prcb *prcb_return_current_cpu(void);
 size_t prcb_return_installed_cpus(void);
 
 #endif

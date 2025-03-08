@@ -5,6 +5,10 @@
 
 void thread_setup_context(struct thread *thrd, uintptr_t pc_address,
 						  uint64_t arguments, bool user) {
+							uint64_t flags = 0;
+							asm volatile("pushfq; pop %0" : "=rm"(flags));
+							bool old_state = flags & (1 << 9);
+							cli();
 	thrd->reg.rip = pc_address;
 	thrd->reg.rdi = arguments;
 	thrd->kernel_stack = (uint64_t)kmalloc(STACK_SIZE);
@@ -54,10 +58,20 @@ void thread_setup_context(struct thread *thrd, uintptr_t pc_address,
 	}
 
 	thrd->reg.rflags = 0x202;
+	if (old_state) {
+		sti();
+	}
+	else {
+		cli();
+	}
 }
 
 void thread_setup_context_from_user(struct thread *thrd, uintptr_t pc_address,
 									uintptr_t sp) {
+										uint64_t flags = 0;
+										asm volatile("pushfq; pop %0" : "=rm"(flags));
+										bool old_state = flags & (1 << 9);
+										cli();
 	thrd->reg.rip = pc_address;
 	thrd->kernel_stack = (uint64_t)kmalloc(STACK_SIZE);
 	thrd->kernel_stack += STACK_SIZE;
@@ -86,12 +100,21 @@ void thread_setup_context_from_user(struct thread *thrd, uintptr_t pc_address,
 	thrd->gs_base = 0;
 
 	thrd->reg.rflags = 0x202;
+	if (old_state) {
+		sti();
+	} else {
+		cli();
+	}
 }
 
 // I am still surprised that I still know how this works.
 // I will properly document it sometime soon.
 void thread_setup_context_for_execve(struct thread *thrd, uintptr_t pc_address,
 									 char **argv, char **envp) {
+										uint64_t flags = 0;
+										asm volatile("pushfq; pop %0" : "=rm"(flags));
+										bool old_state = flags & (1 << 9);
+										cli();
 	struct process *proc = thrd->mother_proc;
 
 	thrd->reg.rip = pc_address;
@@ -236,9 +259,15 @@ void thread_setup_context_for_execve(struct thread *thrd, uintptr_t pc_address,
 
 	thrd->reg.rsp -= address_difference;
 	proc->stack_top -= STACK_SIZE;
+	if (old_state) {
+		sti();
+	} else {
+		cli();
+	}
 }
 
 void thread_fork_context(struct thread *thrd, struct thread *fthrd) {
+	cli();
 	fthrd->kernel_stack = (uint64_t)kmalloc(STACK_SIZE);
 	fthrd->kernel_stack += STACK_SIZE;
 	fthrd->pf_stack = (uint64_t)kmalloc(STACK_SIZE);
@@ -257,9 +286,14 @@ void thread_fork_context(struct thread *thrd, struct thread *fthrd) {
 
 	memcpy(fthrd->fpu_storage, thrd->fpu_storage,
 		   prcb_return_current_cpu()->fpu_storage_size);
+	sti();
 }
 
 void thread_destroy_context(struct thread *thrd) {
+	uint64_t flags = 0;
+							asm volatile("pushfq; pop %0" : "=rm"(flags));
+							bool old_state = flags & (1 << 9);
+							cli();
 	if (thrd->reg.cs & 0x3) {
 		kfree((void *)(thrd->kernel_stack - STACK_SIZE));
 		kfree((void *)(thrd->pf_stack - STACK_SIZE));
@@ -269,6 +303,11 @@ void thread_destroy_context(struct thread *thrd) {
 	pmm_free(
 		(void *)((uint64_t)thrd->fpu_storage - MEM_PHYS_OFFSET),
 		DIV_ROUNDUP(prcb_return_current_cpu()->fpu_storage_size, PAGE_SIZE));
+		if (old_state) {
+			sti();
+		} else {
+			cli();
+		}
 }
 
 void process_setup_context(struct process *proc, bool user) {
@@ -286,8 +325,17 @@ void process_fork_context(struct process *proc, struct process *fproc) {
 void process_destroy_context(struct process *proc) {
 	(void)proc;
 	// We are killing the running proc time to switch
+	uint64_t flags = 0;
+							asm volatile("pushfq; pop %0" : "=rm"(flags));
+							bool old_state = flags & (1 << 9);
+							cli();
 	if (prcb_return_current_cpu()->running_thread == NULL) {
 		vmm_switch_pagemap(kernel_pagemap);
+	}
+	if (old_state) {
+		sti();
+	} else {
+		cli();
 	}
 	vmm_destroy_pagemap(proc->process_pagemap);
 }

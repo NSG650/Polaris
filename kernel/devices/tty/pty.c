@@ -330,7 +330,7 @@ static ssize_t pty_slave_write(struct resource *this,
 
 void syscall_openpty(struct syscall_arguments *args) {
 	struct process *proc =
-		prcb_return_current_cpu()->running_thread->mother_proc;
+	sched_get_running_thread()->mother_proc;
 
 	int *fds = (int *)(syscall_helper_user_to_kernel_address(args->args0));
 	if (fds == NULL) {

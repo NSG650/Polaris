@@ -76,7 +76,7 @@ void syscall_sysinfo(struct syscall_arguments *args) {
 #ifdef KERNEL_ABUSE
 void kernel_dummy_sleeping_thread(void) {
 	for (;;) {
-		thread_sleep(prcb_return_current_cpu()->running_thread, ONE_SECOND * 5);
+		thread_sleep(sched_get_running_thread(), ONE_SECOND * 5);
 	}
 }
 
@@ -102,9 +102,7 @@ void kernel_main(void *args) {
 	streams_init();
 	randdev_init();
 
-	kprintf("Hello I am %s running on CPU%u\n",
-			prcb_return_current_cpu()->running_thread->mother_proc->name,
-			prcb_return_current_cpu()->cpu_number);
+	kprintf("Hello I am %s\n", sched_get_running_thread()->mother_proc->name);
 
 	if (args != NULL) {
 		uint64_t *module_info = (uint64_t *)args;
@@ -176,18 +174,18 @@ void kernel_main(void *args) {
 	kprintf("Running init binary %s\n", argv[0]);
 
 	if (!process_create_elf(
-			"init", PROCESS_READY_TO_RUN, 200000, argv[0],
-			prcb_return_current_cpu()->running_thread->mother_proc))
+			"init", PROCESS_READY_TO_RUN, 40000, argv[0],
+			sched_get_running_thread()->mother_proc))
 		panic("Failed to run init binary!\n");
 
 #ifdef KERNEL_ABUSE
 	for (uint64_t i = 0; i < prcb_return_installed_cpus(); i++) {
 		thread_create((uintptr_t)kernel_dummy_threads, i, false,
-					  prcb_return_current_cpu()->running_thread->mother_proc);
+		sched_get_running_thread()->mother_proc);
 	}
 
 	thread_create((uintptr_t)kernel_dummy_sleeping_thread, 0, false,
-				  prcb_return_current_cpu()->running_thread->mother_proc);
+	sched_get_running_thread()->mother_proc);
 #endif
 
 	for (;;) {

@@ -13,12 +13,12 @@ void syscall_handle(struct syscall_arguments *args) {
 		return;
 	}
 #if 0
-	kprintf("%s called by process %s\n", syscalls_name[args->syscall_nr], prcb_return_current_cpu()->running_thread->mother_proc->name);
+	kprintf("%s called by process %s\n", syscalls_name[args->syscall_nr], sched_get_running_thread()->mother_proc->name);
 #endif
 	syscalls[args->syscall_nr](args);
 #if 0
 	if ((int)args->ret < 0) {
-		kprintf("%s failed. Called by process %s with errno %d\n", syscalls_name[args->syscall_nr], prcb_return_current_cpu()->running_thread->mother_proc->name, errno);
+		kprintf("%s failed. Called by process %s with errno %d\n", syscalls_name[args->syscall_nr], sched_get_running_thread()->mother_proc->name, errno);
 	}
 #endif
 }

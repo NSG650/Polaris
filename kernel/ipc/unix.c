@@ -184,7 +184,7 @@ static bool unix_sock_connect(struct socket *_this,
 	}
 
 	struct process *proc =
-		prcb_return_current_cpu()->running_thread->mother_proc;
+	sched_get_running_thread()->mother_proc;
 	struct vfs_node *node = vfs_get_node(proc->cwd, addr->sun_path, true);
 	if (node == NULL) {
 		return false;
@@ -325,7 +325,7 @@ bool unix_sock_bind(struct socket *_this, struct f_description *description,
 	struct unix_socket *this = (struct unix_socket *)_this;
 	spinlock_acquire_or_wait(&this->sock.res.lock);
 	struct process *proc =
-		prcb_return_current_cpu()->running_thread->mother_proc;
+	sched_get_running_thread()->mother_proc;
 
 	struct sockaddr_un *addr = (struct sockaddr_un *)addr_;
 	if (addr->sun_family != AF_UNIX) {

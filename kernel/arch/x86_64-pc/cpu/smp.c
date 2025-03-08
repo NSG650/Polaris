@@ -27,6 +27,7 @@ extern void idt_reload(void);
 extern void amd_syscall_entry(void);
 
 static void smp_cpu_init(struct limine_smp_info *smp_info) {
+	cli();
 	struct prcb *prcb_local = (void *)smp_info->extra_argument;
 	gdt_reload();
 	idt_reload();
@@ -123,11 +124,10 @@ static void smp_cpu_init(struct limine_smp_info *smp_info) {
 
 	if (prcb_local->lapic_id != smp_bsp_lapic_id) {
 		lapic_init(smp_info->lapic_id);
-		timer_sched_oneshot(48, 20000);
 		kprintf("CPU%u: I am alive!\n", prcb_return_current_cpu()->cpu_number);
 		initialized_cpus++;
 		spinlock_drop(&smp_lock);
-		sti();
+		timer_sched_oneshot(48, 20000);
 		for (;;) {
 			halt();
 		}
@@ -185,6 +185,23 @@ void smp_init(struct limine_smp_response *smp_info) {
 	is_smp = true;
 }
 
+
+
 size_t prcb_return_installed_cpus(void) {
 	return initialized_cpus;
+}
+
+struct prcb *prcb_return_current_cpu(void) {
+	uint64_t flags = 0;
+	asm volatile("pushfq; pop %0" : "=rm"(flags));
+	bool interrupts_enabled = flags & (1 << 9);
+	if (interrupts_enabled && is_smp) {
+		panic("Calling prcb_return_current_cpu with interrupts enabled is a bug\n");
+	}
+	uint64_t cpu_number;                    
+	asm volatile("mov %0, qword ptr gs:[0]" 
+				 : "=r"(cpu_number)         
+				 :                          
+				 : "memory");               
+	return &prcbs[cpu_number];                     
 }

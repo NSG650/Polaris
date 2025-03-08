@@ -41,7 +41,7 @@ bool mmap_handle_pf(registers_t *reg) {
 	// temporarily
 	uint64_t cr2 = read_cr("2");
 
-	struct thread *thread = prcb_return_current_cpu()->running_thread;
+	struct thread *thread = sched_get_running_thread();
 	if (thread == NULL) {
 		return false;
 	}
@@ -193,7 +193,7 @@ void *mmap(struct pagemap *pagemap, uintptr_t addr, size_t length, int prot,
 		return MAP_FAILED;
 	}
 
-	struct thread *thread = prcb_return_current_cpu()->running_thread;
+	struct thread *thread = sched_get_running_thread();
 	struct process *process = thread->mother_proc;
 
 	uint64_t base = 0;
@@ -266,7 +266,7 @@ cleanup:
 
 bool munmap(struct pagemap *pagemap, uintptr_t addr, size_t length) {
 	if (length == 0) {
-		if (prcb_return_current_cpu()->running_thread) {
+		if (sched_get_running_thread()) {
 			errno = EINVAL;
 		}
 		return false;
@@ -302,7 +302,7 @@ bool munmap(struct pagemap *pagemap, uintptr_t addr, size_t length) {
 				kmalloc(sizeof(struct mmap_range_local));
 			if (postsplit_range == NULL) {
 				// FIXME: Page map is in inconsistent state at this point!
-				if (prcb_return_current_cpu()->running_thread) {
+				if (sched_get_running_thread()) {
 					errno = ENOMEM;
 				}
 				spinlock_drop(&pagemap->lock);
@@ -469,7 +469,7 @@ void syscall_mmap(struct syscall_arguments *args) {
 
 	void *ret = MAP_FAILED;
 
-	struct thread *thread = prcb_return_current_cpu()->running_thread;
+	struct thread *thread = sched_get_running_thread();
 	struct process *proc = thread->mother_proc;
 
 	struct resource *res = NULL;
@@ -494,7 +494,7 @@ void syscall_munmap(struct syscall_arguments *args) {
 	uintptr_t addr = args->args0;
 	size_t length = args->args1;
 
-	struct thread *thread = prcb_return_current_cpu()->running_thread;
+	struct thread *thread = sched_get_running_thread();
 	struct process *proc = thread->mother_proc;
 
 	args->ret = munmap(proc->process_pagemap, addr, length) ? 0 : -1;
@@ -505,7 +505,7 @@ void syscall_mprotect(struct syscall_arguments *args) {
 	size_t length = args->args1;
 	int prot = args->args2;
 
-	struct thread *thread = prcb_return_current_cpu()->running_thread;
+	struct thread *thread = sched_get_running_thread();
 	struct process *proc = thread->mother_proc;
 
 	args->ret = mprotect(proc->process_pagemap, addr, length, prot) ? 0 : -1;
