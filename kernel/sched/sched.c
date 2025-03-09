@@ -225,7 +225,8 @@ void syscall_getpid(struct syscall_arguments *args) {
 void syscall_getppid(struct syscall_arguments *args) {
 	args->ret = 0;
 	if (sched_get_running_thread()->mother_proc->parent_process) {
-		args->ret = sched_get_running_thread()->mother_proc->parent_process->pid;
+		args->ret =
+			sched_get_running_thread()->mother_proc->parent_process->pid;
 	}
 }
 

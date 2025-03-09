@@ -104,8 +104,7 @@ struct pipe *pipe_create(void) {
 }
 
 void syscall_pipe(struct syscall_arguments *args) {
-	struct process *proc =
-	sched_get_running_thread()->mother_proc;
+	struct process *proc = sched_get_running_thread()->mother_proc;
 
 	int *fds = (int *)(syscall_helper_user_to_kernel_address(args->args0));
 	int flags = (int)(args->args1);

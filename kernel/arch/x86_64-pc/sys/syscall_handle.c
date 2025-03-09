@@ -32,7 +32,7 @@ void syscall_handler(registers_t *reg) {
 	// This is done such that if the user thread is called to be killed while it
 	// is in kernel space due to a syscall It can do its entire work in kernel
 	// space finally cleaning up resources and freeing locks it held
-	
+
 	cli();
 	if (prcb_return_current_cpu()->running_thread->marked_for_execution) {
 		// risky put a lock here
@@ -64,8 +64,7 @@ void syscall_install_handler(void) {
 }
 
 uint64_t syscall_helper_user_to_kernel_address(uintptr_t user_addr) {
-	struct process *proc =
-		sched_get_running_thread()->mother_proc;
+	struct process *proc = sched_get_running_thread()->mother_proc;
 	struct pagemap *target_pagemap = proc->process_pagemap;
 
 	uint64_t kernel_addr = vmm_virt_to_kernel(target_pagemap, user_addr);
@@ -76,8 +75,7 @@ bool syscall_helper_copy_to_user(uintptr_t user_addr, void *buffer,
 								 size_t count) {
 	vmm_switch_pagemap(kernel_pagemap);
 
-	struct process *proc =
-		sched_get_running_thread()->mother_proc;
+	struct process *proc = sched_get_running_thread()->mother_proc;
 	struct pagemap *target_pagemap = proc->process_pagemap;
 
 	uint64_t kernel_addr = vmm_virt_to_kernel(target_pagemap, user_addr);
@@ -96,8 +94,7 @@ bool syscall_helper_copy_from_user(uintptr_t user_addr, void *buffer,
 								   size_t count) {
 	vmm_switch_pagemap(kernel_pagemap);
 
-	struct process *proc =
-		sched_get_running_thread()->mother_proc;
+	struct process *proc = sched_get_running_thread()->mother_proc;
 	struct pagemap *target_pagemap = proc->process_pagemap;
 
 	uint64_t kernel_addr = vmm_virt_to_kernel(target_pagemap, user_addr);

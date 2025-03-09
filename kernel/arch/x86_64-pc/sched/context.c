@@ -5,14 +5,14 @@
 
 void thread_setup_context(struct thread *thrd, uintptr_t pc_address,
 						  uint64_t arguments, bool user) {
-							uint64_t flags = 0;
-							asm volatile("pushfq; pop %0" : "=rm"(flags));
-							bool old_state = flags & (1 << 9);
-							cli();
+	uint64_t flags = 0;
+	asm volatile("pushfq; pop %0" : "=rm"(flags));
+	bool old_state = flags & (1 << 9);
+	cli();
 	thrd->reg.rip = pc_address;
 	thrd->reg.rdi = arguments;
-	thrd->kernel_stack = (uint64_t)kmalloc(STACK_SIZE);
-	thrd->kernel_stack += STACK_SIZE;
+	thrd->kernel_stack = (uint64_t)kmalloc(CPU_STACK_SIZE);
+	thrd->kernel_stack += CPU_STACK_SIZE;
 	thrd->fpu_storage =
 		(void *)((uintptr_t)pmm_allocz(DIV_ROUNDUP(
 					 prcb_return_current_cpu()->fpu_storage_size, PAGE_SIZE)) +
@@ -33,8 +33,8 @@ void thread_setup_context(struct thread *thrd, uintptr_t pc_address,
 		thrd->reg.rsp = proc->stack_top;
 		proc->stack_top -= STACK_SIZE;
 
-		thrd->pf_stack = (uint64_t)kmalloc(STACK_SIZE);
-		thrd->pf_stack += STACK_SIZE;
+		thrd->pf_stack = (uint64_t)kmalloc(CPU_STACK_SIZE);
+		thrd->pf_stack += CPU_STACK_SIZE;
 
 		prcb_return_current_cpu()->fpu_restore(thrd->fpu_storage);
 		uint16_t default_fcw = 0b1100111111;
@@ -60,21 +60,20 @@ void thread_setup_context(struct thread *thrd, uintptr_t pc_address,
 	thrd->reg.rflags = 0x202;
 	if (old_state) {
 		sti();
-	}
-	else {
+	} else {
 		cli();
 	}
 }
 
 void thread_setup_context_from_user(struct thread *thrd, uintptr_t pc_address,
 									uintptr_t sp) {
-										uint64_t flags = 0;
-										asm volatile("pushfq; pop %0" : "=rm"(flags));
-										bool old_state = flags & (1 << 9);
-										cli();
+	uint64_t flags = 0;
+	asm volatile("pushfq; pop %0" : "=rm"(flags));
+	bool old_state = flags & (1 << 9);
+	cli();
 	thrd->reg.rip = pc_address;
-	thrd->kernel_stack = (uint64_t)kmalloc(STACK_SIZE);
-	thrd->kernel_stack += STACK_SIZE;
+	thrd->kernel_stack = (uint64_t)kmalloc(CPU_STACK_SIZE);
+	thrd->kernel_stack += CPU_STACK_SIZE;
 	thrd->fpu_storage =
 		(void *)((uintptr_t)pmm_allocz(DIV_ROUNDUP(
 					 prcb_return_current_cpu()->fpu_storage_size, PAGE_SIZE)) +
@@ -86,8 +85,8 @@ void thread_setup_context_from_user(struct thread *thrd, uintptr_t pc_address,
 	thrd->reg.rsp = sp;
 	thrd->stack = thrd->reg.rsp;
 
-	thrd->pf_stack = (uint64_t)kmalloc(STACK_SIZE);
-	thrd->pf_stack += STACK_SIZE;
+	thrd->pf_stack = (uint64_t)kmalloc(CPU_STACK_SIZE);
+	thrd->pf_stack += CPU_STACK_SIZE;
 
 	prcb_return_current_cpu()->fpu_restore(thrd->fpu_storage);
 	uint16_t default_fcw = 0b1100111111;
@@ -111,10 +110,10 @@ void thread_setup_context_from_user(struct thread *thrd, uintptr_t pc_address,
 // I will properly document it sometime soon.
 void thread_setup_context_for_execve(struct thread *thrd, uintptr_t pc_address,
 									 char **argv, char **envp) {
-										uint64_t flags = 0;
-										asm volatile("pushfq; pop %0" : "=rm"(flags));
-										bool old_state = flags & (1 << 9);
-										cli();
+	uint64_t flags = 0;
+	asm volatile("pushfq; pop %0" : "=rm"(flags));
+	bool old_state = flags & (1 << 9);
+	cli();
 	struct process *proc = thrd->mother_proc;
 
 	thrd->reg.rip = pc_address;
@@ -129,10 +128,10 @@ void thread_setup_context_for_execve(struct thread *thrd, uintptr_t pc_address,
 
 	thrd->reg.rsp = proc->stack_top;
 
-	thrd->kernel_stack = (uint64_t)kmalloc(STACK_SIZE);
-	thrd->kernel_stack += STACK_SIZE;
-	thrd->pf_stack = (uint64_t)kmalloc(STACK_SIZE);
-	thrd->pf_stack += STACK_SIZE;
+	thrd->kernel_stack = (uint64_t)kmalloc(CPU_STACK_SIZE);
+	thrd->kernel_stack += CPU_STACK_SIZE;
+	thrd->pf_stack = (uint64_t)kmalloc(CPU_STACK_SIZE);
+	thrd->pf_stack += CPU_STACK_SIZE;
 
 	thrd->reg.rflags = 0x202;
 
@@ -267,11 +266,15 @@ void thread_setup_context_for_execve(struct thread *thrd, uintptr_t pc_address,
 }
 
 void thread_fork_context(struct thread *thrd, struct thread *fthrd) {
+	uint64_t flags = 0;
+	asm volatile("pushfq; pop %0" : "=rm"(flags));
+	bool old_state = flags & (1 << 9);
 	cli();
-	fthrd->kernel_stack = (uint64_t)kmalloc(STACK_SIZE);
-	fthrd->kernel_stack += STACK_SIZE;
-	fthrd->pf_stack = (uint64_t)kmalloc(STACK_SIZE);
-	fthrd->pf_stack += STACK_SIZE;
+
+	fthrd->kernel_stack = (uint64_t)kmalloc(CPU_STACK_SIZE);
+	fthrd->kernel_stack += CPU_STACK_SIZE;
+	fthrd->pf_stack = (uint64_t)kmalloc(CPU_STACK_SIZE);
+	fthrd->pf_stack += CPU_STACK_SIZE;
 	fthrd->reg = thrd->reg;
 	fthrd->reg.rax = 0;
 	fthrd->reg.rbx = 0;
@@ -282,32 +285,32 @@ void thread_fork_context(struct thread *thrd, struct thread *fthrd) {
 					 prcb_return_current_cpu()->fpu_storage_size, PAGE_SIZE)) +
 				 MEM_PHYS_OFFSET);
 
-	fthrd->stack = (uint64_t)pmm_allocz(STACK_SIZE / PAGE_SIZE);
-
 	memcpy(fthrd->fpu_storage, thrd->fpu_storage,
 		   prcb_return_current_cpu()->fpu_storage_size);
-	sti();
+	if (old_state) {
+		sti();
+	} else {
+		cli();
+	}
 }
 
 void thread_destroy_context(struct thread *thrd) {
 	uint64_t flags = 0;
-							asm volatile("pushfq; pop %0" : "=rm"(flags));
-							bool old_state = flags & (1 << 9);
-							cli();
+	asm volatile("pushfq; pop %0" : "=rm"(flags));
+	bool old_state = flags & (1 << 9);
+	cli();
+	kfree((void *)(thrd->kernel_stack - STACK_SIZE));
 	if (thrd->reg.cs & 0x3) {
-		kfree((void *)(thrd->kernel_stack - STACK_SIZE));
 		kfree((void *)(thrd->pf_stack - STACK_SIZE));
-	} else {
-		kfree((void *)(thrd->kernel_stack - STACK_SIZE));
 	}
 	pmm_free(
 		(void *)((uint64_t)thrd->fpu_storage - MEM_PHYS_OFFSET),
 		DIV_ROUNDUP(prcb_return_current_cpu()->fpu_storage_size, PAGE_SIZE));
-		if (old_state) {
-			sti();
-		} else {
-			cli();
-		}
+	if (old_state) {
+		sti();
+	} else {
+		cli();
+	}
 }
 
 void process_setup_context(struct process *proc, bool user) {
@@ -326,9 +329,9 @@ void process_destroy_context(struct process *proc) {
 	(void)proc;
 	// We are killing the running proc time to switch
 	uint64_t flags = 0;
-							asm volatile("pushfq; pop %0" : "=rm"(flags));
-							bool old_state = flags & (1 << 9);
-							cli();
+	asm volatile("pushfq; pop %0" : "=rm"(flags));
+	bool old_state = flags & (1 << 9);
+	cli();
 	if (prcb_return_current_cpu()->running_thread == NULL) {
 		vmm_switch_pagemap(kernel_pagemap);
 	}

@@ -173,19 +173,18 @@ void kernel_main(void *args) {
 
 	kprintf("Running init binary %s\n", argv[0]);
 
-	if (!process_create_elf(
-			"init", PROCESS_READY_TO_RUN, 40000, argv[0],
-			sched_get_running_thread()->mother_proc))
+	if (!process_create_elf("init", PROCESS_READY_TO_RUN, 40000, argv[0],
+							sched_get_running_thread()->mother_proc))
 		panic("Failed to run init binary!\n");
 
 #ifdef KERNEL_ABUSE
 	for (uint64_t i = 0; i < prcb_return_installed_cpus(); i++) {
 		thread_create((uintptr_t)kernel_dummy_threads, i, false,
-		sched_get_running_thread()->mother_proc);
+					  sched_get_running_thread()->mother_proc);
 	}
 
 	thread_create((uintptr_t)kernel_dummy_sleeping_thread, 0, false,
-	sched_get_running_thread()->mother_proc);
+				  sched_get_running_thread()->mother_proc);
 #endif
 
 	for (;;) {

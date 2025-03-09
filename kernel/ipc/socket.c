@@ -22,8 +22,7 @@ struct socket **socket_create_pair(int family, int type, int protocol) {
 }
 
 void syscall_socket(struct syscall_arguments *args) {
-	struct process *proc =
-	sched_get_running_thread()->mother_proc;
+	struct process *proc = sched_get_running_thread()->mother_proc;
 
 	int family = (int)(args->args0);
 	int type = (int)(args->args1);
@@ -57,8 +56,7 @@ void syscall_socket(struct syscall_arguments *args) {
 }
 
 void syscall_socketpair(struct syscall_arguments *args) {
-	struct process *proc =
-	sched_get_running_thread()->mother_proc;
+	struct process *proc = sched_get_running_thread()->mother_proc;
 
 	int family = (int)(args->args0);
 	int type = (int)(args->args1);
@@ -95,8 +93,7 @@ void syscall_socketpair(struct syscall_arguments *args) {
 }
 
 void syscall_bind(struct syscall_arguments *args) {
-	struct process *proc =
-	sched_get_running_thread()->mother_proc;
+	struct process *proc = sched_get_running_thread()->mother_proc;
 
 	int fdnum = (int)(args->args0);
 	void *addr = (void *)(args->args1);
@@ -124,8 +121,7 @@ void syscall_bind(struct syscall_arguments *args) {
 }
 
 void syscall_connect(struct syscall_arguments *args) {
-	struct process *proc =
-	sched_get_running_thread()->mother_proc;
+	struct process *proc = sched_get_running_thread()->mother_proc;
 
 	int fdnum = (int)(args->args0);
 	void *addr = (void *)(args->args1);
@@ -153,8 +149,7 @@ void syscall_connect(struct syscall_arguments *args) {
 }
 
 void syscall_getpeername(struct syscall_arguments *args) {
-	struct process *proc =
-	sched_get_running_thread()->mother_proc;
+	struct process *proc = sched_get_running_thread()->mother_proc;
 
 	int fdnum = (int)(args->args0);
 	void *addr = (void *)(args->args1);
@@ -182,8 +177,7 @@ void syscall_getpeername(struct syscall_arguments *args) {
 }
 
 void syscall_listen(struct syscall_arguments *args) {
-	struct process *proc =
-	sched_get_running_thread()->mother_proc;
+	struct process *proc = sched_get_running_thread()->mother_proc;
 
 	int fdnum = (int)(args->args0);
 	int backlog = (int)(args->args1);
@@ -210,8 +204,7 @@ void syscall_listen(struct syscall_arguments *args) {
 }
 
 void syscall_accept(struct syscall_arguments *args) {
-	struct process *proc =
-	sched_get_running_thread()->mother_proc;
+	struct process *proc = sched_get_running_thread()->mother_proc;
 
 	int fdnum = (int)(args->args0);
 
@@ -243,8 +236,7 @@ void syscall_accept(struct syscall_arguments *args) {
 }
 
 void syscall_recvmsg(struct syscall_arguments *args) {
-	struct process *proc =
-	sched_get_running_thread()->mother_proc;
+	struct process *proc = sched_get_running_thread()->mother_proc;
 
 	int fdnum = (int)(args->args0);
 	struct msghdr *msg = (struct msghdr *)(args->args1);

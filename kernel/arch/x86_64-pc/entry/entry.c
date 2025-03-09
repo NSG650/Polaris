@@ -44,7 +44,7 @@ extern bool print_now;
 volatile struct limine_stack_size_request stack_size_request = {
 	.id = LIMINE_STACK_SIZE_REQUEST,
 	.revision = 0,
-	.stack_size = 32768,
+	.stack_size = CPU_STACK_SIZE,
 };
 
 static volatile struct limine_kernel_file_request limine_kernel_file_request = {

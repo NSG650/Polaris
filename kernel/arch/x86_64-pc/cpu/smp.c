@@ -164,9 +164,9 @@ void smp_init(struct limine_smp_response *smp_info) {
 		prcbs[i].cpu_number = i;
 		prcbs[i].lapic_id = cpu->lapic_id;
 		prcbs[i].cpu_tss.rsp0 =
-			(uint64_t)pmm_allocz(STACK_SIZE / PAGE_SIZE) + MEM_PHYS_OFFSET;
+			(uint64_t)pmm_allocz(CPU_STACK_SIZE / PAGE_SIZE) + MEM_PHYS_OFFSET;
 		prcbs[i].cpu_tss.ist1 =
-			(uint64_t)pmm_allocz(STACK_SIZE / PAGE_SIZE) + MEM_PHYS_OFFSET;
+			(uint64_t)pmm_allocz(CPU_STACK_SIZE / PAGE_SIZE) + MEM_PHYS_OFFSET;
 		prcbs[i].cpu_tss.ist2 = prcbs[i].cpu_tss.ist1;
 
 		if (cpu->lapic_id != smp_bsp_lapic_id) {
@@ -185,8 +185,6 @@ void smp_init(struct limine_smp_response *smp_info) {
 	is_smp = true;
 }
 
-
-
 size_t prcb_return_installed_cpus(void) {
 	return initialized_cpus;
 }
@@ -196,12 +194,10 @@ struct prcb *prcb_return_current_cpu(void) {
 	asm volatile("pushfq; pop %0" : "=rm"(flags));
 	bool interrupts_enabled = flags & (1 << 9);
 	if (interrupts_enabled && is_smp) {
-		panic("Calling prcb_return_current_cpu with interrupts enabled is a bug\n");
+		panic("Calling prcb_return_current_cpu with interrupts enabled is a "
+			  "bug\n");
 	}
-	uint64_t cpu_number;                    
-	asm volatile("mov %0, qword ptr gs:[0]" 
-				 : "=r"(cpu_number)         
-				 :                          
-				 : "memory");               
-	return &prcbs[cpu_number];                     
+	uint64_t cpu_number;
+	asm volatile("mov %0, qword ptr gs:[0]" : "=r"(cpu_number) : : "memory");
+	return &prcbs[cpu_number];
 }

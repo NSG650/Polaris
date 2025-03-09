@@ -190,8 +190,7 @@ static struct path2node_res path2node(struct vfs_node *parent,
 }
 
 static struct vfs_node *get_parent_dir(int dir_fdnum, const char *path) {
-	struct process *proc =
-	sched_get_running_thread()->mother_proc;
+	struct process *proc = sched_get_running_thread()->mother_proc;
 
 	if (path != NULL && *path == '/') {
 		return vfs_root;
@@ -504,8 +503,7 @@ bool vfs_fdnum_path_to_node(int dir_fdnum, const char *path, bool empty_path,
 }
 
 void syscall_openat(struct syscall_arguments *args) {
-	struct process *proc =
-	sched_get_running_thread()->mother_proc;
+	struct process *proc = sched_get_running_thread()->mother_proc;
 
 	int dir_fdnum = args->args0;
 	const char *path = (char *)args->args1;
@@ -590,8 +588,7 @@ void syscall_open(struct syscall_arguments *args) {
 }
 
 void syscall_fstatat(struct syscall_arguments *args) {
-	struct process *proc =
-	sched_get_running_thread()->mother_proc;
+	struct process *proc = sched_get_running_thread()->mother_proc;
 	struct stat *stat_src = NULL;
 
 	int dir_fdnum = args->args0;
@@ -645,8 +642,7 @@ void syscall_fstatat(struct syscall_arguments *args) {
 }
 
 void syscall_getcwd(struct syscall_arguments *args) {
-	struct process *proc =
-	sched_get_running_thread()->mother_proc;
+	struct process *proc = sched_get_running_thread()->mother_proc;
 
 	char *buffer = (char *)args->args0;
 	size_t len = args->args1;
@@ -663,8 +659,7 @@ void syscall_getcwd(struct syscall_arguments *args) {
 }
 
 void syscall_chdir(struct syscall_arguments *args) {
-	struct process *proc =
-	sched_get_running_thread()->mother_proc;
+	struct process *proc = sched_get_running_thread()->mother_proc;
 
 	const char *path = (char *)args->args0;
 
@@ -698,8 +693,7 @@ void syscall_chdir(struct syscall_arguments *args) {
 }
 
 void syscall_readdir(struct syscall_arguments *args) {
-	struct process *proc =
-	sched_get_running_thread()->mother_proc;
+	struct process *proc = sched_get_running_thread()->mother_proc;
 
 	int dir_fdnum = (int)args->args0;
 	void *buffer = (void *)args->args1;
@@ -924,8 +918,7 @@ void syscall_unlinkat(struct syscall_arguments *args) {
 }
 
 void syscall_mkdirat(struct syscall_arguments *args) {
-	struct process *proc =
-	sched_get_running_thread()->mother_proc;
+	struct process *proc = sched_get_running_thread()->mother_proc;
 
 	int dir_fdnum = args->args0;
 	const char *path = (char *)args->args1;

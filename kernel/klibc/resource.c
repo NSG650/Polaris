@@ -297,15 +297,13 @@ cleanup:
 }
 
 void syscall_close(struct syscall_arguments *args) {
-	struct process *proc =
-	sched_get_running_thread()->mother_proc;
+	struct process *proc = sched_get_running_thread()->mother_proc;
 
 	args->ret = fdnum_close(proc, args->args0) ? 0 : -1;
 }
 
 void syscall_read(struct syscall_arguments *args) {
-	struct process *proc =
-	sched_get_running_thread()->mother_proc;
+	struct process *proc = sched_get_running_thread()->mother_proc;
 
 	int fdnum = args->args0;
 	void *buf = (void *)args->args1;
@@ -331,8 +329,7 @@ void syscall_read(struct syscall_arguments *args) {
 }
 
 void syscall_write(struct syscall_arguments *args) {
-	struct process *proc =
-	sched_get_running_thread()->mother_proc;
+	struct process *proc = sched_get_running_thread()->mother_proc;
 
 	int fdnum = args->args0;
 	void *buf = (void *)args->args1;
@@ -359,8 +356,7 @@ void syscall_write(struct syscall_arguments *args) {
 }
 
 void syscall_seek(struct syscall_arguments *args) {
-	struct process *proc =
-	sched_get_running_thread()->mother_proc;
+	struct process *proc = sched_get_running_thread()->mother_proc;
 
 	int fdnum = args->args0;
 	off_t offset = args->args1;
@@ -417,8 +413,7 @@ void syscall_seek(struct syscall_arguments *args) {
 }
 
 void syscall_fcntl(struct syscall_arguments *args) {
-	struct process *proc =
-	sched_get_running_thread()->mother_proc;
+	struct process *proc = sched_get_running_thread()->mother_proc;
 
 	int fdnum = args->args0;
 	uint64_t request = args->args1;
@@ -468,8 +463,7 @@ void syscall_fcntl(struct syscall_arguments *args) {
 }
 
 void syscall_ioctl(struct syscall_arguments *args) {
-	struct process *proc =
-	sched_get_running_thread()->mother_proc;
+	struct process *proc = sched_get_running_thread()->mother_proc;
 
 	int fdnum = args->args0;
 	uint64_t request = args->args1;
@@ -487,8 +481,7 @@ void syscall_ioctl(struct syscall_arguments *args) {
 }
 
 void syscall_dup3(struct syscall_arguments *args) {
-	struct process *proc =
-	sched_get_running_thread()->mother_proc;
+	struct process *proc = sched_get_running_thread()->mother_proc;
 
 	int old_fdnum = args->args0;
 	int new_fdnum = args->args1;
@@ -520,8 +513,7 @@ void syscall_fchmodat(struct syscall_arguments *args) {
 }
 
 void syscall_ppoll(struct syscall_arguments *args) {
-	struct process *proc =
-	sched_get_running_thread()->mother_proc;
+	struct process *proc = sched_get_running_thread()->mother_proc;
 	struct pollfd *pfds = (struct pollfd *)(args->args0);
 	uint32_t nfds = (uint32_t)(args->args1);
 	struct timespec *timeout = (struct timespec *)(args->args2);
