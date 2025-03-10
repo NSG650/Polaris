@@ -327,7 +327,7 @@ bool munmap(struct pagemap *pagemap, uintptr_t addr, size_t length) {
 		spinlock_drop(&pagemap->lock);
 
 		for (uintptr_t j = snip_begin; j < snip_end; j += PAGE_SIZE) {
-			vmm_unmap_page(pagemap, j);
+			vmm_unmap_page(pagemap, j, true);
 		}
 
 		if (snip_length == local_range->length) {
@@ -346,7 +346,8 @@ bool munmap(struct pagemap *pagemap, uintptr_t addr, size_t length) {
 						continue;
 					}
 
-					if (!vmm_unmap_page(global_range->shadow_pagemap, j)) {
+					if (!vmm_unmap_page(global_range->shadow_pagemap, j,
+										true)) {
 						// FIXME: Page map is in inconsistent state at this
 						// point!
 						errno = EINVAL;
@@ -428,7 +429,7 @@ bool mprotect(struct pagemap *pagemap, uintptr_t addr, size_t length,
 				pt_flags |= 1ull << 63ull;
 				;
 			}
-			vmm_remap_page(pagemap, j, pt_flags);
+			vmm_remap_page(pagemap, j, pt_flags, true);
 		}
 
 		uintptr_t new_offset =

@@ -190,7 +190,11 @@ level4:
 	return true;
 }
 
-bool vmm_remap_page(struct pagemap *pagemap, uintptr_t virt, uint64_t flags) {
+bool vmm_remap_page(struct pagemap *pagemap, uintptr_t virt, uint64_t flags,
+					bool locked) {
+	if (!locked) {
+		spinlock_acquire_or_wait(&pagemap->lock);
+	}
 	size_t pml5_entry = (virt & ((uint64_t)0x1FF << 48)) >> 48;
 	size_t pml4_entry = (virt & ((uint64_t)0x1FF << 39)) >> 39;
 	size_t pml3_entry = (virt & ((uint64_t)0x1FF << 30)) >> 30;
@@ -230,6 +234,9 @@ level4:
 
 	if ((pml1[pml1_entry] & 1) == 0) {
 	die:
+		if (!locked) {
+			spinlock_drop(&pagemap->lock);
+		}
 		return false;
 	}
 
@@ -239,11 +246,16 @@ level4:
 		asm volatile("invlpg [%0]" : : "r"(virt) : "memory");
 	}
 
+	if (!locked) {
+		spinlock_drop(&pagemap->lock);
+	}
 	return true;
 }
 
-bool vmm_unmap_page(struct pagemap *pagemap, uintptr_t virt) {
-	spinlock_acquire_or_wait(&pagemap->lock);
+bool vmm_unmap_page(struct pagemap *pagemap, uintptr_t virt, bool locked) {
+	if (!locked) {
+		spinlock_acquire_or_wait(&pagemap->lock);
+	}
 
 	size_t pml5_entry = (virt & ((uint64_t)0x1FF << 48)) >> 48;
 	size_t pml4_entry = (virt & ((uint64_t)0x1FF << 39)) >> 39;
@@ -284,7 +296,9 @@ level4:
 
 	if ((pml1[pml1_entry] & 1) == 0) {
 	die:
-		spinlock_drop(&pagemap->lock);
+		if (!locked) {
+			spinlock_drop(&pagemap->lock);
+		}
 		return false;
 	}
 
@@ -294,7 +308,9 @@ level4:
 		asm volatile("invlpg [%0]" : : "r"(virt) : "memory");
 	}
 
-	spinlock_drop(&pagemap->lock);
+	if (!locked) {
+		spinlock_drop(&pagemap->lock);
+	}
 	return true;
 }
 
@@ -367,7 +383,10 @@ void vmm_page_fault_handler(registers_t *reg) {
 	if (reg->cs & 0x3)
 		swapgs();
 
+	cli();
+
 	if (mmap_handle_pf(reg)) {
+		sti();
 		if (reg->cs & 0x3)
 			swapgs();
 		return;
@@ -427,6 +446,7 @@ void vmm_page_fault_handler(registers_t *reg) {
 			   user_supervisor ? "U" : "S", reserved ? "R" : "NR",
 			   execute ? "X" : "NX");
 	}
+	sti();
 }
 
 struct pagemap *vmm_fork_pagemap(struct pagemap *pagemap) {

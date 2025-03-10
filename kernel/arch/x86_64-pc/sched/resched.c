@@ -29,60 +29,13 @@ uint64_t timer_sched_tick(void) {
 	return prcb_return_current_cpu()->sched_ticks;
 }
 
-void sched_wake_up_sleeping_threads(void) {
-	if (spinlock_acquire(&wakeup_lock)) {
-		struct thread *this = sleeping_threads;
-		while (this) {
-			if (this->sleeping_till >= timer_get_abs_count()) {
-				this->state = THREAD_READY_TO_RUN;
-				this->sleeping_till = 0;
-				sched_remove_thread_from_list(&sleeping_threads, this);
-				sched_add_thread_to_list(&thread_list, this);
-			}
-			this = this->next;
-		}
-		spinlock_drop(&wakeup_lock);
-	}
-}
-
-void sched_kill_threads_on_the_death_row(void) {
-	if (spinlock_acquire(&electric_chair_lock)) {
-		struct thread *this = threads_on_the_death_row;
-		while (this) {
-			sched_remove_thread_from_list(&threads_on_the_death_row, this);
-			struct thread *next = this->next;
-			thread_destroy_context(this);
-			kfree(this);
-			this = next;
-		}
-		spinlock_drop(&electric_chair_lock);
-	}
-}
-
-void sched_kill_processes_on_the_death_row(void) {
-	if (spinlock_acquire(&electric_chair_lock)) {
-		struct process *this = processes_on_the_death_row;
-		while (this) {
-			sched_remove_process_from_list(&processes_on_the_death_row, this);
-			struct process *next = this->next;
-			process_destroy_context(this);
-			kfree(this);
-			this = next;
-		}
-		spinlock_drop(&electric_chair_lock);
-	}
-}
-
 void resched(registers_t *reg) {
 	cli();
 
 	vmm_switch_pagemap(kernel_pagemap);
 	prcb_return_current_cpu()->sched_ticks++;
 	timer_stop_sched();
-
-	sched_wake_up_sleeping_threads();
-	sched_kill_threads_on_the_death_row();
-	sched_kill_processes_on_the_death_row();
+	timer_handler();
 
 	struct thread *running_thrd = prcb_return_current_cpu()->running_thread;
 

@@ -628,7 +628,6 @@ bool process_execve(char *path, char **argv, char **envp) {
 	proc->state = PROCESS_READY_TO_RUN;
 
 	// We no longer exist. There is no point in saving anything now.
-	cli();
 	prcb_return_current_cpu()->running_thread = NULL;
 
 	proc->auxv = auxv;
@@ -700,8 +699,6 @@ void process_kill(struct process *proc, bool crash) {
 		fdnum_close(proc, i);
 	}
 
-	event_trigger(&proc->death_event, false);
-
 	vec_push(&dead_processes, dead_proc);
 	vec_deinit(&proc->child_processes);
 	vec_deinit(&proc->process_threads);
@@ -714,13 +711,13 @@ void process_kill(struct process *proc, bool crash) {
 	sched_add_process_to_list(&processes_on_the_death_row, proc);
 	spinlock_drop(&electric_chair_lock);
 
-	sti();
+	event_trigger(&proc->death_event, false);
 
 	if (are_we_killing_ourselves) {
-		cli();
-		prcb_return_current_cpu()->running_thread = NULL;
 		sched_resched_now();
 	}
+
+	sti();
 }
 
 void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,

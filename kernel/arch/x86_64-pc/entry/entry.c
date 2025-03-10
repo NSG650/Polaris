@@ -168,7 +168,7 @@ void arch_entry(void) {
 
 	isr_register_handler(2, nmi_vector);
 	isr_register_handler(3, breakpoint_handler);
-	isr_register_handler(48, timer_int_handle);
+	isr_register_handler(48, resched);
 
 	elf_init_function_table(kernel_file->address);
 

@@ -269,13 +269,3 @@ void apic_init(void) {
 	lapic_init(madt_local_apics.data[0]->processor_id);
 	ioapic_redirect_irq(0, 48);
 }
-
-void timer_int_handle(registers_t *reg) {
-	cli();
-
-	timer_handler();
-	resched(reg);
-
-	apic_eoi();
-	sti();
-}

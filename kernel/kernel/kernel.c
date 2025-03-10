@@ -73,6 +73,54 @@ void syscall_sysinfo(struct syscall_arguments *args) {
 					: -1;
 }
 
+extern lock_t wakeup_lock;
+extern lock_t electric_chair_lock;
+extern lock_t thread_lock;
+
+void sched_wake_up_sleeping_threads(void) {
+	if (spinlock_acquire(&wakeup_lock)) {
+		struct thread *this = sleeping_threads;
+		while (this) {
+			if (this->sleeping_till >= timer_get_abs_count()) {
+				this->state = THREAD_READY_TO_RUN;
+				this->sleeping_till = 0;
+				sched_remove_thread_from_list(&sleeping_threads, this);
+				sched_add_thread_to_list(&thread_list, this);
+			}
+			this = this->next;
+		}
+		spinlock_drop(&wakeup_lock);
+	}
+}
+
+void sched_kill_threads_on_the_death_row(void) {
+	if (spinlock_acquire(&electric_chair_lock)) {
+		struct thread *this = threads_on_the_death_row;
+		while (this) {
+			sched_remove_thread_from_list(&threads_on_the_death_row, this);
+			struct thread *next = this->next;
+			thread_destroy_context(this);
+			kfree(this);
+			this = next;
+		}
+		spinlock_drop(&electric_chair_lock);
+	}
+}
+
+void sched_kill_processes_on_the_death_row(void) {
+	if (spinlock_acquire(&electric_chair_lock)) {
+		struct process *this = processes_on_the_death_row;
+		while (this) {
+			sched_remove_process_from_list(&processes_on_the_death_row, this);
+			struct process *next = this->next;
+			process_destroy_context(this);
+			kfree(this);
+			this = next;
+		}
+		spinlock_drop(&electric_chair_lock);
+	}
+}
+
 #ifdef KERNEL_ABUSE
 void kernel_dummy_sleeping_thread(void) {
 	for (;;) {
@@ -188,6 +236,9 @@ void kernel_main(void *args) {
 #endif
 
 	for (;;) {
+		sched_wake_up_sleeping_threads();
+		sched_kill_threads_on_the_death_row();
+		sched_kill_processes_on_the_death_row();
 		halt();
 		sched_resched_now();
 	}

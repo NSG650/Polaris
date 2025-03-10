@@ -30,6 +30,5 @@ void lapic_write(uint32_t reg, uint32_t value);
 uint8_t lapic_get_id(void);
 void lapic_init(uint8_t processor_id);
 void timer_sched_oneshot(uint8_t isr, uint32_t us);
-void timer_int_handle(registers_t *reg);
 
 #endif

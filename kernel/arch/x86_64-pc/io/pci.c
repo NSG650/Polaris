@@ -349,11 +349,11 @@ static bool pci_map_bar(struct pci_bar *bar) {
 
 	if (mapped == false) {
 		for (uintptr_t offset = 0; offset < end - start; offset += PAGE_SIZE) {
-			vmm_unmap_page(kernel_pagemap,
-						   start +
-							   offset); // without this vmm_map_page will fail
-										// if a part of the bar was mapped
-			vmm_unmap_page(kernel_pagemap, start + offset + MEM_PHYS_OFFSET);
+			vmm_unmap_page(kernel_pagemap, start + offset,
+						   false); // without this vmm_map_page will fail
+								   // if a part of the bar was mapped
+			vmm_unmap_page(kernel_pagemap, start + offset + MEM_PHYS_OFFSET,
+						   false);
 			if (vmm_map_page(kernel_pagemap, start + offset, start + offset,
 							 PAGE_READ | PAGE_WRITE, Size4KiB) == false ||
 				vmm_map_page(kernel_pagemap, start + offset + MEM_PHYS_OFFSET,

@@ -364,7 +364,7 @@ bool module_unload(const char *name) {
 				pmm_free((void *)(m->mappings[j].addr - MEM_PHYS_OFFSET),
 						 (m->mappings[j].size / PAGE_SIZE) + 1);
 				for (size_t k = 0; k < m->mappings[j].size; k += PAGE_SIZE) {
-					vmm_unmap_page(kernel_pagemap, m->mappings[j].addr);
+					vmm_unmap_page(kernel_pagemap, m->mappings[j].addr, false);
 				}
 			}
 			vec_remove(&modules_list, m);

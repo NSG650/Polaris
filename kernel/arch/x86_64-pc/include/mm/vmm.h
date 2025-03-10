@@ -53,8 +53,9 @@ void vmm_switch_pagemap(struct pagemap *pagemap);
 struct pagemap *vmm_new_pagemap(void);
 bool vmm_map_page(struct pagemap *pagemap, uint64_t virt_addr,
 				  uint64_t phys_addr, uint64_t flags, enum page_size pg_size);
-bool vmm_remap_page(struct pagemap *pagemap, uintptr_t virt, uint64_t flags);
-bool vmm_unmap_page(struct pagemap *pagemap, uintptr_t virt);
+bool vmm_remap_page(struct pagemap *pagemap, uintptr_t virt, uint64_t flags,
+					bool locked);
+bool vmm_unmap_page(struct pagemap *pagemap, uintptr_t virt, bool locked);
 uint64_t vmm_virt_to_phys(struct pagemap *pagemap, uint64_t virt_addr);
 uint64_t vmm_virt_to_kernel(struct pagemap *pagemap, uint64_t virt_addr);
 void vmm_page_fault_handler(registers_t *reg);
