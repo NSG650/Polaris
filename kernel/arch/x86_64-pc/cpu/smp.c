@@ -129,6 +129,7 @@ static void smp_cpu_init(struct limine_smp_info *smp_info) {
 		spinlock_drop(&smp_lock);
 		timer_sched_oneshot(48, 20000);
 		for (;;) {
+			sti();
 			halt();
 		}
 	}

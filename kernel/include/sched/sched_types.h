@@ -23,10 +23,7 @@ enum thread_states {
 	THREAD_WAITING_FOR_EVENT
 };
 
-enum process_states {
-	PROCESS_NORMAL = 0,
-	PROCESS_READY_TO_RUN
-};
+enum process_states { PROCESS_NORMAL = 0, PROCESS_READY_TO_RUN };
 
 struct process;
 

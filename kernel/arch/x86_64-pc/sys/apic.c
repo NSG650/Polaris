@@ -254,12 +254,10 @@ void timer_stop_sched(void) {
 }
 
 void timer_sched_oneshot(uint8_t isr, uint32_t us) {
-	cli();
 	timer_stop_sched();
 	lapic_write(0x320, isr | 0x20000);
 	lapic_write(0x3E0, 3);
 	lapic_write(0x380, ((tick_in_10ms * (us / 1000))) / 10);
-	sti();
 }
 
 void apic_init(void) {

@@ -386,7 +386,6 @@ void vmm_page_fault_handler(registers_t *reg) {
 	cli();
 
 	if (mmap_handle_pf(reg)) {
-		sti();
 		if (reg->cs & 0x3)
 			swapgs();
 		return;
@@ -446,7 +445,6 @@ void vmm_page_fault_handler(registers_t *reg) {
 			   user_supervisor ? "U" : "S", reserved ? "R" : "NR",
 			   execute ? "X" : "NX");
 	}
-	sti();
 }
 
 struct pagemap *vmm_fork_pagemap(struct pagemap *pagemap) {

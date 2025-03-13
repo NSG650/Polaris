@@ -44,8 +44,7 @@ void resched(registers_t *reg) {
 		running_thrd->gs_base = read_user_gs();
 		prcb_return_current_cpu()->fpu_save(running_thrd->fpu_storage);
 		running_thrd->stack = prcb_return_current_cpu()->user_stack;
-		running_thrd->kernel_stack =
-			prcb_return_current_cpu()->kernel_stack;
+		running_thrd->kernel_stack = prcb_return_current_cpu()->kernel_stack;
 		if (running_thrd->state == THREAD_NORMAL) {
 			running_thrd->state = THREAD_READY_TO_RUN;
 		}
@@ -59,8 +58,8 @@ void resched(registers_t *reg) {
 		apic_eoi();
 		prcb_return_current_cpu()->running_thread = NULL;
 		timer_sched_oneshot(48, 20000);
-		sti();
 		for (;;) {
+			sti();
 			halt();
 		}
 	}

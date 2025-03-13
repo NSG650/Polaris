@@ -199,8 +199,7 @@ void syscall_kill(struct syscall_arguments *args) {
 
 void syscall_exit(struct syscall_arguments *args) {
 	(void)args;
-	sched_get_running_thread()->mother_proc->status =
-		(uint8_t)args->args0;
+	sched_get_running_thread()->mother_proc->status = (uint8_t)args->args0;
 	process_kill(sched_get_running_thread()->mother_proc, false);
 }
 
@@ -304,7 +303,7 @@ void syscall_waitpid(struct syscall_arguments *args) {
 			args->ret = -1;
 			return;
 		}
-		
+
 		event_count = 1;
 		events[0] = &waitee_process->death_event;
 	}
@@ -648,7 +647,8 @@ void process_kill(struct process *proc, bool crash) {
 
 	spinlock_acquire_or_wait(&thread_lock);
 	for (int i = 0; i < proc->process_threads.length; i++) {
-		sched_remove_thread_from_list(&thread_list, proc->process_threads.data[i]);
+		sched_remove_thread_from_list(&thread_list,
+									  proc->process_threads.data[i]);
 		proc->process_threads.data[i]->state = THREAD_KILLED;
 		thread_destroy_context(proc->process_threads.data[i]);
 		kfree(proc->process_threads.data[i]);

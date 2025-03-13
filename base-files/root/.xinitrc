@@ -1,2 +1,2 @@
-exec /usr/bin/dwm
+exec /usr/bin/twm
 
