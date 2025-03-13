@@ -123,6 +123,7 @@ GitHub.sublime-settings
 /host-builds
 /host-pkgs
 /pkgs
+/pkgs_tmp
 /sources
 /sysroot
 /.jinx-cache

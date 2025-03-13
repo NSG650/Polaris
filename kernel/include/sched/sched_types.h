@@ -19,15 +19,13 @@ enum thread_states {
 	THREAD_NORMAL = 0,
 	THREAD_READY_TO_RUN,
 	THREAD_SLEEPING,
-	THREAD_WAITING_FOR_FUTEX,
+	THREAD_KILLED,
 	THREAD_WAITING_FOR_EVENT
 };
 
 enum process_states {
 	PROCESS_NORMAL = 0,
-	PROCESS_READY_TO_RUN,
-	PROCESS_WAITING_ON_ANOTHER_PROCESS,
-	PROCESS_BLOCKED
+	PROCESS_READY_TO_RUN
 };
 
 struct process;
@@ -58,14 +56,6 @@ struct thread {
 	struct thread *next;
 };
 
-struct dead_process {
-	int64_t pid;
-	uint8_t exit_code;
-	bool was_it_killed;
-	struct process *parent_process;
-};
-
-typedef vec_t(struct dead_process *) dead_process_vec_t;
 typedef vec_t(struct thread *) thread_vec_t;
 typedef vec_t(struct process *) process_vec_t;
 
@@ -86,12 +76,13 @@ struct process {
 	process_vec_t child_processes;
 	struct auxval auxv;
 	struct event death_event;
-	struct dead_process waitee;
+	uint8_t status;
+	bool is_waited_on;
 	char name[256];
 	struct process *next;
 };
 
 #define CPU_STACK_SIZE (32 * 1024)
-#define STACK_SIZE (1024 * 1024 * 2)
+#define STACK_SIZE (1024 * 1024 * 8)
 
 #endif

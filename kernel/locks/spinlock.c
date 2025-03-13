@@ -32,7 +32,6 @@ static void spinlock_spinning_for_too_long(lock_t *spin) {
 	char string[20] = {0};
 	ultoa((uintptr_t)spin->last_owner, string, 16);
 	kputs_(string);
-	kputs_(string);
 	kputs_(" deadlocked at: 0x");
 	memzero(string, 20);
 	ultoa((uintptr_t)last_addr, string, 16);

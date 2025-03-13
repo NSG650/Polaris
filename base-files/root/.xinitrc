@@ -1,0 +1,2 @@
+exec /usr/bin/dwm
+

@@ -299,9 +299,9 @@ void thread_destroy_context(struct thread *thrd) {
 	asm volatile("pushfq; pop %0" : "=rm"(flags));
 	bool old_state = flags & (1 << 9);
 	cli();
-	kfree((void *)(thrd->kernel_stack - STACK_SIZE));
+	kfree((void *)(thrd->kernel_stack - CPU_STACK_SIZE));
 	if (thrd->reg.cs & 0x3) {
-		kfree((void *)(thrd->pf_stack - STACK_SIZE));
+		kfree((void *)(thrd->pf_stack - CPU_STACK_SIZE));
 	}
 	pmm_free(
 		(void *)((uint64_t)thrd->fpu_storage - MEM_PHYS_OFFSET),

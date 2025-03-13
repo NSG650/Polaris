@@ -32,7 +32,6 @@ extern struct process *process_list;
 extern struct thread *threads_on_the_death_row;
 extern struct thread *sleeping_threads;
 extern struct process *processes_on_the_death_row;
-extern dead_process_vec_t dead_processes;
 extern struct resource *std_console_device;
 
 void sched_resched_now(void);

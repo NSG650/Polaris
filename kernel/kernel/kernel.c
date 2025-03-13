@@ -64,7 +64,7 @@ void syscall_sysinfo(struct syscall_arguments *args) {
 	to_user.totalswap = 0;
 	to_user.freeswap = 0;
 	extern int64_t pid;
-	to_user.procs = (uint16_t)(pid - dead_processes.length);
+	to_user.procs = (uint16_t)(pid);
 	to_user.mem_unit = 0;
 
 	args->ret = syscall_helper_copy_to_user(args->args0, &to_user,
@@ -74,8 +74,6 @@ void syscall_sysinfo(struct syscall_arguments *args) {
 }
 
 extern lock_t wakeup_lock;
-extern lock_t electric_chair_lock;
-extern lock_t thread_lock;
 
 void sched_wake_up_sleeping_threads(void) {
 	if (spinlock_acquire(&wakeup_lock)) {
@@ -90,34 +88,6 @@ void sched_wake_up_sleeping_threads(void) {
 			this = this->next;
 		}
 		spinlock_drop(&wakeup_lock);
-	}
-}
-
-void sched_kill_threads_on_the_death_row(void) {
-	if (spinlock_acquire(&electric_chair_lock)) {
-		struct thread *this = threads_on_the_death_row;
-		while (this) {
-			sched_remove_thread_from_list(&threads_on_the_death_row, this);
-			struct thread *next = this->next;
-			thread_destroy_context(this);
-			kfree(this);
-			this = next;
-		}
-		spinlock_drop(&electric_chair_lock);
-	}
-}
-
-void sched_kill_processes_on_the_death_row(void) {
-	if (spinlock_acquire(&electric_chair_lock)) {
-		struct process *this = processes_on_the_death_row;
-		while (this) {
-			sched_remove_process_from_list(&processes_on_the_death_row, this);
-			struct process *next = this->next;
-			process_destroy_context(this);
-			kfree(this);
-			this = next;
-		}
-		spinlock_drop(&electric_chair_lock);
 	}
 }
 
@@ -237,8 +207,6 @@ void kernel_main(void *args) {
 
 	for (;;) {
 		sched_wake_up_sleeping_threads();
-		sched_kill_threads_on_the_death_row();
-		sched_kill_processes_on_the_death_row();
 		halt();
 		sched_resched_now();
 	}

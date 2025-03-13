@@ -28,29 +28,6 @@ void syscall_handler(registers_t *reg) {
 
 	syscall_handle(&args);
 
-	// A user thread must be killed only after it returns back to userspace
-	// This is done such that if the user thread is called to be killed while it
-	// is in kernel space due to a syscall It can do its entire work in kernel
-	// space finally cleaning up resources and freeing locks it held
-
-	cli();
-	if (prcb_return_current_cpu()->running_thread->marked_for_execution) {
-		// risky put a lock here
-		struct process *mother_proc =
-			prcb_return_current_cpu()->running_thread->mother_proc;
-		vec_remove(&mother_proc->process_threads,
-				   prcb_return_current_cpu()->running_thread);
-		if (mother_proc->process_threads.length < 1) {
-			process_kill(mother_proc, false);
-		}
-		sched_remove_thread_from_list(
-			&thread_list, prcb_return_current_cpu()->running_thread);
-		sched_add_thread_to_list(&threads_on_the_death_row,
-								 prcb_return_current_cpu()->running_thread);
-		sched_resched_now();
-	}
-	sti();
-
 	int64_t ret = (int64_t)args.ret;
 	if (ret < 0) {
 		ret = -((int)errno);

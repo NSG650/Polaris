@@ -18,7 +18,6 @@ struct process *process_list = NULL;
 struct thread *sleeping_threads = NULL;
 struct thread *threads_on_the_death_row = NULL;
 struct process *processes_on_the_death_row = NULL;
-dead_process_vec_t dead_processes = {0};
 
 int64_t tid = 0;
 int64_t pid = 0;
@@ -26,7 +25,6 @@ int64_t pid = 0;
 lock_t thread_lock = {0};
 lock_t process_lock = {0};
 lock_t wakeup_lock = {0};
-lock_t electric_chair_lock = {0};
 
 struct resource *std_console_device = NULL;
 
@@ -59,6 +57,11 @@ struct thread *sched_get_next_thread(struct thread *thrd) {
 	}
 
 	while (this) {
+		if (this->marked_for_execution) {
+			this = this->next;
+			continue;
+		}
+
 		if (this->state != THREAD_READY_TO_RUN) {
 			this = this->next;
 			continue;
@@ -90,23 +93,6 @@ static struct process *sched_pid_to_process(int64_t p) {
 		if (this->pid == p)
 			return this;
 		this = this->next;
-	}
-	return NULL;
-}
-
-static struct dead_process *
-sched_return_recently_dead_child_process(struct process *parent_process) {
-	for (int i = dead_processes.length - 1; i >= 0; i--) {
-		if (dead_processes.data[i]->parent_process == parent_process)
-			return dead_processes.data[i];
-	}
-	return NULL;
-}
-
-static struct dead_process *sched_pid_to_dead_child_process(int64_t p) {
-	for (int i = 0; i < dead_processes.length; i++) {
-		if (dead_processes.data[i]->pid == p)
-			return dead_processes.data[i];
 	}
 	return NULL;
 }
@@ -213,7 +199,7 @@ void syscall_kill(struct syscall_arguments *args) {
 
 void syscall_exit(struct syscall_arguments *args) {
 	(void)args;
-	sched_get_running_thread()->mother_proc->waitee.exit_code =
+	sched_get_running_thread()->mother_proc->status =
 		(uint8_t)args->args0;
 	process_kill(sched_get_running_thread()->mother_proc, false);
 }
@@ -288,7 +274,7 @@ void syscall_waitpid(struct syscall_arguments *args) {
 		return;
 	}
 
-	struct process *waitee_proc = NULL;
+	struct process *waitee_process = NULL;
 	struct event **events = NULL;
 	size_t event_count = 0;
 
@@ -297,6 +283,7 @@ void syscall_waitpid(struct syscall_arguments *args) {
 						 waiter_proc->child_processes.length);
 		event_count = waiter_proc->child_processes.length;
 		for (int i = 0; i < waiter_proc->child_processes.length; i++) {
+			waiter_proc->child_processes.data[i]->is_waited_on = true;
 			events[i] = &waiter_proc->child_processes.data[i]->death_event;
 		}
 	}
@@ -305,17 +292,21 @@ void syscall_waitpid(struct syscall_arguments *args) {
 		events = kmalloc(sizeof(struct event *));
 		for (int i = 0; i < waiter_proc->child_processes.length; i++) {
 			if (waiter_proc->child_processes.data[i]->pid == pid_to_wait_on) {
-				waitee_proc = waiter_proc->child_processes.data[i];
+				waiter_proc->child_processes.data[i]->is_waited_on = true;
+				waitee_process = waiter_proc->child_processes.data[i];
 				break;
 			}
 		}
-		if (waitee_proc == NULL) {
+
+		if (waitee_process == NULL) {
 			errno = ECHILD;
+			kfree(events);
 			args->ret = -1;
 			return;
 		}
+		
 		event_count = 1;
-		events[0] = &waitee_proc->death_event;
+		events[0] = &waitee_process->death_event;
 	}
 
 	bool block = (mode & WNOHANG) == 0;
@@ -333,19 +324,18 @@ void syscall_waitpid(struct syscall_arguments *args) {
 		}
 	}
 
-	struct dead_process *dead_proc = NULL;
-	
+	struct process *dead_proc = waiter_proc->child_processes.data[which];
+
+	*status = dead_proc->status;
+	args->ret = dead_proc->pid;
+
+	vec_remove(&waiter_proc->child_processes, dead_proc);
+
 	spinlock_acquire_or_wait(&process_lock);
-	if (pid_to_wait_on == -1) {
-		dead_proc = sched_return_recently_dead_child_process(waiter_proc);
-	} else {
-		dead_proc = sched_pid_to_dead_child_process(pid_to_wait_on);
-	}
+	sched_remove_process_from_list(&process_list, dead_proc);
 	spinlock_drop(&process_lock);
 
 	kfree(events);
-	*status = dead_proc->exit_code;
-	args->ret = dead_proc->pid;
 }
 
 void syscall_thread_new(struct syscall_arguments *args) {
@@ -382,8 +372,6 @@ void syscall_thread_exit(struct syscall_arguments *args) {
 }
 
 void sched_init(uint64_t args) {
-	vec_init(&dead_processes);
-
 	syscall_register_handler(0x27, syscall_getpid);
 	syscall_register_handler(0x67, syscall_puts);
 	syscall_register_handler(0x6e, syscall_getppid);
@@ -401,7 +389,7 @@ void sched_init(uint64_t args) {
 
 	futex_init();
 
-	process_create("kernel_tasks", PROCESS_READY_TO_RUN, 20000,
+	process_create("kernel_tasks", PROCESS_READY_TO_RUN, 5000,
 				   (uintptr_t)kernel_main, args, false, NULL);
 	sched_runit = true;
 }
@@ -651,29 +639,21 @@ void process_kill(struct process *proc, bool crash) {
 		panic("Attempted to kill init!\n");
 	}
 
-	struct dead_process *dead_proc = kmalloc(sizeof(struct dead_process));
-	dead_proc->parent_process = proc->parent_process;
-	dead_proc->pid = proc->pid;
-
 	bool are_we_killing_ourselves = false;
 	if (sched_get_running_thread()->mother_proc == proc) {
+		prcb_return_current_cpu()->running_thread = NULL;
 		are_we_killing_ourselves = true;
+		vmm_switch_pagemap(kernel_pagemap);
 	}
 
 	spinlock_acquire_or_wait(&thread_lock);
-	spinlock_acquire_or_wait(&electric_chair_lock);
 	for (int i = 0; i < proc->process_threads.length; i++) {
-		sched_remove_thread_from_list(&thread_list,
-									  proc->process_threads.data[i]);
-		sched_add_thread_to_list(&threads_on_the_death_row,
-								 proc->process_threads.data[i]);
+		sched_remove_thread_from_list(&thread_list, proc->process_threads.data[i]);
+		proc->process_threads.data[i]->state = THREAD_KILLED;
+		thread_destroy_context(proc->process_threads.data[i]);
+		kfree(proc->process_threads.data[i]);
 	}
-	spinlock_drop(&electric_chair_lock);
 	spinlock_drop(&thread_lock);
-
-	if (proc->parent_process) {
-		vec_remove(&proc->parent_process->child_processes, proc);
-	}
 
 	struct process *init_proc = process_list->next;
 
@@ -683,15 +663,6 @@ void process_kill(struct process *proc, bool crash) {
 		vec_push(&init_proc->child_processes, child_proc);
 	}
 
-	if (are_we_killing_ourselves && !crash) {
-		dead_proc->exit_code = proc->waitee.exit_code;
-		dead_proc->was_it_killed = false;
-
-	} else {
-		dead_proc->exit_code = -1;
-		dead_proc->was_it_killed = true;
-	}
-
 	for (int i = 0; i < MAX_FDS; i++) {
 		if (proc->fds[i] == NULL) {
 			continue;
@@ -699,21 +670,24 @@ void process_kill(struct process *proc, bool crash) {
 		fdnum_close(proc, i);
 	}
 
-	vec_push(&dead_processes, dead_proc);
 	vec_deinit(&proc->child_processes);
 	vec_deinit(&proc->process_threads);
 
-	spinlock_acquire_or_wait(&process_lock);
-	sched_remove_process_from_list(&process_list, proc);
-	spinlock_drop(&process_lock);
-
-	spinlock_acquire_or_wait(&electric_chair_lock);
-	sched_add_process_to_list(&processes_on_the_death_row, proc);
-	spinlock_drop(&electric_chair_lock);
-
 	event_trigger(&proc->death_event, false);
 
-	if (are_we_killing_ourselves) {
+	// Leave the waiter to clean us up
+	if (!proc->is_waited_on) {
+		if (proc->parent_process) {
+			vec_remove(&proc->parent_process->child_processes, proc);
+		}
+
+		spinlock_acquire_or_wait(&process_lock);
+		sched_remove_process_from_list(&process_list, proc);
+		spinlock_drop(&process_lock);
+	}
+
+	process_destroy_context(proc);
+	if (are_we_killing_ourselves || crash) {
 		sched_resched_now();
 	}
 
@@ -770,7 +744,6 @@ void thread_execve(struct process *proc, struct thread *thrd,
 	void *save_nex = thrd->next;
 	memzero(thrd, sizeof(struct thread));
 
-	thrd->tid = tid++;
 	thrd->state = THREAD_READY_TO_RUN;
 	thrd->runtime = proc->runtime;
 	spinlock_init(thrd->lock);
@@ -797,18 +770,11 @@ void thread_sleep(struct thread *thrd, uint64_t ns) {
 	sched_add_thread_to_list(&sleeping_threads, thrd);
 	spinlock_drop(&wakeup_lock);
 
-	spinlock_drop(&thrd->lock);
 	sched_resched_now();
 }
 
 void thread_kill(struct thread *thrd, bool reschedule) {
 	struct process *mother_proc = thrd->mother_proc;
-
-	// A user thread should only be killed when it returns back to userspace.
-	if (mother_proc != process_list) {
-		thrd->marked_for_execution = true;
-		return;
-	}
 
 	vec_remove(&mother_proc->process_threads, thrd);
 	if (mother_proc->process_threads.length < 1) {
@@ -819,9 +785,9 @@ void thread_kill(struct thread *thrd, bool reschedule) {
 	sched_remove_thread_from_list(&thread_list, thrd);
 	spinlock_drop(&thread_lock);
 
-	spinlock_acquire_or_wait(&electric_chair_lock);
-	sched_add_thread_to_list(&threads_on_the_death_row, thrd);
-	spinlock_drop(&electric_chair_lock);
+	thrd->state = THREAD_KILLED;
+	thread_destroy_context(thrd);
+	kfree(thrd);
 
 	if (reschedule) {
 		sched_resched_now();
@@ -842,9 +808,9 @@ void thread_kill_now(struct thread *thrd) {
 	sched_remove_thread_from_list(&thread_list, thrd);
 	spinlock_drop(&thread_lock);
 
-	spinlock_acquire_or_wait(&electric_chair_lock);
-	sched_add_thread_to_list(&threads_on_the_death_row, thrd);
-	spinlock_drop(&electric_chair_lock);
+	thrd->state = THREAD_KILLED;
+	thread_destroy_context(thrd);
+	kfree(thrd);
 
 	sched_resched_now();
 }

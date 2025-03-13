@@ -1,0 +1,37 @@
+diff --git st-clean/Makefile st-workdir/Makefile
+index 15db421..713ec57 100644
+--- st-clean/Makefile
++++ st-workdir/Makefile
+@@ -41,7 +41,7 @@ install: st
+ 	mkdir -p $(DESTDIR)$(MANPREFIX)/man1
+ 	sed "s/VERSION/$(VERSION)/g" < st.1 > $(DESTDIR)$(MANPREFIX)/man1/st.1
+ 	chmod 644 $(DESTDIR)$(MANPREFIX)/man1/st.1
+-	tic -sx st.info
++	#tic -sx st.info
+ 	@echo Please see the README file regarding the terminfo entry of st.
+ 
+ uninstall:
+diff --git st-clean/st.c st-workdir/st.c
+index b9f66e7..8d8b1f9 100644
+--- st-clean/st.c
++++ st-workdir/st.c
+@@ -16,17 +16,12 @@
+ #include <termios.h>
+ #include <unistd.h>
+ #include <wchar.h>
++#include <sys/ttydefaults.h>
+ 
+ #include "st.h"
+ #include "win.h"
+ 
+-#if   defined(__linux)
+  #include <pty.h>
+-#elif defined(__OpenBSD__) || defined(__NetBSD__) || defined(__APPLE__)
+- #include <util.h>
+-#elif defined(__FreeBSD__) || defined(__DragonFly__)
+- #include <libutil.h>
+-#endif
+ 
+ /* Arbitrary sizes */
+ #define UTF_INVALID   0xFFFD
+ 
