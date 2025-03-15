@@ -73,7 +73,6 @@ struct process {
 	struct auxval auxv;
 	struct event death_event;
 	uint8_t status;
-	bool is_waited_on;
 	char name[256];
 	struct process *next;
 };

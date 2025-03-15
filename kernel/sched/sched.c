@@ -228,10 +228,8 @@ void syscall_execve(struct syscall_arguments *args) {
 }
 
 void syscall_uname(struct syscall_arguments *args) {
-	args->ret = syscall_helper_copy_to_user(args->args0, &system_uname,
-											sizeof(struct utsname))
-					? 0
-					: -1;
+	args->ret = 0;
+	memcpy((struct utsname *)args->args0, &system_uname, sizeof(struct utsname));
 }
 
 void syscall_sethostname(struct syscall_arguments *args) {
@@ -240,35 +238,34 @@ void syscall_sethostname(struct syscall_arguments *args) {
 		count = 65;
 	}
 	memzero(&system_uname.nodename, 65);
-	args->ret = syscall_helper_copy_from_user(args->args0,
-											  &system_uname.nodename, count)
-					? 0
-					: -1;
+	memcpy(&system_uname.nodename, (char *)args->args0, count);
+	args->ret = 0;
 }
 
 void syscall_waitpid(struct syscall_arguments *args) {
+	cli();
 #define WNOHANG 1
 	int pid_to_wait_on = (int)args->args0;
-	int *status = (int *)syscall_helper_user_to_kernel_address(args->args1);
+	int *status = (int *)(args->args1);
 	int mode = (int)args->args2;
+	args->ret = -1;
 
 	if (!status) {
 		errno = EFAULT;
-		args->ret = -1;
 		return;
 	}
 
 	struct process *waiter_proc = sched_get_running_thread()->mother_proc;
 
+	spinlock_acquire_or_wait(&waiter_proc->lock);
+
 	if (!waiter_proc->child_processes.length) {
 		errno = ECHILD;
-		args->ret = -1;
 		return;
 	}
 
 	if (pid_to_wait_on < -1 || pid_to_wait_on == 0) {
 		errno = EINVAL;
-		args->ret = -1;
 		return;
 	}
 
@@ -281,7 +278,6 @@ void syscall_waitpid(struct syscall_arguments *args) {
 						 waiter_proc->child_processes.length);
 		event_count = waiter_proc->child_processes.length;
 		for (int i = 0; i < waiter_proc->child_processes.length; i++) {
-			waiter_proc->child_processes.data[i]->is_waited_on = true;
 			events[i] = &waiter_proc->child_processes.data[i]->death_event;
 		}
 	}
@@ -290,7 +286,6 @@ void syscall_waitpid(struct syscall_arguments *args) {
 		events = kmalloc(sizeof(struct event *));
 		for (int i = 0; i < waiter_proc->child_processes.length; i++) {
 			if (waiter_proc->child_processes.data[i]->pid == pid_to_wait_on) {
-				waiter_proc->child_processes.data[i]->is_waited_on = true;
 				waitee_process = waiter_proc->child_processes.data[i];
 				break;
 			}
@@ -307,6 +302,9 @@ void syscall_waitpid(struct syscall_arguments *args) {
 		events[0] = &waitee_process->death_event;
 	}
 
+	spinlock_drop(&waiter_proc->lock);
+
+	sti();
 	bool block = (mode & WNOHANG) == 0;
 	ssize_t which = event_await(events, event_count, block);
 
@@ -317,12 +315,13 @@ void syscall_waitpid(struct syscall_arguments *args) {
 			return;
 		} else {
 			errno = EINTR;
-			args->ret = -1;
 			return;
 		}
 	}
 
-	if (!waitee_process) {
+	cli();
+	spinlock_acquire_or_wait(&waiter_proc->lock);
+	if (waitee_process == NULL) {
 		waitee_process = waiter_proc->child_processes.data[which];
 	}
 
@@ -330,11 +329,13 @@ void syscall_waitpid(struct syscall_arguments *args) {
 	args->ret = waitee_process->pid;
 
 	vec_remove(&waiter_proc->child_processes, waitee_process);
+	spinlock_drop(&waiter_proc->lock);
 
 	spinlock_acquire_or_wait(&process_lock);
 	sched_remove_process_from_list(&process_list, waitee_process);
 	spinlock_drop(&process_lock);
 
+	kfree(events);
 	kfree(waitee_process);
 }
 
@@ -390,7 +391,7 @@ void sched_init(uint64_t args) {
 
 	futex_init();
 
-	process_create("kernel_tasks", PROCESS_READY_TO_RUN, 20000,
+	process_create("kernel_tasks", PROCESS_READY_TO_RUN, 5000,
 				   (uintptr_t)kernel_main, args, false, NULL);
 	sched_runit = true;
 }
@@ -419,7 +420,9 @@ void process_create(char *name, uint8_t state, uint64_t runtime,
 		}
 		proc->umask = parent_process->umask;
 		proc->mmap_anon_base = parent_process->mmap_anon_base;
+		spinlock_acquire_or_wait(&proc->lock);
 		vec_push(&parent_process->child_processes, proc);
+		spinlock_drop(&proc->lock);
 	} else {
 		proc->umask = S_IWGRP | S_IWOTH;
 		proc->mmap_anon_base = MMAP_ANON_BASE;
@@ -538,7 +541,9 @@ int64_t process_fork(struct process *proc, struct thread *thrd) {
 	vec_init(&fproc->child_processes);
 	vec_init(&fproc->process_threads);
 
+	spinlock_acquire_or_wait(&proc->lock);
 	vec_push(&proc->child_processes, fproc);
+	spinlock_drop(&proc->lock);
 
 	spinlock_acquire_or_wait(&process_lock);
 	sched_add_process_to_list(&process_list, fproc);
@@ -635,14 +640,13 @@ bool process_execve(char *path, char **argv, char **envp) {
 }
 
 void process_kill(struct process *proc, bool crash) {
-	cli();
-
 	if (proc->pid < 2) {
 		panic("Attempted to kill init!\n");
 	}
 
 	bool are_we_killing_ourselves = false;
 	if (sched_get_running_thread()->mother_proc == proc) {
+		cli();
 		prcb_return_current_cpu()->running_thread = NULL;
 		are_we_killing_ourselves = true;
 		vmm_switch_pagemap(kernel_pagemap);
@@ -659,12 +663,13 @@ void process_kill(struct process *proc, bool crash) {
 	spinlock_drop(&thread_lock);
 
 	struct process *init_proc = process_list->next;
-
+	spinlock_acquire_or_wait(&init_proc->lock);
 	for (int i = 0; i < proc->child_processes.length; i++) {
 		struct process *child_proc = proc->child_processes.data[i];
 		child_proc->parent_process = init_proc;
 		vec_push(&init_proc->child_processes, child_proc);
 	}
+	spinlock_drop(&init_proc->lock);
 
 	for (int i = 0; i < MAX_FDS; i++) {
 		if (proc->fds[i] == NULL) {
@@ -696,8 +701,6 @@ void process_kill(struct process *proc, bool crash) {
 	if (are_we_killing_ourselves || crash) {
 		sched_resched_now();
 	}
-
-	sti();
 }
 
 void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,

@@ -55,7 +55,7 @@ void syscall_puts(struct syscall_arguments *args) {
 		KERNEL_ARGS_SUPPRESS_USER_DEBUG_MESSAGES) {
 		return;
 	}
-	char *str = (char *)syscall_helper_user_to_kernel_address(args->args0);
+	char *str = (char *)(args->args0);
 	spinlock_acquire_or_wait(&write_lock);
 	if (str) {
 		kputs(str);
