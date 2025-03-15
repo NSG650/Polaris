@@ -229,7 +229,8 @@ void syscall_execve(struct syscall_arguments *args) {
 
 void syscall_uname(struct syscall_arguments *args) {
 	args->ret = 0;
-	memcpy((struct utsname *)args->args0, &system_uname, sizeof(struct utsname));
+	memcpy((struct utsname *)args->args0, &system_uname,
+		   sizeof(struct utsname));
 }
 
 void syscall_sethostname(struct syscall_arguments *args) {
@@ -766,11 +767,11 @@ void thread_execve(struct process *proc, struct thread *thrd,
 }
 
 void thread_sleep(struct thread *thrd, uint64_t ns) {
-	thrd->state = THREAD_SLEEPING;
 	thrd->sleeping_till = timer_get_sleep_ns(ns);
 
 	cli();
 	spinlock_acquire_or_wait(&thread_lock);
+	thrd->state = THREAD_SLEEPING;
 	sched_remove_thread_from_list(&thread_list, thrd);
 	spinlock_drop(&thread_lock);
 	sti();

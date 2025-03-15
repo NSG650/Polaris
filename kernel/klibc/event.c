@@ -8,6 +8,8 @@
 #include <sys/prcb.h>
 #include <types.h>
 
+extern lock_t thread_lock;
+
 static ssize_t check_for_pending(struct event **events, size_t num_events) {
 	for (size_t i = 0; i < num_events; i++) {
 		if (events[i]->pending > 0) {
@@ -91,11 +93,11 @@ ssize_t event_await(struct event **events, size_t num_events, bool block) {
 		goto cleanup;
 	}
 
+	spinlock_acquire_or_wait(&thread_lock);
 	attach_listeners(events, num_events, thread);
 	thread->state = THREAD_WAITING_FOR_EVENT;
-	//	sched_remove_thread_from_list(&thread_list, thread);
-	//	sched_add_thread_to_list(&waiting_on_event_threads, thread);
 	unlock_events(events, num_events);
+	spinlock_drop(&thread_lock);
 	sched_resched_now();
 
 	cli();
@@ -130,11 +132,11 @@ size_t event_trigger(struct event *event, bool drop) {
 	}
 	for (size_t i = 0; i < event->listeners_i; i++) {
 		struct event_listener *listener = &event->listeners[i];
+		spinlock_acquire_or_wait(&thread_lock);
 		struct thread *thread = listener->thread;
 		thread->which_event = listener->which;
 		thread->state = THREAD_READY_TO_RUN;
-		//	sched_remove_thread_from_list(&waiting_on_event_threads, thread);
-		//	sched_add_thread_to_list(&thread_list, thread);
+		spinlock_drop(&thread_lock);
 	}
 	ret = event->listeners_i;
 	event->listeners_i = 0;
