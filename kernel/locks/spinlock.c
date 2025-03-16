@@ -37,10 +37,6 @@ static void spinlock_spinning_for_too_long(lock_t *spin) {
 	ultoa((uintptr_t)last_addr, string, 16);
 	kputs_(string);
 	kputs_("\n");
-
-	if (sched_runit) {
-		sched_resched_now();
-	}
 }
 
 bool spinlock_acquire(lock_t *spin) {

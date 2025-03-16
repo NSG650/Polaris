@@ -54,7 +54,7 @@ void isr_install(void) {
 	idt_set_gate(45, isr45, 0);
 	idt_set_gate(46, isr46, 0);
 	idt_set_gate(47, isr47, 0);
-	idt_set_gate(48, isr48, 1);
+	idt_set_gate(48, isr48, 4);
 	idt_set_gate(49, isr49, 0);
 	idt_set_gate(50, isr50, 0);
 	idt_set_gate(51, isr51, 0);

@@ -26,6 +26,7 @@ static void attach_listeners(struct event **events, size_t num_events,
 
 	for (size_t i = 0; i < num_events; i++) {
 		struct event *event = events[i];
+
 		if (event->listeners_i == EVENT_MAX_LISTENERS) {
 			panic("Event listeners exhausted");
 		}
@@ -113,6 +114,10 @@ cleanup:
 }
 
 size_t event_trigger(struct event *event, bool drop) {
+	if (!event) {
+		return 0;		
+	}
+
 #if defined(__x86_64__)
 	uint64_t flags = 0;
 	asm volatile("pushfq; pop %0" : "=rm"(flags));

@@ -244,7 +244,6 @@ void syscall_sethostname(struct syscall_arguments *args) {
 }
 
 void syscall_waitpid(struct syscall_arguments *args) {
-	cli();
 #define WNOHANG 1
 	int pid_to_wait_on = (int)args->args0;
 	int *status = (int *)(args->args1);
@@ -305,7 +304,6 @@ void syscall_waitpid(struct syscall_arguments *args) {
 
 	spinlock_drop(&waiter_proc->lock);
 
-	sti();
 	bool block = (mode & WNOHANG) == 0;
 	ssize_t which = event_await(events, event_count, block);
 
@@ -320,7 +318,6 @@ void syscall_waitpid(struct syscall_arguments *args) {
 		}
 	}
 
-	cli();
 	spinlock_acquire_or_wait(&waiter_proc->lock);
 	if (waitee_process == NULL) {
 		waitee_process = waiter_proc->child_processes.data[which];
@@ -646,9 +643,16 @@ void process_kill(struct process *proc, bool crash) {
 	}
 
 	bool are_we_killing_ourselves = false;
+	
+	for (int i = 0; i < MAX_FDS; i++) {
+		if (proc->fds[i] == NULL) {
+			continue;
+		}
+		fdnum_close(proc, i);
+	}
+
 	if (sched_get_running_thread()->mother_proc == proc) {
 		cli();
-		prcb_return_current_cpu()->running_thread = NULL;
 		are_we_killing_ourselves = true;
 		vmm_switch_pagemap(kernel_pagemap);
 	}
@@ -672,13 +676,6 @@ void process_kill(struct process *proc, bool crash) {
 	}
 	spinlock_drop(&init_proc->lock);
 
-	for (int i = 0; i < MAX_FDS; i++) {
-		if (proc->fds[i] == NULL) {
-			continue;
-		}
-		fdnum_close(proc, i);
-	}
-
 	vec_deinit(&proc->child_processes);
 	vec_deinit(&proc->process_threads);
 
@@ -700,6 +697,7 @@ void process_kill(struct process *proc, bool crash) {
 #endif
 
 	if (are_we_killing_ourselves || crash) {
+		prcb_return_current_cpu()->running_thread = NULL;
 		sched_resched_now();
 	}
 }

@@ -45,6 +45,8 @@ void resched(registers_t *reg) {
 			running_thrd->state = THREAD_READY_TO_RUN;
 		}
 		running_thrd->last_scheduled = timer_count();
+		running_thrd->kernel_stack = prcb_return_current_cpu()->kernel_stack;
+		running_thrd->stack = prcb_return_current_cpu()->user_stack;
 		spinlock_drop(&running_thrd->lock);
 	}
 
@@ -61,7 +63,6 @@ void resched(registers_t *reg) {
 	}
 
 	prcb_return_current_cpu()->running_thread = running_thrd;
-	prcb_return_current_cpu()->cpu_tss.rsp0 = running_thrd->kernel_stack;
 	prcb_return_current_cpu()->cpu_tss.ist2 = running_thrd->pf_stack;
 
 	prcb_return_current_cpu()->kernel_stack = running_thrd->kernel_stack;
@@ -73,7 +74,6 @@ void resched(registers_t *reg) {
 	// set_user_gs(running_thrd->gs_base);
 
 	vmm_switch_pagemap(running_thrd->mother_proc->process_pagemap);
-	write_cr("3", read_cr("3"));
 
 	apic_eoi();
 	timer_sched_oneshot(48, running_thrd->runtime);

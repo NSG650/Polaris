@@ -70,7 +70,7 @@ void process_wait_on_processes(struct process *waiter, process_vec_t *waitees);
 #if defined(__x86_64__)
 static inline struct thread *sched_get_running_thread(void) {
 	struct thread *ret = NULL;
-	asm volatile("mov %0, qword ptr gs:[24]" : "=r"(ret));
+	asm volatile("mov %0, qword ptr gs:[24]" : "=r"(ret) :: "memory");
 	return ret;
 }
 #endif
