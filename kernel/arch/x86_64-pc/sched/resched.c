@@ -16,8 +16,9 @@ extern uint32_t smp_bsp_lapic_id;
 extern void resched_context_switch(registers_t *reg);
 
 void sched_resched_now(void) {
+	cli();
+	apic_send_ipi(prcb_return_current_cpu()->lapic_id, 48);
 	sti();
-	asm volatile("int 0x30");
 }
 
 uint64_t timer_sched_tick(void) {

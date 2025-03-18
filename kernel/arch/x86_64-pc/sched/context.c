@@ -33,8 +33,8 @@ void thread_setup_context(struct thread *thrd, uintptr_t pc_address,
 		thrd->reg.rsp = proc->stack_top;
 		proc->stack_top -= STACK_SIZE;
 
-		thrd->pf_stack = (uint64_t)kmalloc(CPU_STACK_SIZE);
-		thrd->pf_stack += CPU_STACK_SIZE;
+		thrd->pf_stack = ((uint64_t)pmm_allocz(CPU_STACK_SIZE / PAGE_SIZE) +
+						  MEM_PHYS_OFFSET + CPU_STACK_SIZE);
 
 		prcb_return_current_cpu()->fpu_restore(thrd->fpu_storage);
 		uint16_t default_fcw = 0b1100111111;
@@ -85,8 +85,8 @@ void thread_setup_context_from_user(struct thread *thrd, uintptr_t pc_address,
 	thrd->reg.rsp = sp;
 	thrd->stack = thrd->reg.rsp;
 
-	thrd->pf_stack = (uint64_t)kmalloc(CPU_STACK_SIZE);
-	thrd->pf_stack += CPU_STACK_SIZE;
+	thrd->pf_stack = ((uint64_t)pmm_allocz(CPU_STACK_SIZE / PAGE_SIZE) +
+					  MEM_PHYS_OFFSET + CPU_STACK_SIZE);
 
 	prcb_return_current_cpu()->fpu_restore(thrd->fpu_storage);
 	uint16_t default_fcw = 0b1100111111;
@@ -130,8 +130,8 @@ void thread_setup_context_for_execve(struct thread *thrd, uintptr_t pc_address,
 
 	thrd->kernel_stack = (uint64_t)kmalloc(CPU_STACK_SIZE);
 	thrd->kernel_stack += CPU_STACK_SIZE;
-	thrd->pf_stack = (uint64_t)kmalloc(CPU_STACK_SIZE);
-	thrd->pf_stack += CPU_STACK_SIZE;
+	thrd->pf_stack = ((uint64_t)pmm_allocz(CPU_STACK_SIZE / PAGE_SIZE) +
+					  MEM_PHYS_OFFSET + CPU_STACK_SIZE);
 
 	thrd->reg.rflags = 0x202;
 
@@ -273,8 +273,8 @@ void thread_fork_context(struct thread *thrd, struct thread *fthrd) {
 
 	fthrd->kernel_stack = (uint64_t)kmalloc(CPU_STACK_SIZE);
 	fthrd->kernel_stack += CPU_STACK_SIZE;
-	fthrd->pf_stack = (uint64_t)kmalloc(CPU_STACK_SIZE);
-	fthrd->pf_stack += CPU_STACK_SIZE;
+	fthrd->pf_stack = ((uint64_t)pmm_allocz(CPU_STACK_SIZE / PAGE_SIZE) +
+					   MEM_PHYS_OFFSET + CPU_STACK_SIZE);
 	fthrd->reg = thrd->reg;
 	fthrd->reg.rax = 0;
 	fthrd->reg.rbx = 0;
@@ -301,7 +301,8 @@ void thread_destroy_context(struct thread *thrd) {
 	cli();
 	kfree((void *)(thrd->kernel_stack - CPU_STACK_SIZE));
 	if (thrd->reg.cs & 0x3) {
-		kfree((void *)(thrd->pf_stack - CPU_STACK_SIZE));
+		pmm_free((void *)(thrd->pf_stack - MEM_PHYS_OFFSET - CPU_STACK_SIZE),
+				 CPU_STACK_SIZE / PAGE_SIZE);
 	}
 	pmm_free(
 		(void *)((uint64_t)thrd->fpu_storage - MEM_PHYS_OFFSET),
