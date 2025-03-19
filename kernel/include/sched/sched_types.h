@@ -40,7 +40,6 @@ struct thread {
 	uint64_t stack;
 	uint64_t pf_stack;
 	uint64_t kernel_stack;
-	uint64_t sleeping_till;
 	uint64_t last_scheduled;
 	void *fpu_storage;
 	size_t which_event;

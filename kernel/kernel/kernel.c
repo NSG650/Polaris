@@ -73,24 +73,6 @@ void syscall_sysinfo(struct syscall_arguments *args) {
 					: -1;
 }
 
-extern lock_t wakeup_lock;
-
-void sched_wake_up_sleeping_threads(void) {
-	if (spinlock_acquire(&wakeup_lock)) {
-		struct thread *this = sleeping_threads;
-		while (this) {
-			if (this->sleeping_till >= timer_get_abs_count()) {
-				this->state = THREAD_READY_TO_RUN;
-				this->sleeping_till = 0;
-				sched_remove_thread_from_list(&sleeping_threads, this);
-				sched_add_thread_to_list(&thread_list, this);
-			}
-			this = this->next;
-		}
-		spinlock_drop(&wakeup_lock);
-	}
-}
-
 #ifdef KERNEL_ABUSE
 void kernel_dummy_sleeping_thread(void) {
 	for (;;) {
@@ -191,7 +173,7 @@ void kernel_main(void *args) {
 
 	kprintf("Running init binary %s\n", argv[0]);
 
-	if (!process_create_elf("init", PROCESS_READY_TO_RUN, 40000, argv[0],
+	if (!process_create_elf("init", PROCESS_READY_TO_RUN, 20000, argv[0],
 							sched_get_running_thread()->mother_proc))
 		panic("Failed to run init binary!\n");
 
@@ -206,7 +188,6 @@ void kernel_main(void *args) {
 #endif
 
 	for (;;) {
-		sched_wake_up_sleeping_threads();
 		halt();
 		sched_resched_now();
 	}

@@ -17,6 +17,7 @@ extern void resched_context_switch(registers_t *reg);
 
 void sched_resched_now(void) {
 	cli();
+	timer_stop_sched();
 	apic_send_ipi(prcb_return_current_cpu()->lapic_id, 48);
 	sti();
 }

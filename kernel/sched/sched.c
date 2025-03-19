@@ -15,7 +15,6 @@ bool sched_runit = false;
 
 struct thread *thread_list = NULL;
 struct process *process_list = NULL;
-struct thread *sleeping_threads = NULL;
 struct thread *threads_on_the_death_row = NULL;
 struct process *processes_on_the_death_row = NULL;
 
@@ -24,7 +23,6 @@ int64_t pid = 0;
 
 lock_t thread_lock = {0};
 lock_t process_lock = {0};
-lock_t wakeup_lock = {0};
 
 struct resource *std_console_device = NULL;
 
@@ -737,7 +735,6 @@ void thread_fork(struct thread *pthrd, struct process *fproc) {
 	thread_fork_context(pthrd, thrd);
 
 	thrd->last_scheduled = 0;
-	thrd->sleeping_till = 0;
 
 	cli();
 	spinlock_acquire_or_wait(&thread_lock);
@@ -752,6 +749,7 @@ void thread_execve(struct process *proc, struct thread *thrd,
 	void *save_nex = thrd->next;
 	memzero(thrd, sizeof(struct thread));
 
+	thrd->tid = tid++;
 	thrd->state = THREAD_READY_TO_RUN;
 	thrd->runtime = proc->runtime;
 	spinlock_init(thrd->lock);
@@ -762,23 +760,6 @@ void thread_execve(struct process *proc, struct thread *thrd,
 	spinlock_acquire_or_wait(&thrd->lock);
 	thread_setup_context_for_execve(thrd, pc_address, argv, envp);
 	spinlock_drop(&thrd->lock);
-}
-
-void thread_sleep(struct thread *thrd, uint64_t ns) {
-	thrd->sleeping_till = timer_get_sleep_ns(ns);
-
-	cli();
-	spinlock_acquire_or_wait(&thread_lock);
-	thrd->state = THREAD_SLEEPING;
-	sched_remove_thread_from_list(&thread_list, thrd);
-	spinlock_drop(&thread_lock);
-	sti();
-
-	spinlock_acquire_or_wait(&wakeup_lock);
-	sched_add_thread_to_list(&sleeping_threads, thrd);
-	spinlock_drop(&wakeup_lock);
-
-	sched_resched_now();
 }
 
 void thread_kill(struct thread *thrd, bool reschedule) {

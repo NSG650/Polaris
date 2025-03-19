@@ -28,15 +28,7 @@ extern bool sched_runit;
 extern bool is_smp;
 
 static void spinlock_spinning_for_too_long(lock_t *spin) {
-	kputs_("\n\nPossible deadlock? Last owner: 0x");
-	char string[20] = {0};
-	ultoa((uintptr_t)spin->last_owner, string, 16);
-	kputs_(string);
-	kputs_(" deadlocked at: 0x");
-	memzero(string, 20);
-	ultoa((uintptr_t)last_addr, string, 16);
-	kputs_(string);
-	kputs_("\n");
+	panic("Deadlocked at %p. Last owner %p\n", spin->last_owner, last_addr);
 }
 
 bool spinlock_acquire(lock_t *spin) {

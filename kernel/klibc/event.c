@@ -94,11 +94,9 @@ ssize_t event_await(struct event **events, size_t num_events, bool block) {
 		goto cleanup;
 	}
 
-	spinlock_acquire_or_wait(&thread_lock);
 	attach_listeners(events, num_events, thread);
 	thread->state = THREAD_WAITING_FOR_EVENT;
 	unlock_events(events, num_events);
-	spinlock_drop(&thread_lock);
 	sched_resched_now();
 
 	cli();

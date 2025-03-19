@@ -7,14 +7,14 @@
 
 void isr_install(void) {
 	idt_set_gate(0, isr0, 0);
-	idt_set_gate(1, isr1, 1);
-	idt_set_gate(2, isr2, 1);
+	idt_set_gate(1, isr1, 0);
+	idt_set_gate(2, isr2, 0);
 	idt_set_gate(3, isr3, 0);
 	idt_set_gate(4, isr4, 0);
 	idt_set_gate(5, isr5, 0);
 	idt_set_gate(6, isr6, 0);
 	idt_set_gate(7, isr7, 0);
-	idt_set_gate(8, isr8, 1);
+	idt_set_gate(8, isr8, 0);
 	idt_set_gate(9, isr9, 0);
 	idt_set_gate(10, isr10, 0);
 	idt_set_gate(11, isr11, 0);
@@ -24,7 +24,7 @@ void isr_install(void) {
 	idt_set_gate(15, isr15, 0);
 	idt_set_gate(16, isr16, 0);
 	idt_set_gate(17, isr17, 0);
-	idt_set_gate(18, isr18, 1);
+	idt_set_gate(18, isr18, 0);
 	idt_set_gate(19, isr19, 0);
 	idt_set_gate(20, isr20, 0);
 	idt_set_gate(21, isr21, 0);
