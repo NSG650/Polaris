@@ -34,7 +34,7 @@ extern struct thread *sleeping_threads;
 extern struct process *processes_on_the_death_row;
 extern struct resource *std_console_device;
 
-void sched_resched_now(void);
+void sched_yield(bool save);
 struct thread *sched_get_next_thread(struct thread *thrd);
 void sched_init(uint64_t args);
 void sched_add_thread_to_list(struct thread **thrd_list, struct thread *thrd);
@@ -57,7 +57,6 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 void thread_execve(struct process *proc, struct thread *thrd,
 				   uintptr_t pc_address, char **argv, char **envp);
 void thread_kill(struct thread *thrd, bool reschedule);
-void thread_kill_now(struct thread *thrd);
 void thread_sleep(struct thread *thrd, uint64_t ns);
 void thread_fork(struct thread *pthrd, struct process *fproc);
 void syscall_prctl(struct syscall_arguments *args);

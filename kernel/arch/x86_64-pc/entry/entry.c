@@ -154,7 +154,7 @@ void arch_entry(void) {
 		put_to_fb = true;
 	}
 
-	kprintf("Hello x86_64 yet again!\n");
+	kprintf("Hello x86_64!\n");
 #ifdef GIT_VERSION
 	kprintf("Version: %s\n", GIT_VERSION);
 #endif

@@ -7,12 +7,21 @@ deps="core-libs"
 
 build() {
     cp -rp "${source_dir}"/. ./
-    ${OS_TRIPLET}-gcc client_sock.c -o c
-    ${OS_TRIPLET}-gcc server_sock.c -o s
+    ${OS_TRIPLET}-gcc client_sock.c -o client_sock
+    ${OS_TRIPLET}-gcc server_sock.c -o server_sock
+    ${OS_TRIPLET}-g++ cpuinfo.cxx -o cpuinfo
+    ${OS_TRIPLET}-gcc sched_hell.c -o sched_hell
+    ${OS_TRIPLET}-gcc waitpid.c -o waitpid
+    ${OS_TRIPLET}-gcc pthread.c -o pthread -lpthread
 }
 
 package() {
     mkdir -p "${dest_dir}/root"
-    cp ./c "${dest_dir}/root/c"
-    cp ./s "${dest_dir}/root/s"
+    mkdir -p "${dest_dir}/usr/bin/"
+    cp ./client_sock "${dest_dir}/root/client_sock"
+    cp ./server_sock "${dest_dir}/root/server_sock"
+    cp ./cpuinfo "${dest_dir}/usr/bin/cpuinfo"
+    cp ./sched_hell "${dest_dir}/root/sched_hell"
+    cp ./waitpid "${dest_dir}/root/waitpid"
+    cp ./pthread "${dest_dir}/root/pthread"
 }

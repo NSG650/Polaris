@@ -97,7 +97,7 @@ static void prcb_dump(void) {
 void breakpoint_handler(registers_t *reg) {
 	if (reg->cs & 0x3) {
 		kprintffos(0, "Breakpoint hit in user!\n");
-		thread_kill_now(prcb_return_current_cpu()->running_thread);
+		thread_kill(prcb_return_current_cpu()->running_thread, true);
 		return;
 	} else {
 		kprintffos(0, "Breakpoint hit in kernel!\n");

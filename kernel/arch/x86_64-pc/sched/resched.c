@@ -15,11 +15,31 @@ extern uint32_t smp_bsp_lapic_id;
 
 extern void resched_context_switch(registers_t *reg);
 
-void sched_resched_now(void) {
+void sched_yield(bool save) {
 	cli();
 	timer_stop_sched();
+	
+	struct thread *thrd = sched_get_running_thread();
+	
+	if (save) {
+		spinlock_acquire_or_wait(&thrd->yield_lock);
+	}
+	else {
+		prcb_return_current_cpu()->running_thread = NULL;
+	}
+
 	apic_send_ipi(prcb_return_current_cpu()->lapic_id, 48);
 	sti();
+
+	if (save) {
+		spinlock_acquire_or_wait(&thrd->yield_lock); // the lock is released when the thread is rescheduled
+		spinlock_drop(&thrd->yield_lock);
+	}
+	else {
+		for (;;) {
+			halt();
+		}
+	}
 }
 
 uint64_t timer_sched_tick(void) {
@@ -39,6 +59,7 @@ void resched(registers_t *reg) {
 	struct thread *running_thrd = prcb_return_current_cpu()->running_thread;
 
 	if (running_thrd) {
+		spinlock_drop(&running_thrd->yield_lock);
 		running_thrd->reg = *reg;
 		running_thrd->fs_base = read_fs_base();
 		running_thrd->gs_base = read_user_gs();
@@ -47,7 +68,6 @@ void resched(registers_t *reg) {
 			running_thrd->state = THREAD_READY_TO_RUN;
 		}
 		running_thrd->last_scheduled = timer_count();
-		running_thrd->kernel_stack = prcb_return_current_cpu()->kernel_stack;
 		running_thrd->stack = prcb_return_current_cpu()->user_stack;
 		spinlock_drop(&running_thrd->lock);
 	}

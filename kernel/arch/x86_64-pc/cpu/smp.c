@@ -167,7 +167,7 @@ void smp_init(struct limine_smp_response *smp_info) {
 		prcbs[i].cpu_tss.rsp0 =
 			(uint64_t)pmm_allocz(CPU_STACK_SIZE / PAGE_SIZE) + MEM_PHYS_OFFSET +
 			CPU_STACK_SIZE;
-		prcbs[i].cpu_tss.ist4 =
+		prcbs[i].cpu_tss.ist1 =
 			(uint64_t)pmm_allocz(CPU_STACK_SIZE / PAGE_SIZE) + MEM_PHYS_OFFSET +
 			CPU_STACK_SIZE;
 

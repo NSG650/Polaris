@@ -8,9 +8,6 @@ amd_syscall_entry:
 	mov qword [gs:0016], rsp
 	mov rsp, qword [gs:0008]
 
-	sti
-	cld
-
 	push 0x1b            ; ss
 	push qword [gs:0016] ; rsp
 	push r11             ; rflags
@@ -36,6 +33,7 @@ amd_syscall_entry:
 	push r15
 
 	mov rdi, rsp
+	sti
 	call syscall_handler
 
 	pop r15

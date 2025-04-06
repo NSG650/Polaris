@@ -54,7 +54,7 @@ void isr_install(void) {
 	idt_set_gate(45, isr45, 0);
 	idt_set_gate(46, isr46, 0);
 	idt_set_gate(47, isr47, 0);
-	idt_set_gate(48, isr48, 4);
+	idt_set_gate(48, isr48, 1);
 	idt_set_gate(49, isr49, 0);
 	idt_set_gate(50, isr50, 0);
 	idt_set_gate(51, isr51, 0);
@@ -323,7 +323,7 @@ void isr_handle(registers_t *r) {
 					thrd->tid, thrd->mother_proc->name,
 					isr_exception_messages[r->isrNumber]);
 			kprintf("User thread crashed at address: %p\n", r->rip);
-			thread_kill_now(thrd);
+			thread_kill(thrd, true);
 		} else {
 			kprintffos(0, "AH! UNHANDLED EXCEPTION!\n");
 			kprintffos(0, "RIP: %p RBP: %p RSP: %p\n", r->rip, r->rbp, r->rsp);

@@ -619,9 +619,6 @@ bool process_execve(char *path, char **argv, char **envp) {
 	proc->stack_top = VIRTUAL_STACK_ADDR;
 	proc->state = PROCESS_READY_TO_RUN;
 
-	// We no longer exist. There is no point in saving anything now.
-	prcb_return_current_cpu()->running_thread = NULL;
-
 	proc->auxv = auxv;
 
 	spinlock_init(proc->fds_lock);
@@ -631,7 +628,7 @@ bool process_execve(char *path, char **argv, char **envp) {
 
 	vmm_switch_pagemap(kernel_pagemap);
 
-	sched_resched_now();
+	sched_yield(false);
 	return false;
 }
 
@@ -695,8 +692,7 @@ void process_kill(struct process *proc, bool crash) {
 #endif
 
 	if (are_we_killing_ourselves || crash) {
-		prcb_return_current_cpu()->running_thread = NULL;
-		sched_resched_now();
+		sched_yield(false);
 	}
 }
 
@@ -780,27 +776,6 @@ void thread_kill(struct thread *thrd, bool reschedule) {
 	kfree(thrd);
 
 	if (reschedule) {
-		sched_resched_now();
+		sched_yield(false);
 	}
-}
-
-void thread_kill_now(struct thread *thrd) {
-	cli();
-
-	struct process *mother_proc = thrd->mother_proc;
-
-	vec_remove(&mother_proc->process_threads, thrd);
-	if (mother_proc->process_threads.length < 1) {
-		process_kill(mother_proc, false);
-	}
-
-	spinlock_acquire_or_wait(&thread_lock);
-	sched_remove_thread_from_list(&thread_list, thrd);
-	spinlock_drop(&thread_lock);
-
-	thrd->state = THREAD_KILLED;
-	thread_destroy_context(thrd);
-	kfree(thrd);
-
-	sched_resched_now();
 }

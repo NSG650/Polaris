@@ -18,7 +18,6 @@
 enum thread_states {
 	THREAD_NORMAL = 0,
 	THREAD_READY_TO_RUN,
-	THREAD_SLEEPING,
 	THREAD_KILLED,
 	THREAD_WAITING_FOR_EVENT
 };
@@ -35,6 +34,7 @@ struct thread {
 	int64_t tid;
 	registers_t reg;
 	lock_t lock;
+	lock_t yield_lock;
 	enum thread_states state;
 	uint64_t runtime;
 	uint64_t stack;

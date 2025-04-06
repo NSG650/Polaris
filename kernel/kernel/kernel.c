@@ -85,7 +85,7 @@ void kernel_dummy_threads(uint64_t id) {
 		kputchar_('0' + id);
 		kputchar_('A' + prcb_return_current_cpu()->cpu_number);
 		halt();
-		sched_resched_now();
+		sched_yield(true);
 	}
 }
 #endif
@@ -188,7 +188,6 @@ void kernel_main(void *args) {
 #endif
 
 	for (;;) {
-		halt();
-		sched_resched_now();
+		sched_yield(true);
 	}
 }
