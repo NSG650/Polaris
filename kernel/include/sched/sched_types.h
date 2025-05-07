@@ -76,7 +76,7 @@ struct process {
 	struct process *next;
 };
 
-#define CPU_STACK_SIZE (32 * 1024)
+#define CPU_STACK_SIZE (64 * 1024)
 #define STACK_SIZE (1024 * 1024 * 8)
 
 #endif

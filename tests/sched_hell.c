@@ -7,6 +7,8 @@ int main(void) {
 		int ret = fork();
 		if (ret == 0) {
 			printf("I am pid %d\n", getpid());
+			char *args[] = {"uname", "-a", NULL};
+			execvp(args[0], args);
 			exit(0);
 		}
 	}

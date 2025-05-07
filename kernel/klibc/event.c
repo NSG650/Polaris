@@ -28,7 +28,7 @@ static void attach_listeners(struct event **events, size_t num_events,
 		struct event *event = events[i];
 
 		if (event->listeners_i == EVENT_MAX_LISTENERS) {
-			panic("Event listeners exhausted");
+			panic("Event listeners exhausted\n");
 		}
 
 		struct event_listener *listener =
@@ -37,7 +37,7 @@ static void attach_listeners(struct event **events, size_t num_events,
 		listener->which = i;
 
 		if (thread->attached_events_i == MAX_EVENTS) {
-			panic("Listening on too many events");
+			panic("Listening on too many events\n");
 		}
 
 		thread->attached_events[thread->attached_events_i++] = event;
@@ -96,7 +96,7 @@ ssize_t event_await(struct event **events, size_t num_events, bool block) {
 
 	attach_listeners(events, num_events, thread);
 	unlock_events(events, num_events);
-	
+
 	thread->state = THREAD_WAITING_FOR_EVENT;
 	sched_yield(true);
 

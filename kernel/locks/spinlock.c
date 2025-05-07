@@ -48,8 +48,10 @@ void spinlock_acquire_or_wait(lock_t *spin) {
 	for (;;) {
 		if (spinlock_acquire(spin))
 			break;
+#if 0
 		if (++deadlock_counter >= 100000000)
 			spinlock_spinning_for_too_long(spin);
+#endif
 		pause();
 	}
 	spin->last_owner = __builtin_return_address(0);

@@ -8,7 +8,6 @@
 #include <sys/prcb.h>
 
 void syscall_handler(registers_t *reg) {
-	// Save original reg in case we're suspending the current thread
 	cli();
 	prcb_return_current_cpu()->running_thread->reg = *reg;
 	prcb_return_current_cpu()->running_thread->stack =

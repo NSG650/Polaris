@@ -248,11 +248,6 @@ void syscall_waitpid(struct syscall_arguments *args) {
 	int mode = (int)args->args2;
 	args->ret = -1;
 
-	if (!status) {
-		errno = EFAULT;
-		return;
-	}
-
 	struct process *waiter_proc = sched_get_running_thread()->mother_proc;
 
 	spinlock_acquire_or_wait(&waiter_proc->lock);
@@ -354,6 +349,7 @@ void syscall_thread_new(struct syscall_arguments *args) {
 
 	thrd->next = NULL;
 	spinlock_init(thrd->lock);
+	spinlock_init(thrd->yield_lock);
 	thrd->state = THREAD_READY_TO_RUN;
 
 	vec_push(&proc->process_threads, thrd);
@@ -708,6 +704,7 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 
 	thrd->next = NULL;
 	spinlock_init(thrd->lock);
+	spinlock_init(thrd->yield_lock);
 	thrd->state = THREAD_READY_TO_RUN;
 
 	vec_push(&proc->process_threads, thrd);
@@ -727,6 +724,7 @@ void thread_fork(struct thread *pthrd, struct process *fproc) {
 	thrd->mother_proc = fproc;
 	thrd->next = NULL;
 	spinlock_init(thrd->lock);
+	spinlock_init(thrd->yield_lock);
 
 	thread_fork_context(pthrd, thrd);
 
@@ -749,6 +747,7 @@ void thread_execve(struct process *proc, struct thread *thrd,
 	thrd->state = THREAD_READY_TO_RUN;
 	thrd->runtime = proc->runtime;
 	spinlock_init(thrd->lock);
+	spinlock_init(thrd->yield_lock);
 	thrd->mother_proc = proc;
 	thrd->next = save_nex;
 

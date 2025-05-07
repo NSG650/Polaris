@@ -11,14 +11,14 @@ void thread_setup_context(struct thread *thrd, uintptr_t pc_address,
 	cli();
 	thrd->reg.rip = pc_address;
 	thrd->reg.rdi = arguments;
-	thrd->kernel_stack =  ((uint64_t)pmm_allocz(CPU_STACK_SIZE / PAGE_SIZE) +
-	MEM_PHYS_OFFSET + CPU_STACK_SIZE);
+	thrd->kernel_stack = ((uint64_t)pmm_allocz(CPU_STACK_SIZE / PAGE_SIZE) +
+						  MEM_PHYS_OFFSET + CPU_STACK_SIZE);
 	thrd->fpu_storage =
 		(void *)((uintptr_t)pmm_allocz(DIV_ROUNDUP(
 					 prcb_return_current_cpu()->fpu_storage_size, PAGE_SIZE)) +
 				 MEM_PHYS_OFFSET);
 	thrd->pf_stack = ((uint64_t)pmm_allocz(CPU_STACK_SIZE / PAGE_SIZE) +
-				 MEM_PHYS_OFFSET + CPU_STACK_SIZE);
+					  MEM_PHYS_OFFSET + CPU_STACK_SIZE);
 
 	struct process *proc = thrd->mother_proc;
 
@@ -70,8 +70,8 @@ void thread_setup_context_from_user(struct thread *thrd, uintptr_t pc_address,
 	bool old_state = flags & (1 << 9);
 	cli();
 	thrd->reg.rip = pc_address;
-	thrd->kernel_stack =  ((uint64_t)pmm_allocz(CPU_STACK_SIZE / PAGE_SIZE) +
-	MEM_PHYS_OFFSET + CPU_STACK_SIZE);
+	thrd->kernel_stack = ((uint64_t)pmm_allocz(CPU_STACK_SIZE / PAGE_SIZE) +
+						  MEM_PHYS_OFFSET + CPU_STACK_SIZE);
 	thrd->fpu_storage =
 		(void *)((uintptr_t)pmm_allocz(DIV_ROUNDUP(
 					 prcb_return_current_cpu()->fpu_storage_size, PAGE_SIZE)) +
@@ -127,7 +127,7 @@ void thread_setup_context_for_execve(struct thread *thrd, uintptr_t pc_address,
 	thrd->reg.rsp = proc->stack_top;
 
 	thrd->kernel_stack = ((uint64_t)pmm_allocz(CPU_STACK_SIZE / PAGE_SIZE) +
-	MEM_PHYS_OFFSET + CPU_STACK_SIZE);
+						  MEM_PHYS_OFFSET + CPU_STACK_SIZE);
 	thrd->pf_stack = ((uint64_t)pmm_allocz(CPU_STACK_SIZE / PAGE_SIZE) +
 					  MEM_PHYS_OFFSET + CPU_STACK_SIZE);
 
@@ -269,8 +269,8 @@ void thread_fork_context(struct thread *thrd, struct thread *fthrd) {
 	bool old_state = flags & (1 << 9);
 	cli();
 
-	fthrd->kernel_stack =  ((uint64_t)pmm_allocz(CPU_STACK_SIZE / PAGE_SIZE) +
-	MEM_PHYS_OFFSET + CPU_STACK_SIZE);
+	fthrd->kernel_stack = ((uint64_t)pmm_allocz(CPU_STACK_SIZE / PAGE_SIZE) +
+						   MEM_PHYS_OFFSET + CPU_STACK_SIZE);
 	fthrd->pf_stack = ((uint64_t)pmm_allocz(CPU_STACK_SIZE / PAGE_SIZE) +
 					   MEM_PHYS_OFFSET + CPU_STACK_SIZE);
 	fthrd->reg = thrd->reg;
@@ -298,9 +298,9 @@ void thread_destroy_context(struct thread *thrd) {
 	bool old_state = flags & (1 << 9);
 	cli();
 	pmm_free((void *)(thrd->kernel_stack - MEM_PHYS_OFFSET - CPU_STACK_SIZE),
-		CPU_STACK_SIZE / PAGE_SIZE);
+			 CPU_STACK_SIZE / PAGE_SIZE);
 	pmm_free((void *)(thrd->pf_stack - MEM_PHYS_OFFSET - CPU_STACK_SIZE),
-		CPU_STACK_SIZE / PAGE_SIZE);
+			 CPU_STACK_SIZE / PAGE_SIZE);
 	pmm_free(
 		(void *)((uint64_t)thrd->fpu_storage - MEM_PHYS_OFFSET),
 		DIV_ROUNDUP(prcb_return_current_cpu()->fpu_storage_size, PAGE_SIZE));

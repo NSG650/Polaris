@@ -42,6 +42,9 @@ static uint64_t *get_next_level(uint64_t *top_level, size_t idx,
 	}
 
 	void *next_level = pmm_allocz(1);
+	if (next_level == NULL) {
+		return NULL;
+	}
 	top_level[idx] = (uint64_t)next_level | 0b111;
 
 	return (uint64_t *)((uintptr_t)next_level + MEM_PHYS_OFFSET);
@@ -574,7 +577,7 @@ static void destroy_level(uint64_t *pml, size_t start, size_t end, int level) {
 		destroy_level(next_level, 0, 512, level - 1);
 	}
 
-	pmm_free((void *)pml, 1);
+	pmm_free((void *)((uintptr_t)pml - MEM_PHYS_OFFSET), 1);
 }
 
 void vmm_destroy_pagemap(struct pagemap *pagemap) {

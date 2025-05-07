@@ -18,13 +18,12 @@ extern void resched_context_switch(registers_t *reg);
 void sched_yield(bool save) {
 	cli();
 	timer_stop_sched();
-	
+
 	struct thread *thrd = sched_get_running_thread();
-	
+
 	if (save) {
 		spinlock_acquire_or_wait(&thrd->yield_lock);
-	}
-	else {
+	} else {
 		prcb_return_current_cpu()->running_thread = NULL;
 	}
 
@@ -32,10 +31,11 @@ void sched_yield(bool save) {
 	sti();
 
 	if (save) {
-		spinlock_acquire_or_wait(&thrd->yield_lock); // the lock is released when the thread is rescheduled
+		spinlock_acquire_or_wait(
+			&thrd->yield_lock); // the lock is released when the thread is
+								// rescheduled
 		spinlock_drop(&thrd->yield_lock);
-	}
-	else {
+	} else {
 		for (;;) {
 			halt();
 		}

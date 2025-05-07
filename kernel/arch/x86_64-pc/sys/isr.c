@@ -1,6 +1,7 @@
 #include <cpu/smp.h>
 #include <debug/debug.h>
 #include <sched/sched.h>
+#include <sys/halt.h>
 #include <sys/idt.h>
 #include <sys/isr.h>
 #include <sys/prcb.h>
@@ -325,6 +326,7 @@ void isr_handle(registers_t *r) {
 			kprintf("User thread crashed at address: %p\n", r->rip);
 			thread_kill(thrd, true);
 		} else {
+			halt_other_cpus();
 			kprintffos(0, "AH! UNHANDLED EXCEPTION!\n");
 			kprintffos(0, "RIP: %p RBP: %p RSP: %p\n", r->rip, r->rbp, r->rsp);
 			kprintffos(0, "RAX: %p RBX: %p RCX: %p\n", r->rax, r->rbx, r->rcx);
