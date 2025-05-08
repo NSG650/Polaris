@@ -255,6 +255,7 @@ struct nvme_device {
 	struct nvme_id *id;
 	uint32_t *namespace_ids;
 	struct nvme_namespace_device *namespace_devices;
+	struct event interrupt_event;
 };
 
 struct nvme_namespace_device {
@@ -273,8 +274,8 @@ struct nvme_namespace_device {
 #define VERSION_MINOR(v) (((v) >> 8) & 0xff)
 #define VERSION_PATCH(v) ((v) & 0xff)
 
-#define CC_COMMANDSET_NVM (0)
-#define CC_ARBITRATION_ROUNDROBIN (0)
+#define CC_COMMANDSET_NVM (0 << 4)
+#define CC_ARBITRATION_ROUNDROBIN (0 << 11)
 #define CC_SHUTDOWN_NOTIFICATIONS_NONE (0 << 14)
 #define CC_IO_SUBMISSION_QUEUE_SIZE (6 << 16)
 #define CC_IO_COMPLETION_QUEUE_SIZE (4 << 20)
@@ -300,5 +301,7 @@ struct nvme_namespace_device {
 #define NVME_OP_GET_FT 0x0a
 
 #define MAX_NVME_DRIVE_COUNT 32
+
+#define IRQ_BASE_START 52
 
 #endif

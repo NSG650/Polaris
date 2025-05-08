@@ -7,6 +7,7 @@
 #include <klibc/mem.h>
 #include <klibc/misc.h>
 #include <klibc/module.h>
+#include <klibc/event.h>
 #include <mm/pmm.h>
 #include <mm/slab.h>
 #include <mm/vmm.h>
@@ -105,7 +106,7 @@ static void nvme_submit_cmd(struct nvme_queue *queue, struct nvme_cmd cmd) {
 								// after (nothing until we submit a new command)
 }
 
-// submit a command an wait for completion
+// submit a command and await for completion
 static uint16_t nvme_await_submit_cmd(struct nvme_queue *queue,
 									  struct nvme_cmd cmd) {
 	uint16_t head = queue->cq_head;
@@ -119,6 +120,7 @@ static uint16_t nvme_await_submit_cmd(struct nvme_queue *queue,
 		if ((status & 0x01) == phase) {
 			break;
 		}
+		pause();
 	}
 
 	head++;

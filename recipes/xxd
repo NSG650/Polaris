@@ -1,0 +1,18 @@
+name=xxd
+revision=1
+hostdeps="gcc pkg-config"
+allow_network=yes
+imagedeps="curl"
+deps="core-libs"
+
+build() {
+	curl -sOL "https://raw.githubusercontent.com/xyproto/tinyxxd/refs/heads/main/main.c"
+	${OS_TRIPLET}-gcc main.c -std=c11 -O2 -pipe -finline-functions -fPIC -Wall -Wextra -Wpedantic -Wfatal-errors -o xxd
+}
+
+package() {
+	mkdir -p "${dest_dir}/usr/bin"
+	cp ./xxd "${dest_dir}/usr/bin"
+	rm ./xxd
+	rm ./main.c
+}

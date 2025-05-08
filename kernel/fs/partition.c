@@ -3,12 +3,14 @@
 #include <fs/partition.h>
 #include <klibc/mem.h>
 #include <mm/slab.h>
+#include <errno.h>
 
 static ssize_t partition_read(struct resource *_this,
 							  struct f_description *description, void *buf,
 							  off_t loc, size_t count) {
 	struct partition_device *this = (struct partition_device *)_this;
-	if ((size_t)loc >= this->sectors * this->lba_size) {
+	if ((size_t)loc >= (this->sectors * this->lba_size)) {
+		errno = ESPIPE;
 		return -1;
 	}
 	return this->root->read(this->root, description, buf,
@@ -19,7 +21,8 @@ static ssize_t partition_write(struct resource *_this,
 							   struct f_description *description,
 							   const void *buf, off_t loc, size_t count) {
 	struct partition_device *this = (struct partition_device *)_this;
-	if ((size_t)loc >= this->sectors * this->lba_size) {
+	if ((size_t)loc >= (this->sectors * this->lba_size)) {
+		errno = ESPIPE;
 		return -1;
 	}
 	return this->root->write(this->root, description, buf,
@@ -66,13 +69,15 @@ static bool partition_enumerate_gpt(struct resource *res, char *root_name) {
 		part_dev->start = entry.start;
 		part_dev->sectors = entry.end - entry.start;
 		part_dev->res.stat.st_blksize = block_size;
-		part_dev->res.stat.st_size = entry.end - entry.start;
-		part_dev->res.stat.st_blocks = (entry.end - entry.start) / block_size;
+		part_dev->res.stat.st_size = part_dev->sectors * block_size;
+		part_dev->res.stat.st_blocks = part_dev->sectors;
+		part_dev->res.stat.st_mode = 0666 | S_IFBLK;
 		part_dev->res.stat.st_rdev = resource_create_dev_id();
 		part_dev->res.can_mmap = false;
 		part_dev->res.ioctl = resource_default_ioctl;
 		part_dev->res.read = partition_read;
 		part_dev->res.write = partition_write;
+
 		char name[32] = {0};
 		char num[21] = {0};
 		strncpy(name, root_name, 32);
@@ -116,6 +121,7 @@ static bool partition_enumerate_mbr(struct resource *res, char *root_name) {
 		part_dev->res.ioctl = resource_default_ioctl;
 		part_dev->res.read = partition_read;
 		part_dev->res.write = partition_write;
+		part_dev->res.stat.st_mode = 0666 | S_IFBLK;
 
 		char name[32] = {0};
 		char num[21] = {0};

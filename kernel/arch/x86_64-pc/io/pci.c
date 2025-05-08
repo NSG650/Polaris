@@ -407,9 +407,11 @@ bool pci_get_bar_n(struct pci_device *device, struct pci_bar *bar, uint8_t n) {
 }
 
 bool pci_setup_irq(struct pci_device *dev, size_t index, uint8_t vector) {
+	cli();
 	union msi_address addr = {.dest_id = prcb_return_current_cpu()->lapic_id,
 							  .base_address = 0xfee};
 	union msi_data data = {.vector = vector, .delivery = 0};
+	sti();
 
 	if (dev->msix_supported) {
 		uint16_t control = PCI_READ_W(dev, dev->msix_offset + 2);
