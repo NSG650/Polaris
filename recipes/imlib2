@@ -1,0 +1,27 @@
+name=imlib2
+version=1.12.1
+revision=1
+tarball_url="https://downloads.sourceforge.net/enlightenment/imlib2-${version}.tar.xz"
+tarball_blake2b="c1483c3a9ac3bfe3aa43183799122f8f360067db04d1c55d356e5423f6e4de917b302a101295d8dd2de58696acbf06879f394a6ef2edae9c1905c8c6156595c7"
+source_hostdeps="automake autoconf libtool pkg-config"
+hostdeps="gcc autoconf automake libtool pkg-config"
+deps="core-libs mpfr gmp readline freetype2 libjpeg-turbo libpng libx11 libxaw"
+
+regenerate() {
+    autotools_recursive_regen
+}
+
+build() {
+    cp -rp "${source_dir}"/. ./
+
+        configure_script_path=./configure \
+    autotools_configure
+
+    make -j${parallelism}
+}
+
+package() {
+    DESTDIR="${dest_dir}" make install
+
+    post_package_strip
+}

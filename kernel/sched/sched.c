@@ -520,6 +520,7 @@ int64_t process_fork(struct process *proc, struct thread *thrd) {
 		}
 	}
 
+	cli();
 	process_fork_context(proc, fproc);
 
 	fproc->mmap_anon_base = proc->mmap_anon_base;

@@ -1,2 +1,5 @@
-exec /usr/local/bin/dwm
+/usr/bin/spider &
+exec /usr/bin/openbox
+
+
 

@@ -51,13 +51,18 @@ uint64_t driver_entry(struct module *driver_module) {
 	// Enable keyboard port
 	ps2_write(0x64, 0xae);
 
+#ifdef MOUSE
 	// Enable mouse port if any
-	//	if ((ps2_config & (1 << 5)) != 0) {
-	//		ps2_write(0x64, 0xa8);
-	//	}
+	if ((ps2_config & (1 << 5)) != 0) {
+		ps2_write(0x64, 0xa8);
+	}
+#endif
 
 	keyboard_init();
-	//	mouse_init();
+
+#ifdef MOUSE
+	mouse_init();
+#endif
 
 	return 0;
 }

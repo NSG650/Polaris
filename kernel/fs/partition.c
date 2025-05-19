@@ -1,9 +1,9 @@
 #include <debug/debug.h>
+#include <errno.h>
 #include <fs/devtmpfs.h>
 #include <fs/partition.h>
 #include <klibc/mem.h>
 #include <mm/slab.h>
-#include <errno.h>
 
 static ssize_t partition_read(struct resource *_this,
 							  struct f_description *description, void *buf,

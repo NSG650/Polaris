@@ -3,11 +3,11 @@
 #include <debug/debug.h>
 #include <errno.h>
 #include <fs/partition.h>
+#include <klibc/event.h>
 #include <klibc/kargs.h>
 #include <klibc/mem.h>
 #include <klibc/misc.h>
 #include <klibc/module.h>
-#include <klibc/event.h>
 #include <mm/pmm.h>
 #include <mm/slab.h>
 #include <mm/vmm.h>

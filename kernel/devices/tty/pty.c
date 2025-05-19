@@ -1,10 +1,7 @@
 #include <debug/debug.h>
 #include <devices/tty/pty.h>
 #include <errno.h>
-
-// I need to think this through once.
-// Does not work for now.
-// Only outputs inputs don't work.
+#include <klibc/mem.h>
 
 static int pty_number = 0;
 
@@ -19,6 +16,14 @@ static int pty_ioctl(struct resource *this, struct f_description *description,
 	int ret = 0;
 
 	switch (request) {
+		case 0x1: {
+			char base[12] = "/dev/pty";
+			char num[3] = {0};
+			ultoa(p->name, num, 10);
+			strcat(base, num);
+			memcpy((void *)arg, base, 12);
+			break;
+		}
 		case TCGETS: {
 			struct termios *t = (void *)arg;
 			if (t)

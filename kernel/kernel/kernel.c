@@ -24,8 +24,7 @@
 
 const char *module_list[] = {
 #if defined(__x86_64__)
-	"/usr/lib/modules/ps2.ko",
-	"/usr/lib/modules/nvme.ko"
+	"/usr/lib/modules/ps2.ko", "/usr/lib/modules/nvme.ko"
 #endif
 };
 

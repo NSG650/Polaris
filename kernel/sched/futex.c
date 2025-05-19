@@ -43,7 +43,6 @@ wait:
 int futex_wake(uint32_t *futex) {
 	spinlock_acquire_or_wait(&futex_lock);
 	struct futex_entry *entry = NULL;
-
 	if (HASHMAP_GET(&futex_hashmap, entry, &futex, sizeof(uint32_t *))) {
 		event_trigger(entry->event, false);
 	}
@@ -70,7 +69,7 @@ void syscall_futex(struct syscall_arguments *args) {
 	switch (opcode) {
 		case FUTEX_WAIT:
 		case FUTEX_WAIT_BITSET:
-			args->ret = futex_wait(value, raw_kernel_addr, thrd) ? 0 : -1;
+			args->ret = futex_wait(value, raw_kernel_addr, thrd);
 			break;
 		case FUTEX_WAKE:
 		case FUTEX_WAKE_BITSET:

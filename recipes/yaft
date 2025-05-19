@@ -1,0 +1,20 @@
+name=yaft
+version=0.2.9
+revision=1
+tarball_url="https://github.com/uobikiemukot/yaft/archive/refs/tags/v${version}.tar.gz"
+tarball_blake2b="3f34ba841e83454a7be754314101361c751971220f8ddad95b6ba97dbacfaea34dc73655c0e1f94337ce205c795d921c0bbd926e5c55dbdb572736dcefda31fc"
+imagedeps="gcc"
+hostdeps="gcc autoconf automake libtool pkg-config"
+deps="core-libs fontconfig ncurses xorg-proto libx11 libxft"
+
+build() {
+    cp -rp "${source_dir}"/. ./
+    make mkfont_bdf
+    make CC=$OS_TRIPLET-gcc yaftx -j${parallelism}
+}
+
+package() {
+    make PREFIX=${dest_dir}${prefix} installx
+
+    post_package_strip
+}

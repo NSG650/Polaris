@@ -53,7 +53,7 @@ static uint64_t *get_next_level(uint64_t *top_level, size_t idx,
 void vmm_init(struct limine_memmap_entry **memmap, size_t memmap_entries) {
 	kernel_pagemap = kmalloc(sizeof(struct pagemap));
 	spinlock_init(kernel_pagemap->lock);
-	kernel_pagemap->top_level = pmm_allocz(1) + MEM_PHYS_OFFSET;
+	kernel_pagemap->top_level = (uint64_t *)((uintptr_t)pmm_allocz(1) + MEM_PHYS_OFFSET);
 
 	for (uint64_t p = 256; p < 512; p++)
 		get_next_level(kernel_pagemap->top_level, p, true);
