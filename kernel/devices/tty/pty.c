@@ -2,6 +2,7 @@
 #include <devices/tty/pty.h>
 #include <errno.h>
 #include <klibc/mem.h>
+#include <sched/sched.h>
 
 static int pty_number = 0;
 

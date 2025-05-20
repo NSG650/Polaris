@@ -17,6 +17,7 @@
 
 #include <asm/asm.h>
 #include <debug/debug.h>
+#include <klibc/kargs.h>
 #include <klibc/mem.h>
 #include <locks/spinlock.h>
 #include <stddef.h>
@@ -28,7 +29,7 @@ extern bool sched_runit;
 extern bool is_smp;
 
 static void spinlock_spinning_for_too_long(lock_t *spin) {
-	panic("Deadlocked at %p. Last owner %p\n", spin->last_owner, last_addr);
+	panic("Deadlocked at %p. Last owner %p\n", last_addr, spin->last_owner);
 }
 
 bool spinlock_acquire(lock_t *spin) {
@@ -48,10 +49,10 @@ void spinlock_acquire_or_wait(lock_t *spin) {
 	for (;;) {
 		if (spinlock_acquire(spin))
 			break;
-#if 0
-		if (++deadlock_counter >= 100000000)
-			spinlock_spinning_for_too_long(spin);
-#endif
+		if ((kernel_arguments.kernel_args & KERNEL_ARGS_PANIC_ON_DEADLOCK)) {
+			if (++deadlock_counter >= 100000000)
+				spinlock_spinning_for_too_long(spin);
+		}
 		pause();
 	}
 	spin->last_owner = __builtin_return_address(0);

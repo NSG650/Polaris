@@ -2,7 +2,7 @@
 #include <unistd.h>
 
 int main(int argc, char **argv) {
-    printf("Hi\n");
+	printf("Hi\n");
 	fork();
-    return execvp(argv[0], argv);
+	return execvp(argv[0], argv);
 }

@@ -37,9 +37,12 @@ void kargs_init(char *args) {
 			kernel_arguments.kernel_args |=
 				KERNEL_ARGS_SUPPRESS_USER_DEBUG_MESSAGES;
 		}
-		if (!strncmp(tokens[i], "dont-trust-cpu-random-seed", 21)) {
+		if (!strncmp(tokens[i], "dont-trust-cpu-random-seed", 27)) {
 			kernel_arguments.kernel_args |=
 				KERNEL_ARGS_DONT_TRUST_CPU_RANDOM_SEED;
+		}
+		if (!strncmp(tokens[i], "panic-on-deadlock", 18)) {
+			kernel_arguments.kernel_args |= KERNEL_ARGS_PANIC_ON_DEADLOCK;
 		}
 	}
 

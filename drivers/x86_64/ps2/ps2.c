@@ -6,6 +6,8 @@
 #include <klibc/mem.h>
 #include <klibc/module.h>
 
+#define MOUSE
+
 void driver_exit(void) {
 	kprintf("Bye bye!\n");
 }
