@@ -1,0 +1,28 @@
+name=nsxiv
+version=33
+revision=1
+tarball_url="https://codeberg.org/nsxiv/nsxiv/archive/v${version}.tar.gz"
+tarball_blake2b="48fa11e1d9a48bc2e4ac3e7e94e2169cf49a4560971ca0f602ac0f7ac375114f6200a3c0efabf6f07df6cb41b63e31e9a0854c959282cfa4d8224f8f6850919b"
+source_hostdeps="automake autoconf libtool pkg-config"
+source_deps="xorg-util-macros"
+hostdeps="gcc autoconf automake libtool pkg-config"
+deps="core-libs libx11 libxft imlib2 freetype2"
+
+build() {
+    cp -rp "${source_dir}"/. ./
+
+    make \
+        CFLAGS="$TARGET_CFLAGS" \
+        LDFLAGS="$TARGET_LDFLAGS" \
+        CC=$OS_TRIPLET-gcc \
+        PKG_CONFIG=$OS_TRIPLET-pkg-config \
+        HAVE_LIBEXIF=0 \
+        HAVE_INOTIFY=0 \
+        -j${parallelism}
+}
+
+package() {
+    DESTDIR="${dest_dir}" make CC=$OS_TRIPLET-gcc HAVE_LIBEXIF=0 HAVE_INOTIFY=0 PREFIX="${prefix}" install
+
+    post_package_strip
+}

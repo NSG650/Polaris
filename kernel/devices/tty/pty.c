@@ -12,8 +12,8 @@ static int pty_ioctl(struct resource *this, struct f_description *description,
 	(void)description;
 	spinlock_acquire_or_wait(&this->lock);
 
-	struct pty_slave *ps = (struct pty_slave *)this;
-	struct pty *p = ps->pty;
+	struct pty_master *pm = (struct pty_master *)this;
+	struct pty *p = pm->pty;
 
 	int ret = 0;
 
@@ -68,6 +68,9 @@ static int pty_ioctl(struct resource *this, struct f_description *description,
 		case TIOCSPTLCK: {
 			break;
 		}
+		case TIOCSCTTY: {
+			break;
+		}
 		default:
 			errno = EINVAL;
 			ret = -1;
@@ -106,6 +109,8 @@ static ssize_t pty_master_read(struct resource *this,
 
 	while (p->in.used == 0) {
 		if (description->flags & O_NONBLOCK) {
+			ret = -1;
+			errno = EAGAIN;
 			goto end;
 		}
 		spinlock_drop(&this->lock);
@@ -144,15 +149,12 @@ static ssize_t pty_master_read(struct resource *this,
 
 	p->in.read_ptr = new_ptr;
 	p->in.used -= count;
+	p->ps->res.status |= POLLOUT;
 
-	if (p->in.used == 0) {
-		this->status &= ~POLLIN;
-	}
-	if (p->in.used < p->in.data_length) {
-		this->status |= POLLOUT;
-	}
 	event_trigger(&p->in.ev, false);
+	p->ps->res.status &= ~POLLIN;
 	ret = count;
+
 end:
 	spinlock_drop(&this->lock);
 	return ret;
@@ -206,12 +208,8 @@ static ssize_t pty_master_write(struct resource *this,
 
 	p->out.write_ptr = new_ptr;
 	p->out.used += count;
+	p->ps->res.status |= POLLIN;
 
-	if (p->out.used == p->out.data_length) {
-		this->status &= ~POLLOUT;
-	}
-
-	this->status |= POLLIN;
 	event_trigger(&p->out.ev, false);
 	ret = count;
 
@@ -233,6 +231,8 @@ static ssize_t pty_slave_read(struct resource *this,
 
 	while (p->out.used == 0) {
 		if (description->flags & O_NONBLOCK) {
+			ret = -1;
+			errno = EAGAIN;
 			goto end;
 		}
 		spinlock_drop(&this->lock);
@@ -271,15 +271,10 @@ static ssize_t pty_slave_read(struct resource *this,
 
 	p->out.read_ptr = new_ptr;
 	p->out.used -= count;
-
-	if (p->out.used == 0) {
-		this->status &= ~POLLIN;
-	}
-	if (p->out.used < p->out.data_length) {
-		this->status |= POLLOUT;
-	}
+	p->pm->res.status |= POLLOUT;
 
 	event_trigger(&p->out.ev, false);
+	p->pm->res.status &= ~POLLIN;
 	ret = count;
 end:
 	spinlock_drop(&this->lock);
@@ -335,11 +330,7 @@ static ssize_t pty_slave_write(struct resource *this,
 	p->in.write_ptr = new_ptr;
 	p->in.used += count;
 
-	if (p->in.used == p->in.data_length) {
-		this->status &= ~POLLOUT;
-	}
-
-	this->status |= POLLIN;
+	p->pm->res.status |= POLLIN;
 	event_trigger(&p->in.ev, false);
 	ret = count;
 
@@ -407,7 +398,6 @@ void syscall_openpty(struct syscall_arguments *args) {
 	ps->res.read = pty_slave_read;
 	ps->res.write = pty_slave_write;
 	ps->res.ioctl = pty_ioctl;
-	ps->res.status |= POLLOUT;
 	ps->res.stat.st_size = 0;
 	ps->res.stat.st_blocks = 0;
 	ps->res.stat.st_blksize = 4096;
@@ -418,9 +408,10 @@ void syscall_openpty(struct syscall_arguments *args) {
 	pm->res.refcount = 1;
 	pm->res.read = pty_master_read;
 	pm->res.write = pty_master_write;
-	pm->res.unref = pty_master_unref;
 	pm->res.ioctl = pty_ioctl;
-	pm->res.status |= POLLOUT;
+
+	p->pm = pm;
+	p->ps = ps;
 
 	fds[0] = fdnum_create_from_resource(proc, (struct resource *)pm, O_RDWR, 0,
 										false);
@@ -431,7 +422,7 @@ void syscall_openpty(struct syscall_arguments *args) {
 		args->ret = -1;
 	}
 
-	char name[5 + 3 + 1] = "tty";
+	char name[5 + 3 + 1] = "pty";
 	char num[3 + 1] = {0};
 	ultoa(p->name, num, 10);
 	strcat(name, num);

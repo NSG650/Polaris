@@ -1,0 +1,21 @@
+name=hsetroot
+version=1.0.5
+revision=1
+tarball_url="https://github.com/himdel/hsetroot/archive/refs/tags/${version}.tar.gz"
+tarball_blake2b="54e80f00d140a83a950d98663db6555a00ac770bd85826b17d8293e3af27cba2a45c2da5e4c185ca90c6adc35bbf2ccdaa3722d015b31654d5e35f4e65a61366"
+source_hostdeps="autoconf automake libtool pkg-config"
+source_deps="xorg-util-macros"
+hostdeps="gcc autoconf automake libtool pkg-config"
+deps="core-libs libx11 libxt libxinerama libxext libxcb imlib2"
+
+build() {
+    cp -rp "${source_dir}"/. ./
+
+    make CC=$OS_TRIPLET-gcc PKG_CONFIG=$OS_TRIPLET-pkg-config -j${parallelism}
+}
+
+package() {
+    mkdir -p "${dest_dir}/usr/bin"
+	cp ./hsetroot "${dest_dir}/usr/bin/"
+    post_package_strip
+}

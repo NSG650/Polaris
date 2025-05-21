@@ -52,14 +52,13 @@ new file mode 100644
 index 0000000..b3d3d19
 --- /dev/null
 +++ xf86-input-keyboard-workdir/src/polaris_kbd.c
-@@ -0,0 +1,31 @@
-+
+@@ -0,0 +1,108 @@
 +#ifdef HAVE_CONFIG_H
 +#include <config.h>
 +#endif
 +
-+#include <xorg-server.h>
 +#include <X11/X.h>
++#include <xorg-server.h>
 +
 +#include "compiler.h"
 +
@@ -67,20 +66,98 @@ index 0000000..b3d3d19
 +#include "xf86Priv.h"
 +#include "xf86_OSlib.h"
 +
-+#include "xf86Xinput.h"
-+#include "xf86OSKbd.h"
 +#include "atKeynames.h"
 +#include "xf86Keymap.h"
++#include "xf86OSKbd.h"
++#include "xf86Xinput.h"
 +
-+#include <stdio.h>
-+#include <errno.h>
-+#include <sys/time.h>
-+#include <sys/file.h>
 +#include <assert.h>
++#include <errno.h>
++#include <stdio.h>
++#include <sys/file.h>
 +#include <sys/ioctl.h>
++#include <sys/time.h>
 +
-+Bool
-+xf86OSKbdPreInit(InputInfoPtr pInfo)
-+{
-+    return FALSE;
++static int KbdOn(InputInfoPtr pInfo, int what) {
++    return Success;
++}
++
++static int KbdOff(InputInfoPtr pInfo, int what) {
++    printf("kbdOff is a stub!\n");
++    return -1;
++}
++
++static void SoundKbdBell(InputInfoPtr pInfo, int loudness, int pitch, int duration) {
++    printf("SoundKbdBell is a stub!\n");
++}
++
++static void SetKbdLeds(InputInfoPtr pInfo, int leds) {
++    printf("SetKbdLeds: is a stub!\n");
++}
++
++static int GetKbdLeds(InputInfoPtr pInfo) {
++    printf("GetKbdLeds is a stub!\n");
++    return -1;
++}
++
++// Save the initial keyboard state. This function is called at the start
++// of each server generation.
++static int KbdInit(InputInfoPtr pInfo, int what) {
++    return Success;
++}
++
++static void KbdGetMapping(InputInfoPtr pInfo, KeySymsPtr pKeySyms, CARD8 *pModMap) {
++    printf("KbdGetMapping is a stub!\n");
++}
++
++static void ReadInput(InputInfoPtr pInfo) {
++    KbdDevPtr pKbd = (KbdDevPtr) pInfo->private;
++
++    uint8_t scancodes[64];
++    ssize_t result = read(pInfo->fd, scancodes, sizeof(scancodes));
++    if (result > 0) {
++        for (ssize_t i = 0; i < result; i++) {
++            pKbd->PostEvent(pInfo, scancodes[i] & 0x7f, scancodes[i] & 0x80 ? FALSE : TRUE);
++        }
++    }
++}
++
++static Bool OpenKeyboard(InputInfoPtr pInfo) {
++    char *kbdPath = xf86SetStrOption(pInfo->options, "Device", "/dev/keyboard");
++    Bool ret;
++
++    pInfo->fd = open(kbdPath, O_RDONLY | O_NONBLOCK);
++
++    if (pInfo->fd == -1) {
++        xf86Msg(X_ERROR, "%s: cannot open \"%s\"\n", pInfo->name, kbdPath);
++        ret = FALSE;
++    } else {
++        xf86MsgVerb(X_INFO, 3, "%s: opened device \"%s\"\n", pInfo->name, kbdPath);
++        pInfo->read_input = ReadInput;
++        ret = TRUE;
++
++        // in case it wasn't set and we fell back to default.
++        xf86ReplaceStrOption(pInfo->options, "Device", kbdPath);
++    }
++
++    free(kbdPath);
++    return ret;
++}
++
++Bool xf86OSKbdPreInit(InputInfoPtr pInfo) {
++    KbdDevPtr pKbd = pInfo->private;
++
++    pKbd->KbdInit       = KbdInit;
++    pKbd->KbdOn         = KbdOn;
++    pKbd->KbdOff        = KbdOff;
++    pKbd->Bell          = SoundKbdBell;
++    pKbd->SetLeds       = SetKbdLeds;
++    pKbd->GetLeds       = GetKbdLeds;
++    pKbd->KbdGetMapping = KbdGetMapping;
++    pKbd->OpenKeyboard = OpenKeyboard;
++
++    pKbd->RemapScanCode = NULL;
++    pKbd->private = NULL;
++
++    return TRUE;
 +}
