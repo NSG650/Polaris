@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <klibc/mem.h>
 #include <sched/sched.h>
+#include <fs/devtmpfs.h>
 
 static int pty_number = 0;
 
@@ -17,14 +18,6 @@ static int pty_ioctl(struct resource *this, struct f_description *description,
 	int ret = 0;
 
 	switch (request) {
-		case 0x1: {
-			char base[12] = "/dev/pty";
-			char num[3] = {0};
-			ultoa(p->name, num, 10);
-			strcat(base, num);
-			memcpy((void *)arg, base, 12);
-			break;
-		}
 		case TCGETS: {
 			struct termios *t = (void *)arg;
 			if (t)
@@ -46,13 +39,33 @@ static int pty_ioctl(struct resource *this, struct f_description *description,
 			break;
 		}
 		case TIOCSPGRP: {
-			ret = 0;
 			break;
 		}
 		case TIOCSWINSZ: {
 			struct winsize *w = (void *)arg;
 			if (w)
 				p->ws = *w;
+			break;
+		}
+		case TIOCGPGRP: {
+			int *n = (int *)arg;
+			if (n)
+				*n = sched_get_running_thread()->mother_proc->pid;
+			break;
+		}
+		case TIOCGSID: {
+			int *n = (int *)arg;
+			if (n)
+				*n = sched_get_running_thread()->mother_proc->pid;
+			break;
+		}
+		case TIOCGPTN: {
+			int *n = (int *)arg;
+			if (n)
+				*n = p->name;
+			break;
+		}
+		case TIOCSPTLCK: {
 			break;
 		}
 		default:
@@ -395,6 +408,11 @@ void syscall_openpty(struct syscall_arguments *args) {
 	ps->res.write = pty_slave_write;
 	ps->res.ioctl = pty_ioctl;
 	ps->res.status |= POLLOUT;
+	ps->res.stat.st_size = 0;
+	ps->res.stat.st_blocks = 0;
+	ps->res.stat.st_blksize = 4096;
+	ps->res.stat.st_rdev = resource_create_dev_id();
+	ps->res.stat.st_mode = 0644 | S_IFCHR;
 
 	pm->pty = p;
 	pm->res.refcount = 1;
@@ -412,6 +430,13 @@ void syscall_openpty(struct syscall_arguments *args) {
 	if (fds[0] == -1 || fds[1] == -1) {
 		args->ret = -1;
 	}
+
+	char name[5 + 3 + 1] = "tty";
+	char num[3 + 1] = {0};
+	ultoa(p->name, num, 10);
+	strcat(name, num);
+
+	devtmpfs_add_device((struct resource *)ps, name);
 
 	args->ret = 0;
 }

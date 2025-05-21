@@ -72,7 +72,6 @@ struct process {
 	struct auxval auxv;
 	struct event death_event;
 	uint8_t status;
-	mode_t umask;
 	char name[256];
 	struct process *next;
 };

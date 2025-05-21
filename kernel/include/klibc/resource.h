@@ -27,6 +27,7 @@ struct resource {
 	int (*ioctl)(struct resource *this, struct f_description *description,
 				 uint64_t request, uint64_t arg);
 	void *(*mmap)(struct resource *this, size_t file_page, int flags);
+	bool (*ref)(struct resource *this, struct f_description *description);
 	bool (*unref)(struct resource *this, struct f_description *description);
 	bool (*truncate)(struct resource *this, struct f_description *description,
 					 size_t length);

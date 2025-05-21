@@ -1,0 +1,23 @@
+name=xorg-mkfontscale
+version=1.2.3
+revision=1
+tarball_url="https://www.x.org/pub/individual/app/mkfontscale-${version}.tar.xz"
+tarball_blake2b="93024a607ebe789682c00490528de1688d073f016b97f7c9fd86b225ee1ac96616c3666708b72e3984383f13f89025e12f591fada324b8a14e99764c5cdf33e9"
+source_hostdeps="automake autoconf libtool pkg-config xorg-font-util"
+source_deps="xorg-util-macros"
+hostdeps="gcc autoconf automake libtool pkg-config"
+deps="freetype2 libfontenc"
+
+regenerate() {
+    autotools_recursive_regen
+}
+
+build() {
+    autotools_configure
+
+    make -j${parallelism}
+}
+
+package() {
+	make install DESTDIR=${dest_dir}
+}
