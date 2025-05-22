@@ -152,7 +152,7 @@ static ssize_t pty_master_read(struct resource *this,
 	p->ps->res.status |= POLLOUT;
 
 	event_trigger(&p->in.ev, false);
-	p->ps->res.status &= ~POLLIN;
+	this->status &= ~POLLIN;
 	ret = count;
 
 end:
@@ -165,21 +165,22 @@ static ssize_t pty_master_write(struct resource *this,
 								const void *buf, off_t offset, size_t count) {
 	(void)description;
 	(void)offset;
-	spinlock_acquire_or_wait(&this->lock);
 
 	struct pty_master *pm = (struct pty_master *)this;
 	struct pty *p = pm->pty;
+	struct pty_slave *ps = p->ps;
 	ssize_t ret = 0;
 
+	spinlock_acquire_or_wait(&ps->res.lock);
 	if (p->out.used == p->out.data_length) {
-		spinlock_drop(&this->lock);
+		spinlock_drop(&ps->res.lock);
 		struct event *events[] = {&p->out.ev};
 		if (event_await(events, 1, true) < 0) {
 			errno = EINTR;
 			ret = -1;
 			return ret;
 		}
-		spinlock_acquire_or_wait(&this->lock);
+		spinlock_acquire_or_wait(&ps->res.lock);
 	}
 
 	if (p->out.used + count > p->out.data_length) {
@@ -208,12 +209,12 @@ static ssize_t pty_master_write(struct resource *this,
 
 	p->out.write_ptr = new_ptr;
 	p->out.used += count;
-	p->ps->res.status |= POLLIN;
+	ps->res.status |= POLLIN;
 
 	event_trigger(&p->out.ev, false);
 	ret = count;
 
-	spinlock_drop(&this->lock);
+	spinlock_drop(&ps->res.lock);
 	return ret;
 }
 
@@ -274,7 +275,7 @@ static ssize_t pty_slave_read(struct resource *this,
 	p->pm->res.status |= POLLOUT;
 
 	event_trigger(&p->out.ev, false);
-	p->pm->res.status &= ~POLLIN;
+	this->status &= ~POLLIN;
 	ret = count;
 end:
 	spinlock_drop(&this->lock);
@@ -286,21 +287,22 @@ static ssize_t pty_slave_write(struct resource *this,
 							   const void *buf, off_t offset, size_t count) {
 	(void)description;
 	(void)offset;
-	spinlock_acquire_or_wait(&this->lock);
 
 	struct pty_slave *ps = (struct pty_slave *)this;
 	struct pty *p = ps->pty;
+	struct pty_master *pm = p->pm;
 	ssize_t ret = 0;
 
+	spinlock_acquire_or_wait(&pm->res.lock);
 	if (p->in.used == p->in.data_length) {
-		spinlock_drop(&this->lock);
+		spinlock_drop(&pm->res.lock);
 		struct event *events[] = {&p->in.ev};
 		if (event_await(events, 1, true) < 0) {
 			errno = EINTR;
 			ret = -1;
 			return ret;
 		}
-		spinlock_acquire_or_wait(&this->lock);
+		spinlock_acquire_or_wait(&pm->res.lock);
 	}
 
 	if (p->in.used + count > p->in.data_length) {
@@ -330,11 +332,11 @@ static ssize_t pty_slave_write(struct resource *this,
 	p->in.write_ptr = new_ptr;
 	p->in.used += count;
 
-	p->pm->res.status |= POLLIN;
+	pm->res.status |= POLLIN;
 	event_trigger(&p->in.ev, false);
 	ret = count;
 
-	spinlock_drop(&this->lock);
+	spinlock_drop(&pm->res.lock);
 	return ret;
 }
 

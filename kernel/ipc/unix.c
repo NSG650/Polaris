@@ -2,6 +2,7 @@
 #include <errno.h>
 #include <ipc/unix.h>
 #include <klibc/misc.h>
+#include <sched/sched.h>
 
 #define FIONREAD 0x541b
 
