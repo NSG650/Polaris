@@ -3,6 +3,11 @@
 Polaris is another UNIX-like kernel written in C, which uses [Limine](https://github.com/limine-bootloader/limine) as its default bootloader and boot protocol.
 It's goal is to be simple to build and understand, while also acting as a learning experience.
 
+![Command line program demo](/command_line_program_demo.png?raw=true "Command line program demo")
+![GUI program demo](/gui_program_demo.png?raw=true "GUI program demo")
+
+[Background Image by Ambra](https://www.flickr.com/photos/190109522@N05/53788024487/)
+
 > [!WARNING]
 > Polaris is under active development and is not suitable for real usage.
 
