@@ -233,10 +233,10 @@ void syscall_uname(struct syscall_arguments *args) {
 
 void syscall_sethostname(struct syscall_arguments *args) {
 	size_t count = args->args1;
-	if (count > 65) {
-		count = 65;
+	if (count > 64) {
+		count = 64;
 	}
-	memzero(&system_uname.nodename, 65);
+	memzero(&system_uname.nodename, sizeof(system_uname.nodename));
 	memcpy(&system_uname.nodename, (char *)args->args0, count);
 	args->ret = 0;
 }
@@ -365,6 +365,12 @@ void syscall_thread_exit(struct syscall_arguments *args) {
 	thread_kill(sched_get_running_thread(), true);
 }
 
+void syscall_umask(struct syscall_arguments *args) {
+	mode_t old = sched_get_running_thread()->mother_proc->umask;
+	sched_get_running_thread()->mother_proc->umask = ((mode_t)args->args0);
+	args->ret = old;
+}
+
 void sched_init(uint64_t args) {
 	syscall_register_handler(0x27, syscall_getpid);
 	syscall_register_handler(0x67, syscall_puts);
@@ -380,6 +386,8 @@ void sched_init(uint64_t args) {
 
 	syscall_register_handler(0x38, syscall_thread_new);
 	syscall_register_handler(0x3d, syscall_thread_exit);
+
+	syscall_register_handler(0x5f, syscall_umask);
 
 	futex_init();
 
