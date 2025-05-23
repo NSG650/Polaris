@@ -1,11 +1,18 @@
-Only in gcon: aclocal.m4
-Only in gcon: autom4te.cache
-Only in gcon: build-aux
-Only in gcon: configure
-Only in gcon/src: flanterm
-diff --color -ur gcon-clean/src/main.c gcon/src/main.c
---- gcon-clean/src/main.c	2025-01-28 00:16:46.000000000 +0530
-+++ gcon/src/main.c	2025-02-10 14:19:22.479318268 +0530
+diff --color -ur gcon-clean/configure.ac gcon-workdir/configure.ac
+--- gcon-clean/configure.ac	2025-05-19 11:04:13.000000000 +0530
++++ gcon-workdir/configure.ac	2025-05-23 19:02:26.294952269 +0530
+@@ -123,7 +123,7 @@
+ CPPFLAGS="$PKGCONF_CPPFLAGS $CPPFLAGS"
+ LIBS="$LIBS $PKGCONF_LIBS"
+ 
+-AC_CHECK_HEADERS([stdio.h unistd.h pthread.h fcntl.h linux/fb.h sys/ttydefaults.h sys/syscall.h stdlib.h sys/mman.h sys/wait.h sys/ioctl.h termios.h ctype.h stdnoreturn.h pty.h],
++AC_CHECK_HEADERS([stdio.h unistd.h pthread.h fcntl.h linux/fb.h sys/ttydefaults.h stdlib.h sys/mman.h sys/wait.h sys/ioctl.h termios.h ctype.h stdnoreturn.h pty.h],
+     [], [AC_MSG_ERROR([required header not found])])
+ 
+ CFLAGS="$OLD_CFLAGS"
+diff --color -ur gcon-clean/src/main.c gcon-workdir/src/main.c
+--- gcon-clean/src/main.c	2025-05-19 11:04:13.000000000 +0530
++++ gcon-workdir/src/main.c	2025-05-23 19:00:13.044953990 +0530
 @@ -22,7 +22,6 @@
  #include <fcntl.h>
  #include <linux/fb.h>
@@ -40,8 +47,8 @@ diff --color -ur gcon-clean/src/main.c gcon/src/main.c
 +        ;
      }
  
-     ttys[current_tty].context->autoflush = false;
-@@ -411,7 +410,7 @@
+     flanterm_set_autoflush(ttys[current_tty].context, false);
+@@ -421,7 +420,7 @@
  
      // Open devices.
      pcspkr = open("/dev/pcspeaker", O_RDWR);
@@ -50,7 +57,7 @@ diff --color -ur gcon-clean/src/main.c gcon/src/main.c
      if (kb == -1) {
          perror("Could not open keyboard");
          return 1;
-@@ -447,7 +446,7 @@
+@@ -457,7 +456,7 @@
      termios.c_iflag = BRKINT | IGNPAR | ICRNL | IXON | IMAXBEL;
      termios.c_oflag = OPOST | ONLCR;
      termios.c_cflag = CS8 | CREAD;
