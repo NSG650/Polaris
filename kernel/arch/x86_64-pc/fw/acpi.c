@@ -27,7 +27,6 @@ void acpi_init(acpi_xsdp_t *rsdp) {
 	}
 	pci_init();
 	madt_init();
-	hpet_init();
 	if (!(kernel_arguments.kernel_args & KERNEL_ARGS_NO_LAI)) {
 		lai_set_acpi_revision(revision);
 		lai_create_namespace();

@@ -29,6 +29,7 @@
 #include <sys/isr.h>
 #include <sys/pic.h>
 #include <sys/prcb.h>
+#include <sys/timer.h>
 
 static uintptr_t lapic_addr = 0;
 static bool x2apic = false;

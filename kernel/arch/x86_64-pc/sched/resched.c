@@ -42,21 +42,19 @@ void sched_yield(bool save) {
 	}
 }
 
-uint64_t timer_sched_tick(void) {
-	return prcb_return_current_cpu()->sched_ticks;
-}
-
 void resched(registers_t *reg) {
 	cli();
 
 	vmm_switch_pagemap(kernel_pagemap);
 	prcb_return_current_cpu()->sched_ticks++;
 	timer_stop_sched();
-	if (prcb_return_current_cpu()->lapic_id == smp_bsp_lapic_id) {
-		timer_handler();
-	}
 
 	struct thread *running_thrd = prcb_return_current_cpu()->running_thread;
+	uint64_t runtime = running_thrd == NULL ? 20000 : running_thrd->runtime;
+	
+	if (prcb_return_current_cpu()->lapic_id == smp_bsp_lapic_id) {
+		timer_handler(runtime * 1000);
+	}
 
 	if (running_thrd) {
 		spinlock_drop(&running_thrd->yield_lock);

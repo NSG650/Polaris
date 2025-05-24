@@ -37,6 +37,8 @@
 #include <sys/hpet.h>
 #include <sys/idt.h>
 #include <sys/isr.h>
+#include <sys/pit.h>
+#include <sys/timer.h>
 #include <sys/prcb.h>
 
 extern bool print_now;
@@ -173,6 +175,7 @@ void arch_entry(void) {
 	elf_init_function_table(kernel_file->address);
 
 	acpi_init(rsdp_request.response->address);
+	timer_init();
 	apic_init();
 
 	smp_init(smp_request.response);

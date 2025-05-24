@@ -33,7 +33,7 @@ static uint64_t _random_get_seed(void) {
 	int *k = kmalloc(sizeof(int));
 	int dk = *k;
 	kfree(k);
-	return (timer_get_abs_count() ^ dk);
+	return (timer_count() ^ dk);
 }
 
 uint64_t (*random_get_seed)(void) = _random_get_seed;

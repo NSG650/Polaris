@@ -5,9 +5,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-static volatile struct limine_boot_time_request boot_time_request = {
-	.id = LIMINE_BOOT_TIME_REQUEST, .revision = 0};
-
 struct timespec time_monotonic = {0, 0};
 struct timespec time_realtime = {0, 0};
 
@@ -60,17 +57,13 @@ cleanup:
 }
 
 void time_init(void) {
-	struct limine_boot_time_response *boot_time_resp =
-		boot_time_request.response;
-
-	time_realtime.tv_sec = boot_time_resp->boot_time;
 	syscall_register_handler(0x13a, syscall_getclock);
 	syscall_register_handler(0x23, syscall_nanosleep);
 }
 
-void timer_handler(void) {
+void timer_handler(uint64_t ns) {
 	struct timespec interval = {
-		.tv_sec = 0, .tv_nsec = 1000000000 / ((tick_in_10ms / 10) / 1000)};
+		.tv_sec = 0, .tv_nsec = ns};
 
 	time_monotonic = timespec_add(time_monotonic, interval);
 	time_realtime = timespec_add(time_realtime, interval);

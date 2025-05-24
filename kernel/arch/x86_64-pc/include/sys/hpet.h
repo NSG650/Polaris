@@ -47,15 +47,7 @@ struct hpet {
 	uint64_t reserved5;
 };
 
-void hpet_init(void);
 uint64_t hpet_counter_value(void);
 void hpet_sleep(uint64_t us);
-
-bool timer_installed(void);
-void timer_sleep(uint64_t ms);
-void timer_sleep_ns(uint64_t ns);
-uint64_t timer_count(void);
-uint64_t timer_get_sleep_ns(uint64_t ns);
-uint64_t timer_get_abs_count(void);
 
 #endif
