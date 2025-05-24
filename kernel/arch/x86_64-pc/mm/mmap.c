@@ -147,13 +147,13 @@ cleanup:
 
 bool mmap_page_in_range(struct mmap_range_global *global, uintptr_t virt,
 						uintptr_t phys, int prot) {
-	uint64_t pt_flags = 0b1 | 0b100;
+	uint64_t pt_flags = PAGE_READ | PAGE_USER;
 
 	if ((prot & PROT_WRITE) != 0) {
-		pt_flags |= 0b010;
+		pt_flags |= PAGE_WRITE;
 	}
 	if ((prot & PROT_EXEC) == 0) {
-		pt_flags |= 1ull << 63ull;
+		pt_flags |= PAGE_NO_EXECUTE;
 	}
 
 	if (!vmm_map_page(global->shadow_pagemap, virt, phys, pt_flags, Size4KiB)) {
@@ -420,14 +420,13 @@ bool mprotect(struct pagemap *pagemap, uintptr_t addr, size_t length,
 		}
 
 		for (uintptr_t j = snip_begin; j < snip_end; j += PAGE_SIZE) {
-			uint64_t pt_flags = 0b1 | 0b100;
+			uint64_t pt_flags = PAGE_READ | PAGE_USER;
 
 			if ((prot & PROT_WRITE) != 0) {
-				pt_flags |= 0b10;
+				pt_flags |= PAGE_WRITE;
 			}
 			if ((prot & PROT_EXEC) == 0) {
-				pt_flags |= 1ull << 63ull;
-				;
+				pt_flags |= PAGE_NO_EXECUTE;
 			}
 			vmm_remap_page(pagemap, j, pt_flags, true);
 		}

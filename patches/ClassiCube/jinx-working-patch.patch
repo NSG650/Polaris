@@ -1,0 +1,48 @@
+diff --color -ur ClassiCube-clean/src/Audio.c ClassiCube-workdir/src/Audio.c
+--- ClassiCube-clean/src/Audio.c	2023-01-06 06:54:02.000000000 +0530
++++ ClassiCube-workdir/src/Audio.c	2025-05-24 12:35:49.068284679 +0530
+@@ -861,6 +861,9 @@
+
+ void Audio_PlayDigSound(cc_uint8 type)  { }
+ void Audio_PlayStepSound(cc_uint8 type) { }
++cc_bool Audio_DescribeError(cc_result res, cc_string* dst) {
++	return true;
++}
+ #else
+ #define AUDIO_MAX_SOUNDS 10
+ #define SOUND_MAX_CONTEXTS 8
+diff --color -ur ClassiCube-clean/src/Core.h ClassiCube-workdir/src/Core.h
+--- ClassiCube-clean/src/Core.h	2023-01-06 06:54:02.000000000 +0530
++++ ClassiCube-workdir/src/Core.h	2025-05-24 12:35:36.238284606 +0530
+@@ -192,6 +192,14 @@
+ #define CC_BUILD_GLES
+ #define CC_BUILD_EGL
+ #endif
++#elif defined __polaris__
++#define CC_BUILD_LINUX
++#define CC_BUILD_POSIX
++#define CC_BUILD_GL
++#define CC_BUILD_X11
++#define CC_BUILD_NOMUSIC
++#define CC_BUILD_NOSOUNDS
++#define CC_BUILD_CURL
+ #elif defined __APPLE__
+ #define CC_BUILD_DARWIN
+ #define CC_BUILD_POSIX
+diff --color -ur ClassiCube-clean/src/Platform_Posix.c ClassiCube-workdir/src/Platform_Posix.c
+--- ClassiCube-clean/src/Platform_Posix.c	2023-01-06 06:54:02.000000000 +0530
++++ ClassiCube-workdir/src/Platform_Posix.c	2025-05-24 12:36:26.138284889 +0530
+@@ -717,8 +717,13 @@
+ }
+ #elif defined CC_BUILD_LINUX || defined CC_BUILD_SERENITY
+ static cc_result Process_RawGetExePath(char* path, int* len) {
++#if defined(__polaris__)
++	strcpy(path, "/usr/bin/ClassiCube");
++	*len = 19;
++#else
+ 	*len = readlink("/proc/self/exe", path, NATIVE_STR_LEN);
+ 	return *len == -1 ? errno : 0;
++#endif
+ }
+ #elif defined CC_BUILD_FREEBSD
+ static cc_result Process_RawGetExePath(char* path, int* len) {

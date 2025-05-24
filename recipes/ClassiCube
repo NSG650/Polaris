@@ -1,0 +1,20 @@
+name=ClassiCube
+version=1.3.5
+revision=1
+tarball_url="https://github.com/ClassiCube/ClassiCube/archive/refs/tags/${version}.tar.gz"
+tarball_blake2b="b3cd38a61ba3dbb1e47d9837bfae9527d9ba34b893101dd9158c75edbaf90256d63f31f3230371458d485c3177a6b9c9d252ed8fef82cd7c99fdb74af08beec0"
+source_imagedeps="git"
+source_hostdeps="automake autoconf libtool pkg-config"
+source_allow_network="yes"
+hostdeps="gcc autoconf automake libtool pkg-config"
+deps="core-libs freetype2 mesa glu libx11 libxi libxext curl"
+
+build() {
+    cp -rp "${source_dir}"/. ./
+    ${OS_TRIPLET}-gcc src/*.c -o ClassiCube -lpthread -lX11 -lXi -lGL -lm -Wno-incompatible-pointer-types
+}
+
+package() {
+    mkdir -p "${dest_dir}/usr/bin"
+    cp ./ClassiCube "${dest_dir}/usr/bin/"
+}

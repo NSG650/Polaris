@@ -405,21 +405,23 @@ void vmm_page_fault_handler(registers_t *reg) {
 				thrd->tid, thrd->mother_proc->name);
 		kprintf("User thread crashed at address: %p\n", reg->rip);
 		// backtrace_unsafe((void *)reg->rbp);
-		// kprintf("RIP: %p RBP: %p RSP: %p\n", reg->rip, reg->rbp, reg->rsp);
-		// kprintf("RAX: %p RBX: %p RCX: %p\n", reg->rax, reg->rbx, reg->rcx);
-		// kprintf("RDX: %p RDI: %p RSI: %p\n", reg->rdx, reg->rdi, reg->rsi);
-		// kprintf("R8 : %p R9 : %p R10: %p\n", reg->r8, reg->r9, reg->r10);
-		// kprintf("R11: %p R12: %p R13: %p\n", reg->r11, reg->r12, reg->r13);
-		// kprintf("R14: %p R15: %p ERR: 0b%b\n", reg->r14, reg->r15,
-		// 		reg->errorCode);
-		// kprintf("CS : %p SS : %p RFLAGS: %p\n", reg->cs, reg->ss, reg->rflags);
-		// kprintf("FS: %p UGS: %p KGS: %p\n", read_fs_base(), read_user_gs(),
-		// 		read_kernel_gs());
-		// kprintf("Page fault at %p present: %s, read/write: %s, "
-		// 		"user/supervisor: %s, reserved: %s, execute: %s\n",
-		// 		faulting_address, present ? "P" : "NP", read_write ? "R" : "RW",
-		// 		user_supervisor ? "U" : "S", reserved ? "R" : "NR",
-		// 		execute ? "X" : "NX");
+#if 0
+		kprintf("RIP: %p RBP: %p RSP: %p\n", reg->rip, reg->rbp, reg->rsp);
+		kprintf("RAX: %p RBX: %p RCX: %p\n", reg->rax, reg->rbx, reg->rcx);
+		kprintf("RDX: %p RDI: %p RSI: %p\n", reg->rdx, reg->rdi, reg->rsi);
+		kprintf("R8 : %p R9 : %p R10: %p\n", reg->r8, reg->r9, reg->r10);
+		kprintf("R11: %p R12: %p R13: %p\n", reg->r11, reg->r12, reg->r13);
+		kprintf("R14: %p R15: %p ERR: 0b%b\n", reg->r14, reg->r15,
+				reg->errorCode);
+		kprintf("CS : %p SS : %p RFLAGS: %p\n", reg->cs, reg->ss, reg->rflags);
+		kprintf("FS: %p UGS: %p KGS: %p\n", read_fs_base(), read_user_gs(),
+				read_kernel_gs());
+		kprintf("Page fault at %p present: %s, read/write: %s, "
+				"user/supervisor: %s, reserved: %s, execute: %s\n",
+				faulting_address, present ? "P" : "NP", read_write ? "R" : "RW",
+				user_supervisor ? "U" : "S", reserved ? "R" : "NR",
+				execute ? "X" : "NX");
+#endif
 		thread_kill(thrd, true);
 	} else {
 		kprintffos(0, "AH! UNHANDLED EXCEPTION!\n");
