@@ -38,8 +38,8 @@
 #include <sys/idt.h>
 #include <sys/isr.h>
 #include <sys/pit.h>
-#include <sys/timer.h>
 #include <sys/prcb.h>
+#include <sys/timer.h>
 
 extern bool print_now;
 

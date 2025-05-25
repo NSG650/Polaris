@@ -148,14 +148,11 @@ static ssize_t pty_master_read(struct resource *this,
 	p->in.read_ptr = new_ptr;
 	p->in.used -= count;
 
-	if (p->in.used == 0) {
-		this->status &= ~POLLIN;
-	}
-	if (p->in.used < p->in.data_length) {
-		this->status |= POLLOUT;
-		p->ps->res.status |= POLLOUT;
-	}
+	this->status |= POLLOUT;
+	p->ps->res.status |= POLLOUT;
 	event_trigger(&p->in.ev, false);
+	this->status &= ~POLLIN;
+
 	ret = count;
 end:
 	spinlock_drop(&this->lock);
@@ -211,10 +208,6 @@ static ssize_t pty_master_write(struct resource *this,
 
 	p->out.write_ptr = new_ptr;
 	p->out.used += count;
-
-	if (p->out.used == p->out.data_length) {
-		this->status &= ~POLLOUT;
-	}
 
 	this->status |= POLLIN;
 	p->ps->res.status |= POLLIN;
@@ -278,15 +271,11 @@ static ssize_t pty_slave_read(struct resource *this,
 	p->out.read_ptr = new_ptr;
 	p->out.used -= count;
 
-	if (p->out.used == 0) {
-		this->status &= ~POLLIN;
-	}
-	if (p->out.used < p->out.data_length) {
-		this->status |= POLLOUT;
-		p->pm->res.status |= POLLOUT;
-	}
+	this->status |= POLLOUT;
+	p->pm->res.status |= POLLOUT;
 
 	event_trigger(&p->out.ev, false);
+	this->status &= ~POLLIN;
 	ret = count;
 end:
 	spinlock_drop(&this->lock);
@@ -341,10 +330,6 @@ static ssize_t pty_slave_write(struct resource *this,
 
 	p->in.write_ptr = new_ptr;
 	p->in.used += count;
-
-	if (p->in.used == p->in.data_length) {
-		this->status &= ~POLLOUT;
-	}
 
 	this->status |= POLLIN;
 	p->pm->res.status |= POLLIN;

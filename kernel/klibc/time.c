@@ -4,6 +4,7 @@
 #include <limine.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <sys/timer.h>
 
 struct timespec time_monotonic = {0, 0};
 struct timespec time_realtime = {0, 0};
@@ -56,14 +57,8 @@ cleanup:
 	spinlock_drop(&timers_lock);
 }
 
-void time_init(void) {
-	syscall_register_handler(0x13a, syscall_getclock);
-	syscall_register_handler(0x23, syscall_nanosleep);
-}
-
 void timer_handler(uint64_t ns) {
-	struct timespec interval = {
-		.tv_sec = 0, .tv_nsec = ns};
+	struct timespec interval = {.tv_sec = ns / 1000000000, .tv_nsec = ns};
 
 	time_monotonic = timespec_add(time_monotonic, interval);
 	time_realtime = timespec_add(time_realtime, interval);
