@@ -72,3 +72,31 @@ meson_configure() {
         -Ddefault_library=shared \
         "$@"
 }
+
+cmake_configure() {
+        CFLAGS="$TARGET_CFLAGS" \
+        CXXFLAGS="$TARGET_CXXFLAGS" \
+        LDFLAGS="$TARGET_LDFLAGS" \
+    cmake_configure_noflags \
+        "$@"
+}
+
+cmake_configure_noflags() {
+    if [ -z "${cmake_source_dir}" ]; then
+        cmake_source_dir="${source_dir}"
+    fi
+
+    cmake "${cmake_source_dir}" \
+        -DCMAKE_TOOLCHAIN_FILE="${base_dir}/build-support/CMakeToolchain.txt" \
+        -DCMAKE_INSTALL_PREFIX=${prefix} \
+        -DCMAKE_INSTALL_SYSCONFDIR=/etc \
+        -DCMAKE_INSTALL_LOCALSTATEDIR=/var \
+        -DCMAKE_INSTALL_LIBDIR=lib \
+        -DCMAKE_INSTALL_SBINDIR=bin \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DBUILD_SHARED_LIBS=True \
+        -DENABLE_STATIC=False \
+        -DPKG_CONFIG_EXECUTABLE="/usr/local/bin/$OS_TRIPLET-pkg-config" \
+        -GNinja \
+        "$@"
+}
