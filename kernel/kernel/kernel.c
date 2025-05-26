@@ -24,7 +24,7 @@
 
 const char *module_list[] = {
 #if defined(__x86_64__)
-	"/usr/lib/modules/ps2.ko", "/usr/lib/modules/nvme.ko"
+	"/usr/lib/modules/ps2.ko", "/usr/lib/modules/i8254x.ko"
 #endif
 };
 
@@ -123,6 +123,7 @@ void kernel_main(void *args) {
 
 	// Done so that gcc will stop REMOVING this function
 	partition_enumerate(NULL, NULL);
+	net_handle_packet_thread(NULL);
 
 	fbdev_init();
 
@@ -162,7 +163,8 @@ void kernel_main(void *args) {
 	syscall_register_handler(0x53, syscall_socketpair);
 
 	console_init();
-	
+	net_init();
+
 	std_console_device =
 		(vfs_get_node(vfs_root, "/dev/console", true))->resource;
 

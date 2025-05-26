@@ -27,6 +27,7 @@ ifeq ($(CONFIG_ARCH),x86_64)
 	rm ps2.o mouse.o keyboard.o
 endif
 
+	$(CC) $(CFLAGS) x86_64/i8254x/main.c -o i8254x.ko
 	$(CC) $(CFLAGS) fs/fat32/main.c -o fat32.ko
 
 .PHONY: clean

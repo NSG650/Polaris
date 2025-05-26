@@ -207,4 +207,6 @@ uint64_t driver_entry(struct module *driver_module) {
 
 	nic_rtl8139.get_mac_addr = rtl8139_get_mac_addr;
 	nic_rtl8139.send_packet = rtl8139_send_packet;
+
+	return 0;
 }

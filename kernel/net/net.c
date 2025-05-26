@@ -5,7 +5,10 @@
 #include <sched/sched.h>
 #include <sys/prcb.h>
 
-void __attribute__((used)) net_handle_packet_thread(uint64_t *handover) {
+void net_handle_packet_thread(uint64_t *handover) {
+	if (handover == NULL) {
+		return;
+	}
 	uint8_t *packet = (uint8_t *)handover[0];
 	uint16_t length = (uint16_t)handover[1];
 	struct net_nic_interfaces *nic_interfaces =
@@ -16,10 +19,13 @@ void __attribute__((used)) net_handle_packet_thread(uint64_t *handover) {
 	thread_kill(sched_get_running_thread(), true);
 }
 
-void __attribute__((used))
-net_handle_packet(uint8_t *packet, uint16_t packet_length,
-				  struct net_nic_interfaces *nic_interfaces) {
+void net_handle_packet(uint8_t *packet, uint16_t packet_length,
+					   struct net_nic_interfaces *nic_interfaces) {
 	struct network_packet *net_pack = (struct network_packet *)packet;
+
+	if (net_pack == NULL) {
+		return;
+	}
 
 	uint8_t *data = packet + sizeof(struct network_packet);
 	size_t data_length = packet_length - sizeof(struct network_packet);
@@ -39,6 +45,6 @@ net_handle_packet(uint8_t *packet, uint16_t packet_length,
 	}
 }
 
-void __attribute__((used)) net_init(void) {
+void net_init(void) {
 	arp_init();
 }
