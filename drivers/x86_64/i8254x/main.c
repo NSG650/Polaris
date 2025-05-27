@@ -11,8 +11,6 @@
 #include <sched/sched.h>
 #include <sys/prcb.h>
 
-// This does not work at the moment
-
 struct i8254x_device {
 	uintptr_t mmio_address;
 	uint8_t mac_addr[6];
@@ -92,7 +90,7 @@ static void i8254x_tx_init(struct i8254x_device *dev) {
 
 	// Head and Tail pointer
 	mmoutd(I8254X_REG_TDH(dev->mmio_address), 0);
-	mmoutd(I8254X_REG_TDT(dev->mmio_address), NUM_TX_DESCRIPTORS);
+	mmoutd(I8254X_REG_TDT(dev->mmio_address), NUM_TX_DESCRIPTORS - 1);
 
 	dev->tx_tail = 0;
 
@@ -126,7 +124,7 @@ static void i8254x_rx_init(struct i8254x_device *dev) {
 
 	// Head and Tail pointer
 	mmoutd(I8254X_REG_RDH(dev->mmio_address), 0);
-	mmoutd(I8254X_REG_RDT(dev->mmio_address), NUM_RX_DESCRIPTORS);
+	mmoutd(I8254X_REG_RDT(dev->mmio_address), NUM_RX_DESCRIPTORS - 1);
 
 	dev->rx_tail = 0;
 
@@ -188,15 +186,15 @@ static void i8254x_rx_packet(struct i8254x_device *dev) {
 		}
 
 		dev->rx_desc[dev->rx_tail]->status = 0;
+		int tail = dev->tx_tail;
 		dev->rx_tail = (dev->rx_tail + 1) % NUM_RX_DESCRIPTORS;
 
-		mmoutd(I8254X_REG_RDT(dev->mmio_address), dev->rx_tail);
+		mmoutd(I8254X_REG_RDT(dev->mmio_address), tail);
 	}
 }
 
 static void i8254x_handler(registers_t *reg) {
 	cli();
-	kprintf("ping\n");
 	uint32_t icr = mmind((void *)(i8254x_dev.mmio_address + 0xc0));
 
 	// Clear TX success bit
@@ -206,7 +204,8 @@ static void i8254x_handler(registers_t *reg) {
 	if (icr & (1 << 2)) {
 		icr &= ~(1 << 2);
 		mmoutd(I8254X_REG_CTRL(i8254x_dev.mmio_address),
-			   (mmind(I8254X_REG_CTRL(i8254x_dev.mmio_address)) | CTRL_SLU));
+			   (mmind(I8254X_REG_CTRL(i8254x_dev.mmio_address)) | CTRL_SLU |
+				CTRL_ASDE));
 	}
 
 	// RX underrun / min threshold
@@ -222,7 +221,7 @@ static void i8254x_handler(registers_t *reg) {
 	}
 
 	if (icr)
-		kprintf("I8254X: Unhandled interrupt (0x%x)!\n", icr);
+		kprintf("I8254X: Unhandled interrupt: 0x%x!\n", icr);
 
 	// clearing the pending interrupts
 	mmind((void *)(i8254x_dev.mmio_address + 0xc0));
@@ -238,7 +237,7 @@ uint8_t *i8254x_get_mac_addr(void) {
 void i8254x_send_packet(uint8_t *dest, void *packet, uint32_t packet_length,
 						uint16_t protocol) {
 	struct network_packet *data =
-		(struct network_packet *)(pmm_allocz(
+		(struct network_packet *)((uintptr_t)pmm_allocz(
 									  ALIGN_UP(sizeof(struct network_packet) +
 												   packet_length,
 											   PAGE_SIZE)) +
@@ -255,7 +254,8 @@ void i8254x_send_packet(uint8_t *dest, void *packet, uint32_t packet_length,
 
 	i8254x_tx_packet(&i8254x_dev,
 					 (uint8_t *)((uintptr_t)data - MEM_PHYS_OFFSET),
-					 (uint16_t)packet_length);
+					 (uint16_t)data_length);
+
 	pmm_free((void *)((uintptr_t)data - MEM_PHYS_OFFSET),
 			 ALIGN_UP(data_length, PAGE_SIZE));
 }
@@ -326,7 +326,8 @@ uint64_t driver_entry(struct module *driver_module) {
 
 	// LINK UP
 	mmoutd(I8254X_REG_CTRL(i8254x_dev.mmio_address),
-		   (mmind(I8254X_REG_CTRL(i8254x_dev.mmio_address)) | CTRL_SLU));
+		   (mmind(I8254X_REG_CTRL(i8254x_dev.mmio_address)) | CTRL_SLU |
+			CTRL_ASDE));
 	// Initialize multicast array
 	for (int i = 0; i < 128; i++) {
 		mmoutd(I8254X_REG_MTA(i8254x_dev.mmio_address) + i * 4, 0);
@@ -336,11 +337,8 @@ uint64_t driver_entry(struct module *driver_module) {
 	i8254x_tx_init(&i8254x_dev);
 
 	// Enable interrupts
-    // God knows what will make this work bruh
-	mmoutd(I8254X_REG_RDTR(i8254x_dev.mmio_address), 0);
-	mmoutd((void *)(i8254x_dev.mmio_address + 0x2c2c), 0);
-	mmoutd((void *)(i8254x_dev.mmio_address + 0xc4), 651);
 	mmoutd(I8254X_REG_IMS(i8254x_dev.mmio_address), 0x1f6dc);
+	mmoutd(I8254X_REG_IMS(i8254x_dev.mmio_address), 0xff & ~4);
 	mmind((void *)(i8254x_dev.mmio_address + 0xc0));
 
 	kprintf("I8254X: Got Mac Addr %x:%x:%x:%x:%x:%x\n", i8254x_dev.mac_addr[0],

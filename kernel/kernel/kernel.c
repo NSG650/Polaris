@@ -24,7 +24,7 @@
 
 const char *module_list[] = {
 #if defined(__x86_64__)
-	"/usr/lib/modules/ps2.ko", "/usr/lib/modules/i8254x.ko"
+	"/usr/lib/modules/ps2.ko"
 #endif
 };
 
