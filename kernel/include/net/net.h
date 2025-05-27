@@ -27,7 +27,7 @@ struct net_nic_interfaces {
 };
 
 void net_handle_packet_thread(uint64_t *handover);
-void net_handle_packet(uint8_t *packet, uint16_t packet_length,
+void net_handle_packet(void *packet, uint16_t packet_length,
 					   struct net_nic_interfaces *nic_interfaces);
 void net_init(void);
 

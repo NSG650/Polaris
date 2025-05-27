@@ -31,48 +31,6 @@ const char *module_list[] = {
 #define MODULE_LIST_SIZE (sizeof(module_list) / sizeof(module_list[0]))
 #define ONE_SECOND (uint64_t)(1000 * 1000 * 1000)
 
-struct sysinfo {
-	long uptime;			 /* Seconds since boot */
-	unsigned long loads[3];	 /* 1, 5, and 15 minute load averages */
-	unsigned long totalram;	 /* Total usable main memory size */
-	unsigned long freeram;	 /* Available memory size */
-	unsigned long sharedram; /* Amount of shared memory */
-	unsigned long bufferram; /* Memory used by buffers */
-	unsigned long totalswap; /* Total swap space size */
-	unsigned long freeswap;	 /* swap space still available */
-	unsigned short procs;	 /* Number of current processes */
-	unsigned long totalhigh; /* Total high memory size */
-	unsigned long freehigh;	 /* Available high memory size */
-	unsigned int mem_unit;	 /* Memory unit size in bytes */
-	char _f[20 - 2 * sizeof(long) - sizeof(int)]; /* Padding to 64 bytes */
-};
-
-void syscall_sysinfo(struct syscall_arguments *args) {
-	struct sysinfo to_user = {0};
-
-	uint64_t page_info[2] = {0};
-	pmm_get_memory_info(page_info);
-
-	to_user.uptime = (long)timer_count() / 1000;
-	to_user.loads[0] = 0;
-	to_user.loads[1] = 0;
-	to_user.loads[2] = 0;
-	to_user.totalram = page_info[0] * PAGE_SIZE;
-	to_user.freeram = page_info[1] * PAGE_SIZE;
-	to_user.sharedram = 0;
-	to_user.bufferram = 0;
-	to_user.totalswap = 0;
-	to_user.freeswap = 0;
-	extern int64_t pid;
-	to_user.procs = (uint16_t)(pid);
-	to_user.mem_unit = 0;
-
-	args->ret = syscall_helper_copy_to_user(args->args0, &to_user,
-											sizeof(struct sysinfo))
-					? 0
-					: -1;
-}
-
 #ifdef KERNEL_ABUSE
 void kernel_dummy_sleeping_thread(void) {
 	for (;;) {
@@ -150,7 +108,6 @@ void kernel_main(void *args) {
 	syscall_register_handler(0x124, syscall_dup3);
 	syscall_register_handler(0x125, syscall_pipe);
 	syscall_register_handler(0xff, syscall_openpty);
-	syscall_register_handler(0x63, syscall_sysinfo);
 	syscall_register_handler(0x10f, syscall_ppoll);
 
 	syscall_register_handler(0x29, syscall_socket);

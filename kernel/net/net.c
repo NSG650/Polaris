@@ -19,7 +19,7 @@ void net_handle_packet_thread(uint64_t *handover) {
 	thread_kill(sched_get_running_thread(), true);
 }
 
-void net_handle_packet(uint8_t *packet, uint16_t packet_length,
+void net_handle_packet(void *packet, uint16_t packet_length,
 					   struct net_nic_interfaces *nic_interfaces) {
 	struct network_packet *net_pack = (struct network_packet *)packet;
 
@@ -27,7 +27,7 @@ void net_handle_packet(uint8_t *packet, uint16_t packet_length,
 		return;
 	}
 
-	uint8_t *data = packet + sizeof(struct network_packet);
+	void *data = packet + sizeof(struct network_packet);
 	size_t data_length = packet_length - sizeof(struct network_packet);
 
 	if (BSWAP16(net_pack->type) == REQ_TYPE_ARP) {
