@@ -1,6 +1,6 @@
+#include <devices/net/loopback.h>
 #include <klibc/mem.h>
 #include <mm/slab.h>
-#include <devices/net/loopback.h>
 
 struct net_nic_interfaces nic_loopback = {.get_mac_addr = loopback_get_mac_addr,
 										  .send_packet = loopback_send_packet};

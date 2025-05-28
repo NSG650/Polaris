@@ -23,6 +23,7 @@ package() {
     DESTDIR="${dest_dir}" ninja install
 
     glib-compile-schemas "${dest_dir}${prefix}"/share/glib-2.0/schemas
+    rm "${dest_dir}${prefix}"/share/glib-2.0/schemas/gschemas.compiled
     
     post_package_strip
 }

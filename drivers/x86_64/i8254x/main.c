@@ -252,8 +252,7 @@ void i8254x_send_packet(uint8_t *dest, void *packet, uint32_t packet_length,
 
 	data->type = BSWAP16(protocol);
 
-	i8254x_tx_packet(&i8254x_dev,
-					 (void *)((uintptr_t)data - MEM_PHYS_OFFSET),
+	i8254x_tx_packet(&i8254x_dev, (void *)((uintptr_t)data - MEM_PHYS_OFFSET),
 					 (uint16_t)data_length);
 
 	pmm_free((void *)((uintptr_t)data - MEM_PHYS_OFFSET),
