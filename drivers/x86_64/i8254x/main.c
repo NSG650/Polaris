@@ -345,8 +345,14 @@ uint64_t driver_entry(struct module *driver_module) {
 			i8254x_dev.mac_addr[3], i8254x_dev.mac_addr[4],
 			i8254x_dev.mac_addr[5]);
 
+	nic_i8254x.type = INTERFACE_ETH;
+	nic_i8254x.flags |= IFF_RUNNING;
+	nic_i8254x.ip_address = {192, 168, 10, 10};
+	nic_i8254x.subnet = {255, 255, 255, 0};
+	nic_i8254x.gateway = {192, 168, 10, 1};
+	nic_i8254x.mtu = 1500;
+
 	nic_i8254x.get_mac_addr = i8254x_get_mac_addr;
 	nic_i8254x.send_packet = i8254x_send_packet;
-
 	return 0;
 }

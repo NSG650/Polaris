@@ -45,9 +45,7 @@ void ip_send(struct ip_packet *packet, uint16_t length,
 	packet->checksum = 0;
 
 	memcpy(packet->destination_protocol_addr, destination_protocol_addr, 4);
-	// hard coding the ip yet again
-
-	memcpy(packet->source_protocol_addr, my_ip, 4);
+	memcpy(packet->source_protocol_addr, nic_interfaces->ip_address, 4);
 
 	packet->checksum = ip_calculate_checksum(packet, sizeof(struct ip_packet));
 

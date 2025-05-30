@@ -36,8 +36,7 @@ void arp_handle(struct arp_packet *packet, uint32_t length,
 	if (BSWAP16(packet->opcode) == 1) { // ARP_REQUEST
 		memcpy(packet->source_mac, nic_interfaces->get_mac_addr(), 6);
 
-		// Hard code the IP :))
-		memcpy(packet->source_protocol_addr, my_ip, 4);
+		memcpy(packet->source_protocol_addr, nic_interfaces->ip_address, 4);
 
 		memcpy(packet->destination_protocol_addr, dest_protocol_addr, 4);
 		memcpy(packet->destination_mac, dest_mac, 6);
@@ -70,8 +69,7 @@ void arp_send(struct arp_packet *packet, uint32_t length,
 			  struct net_nic_interfaces *nic_interfaces) {
 	memcpy(packet->source_mac, nic_interfaces->get_mac_addr(), 6);
 
-	// Hard code the IP :))
-	memcpy(packet->source_protocol_addr, my_ip, sizeof(my_ip));
+	memcpy(packet->source_protocol_addr, nic_interfaces->ip_address, sizeof(my_ip));
 
 	packet->opcode = BSWAP16(1);
 

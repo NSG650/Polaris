@@ -652,7 +652,7 @@ void nvme_init_controller(struct pci_device *pci_dev) {
 		resource_create(sizeof(struct nvme_namespace_device) * this->id->nn);
 
 	for (size_t i = 0; i < this->id->nn; i++) {
-		if (this->namespace_ids[i] && this->namespace_ids[i] < this->id->nn) {
+		if (this->namespace_ids[i] && this->namespace_ids[i] <= this->id->nn) {
 			kprintf("\tFound namespace: %lx\n", this->namespace_ids[i]);
 			if (!nvme_init_namespace(this->namespace_ids[i],
 									 &this->namespace_devices[i], this)) {

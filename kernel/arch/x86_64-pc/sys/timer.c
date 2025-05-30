@@ -110,7 +110,7 @@ void timer_sleep(uint64_t ms) {
 
 uint64_t timer_count(void) {
 	if (hpet_table) {
-		return (hpet_counter_value()) / 1000;
+		return (hpet_counter_value() * clk) / (1000000000000);
 	}
 	return pit_counter_value();
 }
