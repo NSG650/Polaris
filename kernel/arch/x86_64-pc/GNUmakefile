@@ -44,10 +44,10 @@ override INTERNALASFLAGS := \
 
 CFILES := $(shell find ../../ -path ../../arch -prune -type f -o -name '*.c')
 CFILES += $(shell find ../../arch/x86_64-pc -path . -prune -type f -o -name '*.c')
-# CFILES += ../../locks/spinlock.c ../../debug/debug.c ../../klibc/string.c ../../klibc/kargs.c ../../klibc/vec.c ../../fb/fb.c ../../fb/terminal/flanterm.c ../../fb/terminal/backends/fb.c
 ASMFILES := $(shell find ../../arch/x86_64-pc -type f -name '*.asm')
 OBJ := $(CFILES:.c=.o) $(ASMFILES:.asm=.o)
 HEADER_DEPS := $(CFILES:.c=.d) $(ASMFILES:.asm=.d)
+STATICLIBS := libpicotcp.a
 
 CC := x86_64-polaris-gcc
 AS := nasm
@@ -78,7 +78,7 @@ limine.h:
 
 # Link rules for the final kernel executable.
 $(KERNEL): $(OBJ)
-	$(CC) $(OBJ) $(LDFLAGS) $(INTERNALLDFLAGS) -o $@
+	$(CC) $(OBJ) $(LDFLAGS) $(INTERNALLDFLAGS) $(STATICLIBS) -o $@
 
 ../../fb/terminal/backends/fb.o: override INTERNALCFLAGS += \
 	-DFLANTERM_FB_DISABLE_BUMP_ALLOC

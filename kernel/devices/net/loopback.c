@@ -1,20 +1,19 @@
 #include <devices/net/loopback.h>
-#include <klibc/mem.h>
-#include <mm/slab.h>
-#include <klibc/resource.h>
 #include <errno.h>
+#include <klibc/mem.h>
+#include <klibc/resource.h>
+#include <mm/slab.h>
 
-struct net_nic_interfaces nic_loopback = {	
-											.name = "lo",
-											.flags = IFF_RUNNING | IFF_LOOPBACK,
-											.type = INTERFACE_ETH | INTERFACE_LOOPBACK,
-											.mtu = 65536,
-											.ip_address = {127, 0, 0, 1},
-											.subnet = {255, 0, 0, 1},
-											.gateway = {0, 0, 0, 0},
-											.get_mac_addr = loopback_get_mac_addr,
-										  	.send_packet = loopback_send_packet
-										};
+struct net_nic_interfaces nic_loopback = {.name = "lo",
+										  .flags = IFF_RUNNING | IFF_LOOPBACK,
+										  .type = INTERFACE_ETH |
+												  INTERFACE_LOOPBACK,
+										  .mtu = 65536,
+										  .ip_address = {127, 0, 0, 1},
+										  .subnet = {255, 0, 0, 1},
+										  .gateway = {0, 0, 0, 0},
+										  .get_mac_addr = loopback_get_mac_addr,
+										  .send_packet = loopback_send_packet};
 
 uint8_t *loopback_get_mac_addr(void) {
 	uint8_t mac[6] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};

@@ -1,0 +1,240 @@
+diff --git a/CONTRIBUTING.md b/CONTRIBUTING.md
+old mode 100755
+new mode 100644
+diff --git a/Makefile b/Makefile
+index 73448b1b..d703e72d 100644
+--- a/Makefile
++++ b/Makefile
+@@ -32,7 +32,7 @@ STRIP?=0
+ RTOS?=0
+ GENERIC?=0
+ PTHREAD?=0
+-ADDRESS_SANITIZER?=1
++ADDRESS_SANITIZER?=0
+ GCOV?=0
+ 
+ # Default compiled-in protocols
+@@ -49,24 +49,24 @@ MCAST?=1
+ DEVLOOP?=1
+ PING?=1
+ DHCP_CLIENT?=1
+-DHCP_SERVER?=1
++DHCP_SERVER?=0
+ DNS_CLIENT?=1
+-MDNS?=1
++MDNS?=0
+ DNS_SD?=0
+-SNTP_CLIENT?=1
+-IPFILTER?=1
++SNTP_CLIENT?=0
++IPFILTER?=0
+ CRC?=1
+ OLSR?=1
+-SLAACV4?=1
+-TFTP?=1
+-AODV?=1
++SLAACV4?=0
++TFTP?=0
++AODV?=0
+ MEMORY_MANAGER?=0
+ MEMORY_MANAGER_PROFILING?=0
+ TUN?=0
+ TAP?=0
+ VDE?=0
+ PCAP?=0
+-PPP?=1
++PPP?=0
+ 6LOWPAN?=1
+ IEEE802154?=0
+ IPC?=0
+@@ -78,7 +78,7 @@ RAW=1
+ PACKET_SOCKET=1
+ 
+ #IPv6 related
+-IPV6?=1
++IPV6?=0
+ 
+ TEST?=0
+ ifeq ($(TEST),1)
+diff --git a/RFC/get_all_rfc b/RFC/get_all_rfc
+old mode 100755
+new mode 100644
+diff --git a/docs/user_manual/build.sh b/docs/user_manual/build.sh
+old mode 100755
+new mode 100644
+diff --git a/include/pico_config.h b/include/pico_config.h
+index 27ca2f10..7c055cfc 100644
+--- a/include/pico_config.h
++++ b/include/pico_config.h
+@@ -256,6 +256,8 @@ static inline uint32_t be_to_host_long(uint32_t be)
+ # include "arch/pico_none.h"
+ #elif defined GENERIC
+ # include "arch/pico_generic_gcc.h"
++#elif defined(__polaris__)
++# include "arch/pico_polaris.h"
+ #elif defined __KERNEL__
+ # include "arch/pico_linux.h"
+ /* #elif defined ... */
+diff --git a/make-gnu.sh b/make-gnu.sh
+old mode 100755
+new mode 100644
+diff --git a/mkdeps.sh b/mkdeps.sh
+old mode 100755
+new mode 100644
+diff --git a/modcheck.py b/modcheck.py
+old mode 100755
+new mode 100644
+diff --git a/modules/pico_dns_common.h b/modules/pico_dns_common.h
+index d399079d..9fd06856 100644
+--- a/modules/pico_dns_common.h
++++ b/modules/pico_dns_common.h
+@@ -30,6 +30,7 @@
+ 
+ #include "pico_config.h"
+ #include "pico_tree.h"
++#include "pico_strings.h"
+ 
+ /* TYPE values */
+ #define PICO_DNS_TYPE_A 1
+diff --git a/modules/pico_strings.c b/modules/pico_strings.c
+index 8206fd22..a88f7a87 100644
+--- a/modules/pico_strings.c
++++ b/modules/pico_strings.c
+@@ -116,3 +116,27 @@ int num2string(int32_t num, char *buf, int len)
+ 
+     return revert_and_shift(buf, len, pos);
+ }
++
++int tolower(int c)
++{
++	if (c >= 'A' && c <= 'Z')
++		return c - 'A' + 'a';
++	return c;
++}
++
++int toupper(int c)
++{
++	if (c >= 'a' && c <= 'z')
++		return c - 'a' + 'A';
++	return c;
++}
++
++int strcasecmp(const char *s1, const char *s2) {
++    int c1, c2;
++
++    do {
++        c1 = tolower(*s1++);
++        c2 = tolower(*s2++);
++    } while (c1 == c2 && c1 != 0);
++    return c1 - c2;
++}
+diff --git a/modules/pico_strings.h b/modules/pico_strings.h
+index d5749035..d63712d5 100644
+--- a/modules/pico_strings.h
++++ b/modules/pico_strings.h
+@@ -35,5 +35,6 @@ int pico_strncasecmp(const char *const str1, const char *const str2, size_t n);
+ size_t pico_strnlen(const char *str, size_t n);
+ 
+ int num2string(int32_t num, char *buf, int len);
++int strcasecmp(const char *s1, const char *s2);
+ 
+ #endif
+diff --git a/test/autotest.sh b/test/autotest.sh
+old mode 100755
+new mode 100644
+diff --git a/test/coverage.sh b/test/coverage.sh
+old mode 100755
+new mode 100644
+diff --git a/test/mkunits.sh b/test/mkunits.sh
+old mode 100755
+new mode 100644
+diff --git a/test/olsr_test.sh b/test/olsr_test.sh
+old mode 100755
+new mode 100644
+diff --git a/test/perf.sh b/test/perf.sh
+old mode 100755
+new mode 100644
+diff --git a/test/python/dhcp.py b/test/python/dhcp.py
+old mode 100755
+new mode 100644
+diff --git a/test/python/fairness.py b/test/python/fairness.py
+old mode 100755
+new mode 100644
+diff --git a/test/python/fairness_bottleneck.py b/test/python/fairness_bottleneck.py
+old mode 100755
+new mode 100644
+diff --git a/test/python/fairness_bottleneck_linux.py b/test/python/fairness_bottleneck_linux.py
+old mode 100755
+new mode 100644
+diff --git a/test/python/fragmentation.py b/test/python/fragmentation.py
+old mode 100755
+new mode 100644
+diff --git a/test/python/http_server_linux.py b/test/python/http_server_linux.py
+old mode 100755
+new mode 100644
+diff --git a/test/python/multicast_recv.py b/test/python/multicast_recv.py
+old mode 100755
+new mode 100644
+diff --git a/test/python/multicast_send.py b/test/python/multicast_send.py
+old mode 100755
+new mode 100644
+diff --git a/test/python/noop.py b/test/python/noop.py
+old mode 100755
+new mode 100644
+diff --git a/test/python/ping.py b/test/python/ping.py
+old mode 100755
+new mode 100644
+diff --git a/test/python/ping_delay.py b/test/python/ping_delay.py
+old mode 100755
+new mode 100644
+diff --git a/test/python/ping_linux.py b/test/python/ping_linux.py
+old mode 100755
+new mode 100644
+diff --git a/test/python/ping_nat.py b/test/python/ping_nat.py
+old mode 100755
+new mode 100644
+diff --git a/test/python/reassembly.py b/test/python/reassembly.py
+old mode 100755
+new mode 100644
+diff --git a/test/python/tcpbench-delay.py b/test/python/tcpbench-delay.py
+old mode 100755
+new mode 100644
+diff --git a/test/python/tcpbench-tap.py b/test/python/tcpbench-tap.py
+old mode 100755
+new mode 100644
+diff --git a/test/python/tcpbench.py b/test/python/tcpbench.py
+old mode 100755
+new mode 100644
+diff --git a/test/python/tcpbench_rx_linux.py b/test/python/tcpbench_rx_linux.py
+old mode 100755
+new mode 100644
+diff --git a/test/python/tcpbench_tx_linux.py b/test/python/tcpbench_tx_linux.py
+old mode 100755
+new mode 100644
+diff --git a/test/python/tcpecho_linux.py b/test/python/tcpecho_linux.py
+old mode 100755
+new mode 100644
+diff --git a/test/python/topology.py b/test/python/topology.py
+old mode 100755
+new mode 100644
+diff --git a/test/python/traceroute_from_linux.py b/test/python/traceroute_from_linux.py
+old mode 100755
+new mode 100644
+diff --git a/test/python/traceroute_nat_from_linux.py b/test/python/traceroute_nat_from_linux.py
+old mode 100755
+new mode 100644
+diff --git a/test/python/udpecho.py b/test/python/udpecho.py
+old mode 100755
+new mode 100644
+diff --git a/test/python/zmq_linux.py b/test/python/zmq_linux.py
+old mode 100755
+new mode 100644
+diff --git a/test/units.sh b/test/units.sh
+old mode 100755
+new mode 100644
+diff --git a/test/vde_sock_start.sh b/test/vde_sock_start.sh
+old mode 100755
+new mode 100644
+diff --git a/test/vde_sock_start_user.sh b/test/vde_sock_start_user.sh
+old mode 100755
+new mode 100644
