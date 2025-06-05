@@ -55,8 +55,9 @@
 #else
 #define PACKED_STRUCT_DEF struct __attribute__((packed))
 #define PEDANTIC_STRUCT_DEF struct
-#define PACKED_UNION_DEF union /* Sane compilers do not require packed unions \
-								*/
+#define PACKED_UNION_DEF                                 \
+	union /* Sane compilers do not require packed unions \
+		   */
 #define PACKED __attribute__((packed))
 #define WEAK __attribute__((weak))
 #ifdef __GNUC__
