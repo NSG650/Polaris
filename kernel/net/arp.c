@@ -69,8 +69,7 @@ void arp_send(struct arp_packet *packet, uint32_t length,
 			  struct net_nic_interfaces *nic_interfaces) {
 	memcpy(packet->source_mac, nic_interfaces->get_mac_addr(), 6);
 
-	memcpy(packet->source_protocol_addr, nic_interfaces->ip_address,
-		   sizeof(my_ip));
+	memcpy(packet->source_protocol_addr, nic_interfaces->ip_address, sizeof(my_ip));
 
 	packet->opcode = BSWAP16(1);
 
