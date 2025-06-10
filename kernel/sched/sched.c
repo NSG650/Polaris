@@ -562,6 +562,14 @@ int64_t process_fork(struct process *proc, struct thread *thrd) {
 // will try to read from the existing addresses which aren't mapped at all lol.
 // Easy fix here disable interrupts for a while.
 
+static size_t get_argv_length(char **a) {
+	size_t count = 0;
+	while (a[count++] != NULL) {
+		pause();
+	}
+	return count;
+}
+
 bool process_execve(char *path, char **argv, char **envp) {
 	cli();
 
@@ -575,6 +583,39 @@ bool process_execve(char *path, char **argv, char **envp) {
 	if (!node) {
 		spinlock_drop(&process_lock);
 		return false;
+	}
+
+	char shebang[2] = {0};
+	node->resource->read(node->resource, NULL, shebang, 0, 2);
+
+	// This is hard coded to 256 + 4 character.
+	// TODO: Make this dynamic in the future.
+	if (shebang[0] == '#' && shebang[1] == '!') {
+		char shebang_line[256 + 4 + 1] = {0};
+		ssize_t read_size = node->resource->read(node->resource, NULL, shebang_line, 2, 256 + 4);
+		char *c = shebang_line;
+		while (*c++ != '\n') { 
+			pause();
+		}
+		c--;
+		*c = '\0';
+		char **arg_list = NULL;
+		size_t arg_count =  strsplit(shebang_line, ' ', &arg_list);
+		size_t old_arg_count = get_argv_length(argv);
+		char *new_path = arg_list[1];
+		char **new_argv = kmalloc(sizeof(char *) * (arg_count + old_arg_count) + 2);
+		new_argv[0] = path;
+		new_argv[1] = path;
+		for (size_t i = 2; i < arg_count; i++) {
+			new_argv[i + 1] = arg_list[i];
+			kfree(arg_list[i]);
+		}
+		for (size_t i = 0; i < old_arg_count; i++) {
+			new_argv[i + arg_count + 1] = argv[i];
+		}
+		new_argv[arg_count + old_arg_count + 1] = NULL;
+		kfree(arg_list);
+		return process_execve(new_path, new_argv, envp);
 	}
 
 	struct pagemap *old_pagemap = proc->process_pagemap;
