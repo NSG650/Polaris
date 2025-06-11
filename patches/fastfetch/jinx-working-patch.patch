@@ -1,0 +1,682 @@
+diff --git fastfetch-clean/CMakeLists.txt fastfetch-workdir/CMakeLists.txt
+index 661fbce..33ef620 100644
+--- fastfetch-clean/CMakeLists.txt
++++ fastfetch-workdir/CMakeLists.txt
+@@ -32,6 +32,8 @@ elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "SunOS")
+     set(SunOS TRUE CACHE BOOL "..." FORCE)
+ elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Haiku")
+     set(Haiku TRUE CACHE BOOL "..." FORCE)
++elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Polaris")
++    set(Polaris TRUE CACHE BOOL "..." FORCE)
+ elseif(NOT APPLE AND NOT WIN32)
+     message(FATAL_ERROR "Unsupported platform: ${CMAKE_SYSTEM_NAME}")
+ endif()
+@@ -1115,6 +1117,85 @@ elseif(SunOS)
+         src/util/platform/FFPlatform_unix.c
+         src/util/binary_linux.c
+     )
++elseif(Polaris)
++	list(APPEND LIBFASTFETCH_SRC
++		src/common/dbus.c
++		src/common/io/io_unix.c
++		src/common/netif/netif_linux.c
++		src/common/networking/networking_linux.c
++		src/common/processing_linux.c
++		src/detection/battery/battery_nosupport.c
++		src/detection/bios/bios_nosupport.c
++		src/detection/bluetooth/bluetooth_nosupport.c
++		src/detection/bluetoothradio/bluetoothradio_nosupport.c
++		src/detection/board/board_nosupport.c
++		src/detection/bootmgr/bootmgr_nosupport.c
++		src/detection/brightness/brightness_nosupport.c
++		src/detection/btrfs/btrfs_nosupport.c
++		src/detection/chassis/chassis_nosupport.c
++		src/detection/cpu/cpu_nosupport.c
++		src/detection/cpucache/cpucache_nosupport.c
++		src/detection/cpuusage/cpuusage_nosupport.c
++		src/detection/cursor/cursor_nosupport.c
++		src/detection/disk/disk_nosupport.c
++		src/detection/dns/dns_linux.c
++		src/detection/physicaldisk/physicaldisk_nosupport.c
++		src/detection/physicalmemory/physicalmemory_nosupport.c
++		src/detection/diskio/diskio_nosupport.c
++		src/detection/font/font_nosupport.c
++		src/detection/host/host_nosupport.c
++		src/detection/initsystem/initsystem_linux.c
++		src/detection/keyboard/keyboard_linux.c
++		src/detection/libc/libc_linux.c
++		src/detection/lm/lm_linux.c
++		src/detection/loadavg/loadavg_nosupport.c
++		src/detection/locale/locale_linux.c
++		src/detection/gamepad/gamepad_linux.c
++		src/detection/media/media_linux.c
++		src/detection/memory/memory_linux.c
++		src/detection/mouse/mouse_linux.c
++		src/detection/netio/netio_linux.c
++		src/detection/opengl/opengl_linux.c
++		src/detection/os/os_polaris.c
++		src/detection/packages/packages_linux.c
++		src/detection/poweradapter/poweradapter_linux.c
++		src/detection/processes/processes_linux.c
++		src/detection/gtk_qt/qt.c
++		src/detection/sound/sound_linux.c
++		src/detection/swap/swap_linux.c
++		src/detection/terminalfont/terminalfont_linux.c
++		src/detection/terminalshell/terminalshell_linux.c
++		src/detection/terminalsize/terminalsize_linux.c
++		src/detection/theme/theme_nosupport.c
++		src/detection/tpm/tpm_linux.c
++		src/detection/uptime/uptime_linux.c
++		src/detection/users/users_nosupport.c
++		src/detection/wallpaper/wallpaper_nosupport.c
++		src/detection/wifi/wifi_nosupport.c
++		src/detection/wm/wm_nosupport.c
++		src/detection/de/de_nosupport.c
++		src/detection/wmtheme/wmtheme_nosupport.c
++		src/detection/camera/camera_linux.c
++		src/detection/zpool/zpool_linux.c
++		src/util/platform/FFPlatform_unix.c
++		src/util/binary_linux.c
++		src/detection/displayserver/linux/displayserver_linux.c
++		src/detection/displayserver/linux/drm.c
++		src/detection/displayserver/linux/wayland/wayland.c
++		src/detection/displayserver/linux/wayland/global-output.c
++		src/detection/displayserver/linux/wayland/zwlr-output.c
++		src/detection/displayserver/linux/wayland/kde-output.c
++		src/detection/displayserver/linux/wayland/wlr-output-management-unstable-v1-protocol.c
++		src/detection/displayserver/linux/wayland/kde-output-device-v2-protocol.c
++		src/detection/displayserver/linux/wayland/kde-output-order-v1-protocol.c
++		src/detection/displayserver/linux/wayland/xdg-output-unstable-v1-protocol.c
++		src/detection/displayserver/linux/wmde.c
++		src/detection/displayserver/linux/xcb.c
++		src/detection/displayserver/linux/xlib.c
++		src/detection/gpu/gpu_nosupport.c
++		src/detection/localip/localip_linux.c
++		src/detection/icons/icons_nosupport.c
++	)
+ elseif(Haiku)
+     list(APPEND LIBFASTFETCH_SRC
+         src/common/dbus.c
+@@ -1185,6 +1266,85 @@ elseif(Haiku)
+         src/util/binary_linux.c
+         src/util/haiku/version.cpp
+     )
++elseif(Polaris)
++	list(APPEND LIBFASTFETCH_SRC
++		src/common/dbus.c
++		src/common/io/io_unix.c
++		src/common/netif/netif_linux.c
++		src/common/networking_linux.c
++		src/common/processing_linux.c
++		src/detection/battery/battery_nosupport.c
++		src/detection/bios/bios_nosupport.c
++		src/detection/bluetooth/bluetooth_nosupport.c
++		src/detection/bluetoothradio/bluetoothradio_nosupport.c
++		src/detection/board/board_nosupport.c
++		src/detection/bootmgr/bootmgr_nosupport.c
++		src/detection/brightness/brightness_nosupport.c
++		src/detection/btrfs/btrfs_nosupport.c
++		src/detection/chassis/chassis_nosupport.c
++		src/detection/cpu/cpu_nosupport.c
++		src/detection/cpucache/cpucache_nosupport.c
++		src/detection/cpuusage/cpuusage_nosupport.c
++		src/detection/cursor/cursor_nosupport.c
++		src/detection/disk/disk_nosupport.c
++		src/detection/dns/dns_linux.c
++		src/detection/physicaldisk/physicaldisk_nosupport.c
++		src/detection/physicalmemory/physicalmemory_nosupport.c
++		src/detection/diskio/diskio_nosupport.c
++		src/detection/font/font_nosupport.c
++		src/detection/host/host_nosupport.c
++		src/detection/initsystem/initsystem_linux.c
++		src/detection/keyboard/keyboard_linux.c
++		src/detection/libc/libc_linux.c
++		src/detection/lm/lm_linux.c
++		src/detection/loadavg/loadavg_nosupport.c
++		src/detection/locale/locale_linux.c
++		src/detection/gamepad/gamepad_linux.c
++		src/detection/media/media_linux.c
++		src/detection/memory/memory_linux.c
++		src/detection/mouse/mouse_linux.c
++		src/detection/netio/netio_linux.c
++		src/detection/opengl/opengl_linux.c
++		src/detection/os/os_polaris.c
++		src/detection/packages/packages_linux.c
++		src/detection/poweradapter/poweradapter_linux.c
++		src/detection/processes/processes_linux.c
++		src/detection/gtk_qt/qt.c
++		src/detection/sound/sound_linux.c
++		src/detection/swap/swap_linux.c
++		src/detection/terminalfont/terminalfont_linux.c
++		src/detection/terminalshell/terminalshell_linux.c
++		src/detection/terminalsize/terminalsize_linux.c
++		src/detection/theme/theme_nosupport.c
++		src/detection/tpm/tpm_linux.c
++		src/detection/uptime/uptime_linux.c
++		src/detection/users/users_nosupport.c
++		src/detection/wallpaper/wallpaper_nosupport.c
++		src/detection/wifi/wifi_nosupport.c
++		src/detection/wm/wm_nosupport.c
++		src/detection/de/de_nosupport.c
++		src/detection/wmtheme/wmtheme_nosupport.c
++		src/detection/camera/camera_linux.c
++		src/detection/zpool/zpool_linux.c
++		src/util/platform/FFPlatform_unix.c
++		src/util/binary_linux.c
++		src/detection/displayserver/linux/displayserver_linux.c
++		src/detection/displayserver/linux/drm.c
++		src/detection/displayserver/linux/wayland/wayland.c
++		src/detection/displayserver/linux/wayland/global-output.c
++		src/detection/displayserver/linux/wayland/zwlr-output.c
++		src/detection/displayserver/linux/wayland/kde-output.c
++		src/detection/displayserver/linux/wayland/wlr-output-management-unstable-v1-protocol.c
++		src/detection/displayserver/linux/wayland/kde-output-device-v2-protocol.c
++		src/detection/displayserver/linux/wayland/kde-output-order-v1-protocol.c
++		src/detection/displayserver/linux/wayland/xdg-output-unstable-v1-protocol.c
++		src/detection/displayserver/linux/wmde.c
++		src/detection/displayserver/linux/xcb.c
++		src/detection/displayserver/linux/xlib.c
++		src/detection/gpu/gpu_nosupport.c
++		src/detection/localip/localip_linux.c
++		src/detection/icons/icons_nosupport.c
++	)
+ endif()
+ 
+ if(ENABLE_DIRECTX_HEADERS)
+@@ -1306,6 +1466,8 @@ elseif(NetBSD)
+     target_compile_definitions(libfastfetch PUBLIC _GNU_SOURCE)
+     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-char-subscripts")
+     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath,/usr/X11R7/lib -Wl,-rpath,/usr/pkg/lib") # ditto
++elseif(Polaris)
++    target_compile_definitions(libfastfetch PUBLIC _GNU_SOURCE _XOPEN_SOURCE _ATFILE_SOURCE)
+ elseif(Haiku)
+     target_compile_definitions(libfastfetch PUBLIC _GNU_SOURCE)
+ endif()
+diff --git fastfetch-workdir/src/detection/os/os_polaris.c fastfetch-workdir/src/detection/os/os_polaris.c
+new file mode 100644
+index 0000000..b4ce350
+--- /dev/null
++++ fastfetch-workdir/src/detection/os/os_polaris.c
+@@ -0,0 +1,6 @@
++#include "os.h"
++
++void ffDetectOSImpl(FFOSResult *os) {
++  ffStrbufSetStatic(&os->name, "Polaris");
++  ffStrbufSet(&os->version, &instance.state.platform.sysinfo.release);
++}
+diff --git fastfetch-clean/src/logo/builtin.c fastfetch-workdir/src/logo/builtin.c
+index 9cae633..0814f58 100644
+--- fastfetch-clean/src/logo/builtin.c
++++ fastfetch-workdir/src/logo/builtin.c
+@@ -3274,6 +3274,15 @@ static const FFlogo N[] = {
+             FF_COLOR_FG_RED,
+         },
+     },
++    {
++        .names = {"polaris", "Polaris"},
++        .lines = FASTFETCH_DATATEXT_LOGO_UNKNOWN,
++        .colors = {
++            FF_COLOR_FG_BLUE,
++        },
++        .colorKeys = FF_COLOR_FG_BLUE,
++        .colorTitle = FF_COLOR_FG_WHITE
++    },
+     // LAST
+     {},
+ };
+diff --git fastfetch-clean/src/options/general.h fastfetch-workdir/src/options/general.h
+index 9e703a9..00d5cfe 100644
+--- fastfetch-clean/src/options/general.h
++++ fastfetch-workdir/src/options/general.h
+@@ -16,7 +16,7 @@ typedef struct FFOptionsGeneral
+     bool detectVersion;
+ 
+     // Module options that cannot be put in module option structure
+-    #if defined(__linux__) || defined(__FreeBSD__) || defined(__sun) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(__HAIKU__)
++    #if defined(__linux__) || defined(__FreeBSD__) || defined(__sun) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(__HAIKU__) || defined (__polaris__)
+     FFstrbuf playerName;
+     FFDsForceDrmType dsForceDrm;
+     #elif defined(_WIN32)
+diff --git fastfetch-clean/src/util/FFstrbuf.h fastfetch-workdir/src/util/FFstrbuf.h
+index cd99c86..ed3a058 100644
+--- fastfetch-clean/src/util/FFstrbuf.h
++++ fastfetch-workdir/src/util/FFstrbuf.h
+@@ -7,6 +7,7 @@
+ #include <stdbool.h>
+ #include <stdio.h>
+ #include <string.h>
++#include <strings.h>
+ #include <stdlib.h>
+ #include <assert.h>
+ 
+diff --git fastfetch-clean/src/util/platform/FFPlatform_unix.c fastfetch-workdir/src/util/platform/FFPlatform_unix.c
+index eb9ee45..9c18c6e 100644
+--- fastfetch-clean/src/util/platform/FFPlatform_unix.c
++++ fastfetch-workdir/src/util/platform/FFPlatform_unix.c
+@@ -1,243 +1,233 @@
+ #include "FFPlatform_private.h"
+-#include "util/stringUtils.h"
+-#include "fastfetch_config.h"
+ #include "common/io/io.h"
++#include "fastfetch_config.h"
++#include "util/stringUtils.h"
+ 
+-#include <unistd.h>
+-#include <pwd.h>
+ #include <limits.h>
+-#include <sys/utsname.h>
+ #include <paths.h>
++#include <pwd.h>
++#include <sys/utsname.h>
++#include <unistd.h>
+ 
+ #ifdef __APPLE__
+-    #include <libproc.h>
+-    #include <sys/sysctl.h>
++#include <libproc.h>
++#include <sys/sysctl.h>
+ #elif defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
+-    #include <sys/sysctl.h>
++#include <sys/sysctl.h>
+ #elif defined(__HAIKU__)
+-    #include <image.h>
+-    #include <OS.h>
++#include <OS.h>
++#include <image.h>
+ #endif
+ 
+-static void getExePath(FFPlatform* platform)
+-{
+-    char exePath[PATH_MAX + 1];
+-    #ifdef __linux__
+-        ssize_t exePathLen = readlink("/proc/self/exe", exePath, sizeof(exePath) - 1);
+-        if (exePathLen >= 0)
+-            exePath[exePathLen] = '\0';
+-    #elif defined(__APPLE__)
+-        int exePathLen = proc_pidpath((int) getpid(), exePath, sizeof(exePath));
+-    #elif defined(__FreeBSD__) || defined(__NetBSD__)
+-        size_t exePathLen = sizeof(exePath);
+-        if(sysctl(
+-            (int[]){CTL_KERN,
+-            #ifdef __FreeBSD__
+-                KERN_PROC, KERN_PROC_PATHNAME, (int) getpid()
+-            #else
+-                KERN_PROC_ARGS, (int) getpid(), KERN_PROC_PATHNAME
+-            #endif
+-            }, 4,
+-            exePath, &exePathLen,
+-            NULL, 0
+-        ) < 0)
+-            exePathLen = 0;
+-        else
+-            exePathLen--; // remove terminating NUL
+-    #elif defined(__OpenBSD__)
+-        size_t exePathLen = 0;
+-    #elif defined(__sun)
+-        ssize_t exePathLen = readlink("/proc/self/path/a.out", exePath, sizeof(exePath) - 1);
+-        if (exePathLen >= 0)
+-            exePath[exePathLen] = '\0';
+-    #elif defined(__HAIKU__)
+-        size_t exePathLen = 0;
+-        image_info info;
+-        int32 cookie = 0;
+-
+-        while (get_next_image_info(B_CURRENT_TEAM, &cookie, &info) == B_OK) {
+-            if (info.type == B_APP_IMAGE) {
+-                exePathLen = strlcpy(exePath, info.name, PATH_MAX);
+-                break;
+-            }
+-        }
+-    #endif
+-    if (exePathLen > 0)
+-    {
+-        ffStrbufEnsureFree(&platform->exePath, PATH_MAX);
+-        if (realpath(exePath, platform->exePath.chars))
+-            ffStrbufRecalculateLength(&platform->exePath);
+-        else
+-            ffStrbufSetNS(&platform->exePath, (uint32_t) exePathLen, exePath);
++static void getExePath(FFPlatform *platform) {
++  char exePath[PATH_MAX + 1];
++#if defined(__linux__) || defined(__polaris__)
++  ssize_t exePathLen = readlink("/proc/self/exe", exePath, sizeof(exePath) - 1);
++  if (exePathLen >= 0)
++    exePath[exePathLen] = '\0';
++#elif defined(__APPLE__)
++  int exePathLen = proc_pidpath((int)getpid(), exePath, sizeof(exePath));
++#elif defined(__FreeBSD__) || defined(__NetBSD__)
++  size_t exePathLen = sizeof(exePath);
++  if (sysctl((int[]){CTL_KERN,
++#ifdef __FreeBSD__
++                     KERN_PROC, KERN_PROC_PATHNAME, (int)getpid()
++#else
++                     KERN_PROC_ARGS, (int)getpid(), KERN_PROC_PATHNAME
++#endif
++             },
++             4, exePath, &exePathLen, NULL, 0) < 0)
++    exePathLen = 0;
++  else
++    exePathLen--; // remove terminating NUL
++#elif defined(__OpenBSD__)
++  size_t exePathLen = 0;
++#elif defined(__sun)
++  ssize_t exePathLen =
++      readlink("/proc/self/path/a.out", exePath, sizeof(exePath) - 1);
++  if (exePathLen >= 0)
++    exePath[exePathLen] = '\0';
++#elif defined(__HAIKU__)
++  size_t exePathLen = 0;
++  image_info info;
++  int32 cookie = 0;
++
++  while (get_next_image_info(B_CURRENT_TEAM, &cookie, &info) == B_OK) {
++    if (info.type == B_APP_IMAGE) {
++      exePathLen = strlcpy(exePath, info.name, PATH_MAX);
++      break;
+     }
++  }
++#endif
++  if (exePathLen > 0) {
++    ffStrbufEnsureFree(&platform->exePath, PATH_MAX);
++    if (realpath(exePath, platform->exePath.chars))
++      ffStrbufRecalculateLength(&platform->exePath);
++    else
++      ffStrbufSetNS(&platform->exePath, (uint32_t)exePathLen, exePath);
++  }
+ }
+ 
+-static void platformPathAddEnv(FFlist* dirs, const char* env)
+-{
+-    const char* envValue = getenv(env);
+-    if(!ffStrSet(envValue))
+-        return;
++static void platformPathAddEnv(FFlist *dirs, const char *env) {
++  const char *envValue = getenv(env);
++  if (!ffStrSet(envValue))
++    return;
+ 
+-    FF_STRBUF_AUTO_DESTROY value = ffStrbufCreateA(64);
+-    ffStrbufAppendS(&value, envValue);
++  FF_STRBUF_AUTO_DESTROY value = ffStrbufCreateA(64);
++  ffStrbufAppendS(&value, envValue);
+ 
+-    uint32_t startIndex = 0;
+-    while (startIndex < value.length)
+-    {
+-        uint32_t colonIndex = ffStrbufNextIndexC(&value, startIndex, ':');
+-        value.chars[colonIndex] = '\0';
++  uint32_t startIndex = 0;
++  while (startIndex < value.length) {
++    uint32_t colonIndex = ffStrbufNextIndexC(&value, startIndex, ':');
++    value.chars[colonIndex] = '\0';
+ 
+-        if(!ffStrSet(value.chars + startIndex))
+-        {
+-            startIndex = colonIndex + 1;
+-            continue;
+-        }
++    if (!ffStrSet(value.chars + startIndex)) {
++      startIndex = colonIndex + 1;
++      continue;
++    }
+ 
+-        ffPlatformPathAddAbsolute(dirs, value.chars + startIndex);
++    ffPlatformPathAddAbsolute(dirs, value.chars + startIndex);
+ 
+-        startIndex = colonIndex + 1;
+-    }
++    startIndex = colonIndex + 1;
++  }
+ }
+ 
+-static void getHomeDir(FFPlatform* platform, const struct passwd* pwd)
+-{
+-    const char* home = pwd ? pwd->pw_dir : getenv("HOME");
+-    ffStrbufAppendS(&platform->homeDir, home);
+-    ffStrbufEnsureEndsWithC(&platform->homeDir, '/');
++static void getHomeDir(FFPlatform *platform, const struct passwd *pwd) {
++  const char *home = pwd ? pwd->pw_dir : getenv("HOME");
++  ffStrbufAppendS(&platform->homeDir, home);
++  ffStrbufEnsureEndsWithC(&platform->homeDir, '/');
+ }
+ 
+-static void getCacheDir(FFPlatform* platform)
+-{
+-    const char* cache = getenv("XDG_CACHE_HOME");
+-    if(ffStrSet(cache))
+-    {
+-        ffStrbufAppendS(&platform->cacheDir, cache);
+-        ffStrbufEnsureEndsWithC(&platform->cacheDir, '/');
+-    }
+-    else
+-    {
+-        ffStrbufAppend(&platform->cacheDir, &platform->homeDir);
+-        ffStrbufAppendS(&platform->cacheDir, ".cache/");
+-    }
++static void getCacheDir(FFPlatform *platform) {
++  const char *cache = getenv("XDG_CACHE_HOME");
++  if (ffStrSet(cache)) {
++    ffStrbufAppendS(&platform->cacheDir, cache);
++    ffStrbufEnsureEndsWithC(&platform->cacheDir, '/');
++  } else {
++    ffStrbufAppend(&platform->cacheDir, &platform->homeDir);
++    ffStrbufAppendS(&platform->cacheDir, ".cache/");
++  }
+ }
+ 
+-static void getConfigDirs(FFPlatform* platform)
+-{
+-    // Always make sure `${XDG_CONFIG_HOME:-$HOME/.config}` is the first entry
+-    platformPathAddEnv(&platform->configDirs, "XDG_CONFIG_HOME");
+-    ffPlatformPathAddHome(&platform->configDirs, platform, ".config/");
+-
+-    #if defined(__APPLE__)
+-        ffPlatformPathAddHome(&platform->configDirs, platform, "Library/Preferences/");
+-        ffPlatformPathAddHome(&platform->configDirs, platform, "Library/Application Support/");
+-    #endif
+-    #if defined(__HAIKU__)
+-        ffPlatformPathAddHome(&platform->configDirs, platform, "config/settings/");
+-    #endif
+-
+-    ffPlatformPathAddHome(&platform->configDirs, platform, "");
+-    platformPathAddEnv(&platform->configDirs, "XDG_CONFIG_DIRS");
+-
+-    #if !defined(__APPLE__)
+-        ffPlatformPathAddAbsolute(&platform->configDirs, FASTFETCH_TARGET_DIR_ETC "/xdg/");
+-    #endif
+-
+-    ffPlatformPathAddAbsolute(&platform->configDirs, FASTFETCH_TARGET_DIR_ETC "/");
+-    ffPlatformPathAddAbsolute(&platform->configDirs, FASTFETCH_TARGET_DIR_INSTALL_SYSCONF "/");
++static void getConfigDirs(FFPlatform *platform) {
++  // Always make sure `${XDG_CONFIG_HOME:-$HOME/.config}` is the first entry
++  platformPathAddEnv(&platform->configDirs, "XDG_CONFIG_HOME");
++  ffPlatformPathAddHome(&platform->configDirs, platform, ".config/");
++
++#if defined(__APPLE__)
++  ffPlatformPathAddHome(&platform->configDirs, platform,
++                        "Library/Preferences/");
++  ffPlatformPathAddHome(&platform->configDirs, platform,
++                        "Library/Application Support/");
++#endif
++#if defined(__HAIKU__)
++  ffPlatformPathAddHome(&platform->configDirs, platform, "config/settings/");
++#endif
++
++  ffPlatformPathAddHome(&platform->configDirs, platform, "");
++  platformPathAddEnv(&platform->configDirs, "XDG_CONFIG_DIRS");
++
++#if !defined(__APPLE__)
++  ffPlatformPathAddAbsolute(&platform->configDirs,
++                            FASTFETCH_TARGET_DIR_ETC "/xdg/");
++#endif
++
++  ffPlatformPathAddAbsolute(&platform->configDirs,
++                            FASTFETCH_TARGET_DIR_ETC "/");
++  ffPlatformPathAddAbsolute(&platform->configDirs,
++                            FASTFETCH_TARGET_DIR_INSTALL_SYSCONF "/");
+ }
+ 
+-static void getDataDirs(FFPlatform* platform)
+-{
+-    platformPathAddEnv(&platform->dataDirs, "XDG_DATA_HOME");
+-    ffPlatformPathAddHome(&platform->dataDirs, platform, ".local/share/");
+-
+-    // Add ${currentExePath}/../share
+-    if (platform->exePath.length > 0)
+-    {
+-        FF_STRBUF_AUTO_DESTROY path = ffStrbufCreateCopy(&platform->exePath);
+-        ffStrbufSubstrBeforeLastC(&path, '/');
+-        ffStrbufSubstrBeforeLastC(&path, '/');
+-        ffStrbufAppendS(&path, "/share");
+-        ffPlatformPathAddAbsolute(&platform->dataDirs, path.chars);
+-    }
++static void getDataDirs(FFPlatform *platform) {
++  platformPathAddEnv(&platform->dataDirs, "XDG_DATA_HOME");
++  ffPlatformPathAddHome(&platform->dataDirs, platform, ".local/share/");
+ 
+-    #ifdef __APPLE__
+-        ffPlatformPathAddHome(&platform->dataDirs, platform, "Library/Application Support/");
+-    #endif
++  // Add ${currentExePath}/../share
++  if (platform->exePath.length > 0) {
++    FF_STRBUF_AUTO_DESTROY path = ffStrbufCreateCopy(&platform->exePath);
++    ffStrbufSubstrBeforeLastC(&path, '/');
++    ffStrbufSubstrBeforeLastC(&path, '/');
++    ffStrbufAppendS(&path, "/share");
++    ffPlatformPathAddAbsolute(&platform->dataDirs, path.chars);
++  }
++
++#ifdef __APPLE__
++  ffPlatformPathAddHome(&platform->dataDirs, platform,
++                        "Library/Application Support/");
++#endif
+ 
+-    ffPlatformPathAddHome(&platform->dataDirs, platform, "");
+-    platformPathAddEnv(&platform->dataDirs, "XDG_DATA_DIRS");
++  ffPlatformPathAddHome(&platform->dataDirs, platform, "");
++  platformPathAddEnv(&platform->dataDirs, "XDG_DATA_DIRS");
+ #ifdef _PATH_LOCALBASE
+-    ffPlatformPathAddAbsolute(&platform->dataDirs, _PATH_LOCALBASE "/share/");
++  ffPlatformPathAddAbsolute(&platform->dataDirs, _PATH_LOCALBASE "/share/");
+ #endif
+-    ffPlatformPathAddAbsolute(&platform->dataDirs, FASTFETCH_TARGET_DIR_USR "/local/share/");
+-    ffPlatformPathAddAbsolute(&platform->dataDirs, FASTFETCH_TARGET_DIR_USR "/share/");
++  ffPlatformPathAddAbsolute(&platform->dataDirs,
++                            FASTFETCH_TARGET_DIR_USR "/local/share/");
++  ffPlatformPathAddAbsolute(&platform->dataDirs,
++                            FASTFETCH_TARGET_DIR_USR "/share/");
+ }
+ 
+-static void getUserName(FFPlatform* platform, const struct passwd* pwd)
+-{
+-    const char* user = getenv("USER");
+-    if(!ffStrSet(user) && pwd)
+-        user = pwd->pw_name;
++static void getUserName(FFPlatform *platform, const struct passwd *pwd) {
++  const char *user = getenv("USER");
++  if (!ffStrSet(user) && pwd)
++    user = pwd->pw_name;
+ 
+-    ffStrbufAppendS(&platform->userName, user);
++  ffStrbufAppendS(&platform->userName, user);
+ 
+-    if (pwd) ffStrbufAppendS(&platform->fullUserName, pwd->pw_gecos);
++  if (pwd)
++    ffStrbufAppendS(&platform->fullUserName, pwd->pw_gecos);
+ }
+ 
+-static void getHostName(FFPlatform* platform, const struct utsname* uts)
+-{
+-    ffStrbufAppendS(&platform->hostName, uts->nodename);
++static void getHostName(FFPlatform *platform, const struct utsname *uts) {
++  ffStrbufAppendS(&platform->hostName, uts->nodename);
+ }
+ 
+-static void getUserShell(FFPlatform* platform, const struct passwd* pwd)
+-{
+-    const char* shell = getenv("SHELL");
+-    if(!ffStrSet(shell) && pwd)
+-        shell = pwd->pw_shell;
++static void getUserShell(FFPlatform *platform, const struct passwd *pwd) {
++  const char *shell = getenv("SHELL");
++  if (!ffStrSet(shell) && pwd)
++    shell = pwd->pw_shell;
+ 
+-    ffStrbufAppendS(&platform->userShell, shell);
++  ffStrbufAppendS(&platform->userShell, shell);
+ }
+ 
+-static void getSysinfo(FFPlatformSysinfo* info, const struct utsname* uts)
+-{
+-    ffStrbufAppendS(&info->name, uts->sysname);
+-    ffStrbufAppendS(&info->release, uts->release);
+-    ffStrbufAppendS(&info->version, uts->version);
+-    #ifdef __HAIKU__
+-    /* historical reason */
+-    if (ffStrEquals(uts->machine, "BePC"))
+-        ffStrbufSetStatic(&info->architecture, "i386");
+-    else
+-    #endif
++static void getSysinfo(FFPlatformSysinfo *info, const struct utsname *uts) {
++  ffStrbufAppendS(&info->name, uts->sysname);
++  ffStrbufAppendS(&info->release, uts->release);
++  ffStrbufAppendS(&info->version, uts->version);
++#ifdef __HAIKU__
++  /* historical reason */
++  if (ffStrEquals(uts->machine, "BePC"))
++    ffStrbufSetStatic(&info->architecture, "i386");
++  else
++#endif
+     ffStrbufAppendS(&info->architecture, uts->machine);
+-    ffStrbufInit(&info->displayVersion);
+-
+-    #if defined(__FreeBSD__) || defined(__APPLE__) || defined(__OpenBSD__) || defined(__NetBSD__)
+-    size_t length = sizeof(info->pageSize);
+-    sysctl((int[]){ CTL_HW, HW_PAGESIZE }, 2, &info->pageSize, &length, NULL, 0);
+-    #else
+-    info->pageSize = (uint32_t) sysconf(_SC_PAGESIZE);
+-    #endif
++  ffStrbufInit(&info->displayVersion);
++
++#if defined(__FreeBSD__) || defined(__APPLE__) || defined(__OpenBSD__) ||      \
++    defined(__NetBSD__)
++  size_t length = sizeof(info->pageSize);
++  sysctl((int[]){CTL_HW, HW_PAGESIZE}, 2, &info->pageSize, &length, NULL, 0);
++#else
++  info->pageSize = (uint32_t)sysconf(_SC_PAGESIZE);
++#endif
+ }
+ 
+-void ffPlatformInitImpl(FFPlatform* platform)
+-{
+-    struct passwd* pwd = getpwuid(getuid());
++void ffPlatformInitImpl(FFPlatform *platform) {
++  struct passwd *pwd = getpwuid(getuid());
+ 
+-    struct utsname uts;
+-    if(uname(&uts) < 0)
+-        memset(&uts, 0, sizeof(uts));
++  struct utsname uts;
++  if (uname(&uts) < 0)
++    memset(&uts, 0, sizeof(uts));
+ 
+-    getExePath(platform);
+-    getHomeDir(platform, pwd);
+-    getCacheDir(platform);
+-    getConfigDirs(platform);
+-    getDataDirs(platform);
++  getExePath(platform);
++  getHomeDir(platform, pwd);
++  getCacheDir(platform);
++  getConfigDirs(platform);
++  getDataDirs(platform);
+ 
+-    getUserName(platform, pwd);
+-    getHostName(platform, &uts);
+-    getUserShell(platform, pwd);
++  getUserName(platform, pwd);
++  getHostName(platform, &uts);
++  getUserShell(platform, pwd);
+ 
+-    getSysinfo(&platform->sysinfo, &uts);
++  getSysinfo(&platform->sysinfo, &uts);
+ }

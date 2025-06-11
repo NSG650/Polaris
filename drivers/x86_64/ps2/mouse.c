@@ -74,10 +74,6 @@ static struct mouse_packet packet = {0};
 static bool discard_packet = false;
 
 static void mouse_interrupt_handle(registers_t *r) {
-	if (time_monotonic.tv_sec == 0 && time_monotonic.tv_nsec < 250000000) {
-		inb(0x60);
-		goto end;
-	}
 	switch (mouse_cycle) {
 		case 0: {
 			packet.flags = inb(0x60);

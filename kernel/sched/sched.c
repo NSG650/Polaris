@@ -592,19 +592,21 @@ bool process_execve(char *path, char **argv, char **envp) {
 	// TODO: Make this dynamic in the future.
 	if (shebang[0] == '#' && shebang[1] == '!') {
 		char shebang_line[256 + 4 + 1] = {0};
-		ssize_t read_size = node->resource->read(node->resource, NULL, shebang_line, 2, 256 + 4);
+		ssize_t read_size = node->resource->read(node->resource, NULL,
+												 shebang_line, 2, 256 + 4);
 		char *c = shebang_line;
-		while (*c++ != '\n') { 
+		while (*c++ != '\n') {
 			pause();
 		}
 		c--;
 		*c = '\0';
 		char **arg_list = NULL;
-		size_t arg_count =  strsplit(shebang_line, ' ', &arg_list);
+		size_t arg_count = strsplit(shebang_line, ' ', &arg_list);
 		size_t old_arg_count = get_argv_length(argv);
 		char *new_path = arg_list[1];
-		char **new_argv = kmalloc(sizeof(char *) * (arg_count + old_arg_count) + 2);
-		new_argv[0] = path;
+		char **new_argv =
+			kmalloc(sizeof(char *) * (arg_count + old_arg_count) + 2);
+		new_argv[0] = new_path;
 		new_argv[1] = path;
 		for (size_t i = 2; i < arg_count; i++) {
 			new_argv[i + 1] = arg_list[i];
