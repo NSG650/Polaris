@@ -8,7 +8,7 @@ source_deps="xorg-util-macros"
 hostdeps="gcc autoconf automake libtool pkg-config"
 deps="core-libs xorg-util-macros"
 
-regenerate() {
+prepare() {
     autotools_recursive_regen
 }
 

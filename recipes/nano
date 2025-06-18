@@ -7,7 +7,7 @@ source_hostdeps="automake autoconf libtool pkg-config"
 hostdeps="gcc automake autoconf libtool pkg-config"
 deps="core-libs ncurses"
 
-regenerate() {
+prepare() {
     AUTOPOINT=true autotools_recursive_regen
 }
 

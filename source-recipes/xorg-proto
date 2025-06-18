@@ -4,6 +4,6 @@ tarball_url="https://www.x.org/releases/individual/proto/xorgproto-${version}.ta
 tarball_blake2b="a3850f8594e8b4240f731dce696c3ab8310c3b2419117dea3141a093a690d9bc16652e64eb5516073145309c65327bd14be2eaa8843c04de25c8eff6c46d3c1d"
 hostdeps="automake autoconf libtool pkg-config xorg-macros"
 
-regenerate() {
+prepare() {
     libtoolize -cfvi && autoreconf -fvi
 }

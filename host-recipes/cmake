@@ -1,7 +1,7 @@
 name=cmake
 from_source=cmake
 revision=1
-imagedeps="gcc"
+imagedeps="build-essential"
 
 build() {
     "${source_dir}"/configure --prefix="${prefix}" --parallel="${parallelism}"

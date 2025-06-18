@@ -8,7 +8,7 @@ source_deps="autoconf-archive"
 hostdeps="gcc autoconf automake libtool pkg-config"
 deps="core-libs libexpat"
 
-regenerate() {
+prepare() {
     autotools_recursive_regen
 }
 

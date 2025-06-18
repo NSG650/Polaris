@@ -7,7 +7,7 @@ source_hostdeps="automake autoconf libtool pkg-config"
 hostdeps="gcc autoconf automake libtool pkg-config"
 deps="core-libs mpfr gmp readline freetype2 libjpeg-turbo libpng libx11 libxaw"
 
-regenerate() {
+prepare() {
     autotools_recursive_regen
 }
 

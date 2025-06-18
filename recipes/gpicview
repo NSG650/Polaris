@@ -9,7 +9,7 @@ imagedeps="intltool"
 hostdeps="gcc autoconf-2.69 automake libtool pkg-config"
 deps="core-libs gtk+-3"
 
-regenerate() {
+prepare() {
     true
 }
 

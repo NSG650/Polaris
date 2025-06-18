@@ -2,7 +2,7 @@ name=automake
 from_source=automake
 revision=1
 hostdeps="autoconf"
-imagedeps="gcc"
+imagedeps="build-essential"
 
 build() {
     "${source_dir}"/configure --prefix="${prefix}"

@@ -7,9 +7,9 @@ source_hostdeps="automake autoconf-2.69 libtool pkg-config"
 source_imagedeps="git"
 hostdeps="gcc autoconf-2.69 automake libtool pkg-config"
 deps="core-libs binutils zlib gmp mpfr mpc gettext"
-imagedeps="gcc"
+imagedeps="build-essential"
 
-regenerate() {
+prepare() {
     for i in "${base_dir}"/patches/gcc-host/*; do
         patch -p1 < "$i"
     done

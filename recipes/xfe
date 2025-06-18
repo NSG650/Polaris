@@ -9,7 +9,7 @@ imagedeps="perl-xml-parser"
 hostdeps="gcc autoconf automake libtool pkg-config intltool"
 deps="core-libs fox libx11 libxft libxcb xcb-util"
 
-regenerate() {
+prepare() {
     autotools_recursive_regen
 }
 

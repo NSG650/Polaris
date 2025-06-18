@@ -7,7 +7,7 @@ imagedeps="base-devel"
 hostdeps="gcc binutils"
 deps="core-libs libx11 libxext libxxf86vm sdl2"
 
-regenerate() {
+prepare() {
         true
 }
 

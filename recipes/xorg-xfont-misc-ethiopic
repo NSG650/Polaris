@@ -9,7 +9,7 @@ hostdeps="gcc binutils pkg-config xorg-font-util"
 imagedeps="gcc xorg-bdftopcf xorg-mkfontscale"
 deps="core-libs xorg-font-util"
 
-regenerate() {
+prepare() {
     autotools_recursive_regen
 }
 

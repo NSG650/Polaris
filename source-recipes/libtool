@@ -5,7 +5,7 @@ tarball_blake2b="9a517b7d04d5f905be3c31c4ddf6a4278a8be3fd8d3c38f1ee244bcaa6bd0d6
 hostdeps="autoconf automake gnulib"
 imagedeps="help2man"
 
-regenerate() {
+prepare() {
     cp -rp ${base_dir}/sources/gnulib ./
     ./bootstrap --force --skip-git --skip-po --gnulib-srcdir=`pwd`/gnulib
 }

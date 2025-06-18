@@ -5,7 +5,7 @@ tarball_blake2b="e5e5f7ec26c3952eb6a25988f78d3a1f8a70cf97a2fbc7b433dfcd1721cd38e
 hostdeps="automake autoconf libtool pkg-config"
 imagedeps="gcc gperf"
 
-regenerate() {
+prepare() {
     autotools_recursive_regen
 
     # Huge hack: coreutils does not compile the build-machine binary make-prime-list

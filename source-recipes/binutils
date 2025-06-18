@@ -1,10 +1,10 @@
 name=binutils
 version=2.44
-tarball_url="https://ftpmirror.gnu.org/gnu/binutils/binutils-${version}.tar.xz"
+tarball_url="https://ftpmirror.gnu.org/gnu/binutils/binutils-${version}.tar.gz"
 tarball_blake2b="f676664064380a9218bb031e68b3b8c7324ae8079d26f9940d5b411396f7dac3843e02b6ae483c57c2a13fda5ba95c30a33920e39866cc82cc39ad53c25aa0ec"
 hostdeps="autoconf-2.69 automake libtool pkg-config"
 
-regenerate() {
+prepare() {
     autotools_recursive_regen -I"$(realpath ./config)"
 
     cp -pv /usr/local/share/libtool/build-aux/{config.sub,config.guess,install-sh} libiberty/

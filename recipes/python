@@ -8,7 +8,7 @@ source_deps="autoconf-archive"
 hostdeps="gcc autoconf automake libtool pkg-config"
 deps="core-libs bzip2 xz zlib openssl ncurses readline gdbm tzdata libexpat libffi"
 
-regenerate() {
+prepare() {
     autotools_recursive_regen
 }
 

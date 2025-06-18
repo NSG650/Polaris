@@ -4,6 +4,6 @@ tarball_url="https://launchpad.net/intltool/trunk/${version}/+download/intltool-
 tarball_blake2b="98fe40e4d669fdf65a777152ddee0a9656412b9cf5d1e682d1b4b7bd666f3e5aa623a50481b6df47e16a935550836c66c666229b0bb7ef143f7cde6893b97a69"
 hostdeps="autoconf automake libtool pkg-config"
 
-regenerate() {
+prepare() {
     autotools_recursive_regen
 }

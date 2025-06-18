@@ -8,7 +8,7 @@ source_deps="xorg-util-macros gettext"
 hostdeps="gcc autoconf automake libtool pkg-config"
 deps="core-libs freetype2 libx11 libxext libxmu libxaw libxrender libxft libxinerama libxt libxkbfile libiconv libxi ttf-dejavu"
 
-regenerate() {
+prepare() {
 	true
 }
 

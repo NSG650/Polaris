@@ -8,7 +8,7 @@ source_deps="xtrans xorg-font-util xorg-util-macros"
 hostdeps="gcc autoconf automake libtool pkg-config"
 deps="core-libs xorg-util-macros xorg-proto xcb-proto xtrans libxinerama libxcvt libxshmfence libx11 libxaw libxkbfile libxmu libxfont2 libxi libxv libxdamage libxrender libxrandr libxcb libxfixes libxext xorg-xkbcomp xkeyboard-config pixman openssl"
 
-regenerate() {
+prepare() {
     autotools_recursive_regen
 }
 

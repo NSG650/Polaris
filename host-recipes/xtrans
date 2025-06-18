@@ -1,7 +1,7 @@
 name=xtrans
 from_source=libxtrans
 revision=1
-imagedeps="gcc"
+imagedeps="build-essential"
 hostdeps="gcc autoconf-2.69 automake libtool pkg-config xorg-macros"
 deps="core-libs"
 

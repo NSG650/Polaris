@@ -6,7 +6,7 @@ hostdeps="automake autoconf-2.69 libtool pkg-config"
 imagedeps="git wget"
 allow_network="yes"
 
-regenerate() {
+prepare() {
     ./contrib/download_prerequisites
 
     rm -rf gettext*

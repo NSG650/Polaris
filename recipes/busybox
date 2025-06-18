@@ -3,7 +3,7 @@ from_source=busybox
 revision=1
 hostdeps="gcc"
 deps="core-libs"
-imagedeps="gcc"
+imagedeps="build-essential"
 
 build() {
 	cp -rp "${source_dir}"/. ./

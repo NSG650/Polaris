@@ -7,7 +7,7 @@ imagedeps="meson ninja glib2"
 hostdeps="gcc pkg-config"
 deps="core-libs glib"
 
-regenerate() {
+prepare() {
     sed -i -r 's:"(/system):"/org/gnome\1:g' schemas/*.in
 }
 

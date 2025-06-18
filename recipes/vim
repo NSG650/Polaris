@@ -8,7 +8,7 @@ source_hostdeps="automake autoconf libtool pkg-config"
 hostdeps="gcc binutils automake autoconf libtool pkg-config"
 deps="core-libs ncurses"
 
-regenerate() {
+prepare() {
     true
 }
 

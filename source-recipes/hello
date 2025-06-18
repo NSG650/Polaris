@@ -5,6 +5,6 @@ tarball_blake2b="685881db0f37c6fafa310182ff938026c5fe67039b902335148d4357cb5066d
 hostdeps="automake autoconf libtool pkg-config"
 imagedeps="git"
 
-regenerate() {
+prepare() {
     autotools_recursive_regen
 }

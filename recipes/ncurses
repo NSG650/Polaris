@@ -8,7 +8,7 @@ imagedeps="gcc ncurses patchelf"
 hostdeps="gcc automake autoconf libtool pkg-config"
 deps="core-libs"
 
-regenerate() {
+prepare() {
     cp -pv /usr/local/share/libtool/build-aux/config.guess ./
     cp -pv /usr/local/share/libtool/build-aux/config.sub ./
 }

@@ -8,7 +8,7 @@ imagedeps="python gperf"
 hostdeps="gcc autoconf automake libtool pkg-config"
 deps="core-libs freetype2 libexpat libxml"
 
-regenerate() {
+prepare() {
     autotools_recursive_regen
 
     # Make sure we regenerate this file

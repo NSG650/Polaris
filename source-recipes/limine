@@ -4,6 +4,6 @@ tarball_url="https://github.com/limine-bootloader/limine/releases/download/v${ve
 tarball_blake2b="d293349204f9fdf2c7339680e706309eaa7e01c6430e803b31ad24d030d917df54a9ec46f1ecf37fcc9a2828fc0e5943b381675c735a32c450a705740766e272"
 hostdeps="autoconf automake libtool pkg-config"
 
-regenerate() {
+prepare() {
     autoreconf -fvi
 }
