@@ -1,6 +1,6 @@
 name=hello
 version=2.12.1
-tarball_url="https://ftp.gnu.org/gnu/hello/hello-${version}.tar.gz"
+tarball_url="https://ftpmirror.gnu.org/gnu/hello/hello-${version}.tar.gz"
 tarball_blake2b="685881db0f37c6fafa310182ff938026c5fe67039b902335148d4357cb5066d6e1c1c61a3fefcc8f42f07c21407be591cdb4a88021185c6965a00d9d0f1dcddc"
 hostdeps="automake autoconf libtool pkg-config"
 imagedeps="git"

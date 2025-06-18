@@ -1,8 +1,8 @@
 name=ncurses
-version=6.4.20240127
+version=6.5
 revision=1
-tarball_url="https://github.com/ThomasDickey/ncurses-snapshots/archive/refs/tags/v6_4_20240127.tar.gz"
-tarball_blake2b="f7896f50d9b5c0c8c125f0b0da50f17405460849f99d678d9d0b5024f1d55de13bb0650e60fa987dd8ce620a5081a5184601cf4aeb51906737ea28dd21dd6177"
+tarball_url="https://ftpmirror.gnu.org/gnu/ncurses/ncurses-${version}.tar.gz"
+tarball_blake2b="d0a05c218b5f320ba9abe2f322787baef1d15d764e503c81d49772b54b2927d28ecbeb500c8e514996226b41f69445b4de44ff423cec25b61847307fe61682ec"
 source_hostdeps="autoconf automake libtool pkg-config"
 imagedeps="gcc ncurses patchelf"
 hostdeps="gcc automake autoconf libtool pkg-config"

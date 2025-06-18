@@ -1,8 +1,8 @@
 name=nano
-version=8.0
+version=8.5
 revision=1
-tarball_url="https://ftp.gnu.org/gnu/nano/nano-${version}.tar.xz"
-tarball_blake2b="ba36182da059a3ee4c1fc60a200dee26f47cc6b1441b7ff665b82871f2f8fcac054f6adf82966d353234141bf9c521518da8fa967aca28307bccf43e015ddaea"
+tarball_url="https://ftpmirror.gnu.org/gnu/nano/nano-${version}.tar.xz"
+tarball_blake2b="85de6d5349ed2332d41c054ff64979d7b00ec3c792564fcfb6ebed56b74a17c948117218a50297fead17674c06755afba393e73466eb2af9d3bb33af085c4f23"
 source_hostdeps="automake autoconf libtool pkg-config"
 hostdeps="gcc automake autoconf libtool pkg-config"
 deps="core-libs ncurses"
@@ -25,4 +25,3 @@ package() {
 
     post_package_strip
 }
-

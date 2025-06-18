@@ -1,4 +1,4 @@
 name=libgcc-binaries
-version=4cd52118d12496eec7589ca1ca0d96be994b80aa
-tarball_url="https://github.com/mintsuki/libgcc-binaries/archive/${version}.tar.gz"
-tarball_blake2b="0746974e1cd8dc4102943c11b4d7b2dc1b8d45a0cde63f75840b0c7a0e689b9469b4d02f044290d85562038f362c03d0535c5b8dcb64ba1e23b4bf48bc9c9715"
+version=28257019ce04f784337cb9c3125abb4d02cef14d
+tarball_url="https://codeberg.org/osdev/libgcc-binaries/archive/${version}.tar.gz"
+tarball_blake2b="9329ab8874e62b9298b17aece8fc2433287c6aacb474cca5bb5375f1364d3fe2af59e9c6cfde31777879131792f00598e008bd517be07b662e5e2c6ced980750"

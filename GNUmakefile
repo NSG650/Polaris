@@ -10,13 +10,7 @@ polaris.iso: jinx
 	./build-support/makeiso.sh
 
 jinx:
-	curl -Lo jinx https://raw.githubusercontent.com/mintsuki/jinx/e86d99f1156b33cd5b37a8bb25317949511a28d0/jinx
-	sed -i '/pacman --noconfirm -S pacman pacman-mirrorlist/a \
-    run_in_container1 "$$JINX_CACHE_DIR/sets/.image" sed -i "s/Required/Never/g" /etc/pacman.conf\
-' jinx
-	sed -i '/pacman --noconfirm -S pacman pacman-mirrorlist/a \
-    run_in_container1 "$$JINX_CACHE_DIR/sets/.image" sed -i "s/#Parallel/Parallel/g" /etc/pacman.conf\
-' jinx
+	curl -Lo jinx https://codeberg.org/mintsuki/jinx/raw/commit/4a4316aec6c258a685ebd952c43a52a9c8fe8d5a/jinx
 	chmod +x jinx
 
 .PHONY: userspace-full

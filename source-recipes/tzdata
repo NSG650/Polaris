@@ -1,4 +1,4 @@
 name=tzdata
-version=2024a
+version=2025b
 tarball_url="https://data.iana.org/time-zones/releases/tzdata${version}.tar.gz"
-tarball_blake2b="5ec49bbce704411a1d8b3f018b0d8f6c7de24c5600e0cb6c61a7ee29b4a49b1e502d23b40bce6584ea0aa9b66327321608cbabb994071ec4ca2b3a496aa2d621"
+tarball_blake2b="07421e756cd33f003f1173c320a2e454f767a2ba299b76b54e34dc5cf1c126b00ab3186bc61d4989201a83cb8b3e4c005c0bc080fb39a1e48ff9555d50c84f1d"
