@@ -1,21 +1,7 @@
-diff --git binutils-clean/bfd/Makefile.am binutils-workdir/bfd/Makefile.am
-index 5c5fdef..3c91651 100644
---- binutils-clean/bfd/Makefile.am
-+++ binutils-workdir/bfd/Makefile.am
-@@ -778,7 +778,7 @@ ofiles: stamp-ofiles ; @true
- libbfd_la_SOURCES = $(BFD32_LIBS_CFILES)
- EXTRA_libbfd_la_SOURCES = $(CFILES)
- libbfd_la_DEPENDENCIES = $(OFILES) ofiles ../libsframe/libsframe.la
--libbfd_la_LIBADD = `cat ofiles` @SHARED_LIBADD@ $(LIBDL) $(ZLIB) $(ZSTD_LIBS) ../libsframe/libsframe.la
-+libbfd_la_LIBADD = `cat ofiles` @SHARED_LIBADD@ $(LIBDL) $(ZLIB) $(ZSTD_LIBS) $(SFRAME_LIB_PATH) ../libsframe/libsframe.la
- libbfd_la_LDFLAGS += -release `cat libtool-soversion` @SHARED_LDFLAGS@
- 
- # This file holds an array associating configuration triplets and
-diff --git binutils-clean/bfd/config.bfd binutils-workdir/bfd/config.bfd
-index bdee539..9389d9d 100644
---- binutils-clean/bfd/config.bfd
-+++ binutils-workdir/bfd/config.bfd
-@@ -664,6 +664,11 @@ case "${targ}" in
+diff --color -urN --no-dereference binutils/binutils-2.44/bfd/config.bfd binutils-2.44/bfd/config.bfd
+--- binutils/binutils-2.44/bfd/config.bfd	2025-02-01 19:00:00.000000000 -0500
++++ binutils-2.44/bfd/config.bfd	2025-06-18 23:00:47.319329516 -0500
+@@ -665,6 +665,11 @@
      targ_selvecs=
      targ64_selvecs=x86_64_elf64_vec
      ;;
@@ -27,48 +13,95 @@ index bdee539..9389d9d 100644
  #ifdef BFD64
    x86_64-*-cloudabi*)
      targ_defvec=x86_64_elf64_cloudabi_vec
-@@ -734,6 +739,11 @@ case "${targ}" in
-     targ_selvecs="i386_elf32_vec iamcu_elf32_vec x86_64_elf32_vec"
+@@ -729,6 +734,11 @@
+     targ_defvec=x86_64_elf64_vec
+     targ_selvecs=i386_elf32_vec
      want64=true
-     ;;
++    ;;
 +  x86_64-*-polaris*)
 +    targ_defvec=x86_64_elf64_vec
 +    targ_selvecs=i386_elf32_vec
 +    want64=true
-+    ;;
- #endif
-   i[3-7]86-*-lynxos*)
-     targ_defvec=i386_elf32_vec
-diff --git binutils-clean/gas/configure.tgt binutils-workdir/gas/configure.tgt
-index 3429f85..9d59102 100644
---- binutils-clean/gas/configure.tgt
-+++ binutils-workdir/gas/configure.tgt
-@@ -227,6 +227,7 @@ case ${generic_target} in
+     ;;
+   x86_64-*-gnu*)
+     targ_defvec=x86_64_elf64_vec
+diff --color -urN --no-dereference binutils/binutils-2.44/bfd/Makefile.am binutils-2.44/bfd/Makefile.am
+--- binutils/binutils-2.44/bfd/Makefile.am	2025-02-01 19:00:00.000000000 -0500
++++ binutils-2.44/bfd/Makefile.am	2025-06-18 22:59:54.516389314 -0500
+@@ -785,7 +785,7 @@
+ libbfd_la_SOURCES = $(BFD32_LIBS_CFILES)
+ EXTRA_libbfd_la_SOURCES = $(CFILES)
+ libbfd_la_DEPENDENCIES = $(OFILES) ofiles ../libsframe/libsframe.la
+-libbfd_la_LIBADD = `cat ofiles` @SHARED_LIBADD@ $(LIBDL) $(ZLIB) $(ZSTD_LIBS) ../libsframe/libsframe.la
++libbfd_la_LIBADD = `cat ofiles` @SHARED_LIBADD@ $(LIBDL) $(ZLIB) $(ZSTD_LIBS) $(SFRAME_LIB_PATH) ../libsframe/libsframe.la
+ libbfd_la_LDFLAGS += -release `cat libtool-soversion` @SHARED_LDFLAGS@
+ 
+ # This file holds an array associating configuration triplets and
+diff --color -urN --no-dereference binutils/binutils-2.44/gas/configure.tgt binutils-2.44/gas/configure.tgt
+--- binutils/binutils-2.44/gas/configure.tgt	2025-02-01 19:00:00.000000000 -0500
++++ binutils-2.44/gas/configure.tgt	2025-06-18 23:01:53.305771466 -0500
+@@ -6,12 +6,12 @@
+ # it under the terms of the GNU General Public License as published by
+ # the Free Software Foundation; either version 3 of the License, or
+ # (at your option) any later version.
+-# 
++#
+ # This program is distributed in the hope that it will be useful,
+ # but WITHOUT ANY WARRANTY; without even the implied warranty of
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ # GNU General Public License for more details.
+-# 
++#
+ # You should have received a copy of the GNU General Public License
+ # along with this program; see the file COPYING3.  If not see
+ # <http://www.gnu.org/licenses/>.
+@@ -229,6 +229,7 @@
    i386-*-beos*)				fmt=elf ;;
    i386-*-elfiamcu)			fmt=elf arch=iamcu ;;
    i386-*-elf*)				fmt=elf ;;
-+  i386-*-polaris*)				fmt=elf em=gnu ;;
++  i386-*-polaris*)			fmt=elf em=gnu ;;
    i386-*-fuchsia*)			fmt=elf ;;
    i386-*-haiku*)			fmt=elf em=haiku ;;
    i386-*-genode*)			fmt=elf ;;
-diff --git binutils-clean/gprofng/libcollector/configure.ac binutils-workdir/gprofng/libcollector/configure.ac
-index 7af9581..c55e424 100644
---- binutils-clean/gprofng/libcollector/configure.ac
-+++ binutils-workdir/gprofng/libcollector/configure.ac
-@@ -18,7 +18,7 @@ dnl <http://www.gnu.org/licenses/>.
+@@ -339,7 +340,7 @@
+   moxie-*-uclinux)			fmt=elf em=linux ;;
+   moxie-*-moxiebox*)                    fmt=elf endian=little ;;
+   moxie-*-*)				fmt=elf ;;
+-    
++
+   mt-*-elf)				fmt=elf bfd_gas=yes ;;
+ 
+   msp430-*-*)				fmt=elf ;;
+@@ -426,7 +427,7 @@
+   wasm32-*-*)                           fmt=elf ;;
+ 
+   xstormy16-*-*)			fmt=elf ;;
+-  
++
+   xgate-*-*)    			fmt=elf ;;
+ 
+   xtensa*-*-*)				fmt=elf ;;
+diff --color -urN --no-dereference binutils/binutils-2.44/gprofng/libcollector/configure.ac binutils-2.44/gprofng/libcollector/configure.ac
+--- binutils/binutils-2.44/gprofng/libcollector/configure.ac	2025-02-01 19:00:00.000000000 -0500
++++ binutils-2.44/gprofng/libcollector/configure.ac	2025-06-18 23:02:08.250492342 -0500
+@@ -18,7 +18,7 @@
  
  m4_include([../../bfd/version.m4])
- AC_INIT([gprofng], BFD_VERSION)
+ AC_INIT([gprofng], [BFD_VERSION])
 -AC_CONFIG_MACRO_DIRS([../../config ../..])
 +#AC_CONFIG_MACRO_DIRS([../../config ../..])
  AC_CONFIG_AUX_DIR(../..)
  AC_CANONICAL_TARGET
  AM_INIT_AUTOMAKE
-diff --git binutils-clean/ld/configure.tgt binutils-workdir/ld/configure.tgt
-index c62b958..81ffba2 100644
---- binutils-clean/ld/configure.tgt
-+++ binutils-workdir/ld/configure.tgt
-@@ -378,6 +378,9 @@ i[3-7]86-*-linux-*)	targ_emul=elf_i386
+@@ -48,4 +48,3 @@
+ AC_CONFIG_HEADERS([lib-config.h:../common/lib-config.h.in])
+ 
+ AC_OUTPUT
+-
+diff --color -urN --no-dereference binutils/binutils-2.44/ld/configure.tgt binutils-2.44/ld/configure.tgt
+--- binutils/binutils-2.44/ld/configure.tgt	2025-02-01 19:00:00.000000000 -0500
++++ binutils-2.44/ld/configure.tgt	2025-06-18 23:03:12.853115622 -0500
+@@ -384,6 +384,9 @@
  i[3-7]86-*-redox*)	targ_emul=elf_i386
  			targ_extra_emuls=elf_x86_64
  			;;
@@ -78,7 +111,7 @@ index c62b958..81ffba2 100644
  i[3-7]86-*-solaris2*)	targ_emul=elf_i386_sol2
  			targ_extra_emuls="elf_i386_ldso elf_i386 elf_iamcu elf_x86_64_sol2 elf_x86_64"
  			targ_extra_libpath=$targ_extra_emuls
-@@ -1011,6 +1014,9 @@ x86_64-*-linux-*)	targ_emul=elf_x86_64
+@@ -1019,6 +1022,9 @@
  x86_64-*-redox*)	targ_emul=elf_x86_64
  			targ_extra_emuls=elf_i386
  			;;
@@ -88,11 +121,10 @@ index c62b958..81ffba2 100644
  x86_64-*-solaris2*)	targ_emul=elf_x86_64_sol2
  			targ_extra_emuls="elf_x86_64 elf_i386_sol2 elf_i386_ldso elf_i386 elf_iamcu"
  			targ_extra_libpath=$targ_extra_emuls
-diff --git binutils-clean/libiberty/configure.ac binutils-workdir/libiberty/configure.ac
-index 0748c59..954e014 100644
---- binutils-clean/libiberty/configure.ac
-+++ binutils-workdir/libiberty/configure.ac
-@@ -37,7 +37,7 @@ else
+diff --color -urN --no-dereference binutils/binutils-2.44/libiberty/configure.ac binutils-2.44/libiberty/configure.ac
+--- binutils/binutils-2.44/libiberty/configure.ac	2025-02-01 19:00:00.000000000 -0500
++++ binutils-2.44/libiberty/configure.ac	2025-06-18 23:04:08.626019115 -0500
+@@ -37,7 +37,7 @@
    libiberty_topdir="${srcdir}/.."
  fi
  AC_SUBST(libiberty_topdir)
@@ -100,3 +132,40 @@ index 0748c59..954e014 100644
 +AC_CONFIG_AUX_DIR([.])
  
  dnl Very limited version of automake's enable-maintainer-mode
+ 
+@@ -159,10 +159,10 @@
+   xyes|x)
+     target_header_dir=libiberty
+     ;;
+-  xno)   
++  xno)
+     target_header_dir=
+     ;;
+-  *) 
++  *)
+     # This could be sanity-checked in various ways...
+     target_header_dir="${enable_install_libiberty}"
+     ;;
+@@ -659,19 +659,19 @@
+     ;;
+ 
+   *-*-uwin*)
+-    # Under some versions of uwin, vfork is notoriously buggy and the test 
++    # Under some versions of uwin, vfork is notoriously buggy and the test
+     # can hang configure; on other versions, vfork exists just as a stub.
+     # FIXME: This should be removed once vfork in uwin's runtime is fixed.
+     ac_cv_func_vfork_works=no
+     # Under uwin 2.0+, sys_nerr and sys_errlist exist, but they are
+-    # macros (actually, these are imported from a DLL, but the end effect 
++    # macros (actually, these are imported from a DLL, but the end effect
+     # is the same), so the test below won't find them.
+     libiberty_cv_var_sys_nerr=yes
+     libiberty_cv_var_sys_errlist=yes
+     ;;
+ 
+   *-*-*vms*)
+-    # Under VMS, vfork works very different than on Unix. The standard test 
++    # Under VMS, vfork works very different than on Unix. The standard test
+     # won't work, and it isn't easily adaptable. It makes more sense to
+     # just force it.
+     ac_cv_func_vfork_works=yes
