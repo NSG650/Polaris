@@ -1,4 +1,4 @@
 name=cmake
-version=3.29.5
+version=4.0.3
 tarball_url="https://github.com/Kitware/CMake/releases/download/v${version}/cmake-${version}.tar.gz"
-tarball_blake2b="94de7f18c549f943a680e6cb1d7e8ae1d3fcb50bfc90c0b4b1f8b68ef2360e45511d6b2f665642aaa3cdf3ae131838fd5678456811a52d4af12bed5216bd8a86"
+tarball_blake2b="4dc2705baf2404b64da88a5b8838850b782849a4dcdfb0eaefa819ba00a018885a8bd0b42f17f92c8e24b9e76c66e60880377017d8e2d584cb75b2978018e214"

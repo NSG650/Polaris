@@ -1,18 +1,14 @@
 name=mlibc-headers
 from_source=mlibc
 revision=1
-imagedeps="meson ninja"
+imagedeps="meson ninja-build"
 hostdeps="pkg-config"
 builddeps="cxxshim frigg"
-deps="linux-headers"
 
 build() {
    meson_configure \
         -Dheaders_only=true \
-        -Ddisable_crypt_option=true \
-        -Ddisable_iconv_option=true \
-        -Ddisable_intl_option=true \
-        -Dlinux_kernel_headers=${sysroot_dir}${prefix}/include
+        -Dlinux_kernel_headers=${source_dir}/linux-headers
 
     ninja -j${parallelism}
 }

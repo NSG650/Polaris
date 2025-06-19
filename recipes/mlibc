@@ -1,22 +1,19 @@
 name=mlibc
 from_source=mlibc
 revision=1
-imagedeps="meson ninja"
+imagedeps="meson ninja-build"
 hostdeps="gcc pkg-config libgcc-binaries"
 builddeps="cxxshim frigg"
-deps="linux-headers mlibc-headers"
+deps="mlibc-headers"
 
 build() {
         LDFLAGS="-Wl,/usr/local/libgcc-binaries/libgcc-x86_64.a" \
     meson_configure \
         --buildtype=debugoptimized \
-        -Dmlibc_no_headers=true \
+        -Dno_headers=true \
         -Ddefault_library=both \
-        -Ddisable_crypt_option=true \
-        -Ddisable_iconv_option=true \
-        -Ddisable_intl_option=true \
-        -Dlinux_kernel_headers=${sysroot_dir}${prefix}/include \
-        -Ddisable_libgcc_dependency=true
+        -Dlinux_kernel_headers=${source_dir}/linux-headers \
+        -Dlibgcc_dependency=false
 
     ninja -j${parallelism}
 }

@@ -1,7 +1,7 @@
 name=cxxshim
 from_source=cxxshim
 revision=1
-imagedeps="meson ninja"
+imagedeps="meson ninja-build"
 hostdeps="pkg-config"
 
 build() {

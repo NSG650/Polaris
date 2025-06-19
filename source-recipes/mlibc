@@ -1,4 +1,13 @@
 name=mlibc
-version=3dddd5359ac4d41756fd30d01be0b28b5aaad172
+version=e86b34e79dbda2ea940bd4c430c5450ee30926f9
 tarball_url="https://github.com/Neptune650/mlibc/archive/${version}.tar.gz"
-tarball_blake2b="db5961c3cc6260efef0ab81bb1588cb455c22699efffba11f3010deb38cdf05724af07f3d2a492466bb25caa357a918e1eb499c39de5edd94339a3e96af58e80"
+tarball_blake2b="927264b17860837d77467af8b716c1357c99dac5685dab0163ae60a6293e679dea325a00d88a1607b83f171c5bcbaea620624c1de5be12170fe7e56a9f9fbb5c"
+allow_network=yes
+imagedeps="build-essential rsync"
+
+prepare() {
+    ./scripts/get-linux-headers.sh
+
+    # remove this file, as mlibc will override this file with one suited to mlibc
+    rm linux-headers/linux/libc-compat.h
+}
