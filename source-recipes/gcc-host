@@ -1,7 +1,7 @@
 name=gcc-host
 version=15.1.0
 tarball_url="https://ftpmirror.gnu.org/gnu/gcc/gcc-${version}/gcc-${version}.tar.xz"
-tarball_blake2b="33608aea61ecb6abb759e7f3de1224fe900d85cd3666b02ad5a3923c8bff29b1cb4e28e7656a9ae30a04a799df0252b745ed38cbf7103f306cf7fb21607a8128"
+tarball_blake2b="a902ce99db4e93615879e435bcd0b96d5a16ea0af42598ca0e6d12913b2ce3651a98574c3264b2717b848e6b5a823b403ccca0adde463938d5b41aa3f1da0d34"
 hostdeps="automake autoconf-2.69 libtool pkg-config"
 imagedeps="git wget"
 allow_network="yes"

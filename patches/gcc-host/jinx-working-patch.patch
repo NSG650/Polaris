@@ -1,20 +1,17 @@
-diff --git gcc-host-clean/fixincludes/mkfixinc.sh gcc-host-workdir/fixincludes/mkfixinc.sh
-index df90720..484f8bc 100755
---- gcc-host-clean/fixincludes/mkfixinc.sh
-+++ gcc-host-workdir/fixincludes/mkfixinc.sh
-@@ -12,6 +12,7 @@ target=fixinc.sh
- # Check for special fix rules for particular targets
+diff --color -urN --no-dereference gcc-host-clean/fixincludes/mkfixinc.sh gcc-host-modified/fixincludes/mkfixinc.sh
+--- gcc-host-clean/fixincludes/mkfixinc.sh	2025-04-25 03:17:59.000000000 -0500
++++ gcc-host-modified/fixincludes/mkfixinc.sh	2025-06-19 13:16:07.095660783 -0500
+@@ -13,6 +13,7 @@
  case $machine in
      i?86-*-cygwin* | \
-+    x86_64-*-polaris* | \
-     i?86-*-mingw32* | \
-     x86_64-*-mingw32* | \
+     *-mingw32* | \
++    x86_64-*polaris* | \
      powerpc-*-eabisim* | \
-diff --git gcc-host-workdir/gcc/config/polaris.h gcc-host-workdir/gcc/config/polaris.h
-new file mode 100644
-index 0000000..ca776e9
---- /dev/null
-+++ gcc-host-workdir/gcc/config/polaris.h
+     powerpc-*-eabi*    | \
+     powerpc-*-rtems*   | \
+diff --color -urN --no-dereference gcc-host-clean/gcc/config/polaris.h gcc-host-modified/gcc/config/polaris.h
+--- gcc-host-clean/gcc/config/polaris.h	1969-12-31 19:00:00.000000000 -0500
++++ gcc-host-modified/gcc/config/polaris.h	2025-06-19 13:05:16.813418634 -0500
 @@ -0,0 +1,29 @@
 +#undef TARGET_POLARIS
 +#define TARGET_POLARIS 1
@@ -39,19 +36,27 @@ index 0000000..ca776e9
 +#undef TARGET_OS_CPP_BUILTINS
 +#define TARGET_OS_CPP_BUILTINS()         \
 +  do {                                   \
-+    builtin_define ("__polaris__");    \
++    builtin_define ("__polaris__");      \
 +    builtin_define ("__unix__");         \
-+    builtin_assert ("system=polaris"); \
++    builtin_assert ("system=polaris");   \
 +    builtin_assert ("system=unix");      \
 +    builtin_assert ("system=posix");     \
 +  } while (0);
-diff --git gcc-host-clean/gcc/config.gcc gcc-host-workdir/gcc/config.gcc
-index 6fd1594..0e447e3 100644
---- gcc-host-clean/gcc/config.gcc
-+++ gcc-host-workdir/gcc/config.gcc
-@@ -840,6 +840,15 @@ case ${target} in
-   tmake_file="${tmake_file} t-freebsd"
-   target_has_targetdm=yes
+diff --color -urN --no-dereference gcc-host-clean/gcc/config.gcc gcc-host-modified/gcc/config.gcc
+--- gcc-host-clean/gcc/config.gcc	2025-04-25 03:18:00.000000000 -0500
++++ gcc-host-modified/gcc/config.gcc	2025-06-19 13:08:33.558903008 -0500
+@@ -187,7 +187,7 @@
+ #			the --with-sysroot configure option or the
+ #			--sysroot command line option is used this
+ #			will be relative to the sysroot.
+-# target_type_format_char 
++# target_type_format_char
+ # 			The default character to be used for formatting
+ #			the attribute in a
+ #			.type symbol_name, ${t_t_f_c}<property>
+@@ -879,6 +879,15 @@
+   rust_target_objs="${rust_target_objs} freebsd-rust.o"
+   target_has_targetrustm=yes
    ;;
 +*-*-polaris*)
 +  extra_options="$extra_options gnu-user.opt"
@@ -64,8 +69,8 @@ index 6fd1594..0e447e3 100644
 +  ;;
  *-*-fuchsia*)
    native_system_header_dir=/include
-   ;;
-@@ -2214,6 +2223,9 @@ i[34567]86-*-mingw* | x86_64-*-mingw*)
+   tmake_file="t-fuchsia"
+@@ -2320,6 +2329,9 @@
  			;;
  	esac
  	;;
@@ -75,11 +80,19 @@ index 6fd1594..0e447e3 100644
  x86_64-*-fuchsia*)
  	tmake_file="${tmake_file} i386/t-x86_64-elf"
  	tm_file="${tm_file} i386/unix.h i386/att.h elfos.h newlib-stdint.h i386/i386elf.h i386/x86-64.h fuchsia.h"
-diff --git gcc-host-clean/libgcc/config.host gcc-host-workdir/libgcc/config.host
-index b9975de..1fe0834 100644
---- gcc-host-clean/libgcc/config.host
-+++ gcc-host-workdir/libgcc/config.host
-@@ -263,6 +263,11 @@ case ${host} in
+diff --color -urN --no-dereference gcc-host-clean/libgcc/config.host gcc-host-modified/libgcc/config.host
+--- gcc-host-clean/libgcc/config.host	2025-04-25 03:18:04.000000000 -0500
++++ gcc-host-modified/libgcc/config.host	2025-06-19 13:11:35.395148516 -0500
+@@ -106,7 +106,7 @@
+ 	;;
+ avr-*-*)
+ 	cpu_type=avr
+-	;;    
++	;;
+ bfin*-*)
+ 	cpu_type=bfin
+ 	;;
+@@ -310,6 +310,11 @@
    tmake_file="$tmake_file t-crtstuff-pic t-libgcc-pic t-eh-dw2-dip t-slibgcc t-slibgcc-fuchsia"
    extra_parts="crtbegin.o crtend.o"
    ;;
@@ -91,7 +104,7 @@ index b9975de..1fe0834 100644
  *-*-linux* | frv-*-*linux* | *-*-kfreebsd*-gnu | *-*-gnu* | *-*-kopensolaris*-gnu | *-*-uclinuxfdpiceabi)
    tmake_file="$tmake_file t-crtstuff-pic t-libgcc-pic t-eh-dw2-dip t-slibgcc t-slibgcc-gld t-slibgcc-elf-ver t-linux"
    extra_parts="crtbegin.o crtbeginS.o crtbeginT.o crtend.o crtendS.o"
-@@ -697,6 +702,10 @@ x86_64-*-elf* | x86_64-*-rtems*)
+@@ -767,6 +772,10 @@
  x86_64-*-fuchsia*)
  	tmake_file="$tmake_file t-libgcc-pic"
  	;;
@@ -102,37 +115,19 @@ index b9975de..1fe0834 100644
  i[34567]86-*-dragonfly*)
  	tmake_file="${tmake_file} i386/t-dragonfly i386/t-crtstuff"
  	md_unwind_header=i386/dragonfly-unwind.h
-diff --git gcc-host-clean/libgcc/configure.ac gcc-host-workdir/libgcc/configure.ac
-index 2fc9d5d..83d246e 100644
---- gcc-host-clean/libgcc/configure.ac
-+++ gcc-host-workdir/libgcc/configure.ac
-@@ -46,7 +46,7 @@ else
-   libgcc_topdir="${srcdir}/.."
- fi
- AC_SUBST(libgcc_topdir)
--AC_CONFIG_AUX_DIR($libgcc_topdir)
-+AC_CONFIG_AUX_DIR([.])
- AC_CONFIG_HEADER(auto-target.h:config.in)
+diff --color -urN --no-dereference gcc-host-clean/libstdc++-v3/crossconfig.m4 gcc-host-modified/libstdc++-v3/crossconfig.m4
+--- gcc-host-clean/libstdc++-v3/crossconfig.m4	2025-04-25 03:18:05.000000000 -0500
++++ gcc-host-modified/libstdc++-v3/crossconfig.m4	2025-06-19 13:16:17.575780456 -0500
+@@ -90,7 +90,7 @@
  
- AC_ARG_ENABLE(shared,
-diff --git gcc-host-clean/libiberty/configure.ac gcc-host-workdir/libiberty/configure.ac
-index 28d996f..61ff752 100644
---- gcc-host-clean/libiberty/configure.ac
-+++ gcc-host-workdir/libiberty/configure.ac
-@@ -37,7 +37,7 @@ else
-   libiberty_topdir="${srcdir}/.."
- fi
- AC_SUBST(libiberty_topdir)
--AC_CONFIG_AUX_DIR($libiberty_topdir)
-+AC_CONFIG_AUX_DIR([.])
- 
- dnl Very limited version of automake's enable-maintainer-mode
- 
-diff --git gcc-host-clean/libstdc++-v3/crossconfig.m4 gcc-host-workdir/libstdc++-v3/crossconfig.m4
-index b3269cb..3303aaa 100644
---- gcc-host-clean/libstdc++-v3/crossconfig.m4
-+++ gcc-host-workdir/libstdc++-v3/crossconfig.m4
-@@ -136,6 +136,18 @@ case "${host}" in
+   *-freebsd*)
+     SECTION_FLAGS='-ffunction-sections -fdata-sections'
+-    AC_SUBST(SECTION_FLAGS) 
++    AC_SUBST(SECTION_FLAGS)
+     GLIBCXX_CHECK_LINKER_FEATURES
+     AC_DEFINE(HAVE_SETENV)
+     AC_DEFINE(HAVE_FINITEF)
+@@ -136,6 +136,18 @@
      AC_CHECK_FUNCS(uselocale)
      ;;
  
@@ -151,3 +146,21 @@ index b3269cb..3303aaa 100644
    *-fuchsia*)
      SECTION_FLAGS='-ffunction-sections -fdata-sections'
      AC_SUBST(SECTION_FLAGS)
+@@ -200,7 +212,7 @@
+     ;;
+   *-netbsd* | *-openbsd*)
+     SECTION_FLAGS='-ffunction-sections -fdata-sections'
+-    AC_SUBST(SECTION_FLAGS) 
++    AC_SUBST(SECTION_FLAGS)
+     GLIBCXX_CHECK_LINKER_FEATURES
+     AC_DEFINE(HAVE_FINITEF)
+     AC_DEFINE(HAVE_FINITE)
+@@ -221,7 +233,7 @@
+     ;;
+   *-qnx6.1* | *-qnx6.2*)
+     SECTION_FLAGS='-ffunction-sections -fdata-sections'
+-    AC_SUBST(SECTION_FLAGS) 
++    AC_SUBST(SECTION_FLAGS)
+     GLIBCXX_CHECK_LINKER_FEATURES
+     AC_DEFINE(HAVE_COSF)
+     AC_DEFINE(HAVE_COSL)
