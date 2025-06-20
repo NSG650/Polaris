@@ -1,0 +1,12 @@
+diff --color -urN --no-dereference gettext-clean/gettext-runtime/intl/gnulib-lib/getlocalename_l-unsafe.c gettext-workdir/gettext-runtime/intl/gnulib-lib/getlocalename_l-unsafe.c
+--- gettext-clean/gettext-runtime/intl/gnulib-lib/getlocalename_l-unsafe.c	2025-05-04 08:43:19.000000000 -0500
++++ gettext-workdir/gettext-runtime/intl/gnulib-lib/getlocalename_l-unsafe.c	2025-06-19 20:40:35.385678287 -0500
+@@ -683,6 +683,8 @@
+       };
+       const char *name = ((struct __locale_t *) locale)->mb_cur_max == 4 ? "C.UTF-8" : "C";
+       return (struct string_with_storage) { name, STORAGE_INDEFINITE };
++#elif defined __polaris__
++      return (struct string_with_storage) { "C.UTF-8", STORAGE_INDEFINITE };
+ #else
+  #error "Please port gnulib getlocalename_l-unsafe.c to your platform! Report this to bug-gnulib."
+ #endif

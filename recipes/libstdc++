@@ -1,5 +1,6 @@
 name=libstdc++
 revision=1
+version=15.1.0
 hostdeps="gcc autoconf-2.69 automake libtool pkg-config"
 imagedeps="build-essential"
 deps="mlibc libgcc"

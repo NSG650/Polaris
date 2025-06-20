@@ -1,7 +1,7 @@
-name=libintl
-version=0.22.5
+name=gettext
+version=0.25
 tarball_url="https://ftpmirror.gnu.org/gnu/gettext/gettext-${version}.tar.xz"
-tarball_blake2b="18c383518f5a78b5c04cf76de976524da2a87a892a30d6386778bb4c7dd526ffc3f14f484906c5d3a513b7caf76ea560e53962b325e552182d6940055d798f24"
+tarball_blake2b="cec5dd43f64ea676b112d53374452852ad25b2d31833a805bb2f92cd0b172536b47f916ad630fd4acd11208d408ff302eac2a5cd6a78ec653b7d5a3b447f5584"
 hostdeps="autoconf automake libtool pkg-config"
 
 prepare() {
