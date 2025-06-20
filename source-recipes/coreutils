@@ -3,7 +3,7 @@ version=9.7
 tarball_url="https://ftpmirror.gnu.org/gnu/coreutils/coreutils-${version}.tar.xz"
 tarball_blake2b="e5e5f7ec26c3952eb6a25988f78d3a1f8a70cf97a2fbc7b433dfcd1721cd38e6e0a8b9cb83f854a22df325bcb5ea8c4534c5a217273762cd5d575b381db69ee8"
 hostdeps="automake autoconf libtool pkg-config"
-imagedeps="gcc gperf"
+imagedeps="build-essential gperf"
 
 prepare() {
     autotools_recursive_regen

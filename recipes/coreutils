@@ -3,7 +3,7 @@ from_source=coreutils
 revision=1
 hostdeps="gcc automake autoconf libtool pkg-config"
 deps="core-libs tzdata"
-imagedeps="gcc gperf"
+imagedeps="build-essential gperf"
 
 build() {
     cp -rp "${source_dir}"/. ./
