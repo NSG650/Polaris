@@ -4,7 +4,7 @@ revision=1
 tarball_url="https://ftpmirror.gnu.org/gnu/ncurses/ncurses-${version}.tar.gz"
 tarball_blake2b="d0a05c218b5f320ba9abe2f322787baef1d15d764e503c81d49772b54b2927d28ecbeb500c8e514996226b41f69445b4de44ff423cec25b61847307fe61682ec"
 source_hostdeps="autoconf automake libtool pkg-config"
-imagedeps="gcc ncurses patchelf"
+imagedeps="build-essential libncurses-dev patchelf"
 hostdeps="gcc automake autoconf libtool pkg-config"
 deps="core-libs"
 
@@ -33,7 +33,7 @@ package() {
     make install DESTDIR="${dest_dir}"
 
     # As we build ncurses with wide character support, make some compatibility links
-    for lib in ncurses ncurses++ form panel menu tinfo ; do
+    for lib in ncurses form panel menu tinfo ; do
        rm -vf                    "${dest_dir}${prefix}"/lib/lib${lib}.so
        echo "INPUT(-l${lib}w)" > "${dest_dir}${prefix}"/lib/lib${lib}.so
        ln -sfv ${lib}w.pc        "${dest_dir}${prefix}"/lib/pkgconfig/${lib}.pc
