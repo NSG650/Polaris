@@ -51,7 +51,7 @@ void resched(registers_t *reg) {
 
 	struct thread *running_thrd = prcb_return_current_cpu()->running_thread;
 	uint64_t runtime = running_thrd == NULL ? 20000 : running_thrd->runtime;
-	
+
 	if (prcb_return_current_cpu()->lapic_id == smp_bsp_lapic_id) {
 		timer_handler(runtime * 1000);
 	}

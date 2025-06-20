@@ -22,8 +22,7 @@ static inline uint32_t hash(const void *data, size_t length) {
 
 #define HASHMAP_KEY_DATA_MAX 256
 
-#define HASHMAP_INIT(CAP) \
-	{ .cap = (CAP), .buckets = NULL }
+#define HASHMAP_INIT(CAP) {.cap = (CAP), .buckets = NULL}
 
 #define HASHMAP_DELETE(HASHMAP)                                     \
 	do {                                                            \

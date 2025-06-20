@@ -70,8 +70,7 @@ static void *stub_mmap(struct resource *this, size_t file_page, int flags) {
 	return NULL;
 }
 
-static bool stub_ref(struct resource *this,
-					   struct f_description *description) {
+static bool stub_ref(struct resource *this, struct f_description *description) {
 	(void)this;
 	(void)description;
 	this->refcount++;

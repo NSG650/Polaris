@@ -114,7 +114,7 @@ cleanup:
 
 size_t event_trigger(struct event *event, bool drop) {
 	if (!event) {
-		return 0;		
+		return 0;
 	}
 
 #if defined(__x86_64__)

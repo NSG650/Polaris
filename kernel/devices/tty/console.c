@@ -1,11 +1,11 @@
-#include <devices/tty/console.h>
 #include <debug/debug.h>
+#include <devices/tty/console.h>
+#include <devices/tty/termios.h>
 #include <errno.h>
 #include <fb/fb.h>
 #include <klibc/mem.h>
 #include <klibc/module.h>
 #include <klibc/resource.h>
-#include <devices/tty/termios.h>
 
 struct console {
 	struct resource res;
@@ -40,7 +40,7 @@ static ssize_t console_write(struct resource *this,
 
 int console_ioctl(struct resource *this, struct f_description *description,
 				  uint64_t request, uint64_t arg) {
-    (void)description;
+	(void)description;
 	spinlock_acquire_or_wait(&this->lock);
 
 	int ret = 0;

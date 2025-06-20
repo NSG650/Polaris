@@ -686,7 +686,7 @@ void process_kill(struct process *proc, bool crash) {
 	}
 
 	bool are_we_killing_ourselves = false;
-	
+
 	for (int i = 0; i < MAX_FDS; i++) {
 		if (proc->fds[i] == NULL) {
 			continue;

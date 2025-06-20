@@ -20,7 +20,7 @@
 
 #include <stdint.h>
 
-#define FLAT_PTR(PTR) (*((uintptr_t(*)[])(PTR)))
+#define FLAT_PTR(PTR) (*((uintptr_t (*)[])(PTR)))
 
 #define BYTE_PTR(PTR) (*((uint8_t *)(PTR)))
 #define WORD_PTR(PTR) (*((uint16_t *)(PTR)))

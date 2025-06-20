@@ -1,4 +1,5 @@
 #include <debug/debug.h>
+#include <devices/tty/console.h>
 #include <devices/tty/pty.h>
 #include <errno.h>
 #include <fb/fb.h>
@@ -20,12 +21,10 @@
 #include <sched/sched.h>
 #include <sys/prcb.h>
 #include <sys/timer.h>
-#include <devices/tty/console.h>
 
 const char *module_list[] = {
 #if defined(__x86_64__)
-	"/usr/lib/modules/ps2.ko",
-	"/usr/lib/modules/i8254x.ko"
+	"/usr/lib/modules/ps2.ko", "/usr/lib/modules/i8254x.ko"
 #endif
 };
 

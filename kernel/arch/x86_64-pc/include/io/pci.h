@@ -131,11 +131,11 @@ bool pci_setup_irq(struct pci_device *dev, size_t index, uint8_t vector);
 bool pci_mask(struct pci_device *dev, size_t index, bool mask);
 
 #define PCI_READ_B(DEV, OFF) \
-	(uint8_t) pci_read(0, DEV->bus, DEV->device, 0, OFF, 1)
+	(uint8_t)pci_read(0, DEV->bus, DEV->device, 0, OFF, 1)
 #define PCI_READ_W(DEV, OFF) \
-	(uint16_t) pci_read(0, DEV->bus, DEV->device, 0, OFF, 2)
+	(uint16_t)pci_read(0, DEV->bus, DEV->device, 0, OFF, 2)
 #define PCI_READ_D(DEV, OFF) \
-	(uint32_t) pci_read(0, DEV->bus, DEV->device, 0, OFF, 4)
+	(uint32_t)pci_read(0, DEV->bus, DEV->device, 0, OFF, 4)
 
 #define PCI_WRITE_B(DEV, OFF, VAL) \
 	pci_write(0, DEV->bus, DEV->device, 0, OFF, (uint8_t)VAL, 1)
