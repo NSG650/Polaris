@@ -1,9 +1,8 @@
 name=freestnd-c-hdrs
-version=87956bbcad0e1934e708223913be53131311342d
+version=4039f438fb1dc1064d8e98f70e1cf122f91b763b
 revision=1
-tarball_url="https://github.com/osdev0/freestnd-c-hdrs/archive/${version}.tar.gz"
-tarball_blake2b="51d696a623a70d46644f654da240505f01d7e4ea0ec3e5f594e55297a82fd6743449b77a9591d16d7c04e1d8612f92c6c4c342ff250cc0d535f10b6562f36de9"
-
+tarball_url="https://codeberg.org/osdev/freestnd-c-hdrs/archive/${version}.tar.gz"
+tarball_blake2b="8abf90b03f02586433bd5f6b193b85f55163306564132ce637528d143cdad4c071c23afa4e305cd4decb6c466c44a143da107f72a988e788bd5b1a99f6a86a7e"
 
 build() {
     cp -rp "${source_dir}"/. ./

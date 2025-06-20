@@ -3,7 +3,7 @@ from_source=mlibc
 revision=1
 imagedeps="meson ninja-build"
 hostdeps="gcc pkg-config libgcc-binaries"
-builddeps="cxxshim frigg"
+builddeps="freestnd-c-hdrs freestnd-cxx-hdrs frigg"
 deps="mlibc-headers"
 
 build() {
@@ -13,7 +13,8 @@ build() {
         -Dno_headers=true \
         -Ddefault_library=both \
         -Dlinux_kernel_headers=${source_dir}/linux-headers \
-        -Dlibgcc_dependency=false
+        -Dlibgcc_dependency=false \
+        -Duse_freestnd_hdrs=enabled
 
     ninja -j${parallelism}
 }
