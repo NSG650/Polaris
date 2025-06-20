@@ -1,3 +1,4 @@
 name=core-libs
+version=1.0
 revision=1
 deps="mlibc libgcc libstdc++ libintl libiconv libxcrypt"
