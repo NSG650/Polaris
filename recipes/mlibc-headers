@@ -8,7 +8,7 @@ builddeps="frigg"
 build() {
    meson_configure \
         -Dheaders_only=true \
-        -Dlinux_kernel_headers=${source_dir}/linux-headers
+        -Dlinux_kernel_headers=$(realpath -s --relative-to="$(pwd)" ${source_dir}/linux-headers)
 
     ninja -j${parallelism}
 }

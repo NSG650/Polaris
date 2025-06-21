@@ -1,7 +1,7 @@
 name=mlibc
 from_source=mlibc
 revision=1
-imagedeps="meson ninja-build"
+imagedeps="build-essential meson ninja-build"
 hostdeps="gcc pkg-config libgcc-binaries"
 builddeps="freestnd-c-hdrs freestnd-cxx-hdrs frigg"
 deps="mlibc-headers"
@@ -12,7 +12,7 @@ build() {
         --buildtype=debugoptimized \
         -Dno_headers=true \
         -Ddefault_library=both \
-        -Dlinux_kernel_headers=${source_dir}/linux-headers \
+        -Dlinux_kernel_headers=$(realpath -s --relative-to="$(pwd)" ${source_dir}/linux-headers) \
         -Dlibgcc_dependency=false \
         -Duse_freestnd_hdrs=enabled
 
