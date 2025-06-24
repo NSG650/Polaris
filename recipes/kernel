@@ -5,6 +5,8 @@ source_dir="kernel"
 hostdeps="gcc autoconf automake libtool pkg-config"
 imagedeps="nasm git"
 deps="core-libs"
+# We need connection in case the limine.h file doesn't exist
+allow_network=yes
 
 build() {
     cp -rp "${source_dir}"/. ./

@@ -16,11 +16,15 @@ jinx:
 .PHONY: userspace-full
 userspace-full:
 	rm -f pkgs/kernel* pkgs/drivers* pkgs/init*
+	rm -rf sources/kernel* sources/drivers* sources/init*
+	rm -rf builds/kernel builds/drivers builds/init
 	./jinx build-all
 
 .PHONY: userspace-base
 userspace-base:
 	rm -f pkgs/kernel* pkgs/drivers* pkgs/init*
+	rm -rf sources/kernel* sources/drivers* sources/init*
+	rm -rf builds/kernel builds/drivers builds/init
 	./jinx build-if-needed base-files kernel drivers init bash coreutils lua nano ncurses readline tzdata xz zlib zstd gcon
 
 .PHONY: kernel-clean
