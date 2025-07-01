@@ -1,8 +1,8 @@
 name=bash
-version=5.3-rc2
+version=5.2.37
 revision=1
-tarball_url="https://ftpmirror.gnu.org/gnu/bash/bash-${version}.tar.gz"
-tarball_blake2b="42f3b6b3b675a618c965fbde8e3052ac4e171b0f50848589ab4996f6a8de22aca8bdaa5819eb21d3e3dbd67cddaad17d8c48d5a977ae77373fedfdec67cb4155"
+tarball_url="https://ftpmirror.gnu.org/gnu/bash/bash-5.2.37.tar.gz"
+tarball_blake2b="7b4dbb7497ab8b54fa30e82591a0557daf0a0668f458db36a032918abc66c7ed35339e947bd95ff1ffbf353403ebee789d27ffa9c037b51c817c074d7a28bb3b"
 source_hostdeps="autoconf automake libtool pkg-config"
 imagedeps="build-essential"
 hostdeps="gcc autoconf automake libtool pkg-config"
@@ -14,6 +14,7 @@ prepare() {
 
 build() {
         CFLAGS="$CFLAGS \
+            -std=c17 \
             -DDEFAULT_PATH_VALUE='\"/usr/local/sbin:/usr/local/bin:/usr/bin\"' \
             -DSTANDARD_UTILS_PATH='\"/usr/bin\"' \
             -DSYS_BASHRC='\"/etc/bash.bashrc\"' \
