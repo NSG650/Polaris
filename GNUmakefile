@@ -19,6 +19,7 @@ userspace-full:
 	rm -rf sources/kernel* sources/drivers* sources/init*
 	rm -rf builds/kernel builds/drivers builds/init
 	./jinx build-all
+	./jinx host-build limine
 
 .PHONY: userspace-base
 userspace-base:
@@ -26,7 +27,8 @@ userspace-base:
 	rm -rf sources/kernel* sources/drivers* sources/init*
 	rm -rf builds/kernel builds/drivers builds/init
 	./jinx build-if-needed base-files kernel drivers init bash coreutils lua nano ncurses readline tzdata xz zlib zstd gcon
-
+	./jinx host-build limine
+	
 .PHONY: kernel-clean
 kernel-clean:
 	rm -rf builds/kernel* pkgs/kernel*

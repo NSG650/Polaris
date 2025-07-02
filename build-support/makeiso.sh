@@ -4,7 +4,6 @@ set -ex
 
 rm -rf sysroot
 ./jinx install sysroot base-files kernel drivers init bash coreutils lua nano ncurses readline tzdata xz zlib zstd gcon
-./jinx host-build limine
 
 ( cd sysroot && tar -cf ../ramdisk.tar * )
 
