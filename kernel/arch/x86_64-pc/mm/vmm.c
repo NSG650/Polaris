@@ -245,9 +245,7 @@ level4:
 
 	pml1[pml1_entry] = (((pml1[pml1_entry]) & 0xffffffffff000)) | flags;
 
-	if (read_cr("3") == (uint64_t)pagemap->top_level) {
-		asm volatile("invlpg [%0]" : : "r"(virt) : "memory");
-	}
+	asm volatile("invlpg [%0]" : : "r"(virt) : "memory");
 
 	if (!locked) {
 		spinlock_drop(&pagemap->lock);
@@ -307,9 +305,7 @@ level4:
 
 	pml1[pml1_entry] = 0;
 
-	if (read_cr("3") == (uint64_t)pagemap->top_level) {
-		asm volatile("invlpg [%0]" : : "r"(virt) : "memory");
-	}
+	asm volatile("invlpg [%0]" : : "r"(virt) : "memory");
 
 	if (!locked) {
 		spinlock_drop(&pagemap->lock);
