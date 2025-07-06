@@ -121,9 +121,9 @@ static void smp_cpu_init(struct limine_smp_info *smp_info) {
 	}
 
 	prcb_local->running_thread = NULL;
+	lapic_init(smp_info->lapic_id);
 
 	if (prcb_local->lapic_id != smp_bsp_lapic_id) {
-		lapic_init(smp_info->lapic_id);
 		kprintf("CPU%u: I am alive!\n", prcb_return_current_cpu()->cpu_number);
 		initialized_cpus++;
 		spinlock_drop(&smp_lock);

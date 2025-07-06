@@ -33,7 +33,6 @@
 
 static uintptr_t lapic_addr = 0;
 static bool x2apic = false;
-uint32_t tick_in_10ms = 0;
 
 // Converts xAPIC MMIO offset into x2APIC MSR
 static inline uint32_t reg_to_x2apic(uint32_t reg) {
@@ -141,13 +140,11 @@ void lapic_init(uint8_t processor_id) {
 	lapic_write(0x320, 0x10000);
 
 	// How much the APIC timer ticked in 10ms
-	tick_in_10ms = 0xFFFFFFFF - lapic_read(0x390);
+	prcb_return_current_cpu()->tick_in_10ms = 0xFFFFFFFF - lapic_read(0x390);
 
-	// Start timer as periodic on IRQ 0
-	lapic_write(0x320, 32 | 0x20000);
 	// With divider 16
 	lapic_write(0x3E0, 3);
-	lapic_write(0x380, tick_in_10ms / 10);
+	lapic_write(0x380, prcb_return_current_cpu()->tick_in_10ms / 10);
 }
 
 static uint32_t ioapic_read(uintptr_t ioapic_address, size_t reg) {
@@ -256,15 +253,14 @@ void timer_stop_sched(void) {
 
 void timer_sched_oneshot(uint8_t isr, uint32_t us) {
 	timer_stop_sched();
-	lapic_write(0x320, isr | 0x20000);
+	lapic_write(0x320, isr);
 	lapic_write(0x3E0, 3);
-	lapic_write(0x380, ((tick_in_10ms * (us / 1000))) / 10);
+	lapic_write(0x380,
+				((prcb_return_current_cpu()->tick_in_10ms * (us / 1000))) / 10);
 }
 
 void apic_init(void) {
 	pic_init();
 
 	lapic_addr = acpi_get_lapic();
-	lapic_init(madt_local_apics.data[0]->processor_id);
-	ioapic_redirect_irq(0, 48);
 }

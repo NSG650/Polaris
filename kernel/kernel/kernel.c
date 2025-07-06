@@ -24,7 +24,7 @@
 
 const char *module_list[] = {
 #if defined(__x86_64__)
-	"/usr/lib/modules/ps2.ko", "/usr/lib/modules/i8254x.ko"
+	"/usr/lib/modules/ps2.ko"
 #endif
 };
 
@@ -32,17 +32,12 @@ const char *module_list[] = {
 #define ONE_SECOND (uint64_t)(1000 * 1000 * 1000)
 
 #ifdef KERNEL_ABUSE
-void kernel_dummy_sleeping_thread(void) {
-	for (;;) {
-		thread_sleep(sched_get_running_thread(), ONE_SECOND * 5);
-	}
-}
-
 void kernel_dummy_threads(uint64_t id) {
 	for (;;) {
+		cli();
 		kputchar_('0' + id);
 		kputchar_('A' + prcb_return_current_cpu()->cpu_number);
-		halt();
+		sti();
 		sched_yield(true);
 	}
 }
@@ -132,18 +127,17 @@ void kernel_main(void *args) {
 
 	kprintf("Running init binary %s\n", argv[0]);
 
+#ifndef KERNEL_ABUSE
 	if (!process_create_elf("init", PROCESS_READY_TO_RUN, 20000, argv[0],
 							sched_get_running_thread()->mother_proc))
 		panic("Failed to run init binary!\n");
+#endif
 
 #ifdef KERNEL_ABUSE
 	for (uint64_t i = 0; i < prcb_return_installed_cpus(); i++) {
 		thread_create((uintptr_t)kernel_dummy_threads, i, false,
 					  sched_get_running_thread()->mother_proc);
 	}
-
-	thread_create((uintptr_t)kernel_dummy_sleeping_thread, 0, false,
-				  sched_get_running_thread()->mother_proc);
 #endif
 
 	for (;;) {

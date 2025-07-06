@@ -22,6 +22,7 @@ struct prcb {
 	size_t fpu_storage_size;
 	void (*fpu_save)(void *);
 	void (*fpu_restore)(void *);
+	uint32_t tick_in_10ms;
 #endif
 };
 

@@ -14,6 +14,7 @@ static struct hpet_table *hpet_table = NULL;
 static struct hpet *hpet = NULL;
 static uint32_t clk = 0;
 static bool timer_installed_b = false;
+extern uint32_t smp_bsp_lapic_id;
 
 static volatile struct limine_boot_time_request boot_time_request = {
 	.id = LIMINE_BOOT_TIME_REQUEST, .revision = 0};
