@@ -1,0 +1,43 @@
+name=zsh
+version=5.9
+revision=1
+tarball_url="https://sourceforge.net/projects/zsh/files/zsh/${version}/zsh-${version}.tar.xz"
+tarball_blake2b="cb0716d1d733b1c37cbfb96c297e3ef897099c46cfad59a23e32b1f8e94a44965f991a64e58e6eb2d4a9bcb902d1596ce422af5aa2b77d02d59f29ae4ad7e5e7"
+
+source_hostdeps="autoconf automake libtool pkg-config"
+imagedeps="build-essential"
+hostdeps="gcc autoconf automake libtool pkg-config"
+deps="core-libs ncurses"
+
+prepare() {
+    AUTOHEADER=true autotools_recursive_regen
+}
+
+build() {
+    CFLAGS="$CFLAGS \
+        -std=c17 \
+        -DNO_GLOBAL_HISTFILE \
+        -DZSH_PATH='\"/usr/bin/zsh\"' \
+    " \
+    autotools_configure \
+        --enable-multibyte \
+        --enable-cap \
+        --enable-function-subdirs \
+        --with-tcsetpgrp \
+        --with-term-lib="ncursesw" \
+        --disable-gdbm
+
+    make -j${parallelism}
+}
+
+package() {
+    make install DESTDIR="${dest_dir}"
+    ln -s zsh "${dest_dir}${prefix}/bin/sh"
+    ln -s zsh "${dest_dir}${prefix}/bin/rzsh"
+
+    mkdir -p "${dest_dir}/etc"
+    cp -v "${base_dir}/build-support/zsh/zshrc" "${dest_dir}/etc/zshrc"
+    cp -v "${base_dir}/build-support/zsh/zlogout" "${dest_dir}/etc/zlogout"
+
+    post_package_strip
+}
