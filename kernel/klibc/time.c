@@ -11,10 +11,14 @@ struct timespec time_realtime = {0, 0};
 
 static lock_t timers_lock = {0};
 static vec_t(struct timer *) armed_timers;
-
-extern uint32_t tick_in_10ms;
+static bool timer_up = false;
 
 struct timer *timer_new(struct timespec when) {
+	if (!timer_up) {
+		vec_init(&armed_timers);
+		timer_up = true;
+	}
+	
 	struct timer *timer = kmalloc(sizeof(struct timer));
 	if (timer == NULL) {
 		return NULL;
