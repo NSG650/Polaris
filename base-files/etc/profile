@@ -20,6 +20,7 @@ append_path '/usr/bin'
 
 # Force PATH to be environment
 export PATH
+export DISPLAY=:0
 
 # Load profiles from /etc/profile.d
 if test -d /etc/profile.d/; then
