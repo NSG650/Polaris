@@ -26,7 +26,7 @@
 #include <stdbool.h>
 #include <sys/prcb.h>
 
-mcfg_vec_t mcfg_entries;
+mcfg_vec_t mcfg_entries = {0};
 struct pci_device *pci_devices[256] = {0};
 
 int dev_count = 0;

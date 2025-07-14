@@ -32,6 +32,15 @@ struct addr2range addr2range(struct pagemap *pagemap, uintptr_t virt) {
 	return (struct addr2range){.range = NULL, .memory_page = 0, .file_page = 0};
 }
 
+static void dump_ranges(struct pagemap *pagemap) {
+	for (int i = 0; i < pagemap->mmap_ranges.length; i++) {
+		kprintf("%p - %p 0b%b\n", pagemap->mmap_ranges.data[i]->base,
+				pagemap->mmap_ranges.data[i]->base +
+					pagemap->mmap_ranges.data[i]->length,
+				pagemap->mmap_ranges.data[i]->prot);
+	}
+}
+
 bool mmap_handle_pf(registers_t *reg) {
 	if ((reg->errorCode & 0x1) != 0) {
 		return false;
@@ -99,6 +108,7 @@ bool mmap_range(struct pagemap *pagemap, uintptr_t virt, uintptr_t phys,
 
 	global_range->base = aligned_virt;
 	global_range->length = aligned_length;
+	vec_init(&global_range->locals);
 
 	local_range = kmalloc(sizeof(struct mmap_range_local));
 	if (local_range == NULL) {
@@ -331,34 +341,33 @@ bool munmap(struct pagemap *pagemap, uintptr_t addr, size_t length) {
 		}
 
 		if (snip_length == local_range->length) {
-			vec_remove(&pagemap->mmap_ranges, local_range);
-		}
+			if (global_range->locals.length == 1) {
+				if ((local_range->flags & MAP_ANONYMOUS) != 0) {
+					for (uintptr_t j = global_range->base;
+						 j < global_range->base + global_range->length;
+						 j += PAGE_SIZE) {
+						uintptr_t phys =
+							vmm_virt_to_phys(global_range->shadow_pagemap, j);
+						if (phys == INVALID_PHYS) {
+							continue;
+						}
 
-		if (snip_length == local_range->length &&
-			global_range->locals.length == 1) {
-			if ((local_range->flags & MAP_ANONYMOUS) != 0) {
-				for (uintptr_t j = global_range->base;
-					 j < global_range->base + global_range->length;
-					 j += PAGE_SIZE) {
-					uintptr_t phys =
-						vmm_virt_to_phys(global_range->shadow_pagemap, j);
-					if (phys == INVALID_PHYS) {
-						continue;
+						if (!vmm_unmap_page(global_range->shadow_pagemap, j,
+											true)) {
+							// FIXME: Page map is in inconsistent state at this
+							// point!
+							errno = EINVAL;
+							return false;
+						}
+						pmm_free((void *)phys, 1);
 					}
-
-					if (!vmm_unmap_page(global_range->shadow_pagemap, j,
-										true)) {
-						// FIXME: Page map is in inconsistent state at this
-						// point!
-						errno = EINVAL;
-						return false;
-					}
-					pmm_free((void *)phys, 1);
+				} else {
+					// TODO: res->unmap();
 				}
 			} else {
-				// TODO: res->unmap();
+				vec_remove(&global_range->locals, local_range);
 			}
-
+			vec_remove(&pagemap->mmap_ranges, local_range);
 			kfree(local_range);
 		} else {
 			if (snip_begin == local_range->base) {
@@ -381,6 +390,7 @@ bool mprotect(struct pagemap *pagemap, uintptr_t addr, size_t length,
 	length = ALIGN_UP(length, PAGE_SIZE);
 
 	for (uintptr_t i = addr; i < addr + length; i += PAGE_SIZE) {
+		bool remove_local_range = false;
 		struct mmap_range_local *local_range = addr2range(pagemap, i).range;
 
 		if (local_range->prot == prot) {
@@ -417,6 +427,9 @@ bool mprotect(struct pagemap *pagemap, uintptr_t addr, size_t length,
 			vec_push(&pagemap->mmap_ranges, postsplit_range);
 
 			local_range->length -= postsplit_range->length;
+			if (local_range->length == 0) {
+				remove_local_range = true;
+			}
 		}
 
 		for (uintptr_t j = snip_begin; j < snip_end; j += PAGE_SIZE) {
@@ -439,6 +452,9 @@ bool mprotect(struct pagemap *pagemap, uintptr_t addr, size_t length,
 			local_range->base = snip_end;
 		}
 		local_range->length -= snip_size;
+		if (local_range->length == 0) {
+			remove_local_range = true;
+		}
 
 		struct mmap_range_local *new_range =
 			kmalloc(sizeof(struct mmap_range_local));
@@ -452,6 +468,10 @@ bool mprotect(struct pagemap *pagemap, uintptr_t addr, size_t length,
 		new_range->flags = local_range->flags;
 
 		vec_push(&pagemap->mmap_ranges, new_range);
+
+		if (remove_local_range) {
+			vec_remove(&pagemap->mmap_ranges, local_range);
+		}
 
 		spinlock_drop(&pagemap->lock);
 	}

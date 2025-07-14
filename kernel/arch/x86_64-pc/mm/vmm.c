@@ -135,6 +135,8 @@ struct pagemap *vmm_new_pagemap(void) {
 		(uint64_t *)((uintptr_t)pmm_allocz(1) + MEM_PHYS_OFFSET);
 	for (size_t i = 256; i < 512; i++)
 		pagemap->top_level[i] = kernel_pagemap->top_level[i];
+
+	vec_init(&pagemap->mmap_ranges);
 	return pagemap;
 }
 
@@ -581,7 +583,6 @@ static void destroy_level(uint64_t *pml, size_t start, size_t end, int level) {
 void vmm_destroy_pagemap(struct pagemap *pagemap) {
 	while (pagemap->mmap_ranges.length > 0) {
 		struct mmap_range_local *local_range = pagemap->mmap_ranges.data[0];
-
 		munmap(pagemap, local_range->base, local_range->length);
 	}
 
@@ -590,5 +591,6 @@ void vmm_destroy_pagemap(struct pagemap *pagemap) {
 		(paging_mode_request.response->mode == LIMINE_PAGING_MODE_X86_64_5LVL)
 			? 5
 			: 4);
+
 	kfree(pagemap);
 }

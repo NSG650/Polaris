@@ -1,7 +1,8 @@
 #include <pthread.h>
 #include <stdio.h>
 
-void *thread_function() {
+void *thread_function(void *arg) {
+	(void)arg;
 	printf("Hello from thread\n");
 	return NULL;
 }
