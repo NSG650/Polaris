@@ -8,6 +8,7 @@
 #include <lai/helpers/sci.h>
 #include <mm/vmm.h>
 #include <sys/hpet.h>
+#include <sys/timer.h>
 
 bool use_xsdt;
 struct rsdt *rsdt = NULL;
@@ -25,6 +26,7 @@ void acpi_init(acpi_xsdp_t *rsdp) {
 		rsdt = (struct rsdt *)((uintptr_t)rsdp->rsdt + MEM_PHYS_OFFSET);
 		kprintf("ACPI: Using RSDT at %p\n", (uintptr_t)rsdt);
 	}
+	timer_init();
 	pci_init();
 	madt_init();
 	if (!(kernel_arguments.kernel_args & KERNEL_ARGS_NO_LAI)) {

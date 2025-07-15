@@ -134,7 +134,7 @@ uint32_t laihost_pci_readd(uint16_t seg, uint8_t bus, uint8_t slot, uint8_t fun,
 }
 
 void laihost_sleep(uint64_t ms) {
-	timer_sleep(ms * 1000);
+	timer_sleep(ms);
 }
 
 uint64_t laihost_timer(void) {
