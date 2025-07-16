@@ -263,4 +263,6 @@ void apic_init(void) {
 	pic_init();
 
 	lapic_addr = acpi_get_lapic();
+
+	ioapic_redirect_irq(0, 48);
 }

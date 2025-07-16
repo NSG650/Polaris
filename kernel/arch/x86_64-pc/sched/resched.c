@@ -51,7 +51,6 @@ void resched(registers_t *reg) {
 	timer_stop_sched();
 
 	struct thread *running_thrd = prcb_return_current_cpu()->running_thread;
-	uint64_t runtime = running_thrd == NULL ? 20000 : running_thrd->runtime;
 
 	timer_delta = timer_count() - timer_delta;
 	timer_handler(timer_delta);
@@ -96,6 +95,7 @@ void resched(registers_t *reg) {
 	vmm_switch_pagemap(running_thrd->mother_proc->process_pagemap);
 
 	apic_eoi();
+
 	timer_sched_oneshot(48, running_thrd->runtime);
 	resched_context_switch(&running_thrd->reg);
 }
