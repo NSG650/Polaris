@@ -157,6 +157,8 @@ void arch_entry(void) {
 	}
 
 	kprintf("Hello x86_64!\n");
+	kprintf("Kernel base: %p Mem phys base: %p\n", KERNEL_BASE,
+			MEM_PHYS_OFFSET);
 #ifdef GIT_VERSION
 	kprintf("Version: %s\n", GIT_VERSION);
 #endif

@@ -2,6 +2,7 @@ name=tests
 version=0.0
 revision=1
 source_dir="tests"
+imagedeps="nasm"
 hostdeps="gcc autoconf automake libtool pkg-config"
 deps="core-libs"
 
@@ -18,6 +19,9 @@ build() {
     ${OS_TRIPLET}-gcc execve.c -o execve
     ${OS_TRIPLET}-gcc fork_execve.c -o fork_execve
     ${OS_TRIPLET}-gcc pthread.c -o pthread -lpthread
+
+    nasm -felf64 kaslr_bypass.asm -o kb.o
+     ${OS_TRIPLET}-gcc kaslr_bypass.c kb.o -o kaslr_bypass
 }
 
 package() {
@@ -34,4 +38,5 @@ package() {
     cp ./execve "${dest_dir}/root/execve"
     cp ./fork_execve "${dest_dir}/root/fork_execve"
     cp ./pthread "${dest_dir}/root/pthread"
+    cp ./kaslr_bypass "${dest_dir}/root/kaslr_bypass"
 }
