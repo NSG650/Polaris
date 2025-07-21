@@ -1,0 +1,147 @@
+diff -urN --no-dereference openrc-clean/meson.build openrc-workdir/meson.build
+--- openrc-clean/meson.build
++++ openrc-workdir/meson.build
+@@ -48,7 +48,11 @@
+ 
+ if os != 'Linux'
+   cap_dep = []
+-  kvm_dep = cc.find_library('kvm')
++  if os == 'Polaris'
++    kvm_dep = []
++  else
++    kvm_dep = cc.find_library('kvm')
++  endif
+ else
+   cap_dep = dependency('libcap', version: '>=2.33')
+   kvm_dep = []
+@@ -127,7 +131,7 @@
+   cc_debug_flags = []
+ endif
+ 
+-if os == 'Linux' or os == 'GNU-kFreeBSD'
++if os == 'Linux' or os == 'GNU-kFreeBSD' or os == 'Polaris'
+   cc_os_flags = ['-D_DEFAULT_SOURCE']
+ elif os == 'FreeBSD'
+   cc_os_flags = ['-D_BSD_SOURCE']
+diff -urN --no-dereference openrc-clean/meson_options.txt openrc-workdir/meson_options.txt
+--- openrc-clean/meson_options.txt
++++ openrc-workdir/meson_options.txt
+@@ -10,7 +10,7 @@
+   description : 'build and install our networking scripts')
+ option('os', type : 'combo',
+   choices :
+-    [ '', 'DragonFly', 'FreeBSD', 'GNU', 'GNU-kFreeBSD', 'Linux', 'NetBSD' ],
++    [ '', 'DragonFly', 'FreeBSD', 'GNU', 'GNU-kFreeBSD', 'Linux', 'NetBSD', 'Polaris' ],
+   description : 'Operating System (autodetected if not specified)')
+ option('pam', type : 'boolean',
+   description : 'enable PAM support')
+diff -urN --no-dereference openrc-clean/src/fstabinfo/fstabinfo.c openrc-workdir/src/fstabinfo/fstabinfo.c
+--- openrc-clean/src/fstabinfo/fstabinfo.c
++++ openrc-workdir/src/fstabinfo/fstabinfo.c
+@@ -28,7 +28,7 @@
+ /* Yay for linux and its non liking of POSIX functions.
+    Okay, we could use getfsent but the man page says use getmntent instead
+    AND we don't have getfsent on uclibc or dietlibc for some odd reason. */
+-#ifdef __linux__
++#if defined(__linux__) || defined(__polaris__)
+ #  define HAVE_GETMNTENT
+ #  include <mntent.h>
+ 
+diff -urN --no-dereference openrc-clean/src/librc/librc-daemon.c openrc-workdir/src/librc/librc-daemon.c
+--- openrc-clean/src/librc/librc-daemon.c
++++ openrc-workdir/src/librc/librc-daemon.c
+@@ -32,7 +32,7 @@
+ #include "helpers.h"
+ 
+ #if defined(__linux__) || (defined (__FreeBSD_kernel__) && defined(__GLIBC__)) \
+-	|| defined(__GNU__)
++	|| defined(__GNU__) || defined(__polaris__)
+ static bool
+ pid_is_exec(pid_t pid, const char *exec)
+ {
+diff -urN --no-dereference openrc-clean/src/mountinfo/mountinfo.c openrc-workdir/src/mountinfo/mountinfo.c
+--- openrc-clean/src/mountinfo/mountinfo.c
++++ openrc-workdir/src/mountinfo/mountinfo.c
+@@ -26,7 +26,7 @@
+ #  define statfs statvfs
+ #  define F_FLAGS f_flag
+ #elif defined(__linux__) || (defined(__FreeBSD_kernel__) && \
+-	defined(__GLIBC__)) || defined(__GNU__)
++	defined(__GLIBC__)) || defined(__GNU__) || defined(__polaris__)
+ #  include <mntent.h>
+ #endif
+ 
+@@ -287,7 +287,7 @@
+ }
+ 
+ #elif defined(__linux__) || (defined(__FreeBSD_kernel__) && \
+-	defined(__GLIBC__)) || defined(__GNU__)
++	defined(__GLIBC__)) || defined(__GNU__) || defined(__polaris__)
+ static struct mntent *
+ getmntfile(const char *file)
+ {
+diff -urN --no-dereference openrc-clean/src/openrc/rc-logger.c openrc-workdir/src/openrc/rc-logger.c
+--- openrc-clean/src/openrc/rc-logger.c
++++ openrc-workdir/src/openrc/rc-logger.c
+@@ -32,7 +32,7 @@
+ #include <unistd.h>
+ 
+ #if defined(__linux__) || (defined(__FreeBSD_kernel__) && defined(__GLIBC__)) \
+-	|| defined(__GNU__)
++	|| defined(__GNU__) || defined(__polaris__)
+ #  include <pty.h>
+ #elif defined(__NetBSD__) || defined(__OpenBSD__)
+ #  include <util.h>
+diff -urN --no-dereference openrc-clean/src/openrc-init/meson.build openrc-workdir/src/openrc-init/meson.build
+--- openrc-clean/src/openrc-init/meson.build
++++ openrc-workdir/src/openrc-init/meson.build
+@@ -1,4 +1,4 @@
+-if os == 'Linux'
++if os == 'Linux' or os == 'Polaris'
+   executable('openrc-init',
+     ['openrc-init.c', plugin_c, wtmp_c, version_h],
+   c_args : cc_selinux_flags,
+diff -urN --no-dereference openrc-clean/src/openrc-run/openrc-run.c openrc-workdir/src/openrc-run/openrc-run.c
+--- openrc-clean/src/openrc-run/openrc-run.c
++++ openrc-workdir/src/openrc-run/openrc-run.c
+@@ -37,7 +37,7 @@
+ #include <stdbool.h>
+ 
+ #if defined(__linux__) || (defined(__FreeBSD_kernel__) && defined(__GLIBC__)) \
+-	|| defined(__GNU__)
++	|| defined(__GNU__) || defined(__polaris__)
+ #  include <pty.h>
+ #elif defined(__NetBSD__) || defined(__OpenBSD__)
+ #  include <util.h>
+diff -urN --no-dereference openrc-clean/src/openrc-shutdown/meson.build openrc-workdir/src/openrc-shutdown/meson.build
+--- openrc-clean/src/openrc-shutdown/meson.build
++++ openrc-workdir/src/openrc-shutdown/meson.build
+@@ -1,4 +1,4 @@
+-if os == 'Linux'
++if os == 'Linux' or os == 'Polaris'
+   executable('openrc-shutdown',
+     ['openrc-shutdown.c', 'broadcast.c', 'sysvinit.c', misc_c,
+ 		usage_c, wtmp_c, version_h],
+diff -urN --no-dereference openrc-clean/src/shared/misc.c openrc-workdir/src/shared/misc.c
+--- openrc-clean/src/shared/misc.c
++++ openrc-workdir/src/shared/misc.c
+@@ -605,7 +605,7 @@
+ {
+ 	int i;
+ 	if (close_range(first, UINT_MAX, CLOSE_RANGE_CLOEXEC) < 0) {
+-		for (i = getdtablesize() - 1; i >= first; --i)
++		for (i = sysconf(_SC_OPEN_MAX) - 1; i >= first; --i)
+ 			fcntl(i, F_SETFD, FD_CLOEXEC);
+ 	}
+ }
+diff -urN --no-dereference openrc-clean/src/shared/wtmp.c openrc-workdir/src/shared/wtmp.c
+--- openrc-clean/src/shared/wtmp.c
++++ openrc-workdir/src/shared/wtmp.c
+@@ -45,5 +45,7 @@
+ 	if (uname(&uname_buf) == 0)
+ 		strncpy(utmp.ut_host, uname_buf.release, sizeof(utmp.ut_host));
+ 
++#ifndef __polaris__
+ 	updwtmp(WTMP_FILE, &utmp);
++#endif
+ }
