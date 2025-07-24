@@ -957,3 +957,44 @@ void syscall_mkdirat(struct syscall_arguments *args) {
 
 	args->ret = 0;
 }
+
+void syscall_mknodat(struct syscall_arguments *args) {
+	struct process *proc = sched_get_running_thread()->mother_proc;
+
+	int dir_fdnum = args->args0;
+	const char *path = (char *)args->args1;
+	mode_t mode = args->args2;
+
+	if (path == NULL || strlen(path) == 0) {
+		errno = ENOENT;
+		args->ret = -1;
+		return;
+	}
+
+	struct vfs_node *parent = NULL;
+	char *basename = NULL;
+	if (!vfs_fdnum_path_to_node(dir_fdnum, path, false, false, &parent, NULL,
+								&basename)) {
+		args->ret = -1;
+		return;
+	}
+
+	if (parent == NULL) {
+		errno = ENOENT;
+		args->ret = -1;
+		return;
+	}
+
+	struct vfs_node *node =
+		vfs_create(parent, basename, (mode & ~proc->umask));
+	if (node == NULL) {
+		args->ret = -1;
+		return;
+	}
+
+	if (basename != NULL) {
+		kfree(basename);
+	}
+
+	args->ret = 0;
+}

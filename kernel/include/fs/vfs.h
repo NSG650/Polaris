@@ -67,5 +67,6 @@ void syscall_readlinkat(struct syscall_arguments *args);
 void syscall_linkat(struct syscall_arguments *args);
 void syscall_unlinkat(struct syscall_arguments *args);
 void syscall_mkdirat(struct syscall_arguments *args);
+void syscall_mknodat(struct syscall_arguments *args);
 
 #endif
