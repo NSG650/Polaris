@@ -56,12 +56,12 @@ cleanup:
 }
 
 void timer_handler(uint64_t ns) {
-	struct timespec interval = {.tv_sec = ns / 1000000000, .tv_nsec = ns};
-
-	time_monotonic = timespec_add(time_monotonic, interval);
-	time_realtime = timespec_add(time_realtime, interval);
-
 	if (spinlock_acquire(&timers_lock)) {
+		struct timespec interval = {.tv_sec = ns / 1000000000, .tv_nsec = ns};
+
+		time_monotonic = timespec_add(time_monotonic, interval);
+		time_realtime = timespec_add(time_realtime, interval);
+
 		for (int i = 0; i < armed_timers.length; i++) {
 			struct timer *timer = armed_timers.data[i];
 			if (timer->fired) {

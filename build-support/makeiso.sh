@@ -3,7 +3,8 @@
 set -ex
 
 rm -rf sysroot
-./jinx install sysroot base-files kernel drivers init bash tests coreutils lua nano ncurses readline tzdata xz zlib zstd gcon
+./jinx build-if-needed base $PKGS_TO_INSTALL
+./jinx install sysroot base $PKGS_TO_INSTALL
 
 ( cd sysroot && tar -cf ../ramdisk.tar * )
 

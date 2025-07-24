@@ -95,6 +95,7 @@ void kernel_main(void *args) {
 	syscall_register_handler(0x59, syscall_readdir);
 	syscall_register_handler(0x101, syscall_openat);
 	syscall_register_handler(0x102, syscall_mkdirat);
+	syscall_register_handler(0x103, syscall_mknodat);
 	syscall_register_handler(0x106, syscall_fstatat);
 	syscall_register_handler(0x107, syscall_unlinkat);
 	syscall_register_handler(0x109, syscall_linkat);

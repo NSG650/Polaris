@@ -74,7 +74,7 @@ all: $(KERNEL)
 # Don't try to download if it already exists.
 limine.h:
 	[ -s include/$@ ] || curl \
-		https://raw.githubusercontent.com/limine-bootloader/limine/trunk/limine.h -o include/$@
+		https://raw.githubusercontent.com/limine-bootloader/limine-protocol/refs/heads/trunk/include/limine.h -o include/$@
 
 # Link rules for the final kernel executable.
 $(KERNEL): $(OBJ)

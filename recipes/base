@@ -1,0 +1,5 @@
+name=base
+skip_pkg_check=yes
+version=0.0
+revision=1
+deps="base-files kernel drivers init bash tests coreutils lua nano ncurses readline tzdata xz zlib zstd gcon"

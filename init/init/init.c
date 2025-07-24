@@ -247,7 +247,7 @@ void main(void) {
 		int fork_ret = fork();
 		if (fork_ret == 0) {
 			chdir("/root");
-			char *argv[] = {"/usr/bin/gcon", NULL};
+			char *argv[] = {"/usr/bin/xinit", NULL};
 			char *envp[] = {"USER=root",
 							"HOME=/root",
 							"PATH=/usr/bin:/usr/local/bin:/bin",

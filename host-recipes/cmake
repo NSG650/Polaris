@@ -1,7 +1,7 @@
 name=cmake
 from_source=cmake
 revision=1
-imagedeps="build-essential"
+imagedeps="build-essential libssl-dev"
 
 build() {
     "${source_dir}"/configure --prefix="${prefix}" --parallel="${parallelism}"
@@ -11,7 +11,7 @@ build() {
 
 package() {
     DESTDIR="${dest_dir}" make install
-    echo 'include(Platform/UnixPaths)' > "${dest_dir}${prefix}/share/cmake-3.29/Modules/Platform/Polaris.cmake"
+    echo 'include(Platform/UnixPaths)' > "${dest_dir}${prefix}/share/cmake-4.0/Modules/Platform/Polaris.cmake"
 
         strip_command=strip \
     post_package_strip

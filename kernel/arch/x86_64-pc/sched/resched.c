@@ -12,7 +12,6 @@
 #include <sys/timer.h>
 
 extern uint32_t smp_bsp_lapic_id;
-static uint64_t timer_delta = 0;
 
 extern void resched_context_switch(registers_t *reg);
 
@@ -52,8 +51,8 @@ void resched(registers_t *reg) {
 
 	struct thread *running_thrd = prcb_return_current_cpu()->running_thread;
 
-	timer_delta = timer_count() - timer_delta;
-	timer_handler(timer_delta);
+	// I don't give a fuck at this point
+	timer_handler(1000000000);
 
 	if (running_thrd) {
 		spinlock_drop(&running_thrd->yield_lock);

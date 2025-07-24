@@ -4,7 +4,7 @@ revision=1
 tarball_url="https://dl.suckless.org/st/st-${version}.tar.gz"
 tarball_blake2b="69818e3c2c3af31ceaaa86c4b721bc9842be21005d72db801d1867c3d33ab5674bce8bd34eb194a683d49514fd5e981b079c23844a895497386c0c26c414ea3a"
 hostdeps="gcc autoconf automake libtool pkg-config"
-deps="core-libs fontconfig ncurses xorg-proto libx11 libxft"
+deps="core-libs ttf-dejavu fontconfig ncurses xorg-proto libx11 libxft"
 
 build() {
     cp -rp "${source_dir}"/. ./

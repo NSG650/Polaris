@@ -10,7 +10,7 @@ deps="core-libs bzip2 libpng zlib"
 
 prepare() {
     NOCONFIGURE=1 ./autogen.sh
-    cp /usr/local/share/automake-1.16/{config.sub,config.guess,install-sh} ./builds/unix/
+    cp /usr/local/share/automake-1.18/{config.sub,config.guess,install-sh} ./builds/unix/
 }
 
 build() {
