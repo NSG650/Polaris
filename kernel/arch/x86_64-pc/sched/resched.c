@@ -51,8 +51,7 @@ void resched(registers_t *reg) {
 
 	struct thread *running_thrd = prcb_return_current_cpu()->running_thread;
 
-	// I don't give a fuck at this point
-	timer_handler(1000000000);
+	timer_handler((running_thrd ? running_thrd->runtime : 2000) * 1000);
 
 	if (running_thrd) {
 		spinlock_drop(&running_thrd->yield_lock);

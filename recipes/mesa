@@ -1,20 +1,23 @@
 name=mesa
-version=23.3.6
+version=25.0.4
 revision=1
 tarball_url="https://archive.mesa3d.org/mesa-${version}.tar.xz"
-tarball_blake2b="1bec42973aa849ab3553942500de253213736eca5a71550f488cf915d65ee4f47d137772af1c59042f5803cfaf8152f278ccbab29c896d104985263a7121a2ba"
-imagedeps="binutils meson ninja-build python-setuptools python-mako"
+tarball_blake2b="b661bc1534bff848c32c559ecc790fd7770682aa7f35403c2fb50b899ad83dbbafb2baecf0e372972849378a4a539eeafe5e9c9e1497ab4313ebcafa89f6e248"
+imagedeps="meson ninja-build python3-mako python3-yaml glslang-tools"
 hostdeps="gcc pkg-config"
-deps="core-libs llvm zlib libxshmfence libxrandr libxdamage libxxf86vm libxfixes libx11 libxext libxcb libexpat"
+deps="core-libs llvm libexpat libx11 libxcb libxext libxshmfence libxxf86vm libxrandr zlib zstd"
 
-build() {
+configure() {
     meson_configure \
         -Dglx=xlib \
         -Dplatforms=x11 \
-        -Dgallium-drivers=swrast \
-        -Dvulkan-drivers= \
+        -Dgallium-drivers=llvmpipe,softpipe \
+        -Dvulkan-drivers=swrast \
+        -Dvideo-codecs=all \
         -Dllvm=enabled
+}
 
+build() {
     ninja -j${parallelism}
 }
 
