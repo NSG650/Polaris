@@ -1,0 +1,36 @@
+name=bullet
+version=3.25
+revision=6
+tarball_url="https://github.com/bulletphysics/bullet3/archive/refs/tags/${version}.tar.gz"
+tarball_blake2b="7b694a971f142b0fedae3e9ec7caff31e3780f9c0422c1de3632f18a6651d2152fc8294eadd3a150299854b9c999cfc98744aee78c056ceb1e3b657bfdfa96ef"
+imagedeps="build-essential ninja-build"
+hostdeps="gcc cmake"
+deps="core-libs mesa glu"
+
+prepare() {
+    cd ${source_dir}
+    sed -i '/SET_TARGET_PROPERTIES(pybullet PROPERTIES PREFIX/d' examples/pybullet/CMakeLists.txt
+}
+
+build() {
+    cmake_configure \
+        -B build \
+        -G Ninja \
+        -DCMAKE_INSTALL_PREFIX=${prefix} \
+        -DBUILD_SHARED_LIBS=ON \
+        -DINSTALL_LIBS=ON \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DBULLET2_MULTITHREADING=ON \
+        -DBUILD_BULLET2_DEMOS=OFF \
+        -DBUILD_EXTRAS=OFF \
+        -DBUILD_UNIT_TESTS=OFF \
+        -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+    
+    ninja -C build -j${parallelism}
+}
+
+package() {
+    DESTDIR="${dest_dir}" ninja -C build install
+
+    post_package_strip
+}

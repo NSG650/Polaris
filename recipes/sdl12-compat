@@ -1,0 +1,26 @@
+name=sdl12-compat
+version=1.2.68
+revision=1
+tarball_url="https://github.com/libsdl-org/sdl12-compat/archive/refs/tags/release-${version}.tar.gz"
+tarball_blake2b="c821772d5c43a9406e06f89d7f0248e051b2cfb0aff33e025dc645d6ba17277ca6db44a586e65fda48155dfb6c48a9d0459d59319ea6750562caa96194ff232b"
+imagedeps="ninja-build git"
+hostdeps="gcc pkg-config cmake"
+deps="sdl2-compat"
+
+configure() {
+    cmake_configure \
+        -DSDL12TESTS=OFF \
+        -DSTATICDEVEL=OFF
+}
+
+build() {
+    ninja -j${parallelism}
+}
+
+package() {
+    DESTDIR="${dest_dir}" ninja install
+
+    rm -v "${dest_dir}${prefix}"/lib/*.a
+
+    post_package_strip
+}

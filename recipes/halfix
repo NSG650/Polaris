@@ -1,0 +1,22 @@
+name=halfix
+version=8068203ed5daf468fe2ea002692ec056d7bb0c02
+revision=1
+tarball_url="https://github.com/nsg650/halfix/archive/${version}.tar.gz"
+tarball_blake2b="07bfca82cd3c3d71370234a0dc5d9cdde0743444e31ea633ccf19132d8f3749dfae030e57d7d569230331e368954c533146f8c3101a760429e5efd0e3edeafd8"
+imagedeps="nodejs"
+hostdeps="gcc binutils pkg-config"
+deps="sdl2-compat"
+
+configure() {
+    cp -r ${source_dir}/. .
+    true
+}
+
+build() {
+    node makefile.js --cc ${OS_TRIPLET}-gcc
+}
+
+package() {
+    mkdir -p "${dest_dir}/usr/bin"
+	cp ./halfix "${dest_dir}/usr/bin/"
+}

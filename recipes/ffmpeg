@@ -1,0 +1,43 @@
+name=ffmpeg
+version=7.1.1
+revision=1
+tarball_url="https://ffmpeg.org/releases/ffmpeg-${version}.tar.xz"
+tarball_blake2b="85d1850bfa39ec28d358b5454daa7c1cf8580af73a6f83e7c070ea94db40ad485adbaeb89e886e0b3908e0f1765bd9f2b40ddd838e33e0a76e5b286917535310"
+source_hostdeps="automake autoconf libtool pkg-config"
+imagedeps="build-essential yasm nasm"
+hostdeps="gcc autoconf automake libtool pkg-config"
+deps="core-libs"
+
+prepare() {
+    autotools_recursive_regen
+}
+
+build() {
+    "${source_dir}/configure" \
+        --prefix=${prefix} \
+        --enable-gpl \
+        --enable-version3 \
+        --enable-nonfree \
+        --disable-static \
+        --disable-doc \
+        --disable-alsa \
+        --enable-ffmpeg \
+        --enable-avcodec \
+        --enable-avformat \
+        --enable-swresample \
+        --enable-swscale \
+        --enable-shared \
+        --enable-cross-compile \
+        --arch=x86_64 \
+        --cross-prefix=${OS_TRIPLET}- \
+        --host-cc=gcc \
+        --target-os=linux
+
+    make -j${parallelism}
+}
+
+package() {
+    DESTDIR="${dest_dir}" make install
+
+    post_package_strip
+}
