@@ -1,0 +1,22 @@
+name=dwm
+version=5.3
+revision=1
+tarball_url="https://dl.suckless.org/tools/dmenu-${version}.tar.gz"
+tarball_blake2b="5f837e49026d3213cfa98411f301c134bccf0299b892d9cb0d54a77d1785c905a4d6bcea941f240bc713122a37d61061eeafc594c27b9f486ca7187558479394"
+source_hostdeps="automake autoconf libtool pkg-config"
+source_deps="xorg-util-macros gettext"
+hostdeps="gcc autoconf automake libtool pkg-config"
+deps="core-libs freetype2 libx11 libxext libxmu libxaw libxrender libxft libxinerama libxt libxkbfile libiconv libxi ttf-dejavu"
+
+prepare() {
+	true
+}
+
+build() {
+	cp -r "${source_dir}"/. ./
+	make CC=${OS_TRIPLET}-gcc CXX=${OS_TRIPLET}-g++ -j${parallelism}
+}
+
+package() {
+	make DESTDIR="${dest_dir}" install
+}

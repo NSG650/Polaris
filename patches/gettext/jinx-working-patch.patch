@@ -1,12 +1,36 @@
-diff --color -urN --no-dereference gettext-clean/gettext-runtime/intl/gnulib-lib/getlocalename_l-unsafe.c gettext-workdir/gettext-runtime/intl/gnulib-lib/getlocalename_l-unsafe.c
---- gettext-clean/gettext-runtime/intl/gnulib-lib/getlocalename_l-unsafe.c	2025-05-04 08:43:19.000000000 -0500
-+++ gettext-workdir/gettext-runtime/intl/gnulib-lib/getlocalename_l-unsafe.c	2025-06-19 20:40:35.385678287 -0500
-@@ -683,6 +683,8 @@
-       };
-       const char *name = ((struct __locale_t *) locale)->mb_cur_max == 4 ? "C.UTF-8" : "C";
-       return (struct string_with_storage) { name, STORAGE_INDEFINITE };
-+#elif defined __polaris__
-+      return (struct string_with_storage) { "C.UTF-8", STORAGE_INDEFINITE };
- #else
-  #error "Please port gnulib getlocalename_l-unsafe.c to your platform! Report this to bug-gnulib."
- #endif
+diff -urN --no-dereference gettext-clean/gettext-runtime/gnulib-lib/getlocalename_l-unsafe.c gettext-workdir/gettext-runtime/gnulib-lib/getlocalename_l-unsafe.c
+--- gettext-clean/gettext-runtime/gnulib-lib/getlocalename_l-unsafe.c
++++ gettext-workdir/gettext-runtime/gnulib-lib/getlocalename_l-unsafe.c
+@@ -469,6 +469,8 @@
+       struct gl_locale_category_t *plc =
+         &locale->category[gl_log2_lcmask_to_index (gl_log2_lc_mask (category))];
+       return (struct string_with_storage) { plc->name, STORAGE_OBJECT };
++#elif defined __mlibc__
++      return (struct string_with_storage) { "C", STORAGE_INDEFINITE };
+ #elif __GLIBC__ >= 2 && !defined __UCLIBC__
+       /* Work around an incorrect definition of the _NL_LOCALE_NAME macro in
+          glibc < 2.12.
+diff -urN --no-dereference gettext-clean/gettext-runtime/intl/gnulib-lib/getlocalename_l-unsafe.c gettext-workdir/gettext-runtime/intl/gnulib-lib/getlocalename_l-unsafe.c
+--- gettext-clean/gettext-runtime/intl/gnulib-lib/getlocalename_l-unsafe.c
++++ gettext-workdir/gettext-runtime/intl/gnulib-lib/getlocalename_l-unsafe.c
+@@ -469,6 +469,8 @@
+       struct gl_locale_category_t *plc =
+         &locale->category[gl_log2_lcmask_to_index (gl_log2_lc_mask (category))];
+       return (struct string_with_storage) { plc->name, STORAGE_OBJECT };
++#elif defined __mlibc__
++      return (struct string_with_storage) { "C", STORAGE_INDEFINITE };
+ #elif __GLIBC__ >= 2 && !defined __UCLIBC__
+       /* Work around an incorrect definition of the _NL_LOCALE_NAME macro in
+          glibc < 2.12.
+diff -urN --no-dereference gettext-clean/gettext-tools/gnulib-lib/getlocalename_l-unsafe.c gettext-workdir/gettext-tools/gnulib-lib/getlocalename_l-unsafe.c
+--- gettext-clean/gettext-tools/gnulib-lib/getlocalename_l-unsafe.c
++++ gettext-workdir/gettext-tools/gnulib-lib/getlocalename_l-unsafe.c
+@@ -469,6 +469,8 @@
+       struct gl_locale_category_t *plc =
+         &locale->category[gl_log2_lcmask_to_index (gl_log2_lc_mask (category))];
+       return (struct string_with_storage) { plc->name, STORAGE_OBJECT };
++#elif defined __mlibc__
++      return (struct string_with_storage) { "C", STORAGE_INDEFINITE };
+ #elif __GLIBC__ >= 2 && !defined __UCLIBC__
+       /* Work around an incorrect definition of the _NL_LOCALE_NAME macro in
+          glibc < 2.12.

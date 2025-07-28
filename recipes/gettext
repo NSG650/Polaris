@@ -1,4 +1,5 @@
 name=gettext
+from_source=gettext
 revision=1
 hostdeps="gcc autoconf automake libtool pkg-config"
 deps="core-libs"
