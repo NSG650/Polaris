@@ -58,3 +58,42 @@ index 0000000..5f5c23a
 +print:
 +	@echo OBJS: $(OBJS)
 +
+diff --color -ur doomgeneric-clean/doomgeneric/doomgeneric_xlib.c doomgeneric/doomgeneric/doomgeneric_xlib.c
+--- doomgeneric-clean/doomgeneric/doomgeneric_xlib.c    2023-01-25 22:44:21.000000000 +0530
++++ doomgeneric/doomgeneric/doomgeneric_xlib.c  2025-07-26 15:16:26.676741171 +0530
+@@ -11,9 +11,10 @@
+ #include <X11/Xlib.h>
+ #include <X11/Xutil.h>
+ #include <X11/Xatom.h>
++#include <X11/XKBlib.h>
+
+ static Display *s_Display = NULL;
+-static Window s_Window = NULL;
++static Window s_Window = {0};
+ static int s_Screen = 0;
+ static GC s_Gc = 0;
+ static XImage *s_Image = NULL;
+@@ -34,15 +35,23 @@
+     case XK_Escape:
+                key = KEY_ESCAPE;
+                break;
++    case XK_A:
++    case XK_a:
+     case XK_Left:
+                key = KEY_LEFTARROW;
+                break;
++    case XK_D:
++    case XK_d:
+     case XK_Right:
+                key = KEY_RIGHTARROW;
+                break;
++    case XK_W:
++    case XK_w:
+     case XK_Up:
+                key = KEY_UPARROW;
+                break;
++    case XK_S:
++    case XK_s:
+     case XK_Down:
+                key = KEY_DOWNARROW;
+                break;

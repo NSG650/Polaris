@@ -2,7 +2,7 @@ name=doomgeneric
 from_source=doomgeneric
 revision=1
 hostdeps="gcc automake pkg-config"
-deps="core-libs libx11 libxcb"
+deps="core-libs libx11 libxcb libxkbcommon"
 
 build() {
 	cp -rp ${source_dir}/doomgeneric/* .
