@@ -1,7 +1,7 @@
 name=mlibc
-version=9b9d12888d62b16b19c3b9028b8bf7b39306e51e
+version=1fc1e6ab88af5d4c0652d2f11b5cbaa008d59701
 tarball_url="https://github.com/Neptune650/mlibc/archive/${version}.tar.gz"
-tarball_blake2b="30db610f16a76eeb9b373fa4f9e09df9f496cb94210ccd2e22de8cde077aabcb53122af746960d931ef059611b1fc13f89469d3eb67552ae4ed4b3ce83e65710"
+tarball_blake2b="695476cb0d5854d521b7e658eb8f5fa53f1a7cdc5a7ab1779c07388b0a5c3d0193a76485be0d67bb7de1e45db7a3d89239fcc2b8eba9e39fc701f11234b72e65"
 allow_network=yes
 imagedeps="build-essential rsync"
 

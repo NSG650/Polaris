@@ -545,7 +545,7 @@ struct pagemap *vmm_fork_pagemap(struct pagemap *pagemap) {
 					*new_spte = *new_pte;
 				}
 			} else {
-				panic("Non anon fork\n");
+				kprintf("WARNING: Non anon fork\n");
 			}
 		}
 

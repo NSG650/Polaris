@@ -1,26 +1,20 @@
 name=xorg-xeyes
-version=1.3.0
+version=1.3.1
 revision=1
 tarball_url="https://xorg.freedesktop.org/archive/individual/app/xeyes-${version}.tar.gz"
-tarball_blake2b="76f24c332bf93cb64b6c53c0bbd662f74be96cc08e05a8aec81ed23c25cb80c1b6258f98e824f7bbe9184b7d882d28e98e1e645f20cf2c3a07f480bd5b479395"
+tarball_blake2b="143bec32c6e928f012ad7898d3948e70f59a1c4a6addb6ee828211b61e4ac66f8952addc6fdcdcd2fda6ea8c174c6c46cb970555490d4236a05ba77c1245a2ba"
 source_hostdeps="automake autoconf libtool pkg-config"
 source_deps="xorg-util-macros"
 hostdeps="gcc autoconf automake libtool pkg-config"
 deps="core-libs libx11 libxcb libxext libxi libxmu libxrender libxt"
 
-prepare() {
-    autotools_recursive_regen
-}
-
 build() {
-    autotools_configure \
-        --disable-selective-werror
-
-    make -j${parallelism}
+    meson_configure
+    meson compile -j${parallelism}
 }
 
 package() {
-    DESTDIR="${dest_dir}" make install
+    DESTDIR="${dest_dir}" meson install --no-rebuild
 
     post_package_strip
 }

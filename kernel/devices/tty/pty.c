@@ -385,10 +385,10 @@ void syscall_openpty(struct syscall_arguments *args) {
 	p->out.read_ptr = 0;
 	p->out.write_ptr = 0;
 
-	p->term.c_iflag = BRKINT | IGNPAR | ICRNL | IXON | IMAXBEL;
+	p->term.c_iflag = IGNBRK | BRKINT | IGNPAR | ISTRIP | ICRNL | IXON;
 	p->term.c_oflag = OPOST | ONLCR;
-	p->term.c_cflag = CS8 | CREAD | 0x04;
-	p->term.c_lflag = ISIG | ECHO | ECHOE | ECHOK | ECHOCTL | ECHOKE;
+	p->term.c_cflag = CS8 | CREAD | HUPCL;
+	p->term.c_lflag = ISIG | ICANON | ECHO | ECHOE | ECHOK | ECHOCTL | ECHOKE | IEXTEN;
 	p->term.c_cc[VINTR] = CTRL('C');
 	p->term.c_cc[VEOF] = CTRL('D');
 	p->term.c_cc[VSUSP] = CTRL('Z');
@@ -396,8 +396,8 @@ void syscall_openpty(struct syscall_arguments *args) {
 	p->term.ibaud = 38400;
 	p->term.obaud = 38400;
 
-	p->ws.ws_row = 80;
-	p->ws.ws_col = 25;
+	p->ws.ws_row = 24;
+	p->ws.ws_col = 80;
 
 	struct pty_slave *ps = resource_create(sizeof(struct pty_slave));
 	struct pty_master *pm = resource_create(sizeof(struct pty_master));
