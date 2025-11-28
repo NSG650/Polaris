@@ -1,0 +1,30 @@
+name=jwm
+version=2.4.6
+revision=1
+tarball_url="https://github.com/joewing/jwm/releases/download/v${version}/jwm-${version}.tar.xz"
+tarball_blake2b="2c43fd7faeb4faf9195e9647b9b0fd657b49d51f6e43651532afb4b66cfc1db142ec257d43d1be5e9f863ab8f88f31bf58b88e9b214eb4d72bb0393b5d815cde"
+source_hostdeps="automake autoconf libtool pkg-config"
+source_deps="gettext"
+hostdeps="gcc autoconf automake libtool pkg-config"
+deps="core-libs libx11 libxft libxmu libjpeg-turbo ttf-dejavu libxpm libxinerama libpng"
+
+prepare() {
+        AUTOMAKE=true \
+    autotools_recursive_regen
+}
+
+configure() {
+    cp -rp "${source_dir}"/. ./
+
+    autotools_configure
+}
+
+build() {
+    make -j${parallelism}
+}
+
+package() {
+    DESTDIR="${dest_dir}" make install
+    post_package_strip
+}
+

@@ -1,0 +1,178 @@
+<?xml version="1.0"?>
+<JWM>
+    <!-- The root menu. -->
+    <RootMenu onroot="0">
+        <Program icon="utilities-terminal" label="Terminal">st</Program>
+        <Menu icon="applications-other" label="Applications">
+            <Program label="Calculator" icon="accessories-calculator">calculator</Program>
+            <Program label="xeyes">xeyes</Program>
+            <Program label="xneko">oneko</Program>
+        </Menu>
+        <Menu icon="applications-system" label="System utilities">
+            <Program icon="preferences-desktop-font" label="Fonts">xfontsel</Program>
+            <Program icon="preferences-system-windows" label="Window Properties">
+                xprop | xmessage -file -
+            </Program>
+            <Program icon="preferences-system-windows" label="Window Information">
+                xwininfo | xmessage -file -
+            </Program>
+        </Menu>
+        <Program icon="view-refresh" label="Reboot">reboot</Program>
+        <Program icon="system-shutdown" label="Shutdown">poweroff</Program>
+        <Separator/>
+        <Restart label="Restart WM" icon="reload"/>
+        <Exit label="Exit" confirm="true" icon="exit"/>
+    </RootMenu>
+
+    <!-- Options for program groups. -->
+    <Group>
+        <Name>xeyes</Name>
+        <Option>drag</Option>
+        <Option>notitle</Option>
+        <Option>noborder</Option>
+    </Group>
+
+    <!-- Tray at the top. -->
+    <Tray x="0" y="0" autohide="off" delay="1000">
+        <TrayButton label="Applications">root:0</TrayButton>
+        <Spacer width="2"/>
+        <TaskList maxwidth="256"/>
+        <Pager labeled="true"/>
+        <Dock/>
+        <Clock format="%l:%M %p" />
+    </Tray>
+
+ <!-- Visual Styles -->
+    <WindowStyle decorations="flat">
+        <Font>DejaVu Sans:bold:pixelsize=14</Font>
+        <Width>4</Width>
+        <Corner>2</Corner>
+        <Foreground>#000000</Foreground>
+        <Background>#FFFFFF</Background>
+        <Opacity>0.5</Opacity>
+        <Active>
+            <Foreground>#000000</Foreground>
+            <Background>#D0DEE5</Background>
+            <Opacity>1.0</Opacity>
+        </Active>
+    </WindowStyle>
+    <TrayStyle decorations="flat">
+        <Font>DejaVu Sans:pixelsize=14</Font>
+        <Foreground>#000000</Foreground>
+        <Background>#FFFFFF</Background>
+        <Opacity>0.75</Opacity>
+    </TrayStyle>
+    <TaskListStyle list="all" group="true">
+      <Font>DejaVu Sans:pixelsize=14</Font>
+      <Active>
+        <Foreground>#000000</Foreground>
+        <Background>#D0DEE5</Background>
+      </Active>
+      <Foreground>#000000</Foreground>
+      <Background>#FFFFFF</Background>
+    </TaskListStyle>
+    <PagerStyle>
+        <Foreground>#D0DEE5</Foreground>
+        <Background>#A7AAAC</Background>
+        <Text>#000000</Text>
+        <Active>
+            <Foreground>#0077CC</Foreground>
+            <Background>#4376C7</Background>
+        </Active>
+    </PagerStyle>
+    <MenuStyle decorations="flat">
+        <Font>DejaVu Sans:pixelsize=14</Font>
+        <Foreground>#000000</Foreground>
+        <Background>#FFFFFF</Background>
+        <Active>
+            <Foreground>#000000</Foreground>
+            <Background>#D0DEE5</Background>
+        </Active>
+        <Opacity>0.85</Opacity>
+    </MenuStyle>
+    <PopupStyle>
+        <Font>DejaVu Sans:pixelsize=14</Font>
+        <Foreground>#000000</Foreground>
+        <Background>#D0DEE5</Background>
+    </PopupStyle>
+
+    <!-- Virtual Desktops -->
+    <Desktops width="4" height="1">
+        <Background type="image">/root/background.jpg</Background>
+    </Desktops>
+
+    <!-- Double click speed (in milliseconds) -->
+    <DoubleClickSpeed>400</DoubleClickSpeed>
+
+    <!-- Double click delta (in pixels) -->
+    <DoubleClickDelta>2</DoubleClickDelta>
+
+    <!-- The focus model (sloppy or click) -->
+    <FocusModel>click</FocusModel>
+
+    <!-- The snap mode (none, screen, or border) -->
+    <SnapMode distance="10">border</SnapMode>
+
+    <!-- The move mode (outline or opaque) -->
+    <MoveMode>opaque</MoveMode>
+
+    <!-- The resize mode (outline or opaque) -->
+    <ResizeMode>opaque</ResizeMode>
+
+    <!-- Key bindings -->
+    <Key key="Up">up</Key>
+    <Key key="Down">down</Key>
+    <Key key="Right">right</Key>
+    <Key key="Left">left</Key>
+    <Key key="h">left</Key>
+    <Key key="j">down</Key>
+    <Key key="k">up</Key>
+    <Key key="l">right</Key>
+    <Key key="Return">select</Key>
+    <Key key="Escape">escape</Key>
+
+    <Key mask="A" key="Tab">nextstacked</Key>
+    <Key mask="A" key="F4">close</Key>
+    <Key mask="A" key="#">desktop#</Key>
+    <Key mask="A" key="F1">root:0</Key>
+    <Key mask="A" key="F2">window</Key>
+    <Key mask="A" key="F10">maximize</Key>
+    <Key mask="A" key="Right">rdesktop</Key>
+    <Key mask="A" key="Left">ldesktop</Key>
+    <Key mask="A" key="Up">udesktop</Key>
+    <Key mask="A" key="Down">ddesktop</Key>
+
+    <!-- Mouse bindings -->
+    <Mouse context="root" button="4">ldesktop</Mouse>
+    <Mouse context="root" button="5">rdesktop</Mouse>
+
+    <Mouse context="title" button="1">move</Mouse>
+    <Mouse context="title" button="2">move</Mouse>
+    <Mouse context="title" button="3">window</Mouse>
+    <Mouse context="title" button="4">shade</Mouse>
+    <Mouse context="title" button="5">shade</Mouse>
+    <Mouse context="title" button="11">maximize</Mouse>
+
+    <Mouse context="icon" button="1">window</Mouse>
+    <Mouse context="icon" button="2">move</Mouse>
+    <Mouse context="icon" button="3">window</Mouse>
+    <Mouse context="icon" button="4">shade</Mouse>
+    <Mouse context="icon" button="5">shade</Mouse>
+
+    <Mouse context="border" button="1">resize</Mouse>
+    <Mouse context="border" button="2">move</Mouse>
+    <Mouse context="border" button="3">window</Mouse>
+
+    <Mouse context="close" button="-1">close</Mouse>
+    <Mouse context="close" button="2">move</Mouse>
+    <Mouse context="close" button="-3">close</Mouse>
+
+    <Mouse context="maximize" button="-1">maximize</Mouse>
+    <Mouse context="maximize" button="-2">maxv</Mouse>
+    <Mouse context="maximize" button="-3">maxh</Mouse>
+
+    <Mouse context="minimize" button="-1">minimize</Mouse>
+    <Mouse context="minimize" button="2">move</Mouse>
+    <Mouse context="minimize" button="-3">shade</Mouse>
+</JWM>
+
