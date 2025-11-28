@@ -1,9 +1,9 @@
 name=gdk-pixbuf
-version=2.42.12
+version=2.44.4
 revision=1
-tarball_url="https://download.gnome.org/sources/gdk-pixbuf/2.42/gdk-pixbuf-${version}.tar.xz"
-tarball_blake2b="718a96c9efb836a275692ccbc403df0eb285918c5867d344406f660898c7ce8aad8cce7187faf7f6e9cdcfd1b051d5384f57644d946b888baddbaafb8f99309c"
-imagedeps="meson ninja-build glib2"
+tarball_url="https://download.gnome.org/sources/gdk-pixbuf/2.44/gdk-pixbuf-${version}.tar.xz"
+tarball_blake2b="279271694cbb84c5296106b445cd560b8e9c74140b52c8599623f912f2eb8e61e7ec056483455a5f1a3dc5117451b32dc788f09631157eb201a112757ca61a42"
+imagedeps="meson ninja-build libglib2.0-dev"
 hostdeps="gcc pkg-config"
 deps="core-libs glib libjpeg-turbo libpng libx11 libtiff"
 

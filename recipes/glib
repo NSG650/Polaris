@@ -1,21 +1,26 @@
 name=glib
-version=2.78.6
+version=2.84.2
 revision=1
-tarball_url="https://download.gnome.org/sources/glib/2.78/glib-${version}.tar.xz"
-tarball_blake2b="d16173794c4aa019459cf8c8c84d4107fb8393828f41ec6c631b9452890f34f9022ed848a543ed134fdb8a575faef6b941cea3e05de512eb1b7a99f7601a2485"
-imagedeps="meson ninja-build python-setuptools"
+tarball_url="https://download.gnome.org/sources/glib/2.84/glib-${version}.tar.xz"
+tarball_blake2b="31592cbeca58f03c138a02b0cd953b6bd2cdcbfa39283241affd1bff439d6376f0420b4b715856963c64903f3646cf89890f709f514a85d93fb3bbe26b99d516"
+imagedeps="python3-docutils"
 hostdeps="gcc pkg-config"
 deps="core-libs pcre2 libffi zlib"
 
 build() {
     meson_configure \
-        -Dxattr=false
-
-    ninja -j${parallelism}
+        -Dglib_debug=disabled \
+        -Dman-pages=enabled \
+        -Dsysprof=disabled \
+        -Dintrospection=disabled \
+        -Dxattr=false \
+        -Dinstalled_tests=true \
+        -Dtests=true
+    meson compile -j${parallelism}
 }
 
 package() {
-    DESTDIR="${dest_dir}" ninja install
+    DESTDIR="${dest_dir}" meson install --no-rebuild
 
     post_package_strip
 }

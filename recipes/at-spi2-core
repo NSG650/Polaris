@@ -1,9 +1,9 @@
 name=at-spi2-core
-version=2.52.0
+version=2.58.1
 revision=1
-tarball_url="https://download.gnome.org/sources/at-spi2-core/2.52/at-spi2-core-${version}.tar.xz"
-tarball_blake2b="642cf8a63700ed5d5e20eb356f60c5d5e771d34bb0a373e95c71898ea2318c41484faec736ec44b1162fac22a075ca5f7b4698b105972ea060d107f9afc7f5b9"
-imagedeps="meson ninja-build glib2"
+git_url="https://gitlab.gnome.org/GNOME/at-spi2-core.git"
+commit=1c403959184b36a2d146840254b7a69dd080ec40
+imagedeps="libglib2.0-dev"
 hostdeps="gcc pkg-config"
 deps="core-libs bash dbus glib gsettings-desktop-schemas libx11 libxi libxkbcommon libxml libxtst"
 
@@ -12,11 +12,11 @@ build() {
         -Dsystemd_user_dir=/tmp \
         -Dintrospection=disabled
 
-    ninja -j${parallelism}
+    meson compile -j${parallelism}
 }
 
 package() {
-    DESTDIR="${dest_dir}" ninja install
+    DESTDIR="${dest_dir}" meson install --no-rebuild
 
     post_package_strip
 }

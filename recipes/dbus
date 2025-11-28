@@ -1,39 +1,36 @@
 name=dbus
-version=1.15.8
-revision=1
-tarball_url="https://dbus.freedesktop.org/releases/dbus/dbus-${version}.tar.xz"
-tarball_blake2b="7c1962dfccc6a1b6250e80b0706d7f44536fabeff009013865ec4b1edaec6d4b47dcbe8f78caa61ef7aef4bac6b79f0e2027dd16bbb2baae328429e648bf8b8c"
-source_hostdeps="automake autoconf libtool pkg-config"
-source_deps="autoconf-archive"
-hostdeps="gcc autoconf automake libtool pkg-config"
-deps="core-libs libexpat"
+version=1.16.2
+revision=3
+git_url="https://gitlab.freedesktop.org/dbus/dbus.git"
+commit=958bf9db2100553bcd2fe2a854e1ebb42e886054
+hostdeps="gcc pkg-config"
+deps="core-libs libexpat libx11"
 
-prepare() {
-    autotools_recursive_regen
+configure() {
+    meson_configure \
+        -Druntime_dir=/run \
+        -Dsystemd_system_unitdir=no \
+        -Dsystemd_user_unitdir=no \
+        -Dsystem_pid_file=/run/dbus/pid \
+        -Dsystem_socket=/run/dbus/system_bus_socket \
+        -Dselinux=disabled \
+        -Dapparmor=disabled \
+        -Dlibaudit=disabled \
+        -Dkqueue=disabled \
+        -Dlaunchd=disabled \
+        -Dsystemd=disabled \
+        -Dmodular_tests=disabled
 }
 
 build() {
-    autotools_configure \
-        --runstatedir=/run \
-        --disable-doxygen-docs \
-        --disable-xml-docs \
-        --with-systemdsystemunitdir=no \
-        --with-systemduserunitdir=no \
-        --with-system-pid-file=/run/dbus/pid \
-        --with-system-socket=/run/dbus/system_bus_socket \
-        --disable-selinux \
-        --disable-apparmor \
-        --disable-libaudit \
-        --disable-kqueue \
-        --disable-launchd \
-        --disable-systemd \
-        --disable-tests
-
-    make -j${parallelism}
+    meson compile -j${parallelism}
 }
 
 package() {
-    DESTDIR="${dest_dir}" make install
+    DESTDIR="${dest_dir}" meson install --no-rebuild
+
+    touch "${dest_dir}${prefix}"/share/dbus-1/session.d/.keep
+    touch "${dest_dir}"/var/lib/dbus/.keep
 
     post_package_strip
 }
