@@ -1,11 +1,11 @@
 name=libtool
 version=2.5.4
-tarball_url="https://ftpmirror.gnu.org/gnu/libtool/libtool-${version}.tar.gz"
+tarball_url="https://ftp.gnu.org/gnu/libtool/libtool-${version}.tar.gz"
 tarball_blake2b="9a517b7d04d5f905be3c31c4ddf6a4278a8be3fd8d3c38f1ee244bcaa6bd0d6e5f3046773651b36c61b71d2c0b00c0980bbcbeb4ae3558756ed49fc8bb07266c"
-hostdeps="autoconf automake gnulib"
-imagedeps="help2man"
+hostdeps="autoconf automake"
+imagedeps="help2man git"
+allow_network="yes"
 
 prepare() {
-    cp -rp ${base_dir}/sources/gnulib ./
-    ./bootstrap --force --skip-git --skip-po --gnulib-srcdir=`pwd`/gnulib
+    LIBTOOLIZE=true autotools_recursive_regen
 }
