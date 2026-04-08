@@ -182,7 +182,7 @@ static void i8254x_rx_packet(struct i8254x_device *dev) {
 			handover[2] = (uint64_t)&nic_i8254x;
 
 			thread_create((uintptr_t)net_handle_packet_thread,
-						  (uint64_t)handover, false, process_list);
+						  (uint64_t)handover, false, kernel_proc);
 		}
 
 		dev->rx_desc[dev->rx_tail]->status = 0;
@@ -194,7 +194,6 @@ static void i8254x_rx_packet(struct i8254x_device *dev) {
 }
 
 static void i8254x_handler(registers_t *reg) {
-	cli();
 	uint32_t icr = mmind((void *)(i8254x_dev.mmio_address + 0xc0));
 
 	// Clear TX success bit
@@ -225,7 +224,6 @@ static void i8254x_handler(registers_t *reg) {
 
 	// clearing the pending interrupts
 	mmind((void *)(i8254x_dev.mmio_address + 0xc0));
-	sti();
 
 	apic_eoi();
 }

@@ -65,11 +65,9 @@ static ssize_t keyboard_dev_read(struct resource *this,
 }
 
 static void keyboard_interrupt_handle(registers_t *r) {
-	cli();
 	new_input = true;
 	keyboard_resource->status |= POLLIN;
 	event_trigger(&keyboard_resource->event, false);
-	sti();
 	apic_eoi();
 }
 

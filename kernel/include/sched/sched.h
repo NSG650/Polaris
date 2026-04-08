@@ -29,10 +29,9 @@ void process_destroy_context(struct process *proc);
 
 extern struct thread *thread_list;
 extern struct process *process_list;
-extern struct thread *threads_on_the_death_row;
 extern struct thread *sleeping_threads;
-extern struct process *processes_on_the_death_row;
 extern struct resource *std_console_device;
+extern struct process *kernel_proc;
 
 void sched_yield(bool save);
 struct thread *sched_get_next_thread(struct thread *thrd);

@@ -15,8 +15,8 @@ bool sched_runit = false;
 
 struct thread *thread_list = NULL;
 struct process *process_list = NULL;
-struct thread *threads_on_the_death_row = NULL;
-struct process *processes_on_the_death_row = NULL;
+
+struct process *kernel_proc = NULL;
 
 int64_t tid = 0;
 int64_t pid = 0;
@@ -98,21 +98,9 @@ void sched_add_thread_to_list(struct thread **thrd_list, struct thread *thrd) {
 	if (!thrd) {
 		return;
 	}
-	struct thread *this = *thrd_list;
 
-	if (this == NULL) {
-		*thrd_list = thrd;
-		return;
-	}
-
-	if (this == thrd) {
-		return;
-	}
-
-	while (this->next) {
-		this = this->next;
-	}
-	this->next = thrd;
+	thrd->next = *thrd_list;
+	*thrd_list = thrd;
 }
 
 void sched_remove_thread_from_list(struct thread **thrd_list,
@@ -144,21 +132,9 @@ void sched_add_process_to_list(struct process **proc_list,
 	if (!proc) {
 		return;
 	}
-	struct process *this = *proc_list;
 
-	if (this == NULL) {
-		*proc_list = proc;
-		return;
-	}
-
-	if (this == proc) {
-		return;
-	}
-
-	while (this->next) {
-		this = this->next;
-	}
-	this->next = proc;
+	proc->next = *proc_list;
+	*proc_list = proc;
 }
 
 void sched_remove_process_from_list(struct process **proc_list,
@@ -393,6 +369,8 @@ void sched_init(uint64_t args) {
 
 	process_create("kernel_tasks", PROCESS_READY_TO_RUN, 5000,
 				   (uintptr_t)kernel_main, args, false, NULL);
+	
+	kernel_proc = process_list;
 	sched_runit = true;
 }
 

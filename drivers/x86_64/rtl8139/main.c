@@ -63,7 +63,7 @@ static void rtl8139_rx_handler(registers_t *reg) {
 		handover[2] = (uint64_t)&nic_rtl8139;
 
 		thread_create((uintptr_t)net_handle_packet_thread, (uint64_t)handover,
-					  false, process_list);
+					  false, kernel_proc);
 
 		rtl8139_dev.packet_ptr_off =
 			(rtl8139_dev.packet_ptr_off + packet_length + 4 + 3) & (~3);

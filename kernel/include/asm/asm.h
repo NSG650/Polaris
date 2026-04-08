@@ -19,6 +19,7 @@
  */
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #define FLAT_PTR(PTR) (*((uintptr_t (*)[])(PTR)))
 
@@ -33,5 +34,8 @@ void sti(void);
 void pause(void);
 void nop(void);
 void dbgbrk(void);
+
+bool int_state(void);
+bool int_toggle(bool state);
 
 #endif
