@@ -512,7 +512,7 @@ int64_t process_fork(struct process *proc, struct thread *thrd) {
 	}
 
 	// No fucking clue why this works but disabling interrupts here stops all the random crashes.
-	// I am suspecting its a similar issue to execve but then the new thread and process is even "running"?
+	// I am suspecting its a similar issue to execve but then the new thread and process isn't even "running"?
 	cli();
 	process_fork_context(proc, fproc);
 
