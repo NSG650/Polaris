@@ -36,6 +36,8 @@ amd_syscall_entry:
 	sti
 	call syscall_handler
 
+	cli
+
 	pop r15
 	pop r14
 	pop r13
@@ -53,8 +55,6 @@ amd_syscall_entry:
 	pop rax
 
 	add rsp, 24
-
-	cli
 
 	mov rsp, qword [gs:0016]
 

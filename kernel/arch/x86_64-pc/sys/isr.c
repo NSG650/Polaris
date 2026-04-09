@@ -337,7 +337,7 @@ void isr_handle(registers_t *r) {
 					   r->errorCode);
 			kprintffos(0, "CS : %p SS : %p RFLAGS: %p\n", r->cs, r->ss,
 					   r->rflags);
-			kprintffos(0, "FS: %p UGS: %p KGS: %p\n", read_fs_base(),
+			kprintffos(0, "FS : %p UGS: %p KGS: %p\n", read_fs_base(),
 					   read_user_gs(), read_kernel_gs());
 			panic_((void *)r->rip, (void *)r->rbp, "Unhandled Exception: %s\n",
 				   isr_exception_messages[r->isrNumber]);

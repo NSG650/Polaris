@@ -433,7 +433,7 @@ void vmm_page_fault_handler(registers_t *reg) {
 				   reg->errorCode);
 		kprintffos(0, "CS : %p SS : %p RFLAGS: %p\n", reg->cs, reg->ss,
 				   reg->rflags);
-		kprintffos(0, "FS: %p UGS: %p KGS: %p\n", read_fs_base(),
+		kprintffos(0, "FS : %p UGS: %p KGS: %p\n", read_fs_base(),
 				   read_user_gs(), read_kernel_gs());
 		put_to_fb = true;
 		panic_((void *)reg->rip, (void *)reg->rbp,

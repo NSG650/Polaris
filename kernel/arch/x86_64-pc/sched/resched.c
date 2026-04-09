@@ -24,6 +24,7 @@ void sched_yield(bool save) {
 	if (save) {
 		spinlock_acquire_or_wait(&thrd->yield_lock);
 	} else {
+		spinlock_drop(&thrd->lock);
 		prcb_return_current_cpu()->running_thread = NULL;
 	}
 
@@ -43,8 +44,6 @@ void sched_yield(bool save) {
 }
 
 void resched(registers_t *reg) {
-	cli();
-
 	vmm_switch_pagemap(kernel_pagemap);
 	prcb_return_current_cpu()->sched_ticks++;
 	timer_stop_sched();

@@ -32,6 +32,7 @@ extern struct process *process_list;
 extern struct thread *sleeping_threads;
 extern struct resource *std_console_device;
 extern struct process *kernel_proc;
+extern struct process *init_proc;
 
 void sched_yield(bool save);
 struct thread *sched_get_next_thread(struct thread *thrd);

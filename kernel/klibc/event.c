@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <sys/prcb.h>
 #include <types.h>
+#include <asm/asm.h>
 
 extern lock_t thread_lock;
 
@@ -75,10 +76,10 @@ static void unlock_events(struct event **events, size_t num_events) {
 }
 
 ssize_t event_await(struct event **events, size_t num_events, bool block) {
-	cli();
 	ssize_t ret = -1;
 
 	struct thread *thread = sched_get_running_thread();
+	bool old_state = int_toggle(false);
 
 	lock_events(events, num_events);
 
@@ -100,7 +101,7 @@ ssize_t event_await(struct event **events, size_t num_events, bool block) {
 	thread->state = THREAD_WAITING_FOR_EVENT;
 	sched_yield(true);
 
-	cli();
+	int_toggle(false);
 	ret = thread->which_event;
 
 	lock_events(events, num_events);
@@ -108,7 +109,7 @@ ssize_t event_await(struct event **events, size_t num_events, bool block) {
 	unlock_events(events, num_events);
 
 cleanup:
-	sti();
+	int_toggle(old_state);
 	return ret;
 }
 
@@ -117,13 +118,8 @@ size_t event_trigger(struct event *event, bool drop) {
 		return 0;
 	}
 
-#if defined(__x86_64__)
-	uint64_t flags = 0;
-	asm volatile("pushfq; pop %0" : "=rm"(flags));
-	bool old_state = flags & (1 << 9);
-#endif
+	bool old_state = int_toggle(false);
 
-	cli();
 	spinlock_acquire_or_wait(&event->lock);
 
 	size_t ret = 0;
@@ -136,21 +132,15 @@ size_t event_trigger(struct event *event, bool drop) {
 	}
 	for (size_t i = 0; i < event->listeners_i; i++) {
 		struct event_listener *listener = &event->listeners[i];
-		spinlock_acquire_or_wait(&thread_lock);
 		struct thread *thread = listener->thread;
 		thread->which_event = listener->which;
 		thread->state = THREAD_READY_TO_RUN;
-		spinlock_drop(&thread_lock);
 	}
 	ret = event->listeners_i;
 	event->listeners_i = 0;
 
 cleanup:
 	spinlock_drop(&event->lock);
-	if (old_state) {
-		sti();
-	} else {
-		cli();
-	}
+	int_toggle(old_state);
 	return ret;
 }
