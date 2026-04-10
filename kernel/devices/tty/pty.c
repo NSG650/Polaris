@@ -112,7 +112,7 @@ static ssize_t pty_master_read(struct resource *this,
 			goto end;
 		}
 		spinlock_drop(&this->lock);
-		struct event *events[] = {&p->in.ev};
+		struct event *events[] = {&p->pm->res.event};
 		if (event_await(events, 1, true) < 0) {
 			errno = EINTR;
 			ret = -1;
@@ -148,13 +148,15 @@ static ssize_t pty_master_read(struct resource *this,
 	p->in.read_ptr = new_ptr;
 	p->in.used -= count;
 	if (p->in.used < p->in.data_length) {
-		this->status |= POLLOUT;
 		p->ps->res.status |= POLLOUT;
 	}
-	event_trigger(&p->in.ev, false);
+	
 	if (p->in.used == 0) {
 		this->status &= ~POLLIN;
 	}
+
+	event_trigger(&p->ps->res.event, false);
+
 	ret = count;
 end:
 	spinlock_drop(&this->lock);
@@ -175,7 +177,7 @@ static ssize_t pty_master_write(struct resource *this,
 
 	if (p->out.used == p->out.data_length) {
 		spinlock_drop(&p->ps->res.lock);
-		struct event *events[] = {&p->out.ev};
+		struct event *events[] = {&p->ps->res.event};
 		if (event_await(events, 1, true) < 0) {
 			errno = EINTR;
 			ret = -1;
@@ -215,9 +217,9 @@ static ssize_t pty_master_write(struct resource *this,
 		this->status &= ~POLLOUT;
 	}
 
-	this->status |= POLLIN;
 	p->ps->res.status |= POLLIN;
-	event_trigger(&p->out.ev, false);
+
+	event_trigger(&p->ps->res.event, false);
 	ret = count;
 
 	spinlock_drop(&p->ps->res.lock);
@@ -241,7 +243,7 @@ static ssize_t pty_slave_read(struct resource *this,
 			goto end;
 		}
 		spinlock_drop(&this->lock);
-		struct event *events[] = {&p->out.ev};
+		struct event *events[] = {&p->ps->res.event};
 		if (event_await(events, 1, true) < 0) {
 			errno = EINTR;
 			ret = -1;
@@ -278,13 +280,15 @@ static ssize_t pty_slave_read(struct resource *this,
 	p->out.used -= count;
 
 	if (p->out.used < p->out.data_length) {
-		this->status |= POLLOUT;
 		p->pm->res.status |= POLLOUT;
 	}
-	event_trigger(&p->out.ev, false);
+	
 	if (p->out.used == 0) {
 		this->status &= ~POLLIN;
 	}
+
+	event_trigger(&p->pm->res.event, false);
+
 	ret = count;
 end:
 	spinlock_drop(&this->lock);
@@ -304,13 +308,41 @@ static ssize_t pty_slave_write(struct resource *this,
 	spinlock_acquire_or_wait(&p->pm->res.lock);
 	if (p->in.used == p->in.data_length) {
 		spinlock_drop(&p->pm->res.lock);
-		struct event *events[] = {&p->in.ev};
+		struct event *events[] = {&p->pm->res.event};
 		if (event_await(events, 1, true) < 0) {
 			errno = EINTR;
 			ret = -1;
 			return ret;
 		}
 		spinlock_acquire_or_wait(&p->pm->res.lock);
+	}
+
+	char *buf_to_write_from = buf;
+	size_t newline_count = 0;
+	if ((p->term.c_oflag & ONLCR) && (p->term.c_oflag & OPOST)) {
+		char *buf_but_char = buf;
+		buf_to_write_from = kmalloc(count * 2);
+		if (!buf_to_write_from) {
+			spinlock_drop(&p->pm->res.lock);
+			errno = ENOMEM;
+			return -1;
+		}
+		memzero(buf_to_write_from, count * 2);
+		size_t k = 0;
+		for (size_t i = 0; i < count; i++) {
+			if (buf_but_char[i] == '\n') { 
+				buf_to_write_from[k++] = '\r';
+				newline_count++; 
+			}
+			buf_to_write_from[k++] = buf_but_char[i];
+		}
+
+		if (newline_count == 0) {
+			kfree(buf_to_write_from);
+			buf_to_write_from = buf;
+		}
+
+		count += newline_count;
 	}
 
 	if (p->in.used + count > p->in.data_length) {
@@ -332,20 +364,27 @@ static ssize_t pty_slave_write(struct resource *this,
 		}
 	}
 
-	memcpy(p->in.data + p->in.write_ptr, buf, before_wrap);
+	memcpy(p->in.data + p->in.write_ptr, buf_to_write_from, before_wrap);
 	if (after_wrap) {
-		memcpy(p->in.data, buf + before_wrap, after_wrap);
+		memcpy(p->in.data, buf_to_write_from + before_wrap, after_wrap);
 	}
 
 	p->in.write_ptr = new_ptr;
 	p->in.used += count;
 
+	if (buf_to_write_from != buf) {
+		kfree(buf_to_write_from);
+	}
+
 	if (p->in.used == p->in.data_length) {
 		this->status &= ~POLLOUT;
 	}
-	this->status |= POLLIN;
+
+	count -= newline_count;
+
 	p->pm->res.status |= POLLIN;
-	event_trigger(&p->in.ev, false);
+
+	event_trigger(&p->pm->res.event, false);
 	ret = count;
 
 	spinlock_drop(&p->pm->res.lock);
@@ -385,7 +424,7 @@ void syscall_openpty(struct syscall_arguments *args) {
 	p->out.read_ptr = 0;
 	p->out.write_ptr = 0;
 
-	p->term.c_iflag = IGNBRK | BRKINT | IGNPAR | ISTRIP | ICRNL | IXON;
+	p->term.c_iflag = IGNBRK | BRKINT | IGNPAR | ICRNL | IXON;
 	p->term.c_oflag = OPOST | ONLCR;
 	p->term.c_cflag = CS8 | CREAD | HUPCL;
 	p->term.c_lflag = ISIG | ICANON | ECHO | ECHOE | ECHOK | ECHOCTL | ECHOKE | IEXTEN;

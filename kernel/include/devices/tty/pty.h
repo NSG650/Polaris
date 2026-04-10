@@ -13,7 +13,6 @@ struct ring_buffer {
 	uintptr_t read_ptr;
 	uintptr_t write_ptr;
 	size_t used;
-	struct event ev;
 };
 
 struct pty {

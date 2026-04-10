@@ -37,7 +37,7 @@ static ssize_t keyboard_dev_read(struct resource *this,
 		spinlock_acquire_or_wait(&this->lock);
 	}
 	new_input = false;
-
+	this->status &= ~POLLIN;
 	uint8_t data[2] = {0};
 	data[0] = ps2_read();
 	ret = 1;
@@ -54,12 +54,12 @@ static ssize_t keyboard_dev_read(struct resource *this,
 		}
 
 		new_input = false;
+		this->status &= ~POLLIN;
 		data[1] = ps2_read();
 		ret = 2;
 	}
 
 	memcpy(buf, data, ret);
-	this->status &= ~POLLIN;
 	spinlock_drop(&this->lock);
 	return ret;
 }

@@ -1,8 +1,8 @@
 name=gcon
-version=9b8ffa17c476e661caee4ea57f05becc224cd912
+version=478d3286e4c75d6c3031512766fbb8cf3df83fbc
 revision=1
 tarball_url="https://codeberg.org/Ironclad/gcon/archive/${version}.tar.gz"
-tarball_blake2b="04659ba488885db9cd54c4d3f881fedb779cf2b5fa8ca0ebc35d269967f84d4a1958bde40e056d5eb2d78765790aea86fe03fd6395d585a3572f306aa14f7725"
+tarball_blake2b="8e970569922b9c7daef5a82b17349a454e2ae821f547da1b7a514bf95b0c7f4c5581cf4096e3e85f91165624718c7b6b2863a03b142a0a7ad3557d4163546972"
 source_imagedeps="git"
 source_hostdeps="automake autoconf libtool pkg-config"
 source_allow_network="yes"
@@ -10,14 +10,14 @@ hostdeps="gcc autoconf automake libtool pkg-config"
 deps="core-libs"
 
 prepare() {
-    ./bootstrap
+    meson subprojects download
 }
 
 build() {
-    autotools_configure
-    make -j${parallelism}
+    meson_configure
+    meson compile -j${parallelism}
 }
 
 package() {
-    DESTDIR="${dest_dir}" make install
+    DESTDIR="${dest_dir}" meson install --no-rebuild
 }
