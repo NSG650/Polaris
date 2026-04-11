@@ -5,6 +5,7 @@ tarball_url="https://www.python.org/ftp/python/${version}/Python-${version}.tar.
 tarball_blake2b="4255171ef8ee1777bab829be7bbaf28a9d5073985b3b1309a41694dda5f6b4ad599df4534a1ce83ec65b357d42416cc18722ca94b4227a45ebd90e2c1df90945"
 source_hostdeps="autoconf automake libtool pkg-config"
 source_deps="autoconf-archive"
+imagedeps="python3.12"
 hostdeps="gcc autoconf automake libtool pkg-config"
 deps="core-libs bzip2 xz zlib openssl ncurses readline gdbm tzdata libexpat libffi"
 
@@ -29,7 +30,7 @@ build() {
         --enable-loadable-sqlite-extensions \
         --without-ensurepip \
         --with-tzpath=/usr/share/zoneinfo \
-        --with-build-python=python3 \
+        --with-build-python=python3.12 \
         --disable-ipv6 \
         --without-static-libpython
 

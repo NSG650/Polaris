@@ -1,7 +1,7 @@
 name=gcc
 version=15.1.0
 revision=1
-tarball_url="https://ftpmirror.gnu.org/gnu/gcc/gcc-${version}/gcc-${version}.tar.xz"
+tarball_url="https://ftp.gnu.org/gnu/gcc/gcc-${version}/gcc-${version}.tar.xz"
 tarball_blake2b="a902ce99db4e93615879e435bcd0b96d5a16ea0af42598ca0e6d12913b2ce3651a98574c3264b2717b848e6b5a823b403ccca0adde463938d5b41aa3f1da0d34"
 source_hostdeps="automake autoconf-2.69 libtool pkg-config"
 source_imagedeps="git"

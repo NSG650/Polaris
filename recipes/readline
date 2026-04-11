@@ -1,7 +1,7 @@
 name=readline
 version=8.2.13
 revision=1
-tarball_url="https://ftpmirror.gnu.org/gnu/readline/readline-${version}.tar.gz"
+tarball_url="https://ftp.gnu.org/gnu/readline/readline-${version}.tar.gz"
 tarball_blake2b="663ec5e2b61d169bcae200646b41adf139bf19bbe9595fd36378909d0dbfceee247e9141b1b434eebef762e12303696ecfa9d7d832d1d5887dbd47d0aa406c9d"
 source_hostdeps="automake autoconf libtool pkg-config"
 hostdeps="gcc autoconf automake libtool pkg-config"
