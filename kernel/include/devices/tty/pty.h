@@ -28,6 +28,7 @@ struct pty {
 struct pty_slave {
 	struct resource res;
 	struct pty *pty;
+	bool closed;
 };
 
 struct pty_master {

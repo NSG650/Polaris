@@ -85,9 +85,13 @@ static bool pty_master_unref(struct resource *this,
 							 struct f_description *description) {
 	(void)description;
 	struct pty_master *pm = (struct pty_master *)this;
+	struct pty *p = pm->pty;
 	this->refcount--;
 	if (!this->refcount) {
-		struct pty *p = pm->pty;
+		p->pm->res.status |= POLLHUP;
+		p->pm->res.status &= ~POLLIN;
+		p->pm->res.status &= ~POLLOUT;
+		event_trigger(&p->ps->res.event, false);
 		kfree(p->in.data);
 		kfree(p->out.data);
 	}
@@ -108,6 +112,12 @@ static ssize_t pty_master_read(struct resource *this,
 	ssize_t ret = 0;
 
 	while (p->in.used == 0) {
+		if (p->ps->closed) {
+        	errno = EIO;
+        	ret = -1;
+        	spinlock_drop(&this->lock);
+        	return ret;
+    	}
 		if (description->flags & O_NONBLOCK) {
 			goto end;
 		}
@@ -224,6 +234,22 @@ static ssize_t pty_master_write(struct resource *this,
 
 	spinlock_drop(&p->ps->res.lock);
 	return ret;
+}
+
+static bool pty_slave_unref(struct resource *this,
+                             struct f_description *description) {
+    (void)description;
+    struct pty_slave *ps = (struct pty_slave *)this;
+	struct pty *p = ps->pty;
+    this->refcount--;
+    if (!this->refcount) {
+        ps->closed = true;
+        p->pm->res.status |= POLLHUP;
+		p->pm->res.status &= ~POLLIN;
+		p->pm->res.status &= ~POLLOUT;
+        event_trigger(&ps->pty->pm->res.event, false);
+    }
+    return true;
 }
 
 static ssize_t pty_slave_read(struct resource *this,
@@ -450,6 +476,7 @@ void syscall_openpty(struct syscall_arguments *args) {
 	ps->pty = p;
 	ps->res.read = pty_slave_read;
 	ps->res.write = pty_slave_write;
+	pm->res.unref = pty_slave_unref;
 	ps->res.ioctl = pty_ioctl;
 	ps->res.stat.st_size = 0;
 	ps->res.stat.st_blocks = 0;
