@@ -456,6 +456,7 @@ void syscall_openpty(struct syscall_arguments *args) {
 	ps->res.stat.st_blksize = 4096;
 	ps->res.stat.st_rdev = resource_create_dev_id();
 	ps->res.stat.st_mode = 0644 | S_IFCHR;
+	ps->res.status = POLLOUT;
 
 	pm->pty = p;
 	pm->res.refcount = 1;
@@ -463,6 +464,7 @@ void syscall_openpty(struct syscall_arguments *args) {
 	pm->res.write = pty_master_write;
 	pm->res.unref = pty_master_unref;
 	pm->res.ioctl = pty_ioctl;
+	pm->res.status = POLLOUT;
 
 	p->ps = ps;
 	p->pm = pm;
