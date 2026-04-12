@@ -4,27 +4,6 @@
 int stdin = 0;
 int stdout = 1;
 
-struct fbdev_info {
-	size_t pitch, bpp;
-	uint16_t width, height;
-};
-
-struct sysinfo {
-	long uptime;			 /* Seconds since boot */
-	unsigned long loads[3];	 /* 1, 5, and 15 minute load averages */
-	unsigned long totalram;	 /* Total usable main memory size */
-	unsigned long freeram;	 /* Available memory size */
-	unsigned long sharedram; /* Amount of shared memory */
-	unsigned long bufferram; /* Memory used by buffers */
-	unsigned long totalswap; /* Total swap space size */
-	unsigned long freeswap;	 /* swap space still available */
-	unsigned short procs;	 /* Number of current processes */
-	unsigned long totalhigh; /* Total high memory size */
-	unsigned long freehigh;	 /* Available high memory size */
-	unsigned int mem_unit;	 /* Memory unit size in bytes */
-	char _f[20 - 2 * sizeof(long) - sizeof(int)]; /* Padding to 64 bytes */
-};
-
 #define PROT_NONE 0x00
 #define PROT_READ 0x01
 #define PROT_WRITE 0x02
@@ -214,10 +193,6 @@ void puts_to_console(char *string) {
 
 void puts_to_console_with_length(char *string, size_t length) {
 	write(stdout, string, length);
-}
-
-int sysinfo(struct sysinfo *info) {
-	return syscall1(0x63, (uint64_t)info);
 }
 
 int sethostname(char *name, int length) {

@@ -312,9 +312,6 @@ void syscall_thread_new(struct syscall_arguments *args) {
 	uintptr_t pc = (uintptr_t)args->args0;
 	uintptr_t sp = (uintptr_t)args->args1;
 
-	cli();
-	spinlock_acquire_or_wait(&thread_lock);
-
 	struct thread *thrd = kmalloc(sizeof(struct thread));
 	memzero(thrd, sizeof(struct thread));
 	thrd->runtime = proc->runtime;
@@ -325,11 +322,17 @@ void syscall_thread_new(struct syscall_arguments *args) {
 	thrd->next = NULL;
 	spinlock_init(thrd->lock);
 	spinlock_init(thrd->yield_lock);
-	thrd->state = THREAD_READY_TO_RUN;
 
+	spinlock_acquire_or_wait(&proc->lock);
 	vec_push(&proc->process_threads, thrd);
+	spinlock_drop(&proc->lock);
+
+	cli();
+
+	spinlock_acquire_or_wait(&thread_lock);
 	thrd->tid = tid++;
 	sched_add_thread_to_list(&thread_list, thrd);
+	thrd->state = THREAD_READY_TO_RUN;
 	spinlock_drop(&thread_lock);
 
 	args->ret = thrd->tid;
@@ -417,16 +420,14 @@ void process_create(char *name, uint8_t state, uint64_t runtime,
 	thread_create(pc_address, arguments, user, proc);
 }
 
-bool process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
-						struct process *parent_process) {
-
+bool process_run_init(char *path, char **argv, char **envp, struct process *parent_process) {
 	struct process *proc = kmalloc(sizeof(struct process));
 	memzero(proc, sizeof(struct process));
 
-	strncpy(proc->name, name, 256);
+	strncpy(proc->name, "init", 5);
 
-	proc->runtime = runtime;
-	proc->state = state;
+	proc->runtime = 20000;
+	proc->state = PROCESS_READY_TO_RUN;
 
 	process_setup_context(proc, true);
 
@@ -478,6 +479,7 @@ bool process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
 	for (int i = 0; i < 3; i++)
 		fdnum_create_from_resource(proc, std_console_device, 0, i, true);
 
+
 	proc->next = NULL;
 
 	vec_init(&proc->process_threads);
@@ -488,10 +490,9 @@ bool process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
 	sched_add_process_to_list(&process_list, proc);
 	spinlock_drop(&process_lock);
 
-	if (!init_proc)
-		init_proc = proc;
+	thread_setup_for_init(entry, argv, envp, proc);
 
-	thread_create(entry, 0, true, proc);
+	init_proc = proc;
 	return true;
 }
 
@@ -724,6 +725,30 @@ void process_kill(struct process *proc, bool crash) {
 	}
 }
 
+void thread_setup_for_init(uintptr_t pc_address, char **argv, char **envp, struct process *proc) {
+	struct thread *thrd = kmalloc(sizeof(struct thread));
+	memzero(thrd, sizeof(struct thread));
+	thrd->runtime = proc->runtime;
+	thrd->mother_proc = proc;
+
+	thrd->next = NULL;
+	spinlock_init(thrd->lock);
+	spinlock_init(thrd->yield_lock);
+
+	vec_push(&proc->process_threads, thrd);
+
+	// thread_setup_context_from_user sets up a minimal thread for userspace we only have to pass the stack.
+	// thread_setup_context_for_execve anyways creates a new stack.
+	thread_setup_context_from_user(thrd, 0, 0);
+	thread_setup_context_for_execve(thrd, pc_address, argv, envp);
+
+	spinlock_acquire_or_wait(&thread_lock);
+	thrd->tid = tid++;
+	sched_add_thread_to_list(&thread_list, thrd);
+	thrd->state = THREAD_READY_TO_RUN;
+	spinlock_drop(&thread_lock);
+}
+
 void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 				   struct process *proc) {
 	struct thread *thrd = kmalloc(sizeof(struct thread));
@@ -737,7 +762,9 @@ void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 	spinlock_init(thrd->lock);
 	spinlock_init(thrd->yield_lock);
 
+	spinlock_acquire_or_wait(&proc->lock);
 	vec_push(&proc->process_threads, thrd);
+	spinlock_drop(&proc->lock);
 
 	spinlock_acquire_or_wait(&thread_lock);
 	thrd->tid = tid++;
@@ -782,7 +809,9 @@ void thread_execve(struct process *proc, struct thread *thrd,
 void thread_kill(struct thread *thrd, bool reschedule) {
 	struct process *mother_proc = thrd->mother_proc;
 
+	spinlock_acquire_or_wait(&mother_proc->lock);
 	vec_remove(&mother_proc->process_threads, thrd);
+	spinlock_drop(&mother_proc->lock);
 	if (mother_proc->process_threads.length < 1) {
 		process_kill(mother_proc, false);
 	}

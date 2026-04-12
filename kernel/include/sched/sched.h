@@ -47,11 +47,11 @@ void sched_remove_process_from_list(struct process **proc_list,
 void process_create(char *name, uint8_t state, uint64_t runtime,
 					uintptr_t pc_address, uint64_t arguments, bool user,
 					struct process *parent_process);
-bool process_create_elf(char *name, uint8_t state, uint64_t runtime, char *path,
-						struct process *parent_process);
+bool process_run_init(char *path, char **argv, char **envp, struct process *parent_process);
 void process_kill(struct process *proc, bool crash);
 int64_t process_fork(struct process *proc, struct thread *thrd);
 bool process_execve(char *path, char **argv, char **envp);
+void thread_setup_for_init(uintptr_t pc_address, char **argv, char **envp, struct process *proc);
 void thread_create(uintptr_t pc_address, uint64_t arguments, bool user,
 				   struct process *proc);
 void thread_execve(struct process *proc, struct thread *thrd,

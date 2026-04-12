@@ -31,18 +31,6 @@ const char *module_list[] = {
 #define MODULE_LIST_SIZE (sizeof(module_list) / sizeof(module_list[0]))
 #define ONE_SECOND (uint64_t)(1000 * 1000 * 1000)
 
-#ifdef KERNEL_ABUSE
-void kernel_dummy_threads(uint64_t id) {
-	for (;;) {
-		cli();
-		kputchar_('0' + id);
-		kputchar_('A' + prcb_return_current_cpu()->cpu_number);
-		sti();
-		sched_yield(true);
-	}
-}
-#endif
-
 void kernel_main(void *args) {
 	vfs_init();
 	tmpfs_init();
@@ -121,25 +109,18 @@ void kernel_main(void *args) {
 	std_console_device =
 		(vfs_get_node(vfs_root, "/dev/console", true))->resource;
 
-	char *argv[] = {"/usr/bin/init", NULL};
+	char *argv[] = {"init", NULL};
+	char *envp[] = {"HOME=/", "TERM=linux", NULL, };
+	char *init_path = "/usr/bin/init";
 	if (kernel_arguments.kernel_args & KERNEL_ARGS_INIT_PATH_GIVEN) {
-		argv[0] = kernel_arguments.init_binary_path;
+		init_path = kernel_arguments.init_binary_path;
 	}
 
-	kprintf("Running init binary %s\n", argv[0]);
+	kprintf("Running init binary %s\n", init_path);
 
-#ifndef KERNEL_ABUSE
-	if (!process_create_elf("init", PROCESS_READY_TO_RUN, 20000, argv[0],
-							sched_get_running_thread()->mother_proc))
+	if (!process_run_init(init_path, argv, envp, sched_get_running_thread()->mother_proc)) {
 		panic("Failed to run init binary!\n");
-#endif
-
-#ifdef KERNEL_ABUSE
-	for (uint64_t i = 0; i < prcb_return_installed_cpus(); i++) {
-		thread_create((uintptr_t)kernel_dummy_threads, i, false,
-					  sched_get_running_thread()->mother_proc);
 	}
-#endif
 
 	for (;;) {
 		sched_yield(true);
