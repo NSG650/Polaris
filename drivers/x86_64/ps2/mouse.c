@@ -127,6 +127,7 @@ static ssize_t mouse_dev_read(struct resource *this,
 	spinlock_acquire_or_wait(&mouse_resource->res.lock);
 
 	if (!mouse_resource->new_packet) {
+		mouse_resource->res.status &= ~POLLIN;
 		spinlock_drop(&mouse_resource->res.lock);
 		if (description->flags & O_NONBLOCK) {
 			errno = EAGAIN;
