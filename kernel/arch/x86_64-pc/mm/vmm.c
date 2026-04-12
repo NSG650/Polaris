@@ -505,7 +505,8 @@ struct pagemap *vmm_fork_pagemap(struct pagemap *pagemap) {
 
 			vec_push(&new_global_range->locals, new_local_range);
 
-			if ((local_range->flags & MAP_ANONYMOUS) != 0) {
+			// TODO: CoW for MAP_PRIVATE?
+//			if ((local_range->flags & MAP_ANONYMOUS) != 0) {
 				for (uintptr_t i = local_range->base;
 					 i < local_range->base + local_range->length;
 					 i += PAGE_SIZE) {
@@ -542,9 +543,9 @@ struct pagemap *vmm_fork_pagemap(struct pagemap *pagemap) {
 					*new_pte = ((*old_pte) & 0xfff) | (uint64_t)page;
 					*new_spte = *new_pte;
 				}
-			} else {
-				kprintf("WARNING: Non anon fork\n");
-			}
+//			} else {
+//				kprintf("WARNING: Non anon fork\n");
+//			}
 		}
 
 		vec_push(&new_pagemap->mmap_ranges, new_local_range);
