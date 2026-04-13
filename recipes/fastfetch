@@ -1,14 +1,44 @@
 name=fastfetch
-version=2.42.0
+version=2.33.0
 revision=1
 tarball_url="https://github.com/fastfetch-cli/fastfetch/archive/refs/tags/${version}.tar.gz"
-tarball_blake2b="99329524e9959d293f4ed25396d6dcaf0f6bc1569e8ff07a4cfbf0c409e10fc4872d9dad2eb0011c19f693c971b90084e083961b477a8102b45f59bcd1d72c9d"
-imagedeps="ninja-build"
-hostdeps="gcc cmake pkg-config"
+tarball_blake2b="1a31aa0b7651c27ecff34067360c136ad5c0dddac60e5bc2c4ae749194d63c49df3bc92de91e5a3249b8bcd1f640b62025a01d7f6b89b96991ad1623ca079bb5"
+imagedeps="build-essential"
+hostdeps="gcc pkg-config cmake"
 deps="core-libs"
 
+configure() {
+    cmake_configure \
+        -DENABLE_RPM=no \
+        -DENABLE_ZLIB=no \
+        -DENABLE_SYSTEM_YYJSON=no \
+        -DINSTALL_LICENSE=no \
+        -DBUILD_FLASHFETCH=no \
+        -DENABLE_CHAFA=no \
+        -DENABLE_DBUS=no \
+        -DENABLE_DCONF=no \
+        -DENABLE_DDCUTIL=no \
+        -DENABLE_DRM=no \
+        -DENABLE_ELF=no \
+        -DENABLE_EGL=no \
+        -DENABLE_GIO=no \
+        -DENABLE_GLX=no \
+        -DENABLE_IMAGEMAGICK6=no \
+        -DENABLE_IMAGEMAGICK7=no \
+        -DENABLE_OPENCL=no \
+        -DENABLE_OSMESA=no \
+        -DENABLE_PULSE=no \
+        -DENABLE_SQLITE3=no \
+        -DENABLE_VULKAN=no \
+        -DENABLE_WAYLAND=no \
+        -DENABLE_XCB_RANDR=no \
+        -DENABLE_XFCONF=no \
+        -DENABLE_XRANDR=no \
+        -DBUILD_TESTS=no \
+        -DPACKAGES_DISABLE_XBPS=OFF
+}
+
 build() {
-    cmake_configure
     cmake --build . -j${parallelism}
 }
 
