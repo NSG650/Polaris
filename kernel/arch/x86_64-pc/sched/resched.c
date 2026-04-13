@@ -43,6 +43,19 @@ void sched_yield(bool save) {
 	}
 }
 
+void sched_trigger_yield(uint64_t cpu_number) {
+	struct prcb *target = NULL;
+	for (size_t i = 0; i < prcb_return_installed_cpus(); i++) {
+		if (prcbs[i].cpu_number == cpu_number) {
+			target = &prcbs[i];
+			break;
+		}
+	}
+	if (target) {
+		apic_send_ipi(target->lapic_id, 48);
+	}
+}
+
 void resched(registers_t *reg) {
 	vmm_switch_pagemap(kernel_pagemap);
 	prcb_return_current_cpu()->sched_ticks++;
@@ -58,11 +71,11 @@ void resched(registers_t *reg) {
 		running_thrd->fs_base = read_fs_base();
 		running_thrd->gs_base = read_user_gs();
 		prcb_return_current_cpu()->fpu_save(running_thrd->fpu_storage);
+		running_thrd->last_scheduled = timer_count();
+		running_thrd->stack = prcb_return_current_cpu()->user_stack;
 		if (running_thrd->state == THREAD_NORMAL) {
 			running_thrd->state = THREAD_READY_TO_RUN;
 		}
-		running_thrd->last_scheduled = timer_count();
-		running_thrd->stack = prcb_return_current_cpu()->user_stack;
 		spinlock_drop(&running_thrd->lock);
 	}
 
@@ -85,6 +98,8 @@ void resched(registers_t *reg) {
 	prcb_return_current_cpu()->user_stack = running_thrd->stack;
 	prcb_return_current_cpu()->running_thread->state = THREAD_NORMAL;
 	prcb_return_current_cpu()->fpu_restore(running_thrd->fpu_storage);
+
+	running_thrd->running_on_cpu = prcb_return_current_cpu()->cpu_number;
 
 	set_fs_base(running_thrd->fs_base);
 	// set_user_gs(running_thrd->gs_base);

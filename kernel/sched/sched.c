@@ -59,13 +59,25 @@ struct thread *sched_get_next_thread(struct thread *thrd) {
 
 	while (this) {
 		if (spinlock_acquire(&this->lock)) {
-			if (this->state != THREAD_READY_TO_RUN) {
-				spinlock_drop(&this->lock);
-				this = this->next;
+			if (this->state == THREAD_READY_TO_RUN) {
+				spinlock_drop(&thread_lock);
+				return this;
+			}
+			if (this->state == THREAD_KILLED) {
+				struct thread *next = this->next;
+				thread_destroy_context(this);
+				if (this->mother_proc->state == PROCESS_KILLED && this->mother_proc->clean_up) {
+					process_destroy_context(this->mother_proc);
+					this->mother_proc->clean_up = false;
+				}
+				sched_remove_thread_from_list(&thread_list, this);
+				kfree(this);
+				this = next;
 				continue;
 			}
-			spinlock_drop(&thread_lock);
-			return this;
+			spinlock_drop(&this->lock);
+			this = this->next;
+			continue;
 		}
 
 		this = this->next;
@@ -635,17 +647,14 @@ bool process_execve(char *path, char **argv, char **envp) {
 
 	strncpy(proc->name, path, 256);
 
-	spinlock_acquire_or_wait(&thread_lock);
 	for (int i = 0; i < proc->process_threads.length; i++) {
 		if (proc->process_threads.data[i] != thread) {
-			sched_remove_thread_from_list(&thread_list,
-										  proc->process_threads.data[i]);
 			proc->process_threads.data[i]->state = THREAD_KILLED;
-			thread_destroy_context(proc->process_threads.data[i]);
-			kfree(proc->process_threads.data[i]);
 		}
 	}
-	spinlock_drop(&thread_lock);
+
+	vec_deinit(&proc->process_threads);
+	vec_push(&proc->process_threads, thread);
 
 	proc->mmap_anon_base = MMAP_ANON_BASE;
 	proc->stack_top = VIRTUAL_STACK_ADDR;
@@ -681,15 +690,12 @@ void process_kill(struct process *proc, bool crash) {
 		vmm_switch_pagemap(kernel_pagemap);
 	}
 
-	spinlock_acquire_or_wait(&thread_lock);
 	for (int i = 0; i < proc->process_threads.length; i++) {
-		sched_remove_thread_from_list(&thread_list,
-									  proc->process_threads.data[i]);
+		if (proc->process_threads.data[i]->state == THREAD_NORMAL) {
+			sched_trigger_yield(proc->process_threads.data[i]->running_on_cpu);
+		}
 		proc->process_threads.data[i]->state = THREAD_KILLED;
-		thread_destroy_context(proc->process_threads.data[i]);
-		kfree(proc->process_threads.data[i]);
 	}
-	spinlock_drop(&thread_lock);
 
 	spinlock_acquire_or_wait(&init_proc->lock);
 	for (int i = 0; i < proc->child_processes.length; i++) {
@@ -704,23 +710,13 @@ void process_kill(struct process *proc, bool crash) {
 
 	event_trigger(&proc->death_event, false);
 	proc->state = PROCESS_KILLED;
-
-#if 0
-	// Leave the waiter to clean us up
-	process_destroy_context(proc);
-	if (!proc->is_waited_on) {
-		if (proc->parent_process) {
-			vec_remove(&proc->parent_process->child_processes, proc);
-		}
-
-		spinlock_acquire_or_wait(&process_lock);
-		sched_remove_process_from_list(&process_list, proc);
-		spinlock_drop(&process_lock);
-		kfree(proc);
+	
+	if (!are_we_killing_ourselves) {
+		process_destroy_context(proc);
 	}
-#endif
 
 	if (are_we_killing_ourselves || crash) {
+		proc->clean_up = true;
 		sched_yield(false);
 	}
 }
@@ -812,17 +808,8 @@ void thread_kill(struct thread *thrd, bool reschedule) {
 	spinlock_acquire_or_wait(&mother_proc->lock);
 	vec_remove(&mother_proc->process_threads, thrd);
 	spinlock_drop(&mother_proc->lock);
-	if (mother_proc->process_threads.length < 1) {
-		process_kill(mother_proc, false);
-	}
 
-	spinlock_acquire_or_wait(&thread_lock);
-	sched_remove_thread_from_list(&thread_list, thrd);
 	thrd->state = THREAD_KILLED;
-	spinlock_drop(&thread_lock);
-
-	thread_destroy_context(thrd);
-	kfree(thrd);
 
 	if (reschedule) {
 		sched_yield(false);

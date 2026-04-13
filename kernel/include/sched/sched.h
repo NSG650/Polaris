@@ -35,6 +35,7 @@ extern struct process *kernel_proc;
 extern struct process *init_proc;
 
 void sched_yield(bool save);
+void sched_trigger_yield(uint64_t cpu_number);
 struct thread *sched_get_next_thread(struct thread *thrd);
 void sched_init(uint64_t args);
 void sched_add_thread_to_list(struct thread **thrd_list, struct thread *thrd);

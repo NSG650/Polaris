@@ -48,6 +48,7 @@ struct thread {
 	struct process *mother_proc;
 	uint64_t gs_base;
 	uint64_t fs_base;
+	uint64_t running_on_cpu;
 	struct thread *next;
 };
 
@@ -72,6 +73,7 @@ struct process {
 	struct auxval auxv;
 	struct event death_event;
 	uint8_t status;
+	bool clean_up;
 	char name[256];
 	struct process *next;
 };
