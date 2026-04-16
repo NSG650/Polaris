@@ -1,0 +1,13 @@
+diff --git dinit-clean/dasynq/include/dasynq/signal.h dinit-workdir/dasynq/include/dasynq/signal.h
+index b69e0ca..23ecde2 100644
+--- dinit-clean/dasynq/include/dasynq/signal.h
++++ dinit-workdir/dasynq/include/dasynq/signal.h
+@@ -57,7 +57,7 @@ class signal_traits
+         int get_sierrno() { return info.si_errno; }
+ 
+         // XSR (streams) OB (obselete)
+-#if !defined(__OpenBSD__)
++#if !defined(__OpenBSD__) && !defined(__polaris__)
+         // Note: OpenBSD doesn't have this; most other systems do. Technically it is part of the STREAMS
+         // interface.
+         int get_siband() { return info.si_band; }

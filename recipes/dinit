@@ -1,0 +1,39 @@
+name=dinit
+version=0.20.0
+revision=1
+git_url="https://github.com/davmac314/dinit.git"
+commit=8ba4caaa0e54754442c5c22282a0f28589ee0f61
+imagedeps="g++"
+hostdeps="gcc pkg-config"
+deps="core-libs"
+
+configure() {
+    cp -rp "${source_dir}"/. ./
+
+        CXX=${OS_TRIPLET}-g++ \
+        CXX_FOR_BUILD=g++ \
+        CXXFLAGS=${TARGET_CXXFLAGS} \
+        LDFLAGS=${TARGET_LDFLAGS} \
+    ./configure \
+        --prefix=${prefix} \
+        --exec-prefix=${prefix} \
+        --bindir=${prefix}/bin \
+        --sbindir=${prefix}/sbin \
+        --mandir=${prefix}/share/man \
+        --platform=Polaris \
+        --disable-strip \
+        --enable-utmpx
+}
+
+build() {
+    make -j${parallelism}
+}
+
+package() {
+    DESTDIR="${dest_dir}" make install
+
+    mkdir -p "${dest_dir}/etc/dinit.d"
+    cp -rp "${base_dir}/build-support/dinit/dinit.d/." "${dest_dir}/etc/dinit.d/"
+
+    post_package_strip
+}
