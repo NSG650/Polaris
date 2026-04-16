@@ -56,6 +56,8 @@ void sched_trigger_yield(uint64_t cpu_number) {
 	}
 }
 
+uint64_t last = 0;
+
 void resched(registers_t *reg) {
 	vmm_switch_pagemap(kernel_pagemap);
 	prcb_return_current_cpu()->sched_ticks++;
@@ -63,7 +65,12 @@ void resched(registers_t *reg) {
 
 	struct thread *running_thrd = prcb_return_current_cpu()->running_thread;
 
-	timer_handler((running_thrd ? running_thrd->runtime : 2000) * 1000);
+	if (prcb_return_current_cpu()->lapic_id == smp_bsp_lapic_id) {
+		uint64_t current = timer_count();
+		if (timer_handler((current - last) * 1000000)) {
+			last = current;
+		}
+	}
 
 	if (running_thrd) {
 		spinlock_drop(&running_thrd->yield_lock);
@@ -72,6 +79,7 @@ void resched(registers_t *reg) {
 		running_thrd->gs_base = read_user_gs();
 		prcb_return_current_cpu()->fpu_save(running_thrd->fpu_storage);
 		running_thrd->last_scheduled = timer_count();
+		running_thrd->running_on_cpu = -1;
 		running_thrd->stack = prcb_return_current_cpu()->user_stack;
 		if (running_thrd->state == THREAD_NORMAL) {
 			running_thrd->state = THREAD_READY_TO_RUN;

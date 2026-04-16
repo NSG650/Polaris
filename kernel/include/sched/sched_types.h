@@ -48,7 +48,7 @@ struct thread {
 	struct process *mother_proc;
 	uint64_t gs_base;
 	uint64_t fs_base;
-	uint64_t running_on_cpu;
+	int64_t running_on_cpu;
 	struct thread *next;
 };
 

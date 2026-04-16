@@ -55,9 +55,9 @@ cleanup:
 	spinlock_drop(&timers_lock);
 }
 
-void timer_handler(uint64_t ns) {
+bool timer_handler(uint64_t ns) {
 	if (spinlock_acquire(&timers_lock)) {
-		struct timespec interval = {.tv_sec = ns / 1000000000, .tv_nsec = ns};
+		struct timespec interval = {.tv_sec = ns / 1000000000, .tv_nsec = ns % 1000000000};
 
 		time_monotonic = timespec_add(time_monotonic, interval);
 		time_realtime = timespec_add(time_realtime, interval);
@@ -74,13 +74,14 @@ void timer_handler(uint64_t ns) {
 				timer->fired = true;
 			}
 		}
-
 		spinlock_drop(&timers_lock);
+		return true;
 	}
+	return false;
 }
 
 void time_nsleep(uint64_t ns) {
-	struct timespec duration = {.tv_sec = ns / 1000000000, .tv_nsec = ns};
+	struct timespec duration = {.tv_sec = ns / 1000000000, .tv_nsec = ns % 1000000000};
 	struct timer *timer = NULL;
 
 	timer = timer_new(duration);
