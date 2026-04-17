@@ -442,6 +442,10 @@ static ssize_t unix_sock_recvmsg(struct socket *_this,
 		msg->msg_namelen = actual_size;
 	}
 
+	if (msg->msg_control != NULL) {
+		msg->msg_controllen = 0;
+	}
+
 	this->sock.res.status &= ~POLLIN;
 
 	spinlock_drop(&this->sock.res.lock);
