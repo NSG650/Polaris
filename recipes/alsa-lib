@@ -1,0 +1,25 @@
+name=alsa-lib
+revision=1
+version=1.2.13
+tarball_url="https://github.com/alsa-project/alsa-lib/archive/refs/tags/v${version}.tar.gz"
+tarball_blake2b="25a27d1c570b0f0830db4d7e46d76a6375ba0bae49190574acb625275dd55aeb3b3bb33ab9ef180ef1139e8fbd911d5d10121779d53eb71b115a3ad67251032b"
+source_hostdeps="automake autoconf libtool pkg-config"
+source_deps="xorg-util-macros"
+hostdeps="gcc pkg-config autoconf automake"
+deps="core-libs"
+
+prepare() {
+    AUTOHEADER=true autotools_recursive_regen
+}
+
+build() {
+	cp -rp ${source_dir}/. ./
+	./configure --prefix=${prefix} --host=${OS_TRIPLET}
+	make -j${parallelism}
+}
+
+package() {
+	make DESTDIR=${dest_dir} install
+	post_package_strip
+}
+

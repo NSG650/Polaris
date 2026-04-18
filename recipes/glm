@@ -1,0 +1,24 @@
+name=glm
+version=1.0.3
+revision=1
+tarball_url="https://github.com/g-truc/glm/archive/refs/tags/${version}.tar.gz"
+tarball_sha512="0a490f0c79cd4a8ba54f37358f8917cef961dab9e61417c84ae0959c61bc860e5b83f4fb7f27169fb3d08eef1d84131bddde23d60876922310205c901b1273aa"
+hostdeps="gcc pkg-config cmake"
+deps="core-libs"
+
+configure() {
+    cmake_configure \
+        -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+        -Wno-dev
+}
+
+build() {
+    cmake --build . -j${parallelism}
+}
+
+package() {
+    DESTDIR=${dest_dir} ninja install
+
+    post_package_strip
+}
+

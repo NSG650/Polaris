@@ -1,0 +1,26 @@
+name=libsquish
+version=1.15
+revision=1
+tarball_url="https://downloads.sourceforge.net/project/libsquish/libsquish-${version}.tgz"
+tarball_blake2b="d2cdf274baf9cf8890ee4c5c434448a34bc6d3d8967df6e2e9334fe1eff66ce5371597396c564c80a128709a8849f1f622d90aaf470eacc1ad67811cef38bd60"
+hostdeps="gcc pkg-config cmake"
+deps="core-libs"
+
+configure() {
+    cmake_configure \
+        -DBUILD_SHARED_LIBS=ON \
+        -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+}
+
+build() {
+    cmake --build . -j${parallelism}
+}
+
+package() {
+    DESTDIR=${dest_dir} ninja install
+
+    rm -rf ${dest_dir}/usr/include
+
+    post_package_strip
+}
+

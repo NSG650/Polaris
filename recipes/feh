@@ -1,0 +1,23 @@
+name=feh
+version=3.12
+revision=1
+tarball_url="https://feh.finalrewind.org/feh-${version}.tar.bz2"
+tarball_blake2b="4ca76b6f4a2f63afdbe51846fb6c2e956206e14e23c79b2a9691cc3b8e976a9a1f7774d8b22f71f2bf9f60f96755b7592162c6b4f5081586cf90737ea141c57b"
+hostdeps="gcc pkg-config"
+deps="core-libs libx11 libxt libpng imlib2 curl libxinerama"
+
+build() {
+    cp -rp "${source_dir}"/. ./
+
+        CC=${OS_TRIPLET}-gcc \
+        CFLAGS="${TARGET_CFLAGS}" \
+        LDFLAGS="${TARGET_LDFLAGS}" \
+    make PREFIX="${prefix}" -j${parallelism}
+}
+
+package() {
+    DESTDIR="${dest_dir}" PREFIX="${prefix}" make install
+
+    post_package_strip
+}
+

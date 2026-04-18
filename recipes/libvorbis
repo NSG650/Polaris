@@ -1,0 +1,21 @@
+name=libvorbis
+version=1.3.7
+revision=4
+tarball_url="https://downloads.xiph.org/releases/vorbis/libvorbis-${version}.tar.xz"
+tarball_blake2b="849e3f1129313646471e2bb7e9beeb3766d6a121fe09984e39a353cae7dacd0a970900b0cb6f68b1d69e759515298d901fcc0cba1edb91dbc4bae4456f4bd6ea"
+hostdeps="gcc pkg-config"
+deps="core-libs libogg"
+
+configure() {
+    cmake_configure -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+}
+
+build() {
+    cmake --build . -j${parallelism}
+}
+
+package() {
+    DESTDIR="${dest_dir}" cmake --install .
+    post_package_strip
+}
+

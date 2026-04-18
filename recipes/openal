@@ -1,0 +1,24 @@
+name=openal
+revision=1
+version=1.23.1
+tarball_url="https://github.com/kcat/openal-soft/archive/refs/tags/1.23.1.tar.gz"
+tarball_sha512="21f768484978e4321b733004988cb5ecf43d908e7e08f2d421a338633fcfb2ade722d035de73742470ff135ab538d6b9b56df14020976adb1d1e081dfb095c6b"
+imagedeps="build-essential"
+hostdeps="gcc pkg-config cmake"
+deps="core-libs alsa-lib"
+
+configure() {
+	cmake_configure \
+		-DALSOFT_EXAMPLES=off \
+		-DCMAKE_POLICY_VERSION_MINIMUM=3.5
+}
+
+build() {
+	cmake --build . -j${parallelism}
+}
+
+package() {
+	DESTDIR=${dest_dir} cmake --install .
+	post_package_strip
+}
+

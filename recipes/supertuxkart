@@ -1,0 +1,27 @@
+name=supertuxkart
+version=1.5
+revision=1
+tarball_url="https://github.com/supertuxkart/stk-code/releases/download/${version}/SuperTuxKart-${version}-src.tar.gz"
+tarball_sha512="f82824f138aa05d179fe9e4fd197971b24a8488417c4eb340648529afc76a0775e32fee933a055672944436d5c67694e64234fb7282c0a0fef7bc89538b51cf8"
+imagedeps="ninja-build"
+hostdeps="gcc pkg-config cmake"
+deps="core-libs openal libsquish libvorbis freetype2 curl zlib sqlite libjpeg-turbo libpng sdl2-compat harfbuzz openssl"
+
+configure() {
+    cmake_configure \
+        -DBUILD_RECORDER=0 \
+        -DNO_SHADERC=on \
+        -DUSE_WIIUSE=0 \
+        -DUSE_DNS_C=1 \
+        -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+}
+
+build() {
+    cmake --build . -j${parallelism}
+}
+
+package() {
+    DESTDIR=${dest_dir} ninja install
+
+    post_package_strip
+}
