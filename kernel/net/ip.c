@@ -64,7 +64,10 @@ void ip_handle(struct ip_packet *packet, uint32_t length, uint8_t *dest_mac,
 
 		kfree(clone);
 		kfree(clone_mac);
-	} else if (packet->protocol == 17) {
+	}
+#if 0
+	else if (packet->protocol == 17) {
 		udp_handle(packet, length, dest_mac, nic_interfaces);
 	}
+#endif
 }

@@ -18,6 +18,7 @@ ASFLAGS ?= -g
 override INTERNALCFLAGS :=          \
 	-I.                             \
 	-I ../../include/               \
+	-I ../../net/include            \
 	-I include/ 					\
 	-std=gnu11                      \
 	-fms-extensions                 \

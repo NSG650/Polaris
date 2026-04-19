@@ -5,6 +5,7 @@
 #include <net/net.h>
 #include <net/udp.h>
 
+#if 0
 uint16_t udp_calculate_checksum(void *addr, int count) {
 	return ip_calculate_checksum(addr, count);
 }
@@ -37,3 +38,5 @@ void udp_send(struct ip_packet *packet, uint16_t length,
 			length + sizeof(struct udp_packet) + sizeof(struct ip_packet),
 			destination_protocol_addr, dest_mac, nic_interfaces);
 }
+
+#endif

@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <limits.h>
 
 #define NAME_MAX 255
 
@@ -251,5 +252,7 @@ struct stat {
 
 #define SOCK_CLOEXEC O_CLOEXEC
 #define SOCK_NONBLOCK O_NONBLOCK
+
+typedef unsigned int nfds_t;
 
 #endif
