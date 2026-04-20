@@ -12,9 +12,8 @@ struct sem {
     int val;
     struct event ev;
     int valid;
-    int name;
 };
-typedef struct sem *sys_sem_t;
+typedef struct sem sys_sem_t;
 
 struct mbox {
     lock_t lock;
@@ -23,10 +22,14 @@ struct mbox {
     void *slots[128];
     int valid;
 };
-typedef struct mbox *sys_mbox_t;
+typedef struct mbox sys_mbox_t;
 
 typedef struct thread *sys_thread_t;
-typedef lock_t *sys_mutex_t;
+typedef lock_t sys_mutex_t;
 typedef void (*lwip_thread_fn)(void *arg);
+
+#ifndef SYS_ARCH_TIMEOUT
+#define SYS_ARCH_TIMEOUT 0xffffffffUL
+#endif
 
 #endif

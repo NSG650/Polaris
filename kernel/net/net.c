@@ -5,6 +5,9 @@
 #include <sched/sched.h>
 #include <sys/prcb.h>
 
+#include "lwip/tcpip.h"
+#include "lwip/init.h"
+
 void net_handle_packet_thread(uint64_t *handover) {
 	if (handover == NULL) {
 		return;
@@ -45,6 +48,12 @@ void net_handle_packet(void *packet, uint16_t packet_length,
 	}
 }
 
+void lwip_init_callback(void *arg) {
+	(void)arg;
+	kprintf("NET: Running LwIP " LWIP_VERSION_STRING "\n");
+}
+
 void net_init(void) {
-	arp_init();
+//	arp_init();
+	tcpip_init(lwip_init_callback, NULL);
 }
