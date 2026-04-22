@@ -27,15 +27,6 @@ lock_t process_lock = {0};
 
 struct resource *std_console_device = NULL;
 
-struct utsname {
-	char sysname[65];
-	char nodename[65];
-	char release[65];
-	char version[65];
-	char machine[65];
-	char domainname[65];
-};
-
 struct utsname system_uname = {
 	.sysname = "Polaris",
 	.nodename = "localhost",

@@ -27,6 +27,15 @@ void process_fork_context(struct process *proc, struct process *fproc);
 void process_destroy_context(struct process *proc);
 #endif
 
+struct utsname {
+	char sysname[65];
+	char nodename[65];
+	char release[65];
+	char version[65];
+	char machine[65];
+	char domainname[65];
+};
+
 extern struct thread *thread_list;
 extern struct process *process_list;
 extern struct thread *sleeping_threads;

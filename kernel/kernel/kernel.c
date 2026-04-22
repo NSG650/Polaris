@@ -24,12 +24,47 @@
 
 const char *module_list[] = {
 #if defined(__x86_64__)
-	"/usr/lib/modules/ps2.ko"
+	"/usr/lib/modules/ps2.ko",
+	"/usr/lib/modules/i8254x.ko"
 #endif
 };
 
 #define MODULE_LIST_SIZE (sizeof(module_list) / sizeof(module_list[0]))
 #define ONE_SECOND (uint64_t)(1000 * 1000 * 1000)
+
+#include "lwip/api.h"
+#include <debug/printf.h>
+
+extern struct utsname system_uname;
+void http_server_thread(void) {
+    struct netconn *listener = netconn_new(NETCONN_TCP);
+    netconn_bind(listener, IP_ADDR_ANY, 80);
+    netconn_listen(listener);
+
+    kprintf("%s: listening on port 80\n", __FUNCTION__);
+
+	char HTTP_RESPONSE[1024] = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n";
+	char HTML[512] = {0};
+	snprintf_(HTML, 512, "<h1>It works!</h1><p>Hello from %s %s %s!</p>\r\n", system_uname.sysname, system_uname.release, system_uname.version);
+	strcat(HTTP_RESPONSE, HTML);
+
+	for (;;) {
+        struct netconn *client;
+        if (netconn_accept(listener, &client) != ERR_OK)
+            continue;
+
+        struct netbuf *buf;
+        while (netconn_recv(client, &buf) == ERR_OK) {
+            netbuf_delete(buf);
+            break;
+        }
+
+        netconn_write(client, HTTP_RESPONSE, strlen(HTTP_RESPONSE), NETCONN_COPY);
+
+        netconn_close(client);
+        netconn_delete(client);
+    }
+}
 
 void kernel_main(void *args) {
 	vfs_init();
@@ -50,17 +85,6 @@ void kernel_main(void *args) {
 		kprintf("Ramdisk located at %p\n", module_info[0]);
 		ramdisk_install(module_info[0], module_info[1]);
 	}
-
-	uint64_t mod_ret = 0;
-	for (size_t i = 0; i < MODULE_LIST_SIZE; i++) {
-		mod_ret = module_load(module_list[i]);
-		if (mod_ret) {
-			kprintf("Failed to load kernel module %s. Return value: %p\n",
-					module_list[i], mod_ret);
-		}
-	}
-
-	module_dump();
 
 	// Done so that gcc will stop REMOVING this function
 	partition_enumerate(NULL, NULL);
@@ -108,6 +132,19 @@ void kernel_main(void *args) {
 
 	std_console_device =
 		(vfs_get_node(vfs_root, "/dev/console", true))->resource;
+
+	uint64_t mod_ret = 0;
+	for (size_t i = 0; i < MODULE_LIST_SIZE; i++) {
+		mod_ret = module_load(module_list[i]);
+		if (mod_ret) {
+			kprintf("Failed to load kernel module %s. Return value: %p\n",
+					module_list[i], mod_ret);
+		}
+	}
+
+	module_dump();
+
+	thread_create((uintptr_t)http_server_thread, 0, false, kernel_proc);
 
 	char *argv[] = {"init", NULL};
 	char *envp[] = {"HOME=/", "TERM=linux", NULL, };
