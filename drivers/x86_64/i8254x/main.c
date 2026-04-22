@@ -11,6 +11,12 @@
 #include <sched/sched.h>
 #include <sys/prcb.h>
 
+#include <lwip/api.h>
+#include <lwip/dhcp.h>
+#include <lwip/etharp.h>
+#include <lwip/ip_addr.h>
+#include <lwip/tcpip.h>
+
 struct i8254x_device {
 	uintptr_t mmio_address;
 	uint8_t mac_addr[6];
@@ -257,6 +263,32 @@ void i8254x_send_packet(uint8_t *dest, void *packet, uint32_t packet_length,
 			 ALIGN_UP(data_length, PAGE_SIZE));
 }
 
+static err_t lwip_dummy_init(struct netif *netif) { 
+	netif->hwaddr_len = ETH_HWADDR_LEN;
+	return ERR_OK; 
+}
+
+static err_t lwip_send_packet(struct netif *netif, struct pbuf *p) {
+  	uint8_t *complete = (uint8_t *)((uintptr_t)pmm_allocz(ALIGN_UP(p->tot_len, PAGE_SIZE)) + MEM_PHYS_OFFSET);
+  	struct pbuf *browse = p;
+  	size_t count = 0;
+
+  	while (browse) {
+  	  	memcpy(&complete[count], browse->payload, browse->len);
+  	  	count += browse->len;
+  	  	browse = browse->next;
+  	}
+
+  	if (count != p->tot_len) {
+		kprintf("I8254X/LwIP: count (%lu) != tot_len (%lu) ??\n", count, p->tot_len);
+  	}
+
+	i8254x_tx_packet(&i8254x_dev, (void *)((uintptr_t)complete - MEM_PHYS_OFFSET), (uint16_t)p->tot_len);
+
+	pmm_free((void *)((uintptr_t)complete - MEM_PHYS_OFFSET), ALIGN_UP(p->tot_len, PAGE_SIZE));
+  	return ERR_OK;
+}
+
 uint64_t driver_entry(struct module *driver_module) {
 	for (int i = 0; i < 25; i++) {
 		i8254x_pci_device =
@@ -345,5 +377,46 @@ uint64_t driver_entry(struct module *driver_module) {
 
 	nic_i8254x.get_mac_addr = i8254x_get_mac_addr;
 	nic_i8254x.send_packet = i8254x_send_packet;
+
+	nic_i8254x.ip_address[0] = 192;
+	nic_i8254x.ip_address[1] = 168;
+	nic_i8254x.ip_address[2] = 10;
+	nic_i8254x.ip_address[3] = 10;
+	
+
+#if 1
+	nic_i8254x.lwip.next = NULL;
+	nic_i8254x.lwip.state = NULL;
+	nic_i8254x.lwip.name[0] = 'e';
+	nic_i8254x.lwip.name[1] = '0';
+	
+	struct ip4_addr netmask = {0};
+	IP4_ADDR(&netmask, 255, 255, 255, 0);
+	netif_add(&nic_i8254x.lwip, NULL, &netmask, NULL, NULL, lwip_dummy_init, tcpip_input);
+
+	nic_i8254x.lwip.output = etharp_output;
+	nic_i8254x.lwip.linkoutput = lwip_send_packet;
+
+	netif_set_default(&nic_i8254x.lwip);
+
+	nic_i8254x.lwip.hwaddr[0] = i8254x_dev.mac_addr[0];
+  	nic_i8254x.lwip.hwaddr[1] = i8254x_dev.mac_addr[1];
+  	nic_i8254x.lwip.hwaddr[2] = i8254x_dev.mac_addr[2];
+  	nic_i8254x.lwip.hwaddr[3] = i8254x_dev.mac_addr[3];
+  	nic_i8254x.lwip.hwaddr[4] = i8254x_dev.mac_addr[4];
+  	nic_i8254x.lwip.hwaddr[5] = i8254x_dev.mac_addr[5];
+  	nic_i8254x.lwip.mtu = 1500;
+  	nic_i8254x.lwip.flags = NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP | NETIF_FLAG_ETHERNET | NETIF_FLAG_LINK_UP;
+  	netif_set_up(&nic_i8254x.lwip);
+
+	ip4_addr_t ip, mask, gw;
+	IP4_ADDR(&ip,   192, 168, 10, 10);
+	IP4_ADDR(&mask, 255, 255, 255,  0);
+	IP4_ADDR(&gw,   192, 168, 10,  1);
+	netif_set_addr(&nic_i8254x.lwip, &ip, &mask, &gw);
+
+	const ip4_addr_t *addr = netif_ip4_addr(&nic_i8254x.lwip);
+	kprintf("I8254X: Got IP: %u.%u.%u.%u\n", ip4_addr1(addr), ip4_addr2(addr), ip4_addr3(addr), ip4_addr4(addr));
+#endif
 	return 0;
 }

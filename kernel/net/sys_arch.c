@@ -188,5 +188,5 @@ u32_t sys_now(void) {
 }
 
 void sys_init(void) {
-    kprintf("LwIP: Boo!\n");
+    kprintf("LwIP: Hello there!\n");
 }

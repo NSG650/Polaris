@@ -7,6 +7,7 @@
 
 #include "lwip/tcpip.h"
 #include "lwip/init.h"
+#include "lwip/api.h"
 
 void net_handle_packet_thread(uint64_t *handover) {
 	if (handover == NULL) {
@@ -14,9 +15,15 @@ void net_handle_packet_thread(uint64_t *handover) {
 	}
 	uint8_t *packet = (uint8_t *)handover[0];
 	uint16_t length = (uint16_t)handover[1];
-	struct net_nic_interfaces *nic_interfaces =
+	struct net_nic_interfaces *nic_interface =
 		(struct net_nic_interfaces *)handover[2];
-	net_handle_packet(packet, length, nic_interfaces);
+	
+	struct pbuf *p = pbuf_alloc(PBUF_RAW, length, PBUF_RAM);
+  	void *targ = (void *)p->payload;
+	memcpy(targ, packet, length);
+  	nic_interface->lwip.input(p, &nic_interface->lwip);
+
+	// net_handle_packet(packet, length, nic_interface);
 	kfree(packet);
 	kfree(handover);
 	thread_kill(sched_get_running_thread(), true);
@@ -54,6 +61,6 @@ void lwip_init_callback(void *arg) {
 }
 
 void net_init(void) {
-//	arp_init();
+	arp_init();
 	tcpip_init(lwip_init_callback, NULL);
 }

@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include "lwip/netif.h"
 
 #define BSWAP16(x) ((((x) & 0xff) << 8) | (((x) & 0xff00) >> 8))
 
@@ -64,6 +65,7 @@ struct network_packet {
 } __attribute__((packed));
 
 struct net_nic_interfaces {
+	struct netif lwip;
 	char name[16];
 	uint32_t flags;
 	uint32_t type;

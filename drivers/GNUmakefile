@@ -5,7 +5,7 @@ ifeq ($(CONFIG_ARCH),x86_64)
 	CC := x86_64-polaris-gcc
 	LD := x86_64-polaris-ld
 	ASFLAGS := -felf64 -static
-	CFLAGS := -c -fsanitize=undefined -mgeneral-regs-only -mno-red-zone -mcmodel=large -fno-asynchronous-unwind-tables -ffreestanding -masm=intel -I../kernel/include -I../kernel/arch/x86_64-pc/include -I../kernel/arch/x86_64-pc/fw/lai/include
+	CFLAGS := -c -fsanitize=undefined -mgeneral-regs-only -mno-red-zone -mcmodel=large -fno-asynchronous-unwind-tables -ffreestanding -masm=intel -I../kernel/net/include -I../kernel/include -I../kernel/arch/x86_64-pc/include -I../kernel/arch/x86_64-pc/fw/lai/include
 	
 	CNVMEFILES := $(wildcard x86_64/nvme/*.c)
 	CVIRTIOGPUFILES := $(wildcard x86_64/virtiogpu/*.c)

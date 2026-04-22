@@ -21,7 +21,7 @@
 #define LWIP_RAW 1
 #define LWIP_DHCP 1
 #define LWIP_DNS 1
-#define LWIP_DEBUG 1
+#define LWIP_DEBUG 0
 
 // raise connection limits
 #define MEMP_NUM_NETCONN 100
