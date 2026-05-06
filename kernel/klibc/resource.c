@@ -142,7 +142,7 @@ bool fdnum_close(struct process *proc, int fdnum) {
 
 	fd->description->res->unref(fd->description->res, fd->description);
 
-	if (fd->description->refcount-- == 1) {
+	if (fd->description->refcount < 1) {
 		kfree(fd->description);
 	}
 
@@ -247,8 +247,6 @@ int fdnum_dup(struct process *old_proc, int old_fdnum, struct process *new_proc,
 }
 
 struct f_descriptor *fd_create_from_resource(struct resource *res, int flags) {
-	res->refcount++;
-
 	struct f_description *description = kmalloc(sizeof(struct f_description));
 	if (description == NULL) {
 		goto fail;
@@ -272,7 +270,6 @@ struct f_descriptor *fd_create_from_resource(struct resource *res, int flags) {
 	return fd;
 
 fail:
-	res->refcount--;
 	if (description != NULL) {
 		kfree(description);
 	}
@@ -298,7 +295,7 @@ struct f_descriptor *fd_from_fdnum(struct process *proc, int fdnum) {
 		goto cleanup;
 	}
 
-	ret->description->refcount++;
+//	ret->description->refcount++;
 
 cleanup:
 	spinlock_drop(&proc->fds_lock);

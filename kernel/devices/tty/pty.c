@@ -486,7 +486,6 @@ void syscall_openpty(struct syscall_arguments *args) {
 	ps->res.status = POLLOUT;
 
 	pm->pty = p;
-	pm->res.refcount = 1;
 	pm->res.read = pty_master_read;
 	pm->res.write = pty_master_write;
 	pm->res.unref = pty_master_unref;

@@ -4,6 +4,23 @@
 #include <klibc/misc.h>
 #include <sched/sched.h>
 
+struct iovec {
+	void *iov_base;
+	size_t iov_len;
+};
+
+struct msghdr {
+	void *msg_name;
+	socklen_t msg_namelen;
+
+	struct iovec *msg_iov;
+	size_t msg_iovlen;
+
+	void *msg_control;
+	size_t msg_controllen;
+	int msg_flags;
+};
+
 #define FIONREAD 0x541b
 
 static bool unix_socket_add_to_backlog(struct unix_socket *sock,
@@ -257,8 +274,11 @@ static bool unix_sock_listen(struct socket *_this,
 }
 
 static struct socket *unix_sock_accept(struct socket *_this,
-									   struct f_description *description) {
+									   struct f_description *description, void *addr, socklen_t *len) {
 	(void)description;
+	(void)addr;
+	(void)len;
+
 	struct unix_socket *this = (struct unix_socket *)_this;
 
 	if (!(this->state & UNIX_SOCK_LISTENING)) {
@@ -476,7 +496,6 @@ struct socket *unix_sock_create(int type, int protocol) {
 	sock->sock.res.write = unix_sock_write;
 	sock->sock.res.ioctl = unix_sock_ioctl;
 	sock->sock.res.unref = unix_sock_unref;
-	sock->sock.res.refcount = 1;
 
 	sock->name.sun_family = AF_UNIX;
 	sock->data = kmalloc(0x100000);
