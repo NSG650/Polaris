@@ -260,3 +260,29 @@ void syscall_recvmsg(struct syscall_arguments *args) {
 	struct socket *sock = (struct socket *)(desc->res);
 	args->ret = sock->recvmsg(sock, desc, msg, flags);
 }
+
+void syscall_sendmsg(struct syscall_arguments *args) {
+	struct process *proc = sched_get_running_thread()->mother_proc;
+
+	int fdnum = (int)(args->args0);
+	struct msghdr *msg = (struct msghdr *)(args->args1);
+	int flags = (int)(args->args2);
+
+	struct f_descriptor *fd = fd_from_fdnum(proc, fdnum);
+
+	if (fd == NULL) {
+		args->ret = -1;
+		return;
+	}
+
+	struct f_description *desc = fd->description;
+
+	if (!S_ISSOCK(desc->res->stat.st_mode)) {
+		errno = ENOTSOCK;
+		args->ret = -1;
+		return;
+	}
+
+	struct socket *sock = (struct socket *)(desc->res);
+	args->ret = sock->sendmsg(sock, desc, msg, flags);
+}

@@ -25,6 +25,8 @@ struct socket {
 							 struct f_description *description, void *addr, socklen_t *len);
 	ssize_t (*recvmsg)(struct socket *this, struct f_description *description,
 					   struct msghdr *msg, int flags);
+	ssize_t (*sendmsg)(struct socket *this, struct f_description *description, 
+						const struct msghdr *msg, int flags);
 };
 
 #define AF_UNIX 1
@@ -42,5 +44,6 @@ void syscall_getpeername(struct syscall_arguments *args);
 void syscall_listen(struct syscall_arguments *args);
 void syscall_accept(struct syscall_arguments *args);
 void syscall_recvmsg(struct syscall_arguments *args);
+void syscall_sendmsg(struct syscall_arguments *args);
 
 #endif

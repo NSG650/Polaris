@@ -104,12 +104,19 @@ static ssize_t net_sock_recvmsg(struct socket *_this,
         flags |= MSG_DONTWAIT;
     }
 
-    ssize_t ret = lwip_recvmsg(this->lwip_fd, msg, flags);
-    if (ret < 0) {
-        return -1;
+    return lwip_recvmsg(this->lwip_fd, msg, flags);
+}
+
+static ssize_t net_sock_sendmsg(struct socket *_this, 
+								 struct f_description *description, 
+								 const struct msghdr *msg, int flags) {
+    struct net_socket *this = (struct net_socket *)_this;
+
+    if (description->flags & O_NONBLOCK) {
+        flags |= MSG_DONTWAIT;
     }
 
-    return ret;
+    return lwip_sendmsg(this->lwip_fd, msg, flags);
 }
 
 static bool net_sock_getpeername(struct socket *_this,
@@ -148,6 +155,7 @@ static struct socket *net_sock_accept(struct socket *_this,
 	sock->sock.accept = net_sock_accept;
 	sock->sock.connect = net_sock_connect;
 	sock->sock.getpeername = net_sock_getpeername;
+    sock->sock.sendmsg = net_sock_sendmsg;
 	sock->sock.recvmsg = net_sock_recvmsg;
 	sock->sock.listen = net_sock_listen;
 	sock->sock.bind = net_sock_bind;
@@ -181,6 +189,7 @@ struct socket *net_sock_create(int type, int protocol) {
 	sock->sock.accept = net_sock_accept;
 	sock->sock.connect = net_sock_connect;
 	sock->sock.getpeername = net_sock_getpeername;
+    sock->sock.sendmsg = net_sock_sendmsg;
 	sock->sock.recvmsg = net_sock_recvmsg;
 	sock->sock.listen = net_sock_listen;
 	sock->sock.bind = net_sock_bind;

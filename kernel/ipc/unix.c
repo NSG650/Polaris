@@ -472,6 +472,17 @@ static ssize_t unix_sock_recvmsg(struct socket *_this,
 	return transferred;
 }
 
+static ssize_t unix_sock_sendmsg(struct socket *this, 
+								 struct f_description *description, 
+								 const struct msghdr *msg, int flags) {
+    (void)this;
+    (void)description;
+    (void)msg;
+    (void)flags;
+    errno = ENOSYS;
+    return -1;
+}
+
 struct socket *unix_sock_create(int type, int protocol) {
 	struct unix_socket *sock = resource_create(sizeof(struct unix_socket));
 
@@ -489,6 +500,7 @@ struct socket *unix_sock_create(int type, int protocol) {
 	sock->sock.connect = unix_sock_connect;
 	sock->sock.getpeername = unix_sock_getpeername;
 	sock->sock.recvmsg = unix_sock_recvmsg;
+	sock->sock.sendmsg = unix_sock_sendmsg;
 	sock->sock.listen = unix_sock_listen;
 	sock->sock.bind = unix_sock_bind;
 

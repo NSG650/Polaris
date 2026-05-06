@@ -87,6 +87,7 @@ void kernel_main(void *args) {
 	syscall_register_handler(0x29, syscall_socket);
 	syscall_register_handler(0x2a, syscall_connect);
 	syscall_register_handler(0x2b, syscall_accept);
+	syscall_register_handler(0x2e, syscall_sendmsg);
 	syscall_register_handler(0x2f, syscall_recvmsg);
 	syscall_register_handler(0x31, syscall_bind);
 	syscall_register_handler(0x32, syscall_listen);
