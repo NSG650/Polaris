@@ -192,7 +192,7 @@ static void i8254x_rx_packet(struct i8254x_device *dev) {
 		}
 
 		dev->rx_desc[dev->rx_tail]->status = 0;
-		int tail = dev->tx_tail;
+		int tail = dev->rx_tail;
 		dev->rx_tail = (dev->rx_tail + 1) % NUM_RX_DESCRIPTORS;
 
 		mmoutd(I8254X_REG_RDT(dev->mmio_address), tail);
@@ -317,7 +317,7 @@ uint64_t driver_entry(struct module *driver_module) {
 	// Enable bus mastering, mmio and pio
 	PCI_WRITE_W(i8254x_pci_device, 0x04, 0x04 | 0x02 | 0x01);
 
-	i8254x_dev.mmio_address = bar.base;
+	i8254x_dev.mmio_address = bar.base + MEM_PHYS_OFFSET;
 
 	// Reset the controller
 	mmoutd(I8254X_REG_CTRL(i8254x_dev.mmio_address),
@@ -405,6 +405,7 @@ uint64_t driver_entry(struct module *driver_module) {
   	nic_i8254x.lwip.hwaddr[3] = i8254x_dev.mac_addr[3];
   	nic_i8254x.lwip.hwaddr[4] = i8254x_dev.mac_addr[4];
   	nic_i8254x.lwip.hwaddr[5] = i8254x_dev.mac_addr[5];
+	nic_i8254x.lwip.hwaddr_len = ETH_HWADDR_LEN;
   	nic_i8254x.lwip.mtu = 1500;
   	nic_i8254x.lwip.flags = NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP | NETIF_FLAG_ETHERNET | NETIF_FLAG_LINK_UP;
   	netif_set_up(&nic_i8254x.lwip);
