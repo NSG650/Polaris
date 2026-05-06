@@ -1,9 +1,9 @@
-#ifndef LWIP_LWIPOTS_CC_H
-#define LWIP_LWIPOTS_CC_H
+#ifndef LWIP_LWIPOPTS_CC_H
+#define LWIP_LWIPOPTS_CC_H
 
 #include <types.h>
+#include <errno.h>
 
-#define LWIP_PROVIDE_ERRNO 1
 #define MEM_LIBC_MALLOC 0
 #define LWIP_NO_CTYPE_H 1
 #define LWIP_NO_UNISTD_H 1
@@ -26,6 +26,8 @@
 // raise connection limits
 #define MEMP_NUM_NETCONN 100
 #define MEMP_NUM_TCP_PCB 100
+
+#define LWIP_SOCKET_OFFSET MEMP_NUM_NETCONN
 
 // raise the server buffer (forced to do second)
 #define TCP_SND_BUF 8192
