@@ -32,40 +32,6 @@ const char *module_list[] = {
 #define MODULE_LIST_SIZE (sizeof(module_list) / sizeof(module_list[0]))
 #define ONE_SECOND (uint64_t)(1000 * 1000 * 1000)
 
-#include "lwip/api.h"
-#include <debug/printf.h>
-
-extern struct utsname system_uname;
-void http_server_thread(void) {
-    struct netconn *listener = netconn_new(NETCONN_TCP);
-    netconn_bind(listener, IP_ADDR_ANY, 80);
-    netconn_listen(listener);
-
-    kprintf("%s: listening on port 80\n", __FUNCTION__);
-
-	char HTTP_RESPONSE[1024] = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n";
-	char HTML[512] = {0};
-	snprintf_(HTML, 512, "<h1>It works!</h1><p>Hello from %s %s %s!</p>\r\n", system_uname.sysname, system_uname.release, system_uname.version);
-	strcat(HTTP_RESPONSE, HTML);
-
-	for (;;) {
-        struct netconn *client;
-        if (netconn_accept(listener, &client) != ERR_OK)
-            continue;
-
-        struct netbuf *buf;
-        while (netconn_recv(client, &buf) == ERR_OK) {
-            netbuf_delete(buf);
-            break;
-        }
-
-        netconn_write(client, HTTP_RESPONSE, strlen(HTTP_RESPONSE), NETCONN_COPY);
-
-        netconn_close(client);
-        netconn_delete(client);
-    }
-}
-
 void kernel_main(void *args) {
 	vfs_init();
 	tmpfs_init();
@@ -143,8 +109,6 @@ void kernel_main(void *args) {
 	}
 
 	module_dump();
-
-	thread_create((uintptr_t)http_server_thread, 0, false, kernel_proc);
 
 	char *argv[] = {"init", NULL};
 	char *envp[] = {"HOME=/", "TERM=linux", NULL, };

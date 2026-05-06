@@ -21,7 +21,9 @@ build() {
     ${OS_TRIPLET}-gcc pthread.c -o pthread -lpthread
 
     nasm -felf64 kaslr_bypass.asm -o kb.o
-     ${OS_TRIPLET}-gcc kaslr_bypass.c kb.o -o kaslr_bypass
+    ${OS_TRIPLET}-gcc kaslr_bypass.c kb.o -o kaslr_bypass
+
+    ${OS_TRIPLET}-gcc http.c -o http
 }
 
 package() {
@@ -39,4 +41,5 @@ package() {
     cp ./fork_execve "${dest_dir}/root/fork_execve"
     cp ./pthread "${dest_dir}/root/pthread"
     cp ./kaslr_bypass "${dest_dir}/root/kaslr_bypass"
+    cp ./http "${dest_dir}/root/http"
 }
