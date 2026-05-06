@@ -2,11 +2,14 @@
 #include <errno.h>
 #include <ipc/socket.h>
 #include <ipc/unix.h>
+#include <net/net_sock.h>
 
 struct socket *socket_create(int family, int type, int protocol) {
 	switch (family) {
 		case AF_UNIX:
 			return unix_sock_create(type, protocol);
+		case AF_INET:
+			return net_sock_create(type, protocol);
 		default:
 			return NULL;
 	}
@@ -107,7 +110,6 @@ void syscall_bind(struct syscall_arguments *args) {
 	}
 
 	struct f_description *desc = fd->description;
-	desc->res->unref(desc->res, desc);
 
 	if (!S_ISSOCK(desc->res->stat.st_mode)) {
 		errno = ENOTSOCK;
@@ -135,7 +137,6 @@ void syscall_connect(struct syscall_arguments *args) {
 	}
 
 	struct f_description *desc = fd->description;
-	desc->res->unref(desc->res, desc);
 
 	if (!S_ISSOCK(desc->res->stat.st_mode)) {
 		errno = ENOTSOCK;
@@ -163,7 +164,6 @@ void syscall_getpeername(struct syscall_arguments *args) {
 	}
 
 	struct f_description *desc = fd->description;
-	desc->res->unref(desc->res, desc);
 
 	if (!S_ISSOCK(desc->res->stat.st_mode)) {
 		errno = ENOTSOCK;
@@ -190,7 +190,6 @@ void syscall_listen(struct syscall_arguments *args) {
 	}
 
 	struct f_description *desc = fd->description;
-	desc->res->unref(desc->res, desc);
 
 	if (!S_ISSOCK(desc->res->stat.st_mode)) {
 		errno = ENOTSOCK;
@@ -207,6 +206,8 @@ void syscall_accept(struct syscall_arguments *args) {
 	struct process *proc = sched_get_running_thread()->mother_proc;
 
 	int fdnum = (int)(args->args0);
+	void *addr = (void *)(args->args1);
+	socklen_t *len = (socklen_t *)(args->args2);
 
 	struct f_descriptor *fd = fd_from_fdnum(proc, fdnum);
 
@@ -216,7 +217,6 @@ void syscall_accept(struct syscall_arguments *args) {
 	}
 
 	struct f_description *desc = fd->description;
-	desc->res->unref(desc->res, desc);
 
 	if (!S_ISSOCK(desc->res->stat.st_mode)) {
 		errno = ENOTSOCK;
@@ -225,7 +225,7 @@ void syscall_accept(struct syscall_arguments *args) {
 	}
 
 	struct socket *sock = (struct socket *)(desc->res);
-	struct socket *accep_sock = sock->accept(sock, desc);
+	struct socket *accep_sock = sock->accept(sock, desc, addr, len);
 	if (accep_sock == NULL) {
 		args->ret = -1;
 		return;
@@ -250,7 +250,6 @@ void syscall_recvmsg(struct syscall_arguments *args) {
 	}
 
 	struct f_description *desc = fd->description;
-	desc->res->unref(desc->res, desc);
 
 	if (!S_ISSOCK(desc->res->stat.st_mode)) {
 		errno = ENOTSOCK;

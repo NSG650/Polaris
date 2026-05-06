@@ -3,22 +3,7 @@
 
 #include <klibc/resource.h>
 
-struct iovec {
-	void *iov_base;
-	size_t iov_len;
-};
-
-struct msghdr {
-	void *msg_name;
-	socklen_t msg_namelen;
-
-	struct iovec *msg_iov;
-	size_t msg_iovlen;
-
-	void *msg_control;
-	size_t msg_controllen;
-	int msg_flags;
-};
+struct msghdr;
 
 struct socket {
 	struct resource res;
@@ -37,13 +22,17 @@ struct socket {
 	bool (*listen)(struct socket *this, struct f_description *description,
 				   int backlog);
 	struct socket *(*accept)(struct socket *this,
-							 struct f_description *description);
+							 struct f_description *description, void *addr, socklen_t *len);
 	ssize_t (*recvmsg)(struct socket *this, struct f_description *description,
 					   struct msghdr *msg, int flags);
 };
 
 #define AF_UNIX 1
 #define AF_LOCAL 1
+#define AF_INET 2
+
+#define SOCK_STREAM	1
+#define SOCK_DGRAM 2
 
 void syscall_socket(struct syscall_arguments *args);
 void syscall_socketpair(struct syscall_arguments *args);
