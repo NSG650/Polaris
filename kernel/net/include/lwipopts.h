@@ -3,6 +3,7 @@
 
 #include <types.h>
 #include <errno.h>
+#include <mm/slab.h>
 
 #define MEM_LIBC_MALLOC 0
 #define LWIP_NO_CTYPE_H 1
@@ -13,8 +14,8 @@
 #define LWIP_SO_RCVBUF 1
 #define LWIP_NETCONN_FULLDUPLEX 0
 #define LWIP_NETCONN_SEM_PER_THREAD 0
-#define LWIP_SOCKET_SELECT 0
-#define LWIP_SOCKET_POLL 0
+#define LWIP_SOCKET_SELECT 1
+#define LWIP_SOCKET_POLL 1
 
 #define TCPIP_MBOX_SIZE 32
 
@@ -22,6 +23,11 @@
 #define LWIP_DHCP 1
 #define LWIP_DNS 1
 #define LWIP_DEBUG 0
+
+#define MEM_CUSTOM_ALLOCATOR            1
+#define MEM_CUSTOM_FREE                 kfree
+#define MEM_CUSTOM_MALLOC               kmalloc
+#define MEM_CUSTOM_CALLOC               kcalloc
 
 // raise connection limits
 #define MEMP_NUM_NETCONN 100

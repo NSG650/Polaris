@@ -149,6 +149,33 @@ void syscall_connect(struct syscall_arguments *args) {
 	args->ret = sock->connect(sock, desc, addr, len) ? 0 : -1;
 }
 
+void syscall_getsockname(struct syscall_arguments *args) {
+	struct process *proc = sched_get_running_thread()->mother_proc;
+
+	int fdnum = (int)(args->args0);
+	void *addr = (void *)(args->args1);
+	socklen_t *len = (socklen_t *)(args->args2);
+
+	struct f_descriptor *fd = fd_from_fdnum(proc, fdnum);
+
+	if (fd == NULL) {
+		args->ret = -1;
+		return;
+	}
+
+	struct f_description *desc = fd->description;
+
+	if (!S_ISSOCK(desc->res->stat.st_mode)) {
+		errno = ENOTSOCK;
+		args->ret = -1;
+		return;
+	}
+
+	struct socket *sock = (struct socket *)(desc->res);
+
+	args->ret = sock->getsockname(sock, desc, addr, len) ? 0 : -1;
+}
+
 void syscall_getpeername(struct syscall_arguments *args) {
 	struct process *proc = sched_get_running_thread()->mother_proc;
 
@@ -285,4 +312,60 @@ void syscall_sendmsg(struct syscall_arguments *args) {
 
 	struct socket *sock = (struct socket *)(desc->res);
 	args->ret = sock->sendmsg(sock, desc, msg, flags);
+}
+
+void syscall_getsockopt(struct syscall_arguments *args) {
+	struct process *proc = sched_get_running_thread()->mother_proc;
+
+	int fdnum = (int)(args->args0);
+	int level = (int)(args->args1);
+	int optname = (int)(args->args2);
+	const void *optval = (void *)(args->args3);
+	socklen_t *optlen = (socklen_t *)(args->args4);
+
+	struct f_descriptor *fd = fd_from_fdnum(proc, fdnum);
+
+	if (fd == NULL) {
+		args->ret = -1;
+		return;
+	}
+
+	struct f_description *desc = fd->description;
+
+	if (!S_ISSOCK(desc->res->stat.st_mode)) {
+		errno = ENOTSOCK;
+		args->ret = -1;
+		return;
+	}
+
+	struct socket *sock = (struct socket *)(desc->res);
+	args->ret = sock->getsockopt(sock, desc, level, optname, optval, optlen);
+}
+
+void syscall_setsockopt(struct syscall_arguments *args) {
+	struct process *proc = sched_get_running_thread()->mother_proc;
+
+	int fdnum = (int)(args->args0);
+	int level = (int)(args->args1);
+	int optname = (int)(args->args2);
+	const void *optval = (void *)(args->args3);
+	socklen_t optlen = (socklen_t)(args->args4);
+
+	struct f_descriptor *fd = fd_from_fdnum(proc, fdnum);
+
+	if (fd == NULL) {
+		args->ret = -1;
+		return;
+	}
+
+	struct f_description *desc = fd->description;
+
+	if (!S_ISSOCK(desc->res->stat.st_mode)) {
+		errno = ENOTSOCK;
+		args->ret = -1;
+		return;
+	}
+
+	struct socket *sock = (struct socket *)(desc->res);
+	args->ret = sock->setsockopt(sock, desc, level, optname, optval, optlen);
 }

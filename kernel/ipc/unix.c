@@ -263,6 +263,13 @@ static bool unix_sock_getpeername(struct socket *_this,
 	return true;
 }
 
+
+static bool unix_sock_getsockname(struct socket *_this, 
+							 struct f_description *description, void *addr, 
+							 socklen_t *len) {
+    return unix_sock_getpeername(_this, description, addr, len);
+}
+
 static bool unix_sock_listen(struct socket *_this,
 							 struct f_description *description, int backlog) {
 	(void)description;
@@ -483,6 +490,30 @@ static ssize_t unix_sock_sendmsg(struct socket *this,
     return -1;
 }
 
+static ssize_t unix_sock_getsockopt(struct socket *this, struct f_description *description, 
+									int level, int optname, void *optval, socklen_t *optlen) {
+    (void)this;
+    (void)description;
+    (void)level;
+    (void)optname;
+    (void)optval;
+    (void)optlen;
+    errno = ENOSYS;
+    return -1;
+}
+
+static ssize_t unix_sock_setsockopt(struct socket *this, struct f_description *description, 
+									int level, int optname, const void *optval, socklen_t optlen) {
+    (void)this;
+    (void)description;
+    (void)level;
+    (void)optname;
+    (void)optval;
+    (void)optlen;
+    errno = ENOSYS;
+    return -1;
+}
+
 struct socket *unix_sock_create(int type, int protocol) {
 	struct unix_socket *sock = resource_create(sizeof(struct unix_socket));
 
@@ -498,11 +529,14 @@ struct socket *unix_sock_create(int type, int protocol) {
 
 	sock->sock.accept = unix_sock_accept;
 	sock->sock.connect = unix_sock_connect;
+	sock->sock.getsockname = unix_sock_getsockname;
 	sock->sock.getpeername = unix_sock_getpeername;
 	sock->sock.recvmsg = unix_sock_recvmsg;
 	sock->sock.sendmsg = unix_sock_sendmsg;
 	sock->sock.listen = unix_sock_listen;
 	sock->sock.bind = unix_sock_bind;
+	sock->sock.getsockopt = unix_sock_getsockopt;
+	sock->sock.setsockopt = unix_sock_setsockopt;
 
 	sock->sock.res.read = unix_sock_read;
 	sock->sock.res.write = unix_sock_write;

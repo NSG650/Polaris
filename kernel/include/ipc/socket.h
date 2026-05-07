@@ -17,6 +17,8 @@ struct socket {
 				 void *addr, socklen_t len);
 	bool (*connect)(struct socket *this, struct f_description *description,
 					void *addr, socklen_t len);
+	bool (*getsockname)(struct socket *this, struct f_description *description, 
+						void *addr, socklen_t *len);
 	bool (*getpeername)(struct socket *this, struct f_description *description,
 						void *addr, socklen_t *len);
 	bool (*listen)(struct socket *this, struct f_description *description,
@@ -27,6 +29,10 @@ struct socket {
 					   struct msghdr *msg, int flags);
 	ssize_t (*sendmsg)(struct socket *this, struct f_description *description, 
 						const struct msghdr *msg, int flags);
+	ssize_t (*getsockopt)(struct socket *this, struct f_description *description, 
+						  int level, int optname, void *optval, socklen_t *optlen);
+    ssize_t (*setsockopt)(struct socket *this, struct f_description *description, int level, 
+		                  int optname, const void *optval, socklen_t optlen);
 };
 
 #define AF_UNIX 1
@@ -40,10 +46,13 @@ void syscall_socket(struct syscall_arguments *args);
 void syscall_socketpair(struct syscall_arguments *args);
 void syscall_bind(struct syscall_arguments *args);
 void syscall_connect(struct syscall_arguments *args);
+void syscall_getsockname(struct syscall_arguments *args);
 void syscall_getpeername(struct syscall_arguments *args);
 void syscall_listen(struct syscall_arguments *args);
 void syscall_accept(struct syscall_arguments *args);
 void syscall_recvmsg(struct syscall_arguments *args);
 void syscall_sendmsg(struct syscall_arguments *args);
+void syscall_getsockopt(struct syscall_arguments *args);
+void syscall_setsockopt(struct syscall_arguments *args);
 
 #endif

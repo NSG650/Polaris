@@ -91,8 +91,11 @@ void kernel_main(void *args) {
 	syscall_register_handler(0x2f, syscall_recvmsg);
 	syscall_register_handler(0x31, syscall_bind);
 	syscall_register_handler(0x32, syscall_listen);
+	syscall_register_handler(0x33, syscall_getsockname);
 	syscall_register_handler(0x34, syscall_getpeername);
-	syscall_register_handler(0x53, syscall_socketpair);
+	syscall_register_handler(0x35, syscall_socketpair);
+	syscall_register_handler(0x36, syscall_setsockopt);
+	syscall_register_handler(0x37, syscall_getsockopt);
 
 	console_init();
 	net_init();
