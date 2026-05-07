@@ -16,12 +16,12 @@ lock_t net_sockets_table_lock = {0};
 
 void net_sockets_polling_thread(void) {
 	for (;;) {
-		fd_set readfds, writefds;
-		FD_ZERO(&readfds);
-		FD_ZERO(&writefds);
-		int max_fd = -1;
-
 		if (spinlock_acquire(&net_sockets_table_lock)) {
+			fd_set readfds, writefds;
+			FD_ZERO(&readfds);
+			FD_ZERO(&writefds);
+			int max_fd = -1;
+
 			for (int i = 0; i < net_sockets_table.length; i++) {
 				struct net_socket *socket = net_sockets_table.data[i];
 				if (socket->lwip_fd >= 0) {
@@ -31,14 +31,10 @@ void net_sockets_polling_thread(void) {
 						max_fd = socket->lwip_fd;
 				}
 			}
-			spinlock_drop(&net_sockets_table_lock);
-		}
 
-		if (max_fd >= 0) {
-			struct timeval tv = {.tv_sec = 0, .tv_usec = 1000};
-			lwip_select(max_fd + 1, &readfds, &writefds, NULL, &tv);
-
-			if (spinlock_acquire(&net_sockets_table_lock)) {
+			if (max_fd >= 0) {
+				struct timeval tv = {.tv_sec = 0, .tv_usec = 10};
+				lwip_select(max_fd + 1, &readfds, &writefds, NULL, &tv);
 				for (int i = 0; i < net_sockets_table.length; i++) {
 					struct net_socket *socket = net_sockets_table.data[i];
 					if (socket->lwip_fd < 0)
@@ -52,10 +48,9 @@ void net_sockets_polling_thread(void) {
 						event_trigger(&socket->sock.res.event, false);
 					}
 				}
-				spinlock_drop(&net_sockets_table_lock);
 			}
+			spinlock_drop(&net_sockets_table_lock);
 		}
-
 		sched_yield(true);
 	}
 }
