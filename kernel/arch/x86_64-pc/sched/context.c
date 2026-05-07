@@ -1,8 +1,8 @@
+#include <asm/asm.h>
 #include <debug/debug.h>
 #include <klibc/misc.h>
 #include <sched/sched.h>
 #include <sys/prcb.h>
-#include <asm/asm.h>
 
 void thread_setup_context(struct thread *thrd, uintptr_t pc_address,
 						  uint64_t arguments, bool user) {

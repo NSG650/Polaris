@@ -57,7 +57,8 @@ struct thread *sched_get_next_thread(struct thread *thrd) {
 			if (this->state == THREAD_KILLED) {
 				struct thread *next = this->next;
 				thread_destroy_context(this);
-				if (this->mother_proc->state == PROCESS_KILLED && this->mother_proc->clean_up) {
+				if (this->mother_proc->state == PROCESS_KILLED &&
+					this->mother_proc->clean_up) {
 					process_destroy_context(this->mother_proc);
 					this->mother_proc->clean_up = false;
 				}
@@ -375,7 +376,7 @@ void sched_init(uint64_t args) {
 
 	process_create("kernel_tasks", PROCESS_READY_TO_RUN, 5000,
 				   (uintptr_t)kernel_main, args, false, NULL);
-	
+
 	kernel_proc = process_list;
 	sched_runit = true;
 }
@@ -423,7 +424,8 @@ void process_create(char *name, uint8_t state, uint64_t runtime,
 	thread_create(pc_address, arguments, user, proc);
 }
 
-bool process_run_init(char *path, char **argv, char **envp, struct process *parent_process) {
+bool process_run_init(char *path, char **argv, char **envp,
+					  struct process *parent_process) {
 	struct process *proc = kmalloc(sizeof(struct process));
 	memzero(proc, sizeof(struct process));
 
@@ -482,7 +484,6 @@ bool process_run_init(char *path, char **argv, char **envp, struct process *pare
 	for (int i = 0; i < 3; i++)
 		fdnum_create_from_resource(proc, std_console_device, 0, i, true);
 
-
 	proc->next = NULL;
 
 	vec_init(&proc->process_threads);
@@ -515,8 +516,9 @@ int64_t process_fork(struct process *proc, struct thread *thrd) {
 		}
 	}
 
-	// No fucking clue why this works but disabling interrupts here stops all the random crashes.
-	// I am suspecting its a similar issue to execve but then the new thread and process isn't even "running"?
+	// No fucking clue why this works but disabling interrupts here stops all
+	// the random crashes. I am suspecting its a similar issue to execve but
+	// then the new thread and process isn't even "running"?
 	cli();
 	process_fork_context(proc, fproc);
 
@@ -701,7 +703,7 @@ void process_kill(struct process *proc, bool crash) {
 
 	event_trigger(&proc->death_event, false);
 	proc->state = PROCESS_KILLED;
-	
+
 	if (!are_we_killing_ourselves) {
 		process_destroy_context(proc);
 	}
@@ -712,7 +714,8 @@ void process_kill(struct process *proc, bool crash) {
 	}
 }
 
-void thread_setup_for_init(uintptr_t pc_address, char **argv, char **envp, struct process *proc) {
+void thread_setup_for_init(uintptr_t pc_address, char **argv, char **envp,
+						   struct process *proc) {
 	struct thread *thrd = kmalloc(sizeof(struct thread));
 	memzero(thrd, sizeof(struct thread));
 	thrd->runtime = proc->runtime;
@@ -724,8 +727,9 @@ void thread_setup_for_init(uintptr_t pc_address, char **argv, char **envp, struc
 
 	vec_push(&proc->process_threads, thrd);
 
-	// thread_setup_context_from_user sets up a minimal thread for userspace we only have to pass the stack.
-	// thread_setup_context_for_execve anyways creates a new stack.
+	// thread_setup_context_from_user sets up a minimal thread for userspace we
+	// only have to pass the stack. thread_setup_context_for_execve anyways
+	// creates a new stack.
 	thread_setup_context_from_user(thrd, 0, 0);
 	thread_setup_context_for_execve(thrd, pc_address, argv, envp);
 

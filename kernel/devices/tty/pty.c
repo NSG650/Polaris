@@ -113,11 +113,11 @@ static ssize_t pty_master_read(struct resource *this,
 
 	while (p->in.used == 0) {
 		if (p->ps->closed) {
-        	errno = EIO;
-        	ret = -1;
-        	spinlock_drop(&this->lock);
-        	return ret;
-    	}
+			errno = EIO;
+			ret = -1;
+			spinlock_drop(&this->lock);
+			return ret;
+		}
 		if (description->flags & O_NONBLOCK) {
 			goto end;
 		}
@@ -160,7 +160,7 @@ static ssize_t pty_master_read(struct resource *this,
 	if (p->in.used < p->in.data_length) {
 		p->ps->res.status |= POLLOUT;
 	}
-	
+
 	if (p->in.used == 0) {
 		this->status &= ~POLLIN;
 	}
@@ -237,19 +237,19 @@ static ssize_t pty_master_write(struct resource *this,
 }
 
 static bool pty_slave_unref(struct resource *this,
-                             struct f_description *description) {
-    (void)description;
-    struct pty_slave *ps = (struct pty_slave *)this;
+							struct f_description *description) {
+	(void)description;
+	struct pty_slave *ps = (struct pty_slave *)this;
 	struct pty *p = ps->pty;
-    this->refcount--;
-    if (!this->refcount) {
-        ps->closed = true;
-        p->pm->res.status |= POLLHUP;
+	this->refcount--;
+	if (!this->refcount) {
+		ps->closed = true;
+		p->pm->res.status |= POLLHUP;
 		p->pm->res.status &= ~POLLIN;
 		p->pm->res.status &= ~POLLOUT;
-        event_trigger(&ps->pty->pm->res.event, false);
-    }
-    return true;
+		event_trigger(&ps->pty->pm->res.event, false);
+	}
+	return true;
 }
 
 static ssize_t pty_slave_read(struct resource *this,
@@ -308,7 +308,7 @@ static ssize_t pty_slave_read(struct resource *this,
 	if (p->out.used < p->out.data_length) {
 		p->pm->res.status |= POLLOUT;
 	}
-	
+
 	if (p->out.used == 0) {
 		this->status &= ~POLLIN;
 	}
@@ -356,9 +356,9 @@ static ssize_t pty_slave_write(struct resource *this,
 		memzero(buf_to_write_from, count * 2);
 		size_t k = 0;
 		for (size_t i = 0; i < count; i++) {
-			if (buf_but_char[i] == '\n') { 
+			if (buf_but_char[i] == '\n') {
 				buf_to_write_from[k++] = '\r';
-				newline_count++; 
+				newline_count++;
 			}
 			buf_to_write_from[k++] = buf_but_char[i];
 		}
@@ -453,7 +453,8 @@ void syscall_openpty(struct syscall_arguments *args) {
 	p->term.c_iflag = IGNBRK | BRKINT | IGNPAR | ICRNL | IXON;
 	p->term.c_oflag = OPOST | ONLCR;
 	p->term.c_cflag = CS8 | CREAD | HUPCL;
-	p->term.c_lflag = ISIG | ICANON | ECHO | ECHOE | ECHOK | ECHOCTL | ECHOKE | IEXTEN;
+	p->term.c_lflag =
+		ISIG | ICANON | ECHO | ECHOE | ECHOK | ECHOCTL | ECHOKE | IEXTEN;
 	p->term.c_cc[VINTR] = CTRL('C');
 	p->term.c_cc[VEOF] = CTRL('D');
 	p->term.c_cc[VSUSP] = CTRL('Z');

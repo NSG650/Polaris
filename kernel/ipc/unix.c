@@ -263,11 +263,10 @@ static bool unix_sock_getpeername(struct socket *_this,
 	return true;
 }
 
-
-static bool unix_sock_getsockname(struct socket *_this, 
-							 struct f_description *description, void *addr, 
-							 socklen_t *len) {
-    return unix_sock_getpeername(_this, description, addr, len);
+static bool unix_sock_getsockname(struct socket *_this,
+								  struct f_description *description, void *addr,
+								  socklen_t *len) {
+	return unix_sock_getpeername(_this, description, addr, len);
 }
 
 static bool unix_sock_listen(struct socket *_this,
@@ -281,7 +280,8 @@ static bool unix_sock_listen(struct socket *_this,
 }
 
 static struct socket *unix_sock_accept(struct socket *_this,
-									   struct f_description *description, void *addr, socklen_t *len) {
+									   struct f_description *description,
+									   void *addr, socklen_t *len) {
 	(void)description;
 	(void)addr;
 	(void)len;
@@ -479,39 +479,43 @@ static ssize_t unix_sock_recvmsg(struct socket *_this,
 	return transferred;
 }
 
-static ssize_t unix_sock_sendmsg(struct socket *this, 
-								 struct f_description *description, 
+static ssize_t unix_sock_sendmsg(struct socket *this,
+								 struct f_description *description,
 								 const struct msghdr *msg, int flags) {
-    (void)this;
-    (void)description;
-    (void)msg;
-    (void)flags;
-    errno = ENOSYS;
-    return -1;
+	(void)this;
+	(void)description;
+	(void)msg;
+	(void)flags;
+	errno = ENOSYS;
+	return -1;
 }
 
-static ssize_t unix_sock_getsockopt(struct socket *this, struct f_description *description, 
-									int level, int optname, void *optval, socklen_t *optlen) {
-    (void)this;
-    (void)description;
-    (void)level;
-    (void)optname;
-    (void)optval;
-    (void)optlen;
-    errno = ENOSYS;
-    return -1;
+static ssize_t unix_sock_getsockopt(struct socket *this,
+									struct f_description *description,
+									int level, int optname, void *optval,
+									socklen_t *optlen) {
+	(void)this;
+	(void)description;
+	(void)level;
+	(void)optname;
+	(void)optval;
+	(void)optlen;
+	errno = ENOSYS;
+	return -1;
 }
 
-static ssize_t unix_sock_setsockopt(struct socket *this, struct f_description *description, 
-									int level, int optname, const void *optval, socklen_t optlen) {
-    (void)this;
-    (void)description;
-    (void)level;
-    (void)optname;
-    (void)optval;
-    (void)optlen;
-    errno = ENOSYS;
-    return -1;
+static ssize_t unix_sock_setsockopt(struct socket *this,
+									struct f_description *description,
+									int level, int optname, const void *optval,
+									socklen_t optlen) {
+	(void)this;
+	(void)description;
+	(void)level;
+	(void)optname;
+	(void)optval;
+	(void)optlen;
+	errno = ENOSYS;
+	return -1;
 }
 
 struct socket *unix_sock_create(int type, int protocol) {

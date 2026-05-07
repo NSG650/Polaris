@@ -985,8 +985,7 @@ void syscall_mknodat(struct syscall_arguments *args) {
 		return;
 	}
 
-	struct vfs_node *node =
-		vfs_create(parent, basename, (mode & ~proc->umask));
+	struct vfs_node *node = vfs_create(parent, basename, (mode & ~proc->umask));
 	if (node == NULL) {
 		args->ret = -1;
 		return;

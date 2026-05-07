@@ -5,8 +5,8 @@
 #include <klibc/vec.h>
 
 struct net_socket {
-    struct socket sock;
-    int lwip_fd;
+	struct socket sock;
+	int lwip_fd;
 };
 
 typedef vec_t(struct net_socket *) net_socket_vec_t;

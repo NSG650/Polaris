@@ -128,6 +128,6 @@
 #define EILSEQ 138
 #define EOVERFLOW 139 /* Value too large for defined data type */
 
-#define  EWOULDBLOCK     EAGAIN
+#define EWOULDBLOCK EAGAIN
 
 #endif

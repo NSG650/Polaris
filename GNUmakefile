@@ -58,9 +58,13 @@ distclean: jinx
 
 .PHONY: format
 format:
-	clang-format -i $(shell find . \( -iname *.h -o -iname *.c \) -not -ipath "*./limine*" \
-		-not -iname "limine.h" -not -ipath "*./kernel/arch/x86_64-pc/fw/lai/*" \
-		-not -ipath "*./sources*" -not -ipath "*./host-pkgs*" \
-		-not -ipath "*./pkgs*" -not -ipath "*./builds*" -not -ipath "*./host-builds*" \
-		-not -ipath "*./kernel/fb/terminal*" -not -ipath "*./.jinx-cache*" \
-		-not -ipath "*./sysroot*" -not -iname "printf.c" -not -iname "printf.h")
+	clang-format -i $(shell find kernel/ tests/ \
+        \( -iname "*.h" -o -iname "*.c" \) \
+        -not -ipath "kernel/net/api/*" \
+        -not -ipath "kernel/net/core/*" \
+        -not -ipath "kernel/net/netif/*" \
+        -not -ipath "kernel/net/include/*" \
+        -not -ipath "kernel/fb/terminal/*" \
+        -not -ipath "kernel/arch/x86_64-pc/fw/lai/*" \
+        -not -iname "printf.c" \
+        -not -iname "printf.h")

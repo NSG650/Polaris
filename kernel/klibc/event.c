@@ -1,3 +1,4 @@
+#include <asm/asm.h>
 #include <debug/debug.h>
 #include <klibc/event.h>
 #include <locks/spinlock.h>
@@ -7,7 +8,6 @@
 #include <stdint.h>
 #include <sys/prcb.h>
 #include <types.h>
-#include <asm/asm.h>
 
 extern lock_t thread_lock;
 

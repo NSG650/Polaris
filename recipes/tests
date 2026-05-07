@@ -24,6 +24,7 @@ build() {
     ${OS_TRIPLET}-gcc kaslr_bypass.c kb.o -o kaslr_bypass
 
     ${OS_TRIPLET}-gcc http.c -o http
+    ${OS_TRIPLET}-gcc dnslookup.c -o dnslookup
 }
 
 package() {
@@ -42,4 +43,5 @@ package() {
     cp ./pthread "${dest_dir}/root/pthread"
     cp ./kaslr_bypass "${dest_dir}/root/kaslr_bypass"
     cp ./http "${dest_dir}/root/http"
+    cp ./dnslookup "${dest_dir}/root/dnslookup"
 }

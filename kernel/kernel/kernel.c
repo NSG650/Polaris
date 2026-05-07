@@ -24,8 +24,7 @@
 
 const char *module_list[] = {
 #if defined(__x86_64__)
-	"/usr/lib/modules/ps2.ko",
-	"/usr/lib/modules/i8254x.ko"
+	"/usr/lib/modules/ps2.ko", "/usr/lib/modules/i8254x.ko"
 #endif
 };
 
@@ -115,7 +114,11 @@ void kernel_main(void *args) {
 	module_dump();
 
 	char *argv[] = {"init", NULL};
-	char *envp[] = {"HOME=/", "TERM=linux", NULL, };
+	char *envp[] = {
+		"HOME=/",
+		"TERM=linux",
+		NULL,
+	};
 	char *init_path = "/usr/bin/init";
 	if (kernel_arguments.kernel_args & KERNEL_ARGS_INIT_PATH_GIVEN) {
 		init_path = kernel_arguments.init_binary_path;
@@ -123,7 +126,8 @@ void kernel_main(void *args) {
 
 	kprintf("Running init binary %s\n", init_path);
 
-	if (!process_run_init(init_path, argv, envp, sched_get_running_thread()->mother_proc)) {
+	if (!process_run_init(init_path, argv, envp,
+						  sched_get_running_thread()->mother_proc)) {
 		panic("Failed to run init binary!\n");
 	}
 

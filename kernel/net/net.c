@@ -2,64 +2,63 @@
 #include <net/arp.h>
 #include <net/ip.h>
 #include <net/net.h>
+#include <net/net_sock.h>
 #include <sched/sched.h>
 #include <sys/prcb.h>
-#include <net/net_sock.h>
 
+#include "lwip/api.h"
+#include "lwip/init.h"
 #include "lwip/sockets.h"
 #include "lwip/tcpip.h"
-#include "lwip/init.h"
-#include "lwip/api.h"
 
 net_socket_vec_t net_sockets_table = {0};
 lock_t net_sockets_table_lock = {0};
 
 void net_sockets_polling_thread(void) {
-    for (;;) {
-        fd_set readfds, writefds;
-        FD_ZERO(&readfds);
-        FD_ZERO(&writefds);
-        int max_fd = -1;
+	for (;;) {
+		fd_set readfds, writefds;
+		FD_ZERO(&readfds);
+		FD_ZERO(&writefds);
+		int max_fd = -1;
 
-        if (spinlock_acquire(&net_sockets_table_lock)) {
-            for (int i = 0; i < net_sockets_table.length; i++) {
-                struct net_socket *socket = net_sockets_table.data[i];
-                if (socket->lwip_fd >= 0) {
-                    FD_SET(socket->lwip_fd, &readfds);
-                    FD_SET(socket->lwip_fd, &writefds);
-                    if (socket->lwip_fd > max_fd)
-                        max_fd = socket->lwip_fd;
-                }
-            }
-            spinlock_drop(&net_sockets_table_lock);
-        }
+		if (spinlock_acquire(&net_sockets_table_lock)) {
+			for (int i = 0; i < net_sockets_table.length; i++) {
+				struct net_socket *socket = net_sockets_table.data[i];
+				if (socket->lwip_fd >= 0) {
+					FD_SET(socket->lwip_fd, &readfds);
+					FD_SET(socket->lwip_fd, &writefds);
+					if (socket->lwip_fd > max_fd)
+						max_fd = socket->lwip_fd;
+				}
+			}
+			spinlock_drop(&net_sockets_table_lock);
+		}
 
-        if (max_fd >= 0) {
-            struct timeval tv = { .tv_sec = 0, .tv_usec = 1000 };
-            lwip_select(max_fd + 1, &readfds, &writefds, NULL, &tv);
+		if (max_fd >= 0) {
+			struct timeval tv = {.tv_sec = 0, .tv_usec = 1000};
+			lwip_select(max_fd + 1, &readfds, &writefds, NULL, &tv);
 
-            if (spinlock_acquire(&net_sockets_table_lock)) {
-                for (int i = 0; i < net_sockets_table.length; i++) {
-                    struct net_socket *socket = net_sockets_table.data[i];
-                    if (socket->lwip_fd < 0)
-                        continue;
-                    if (FD_ISSET(socket->lwip_fd, &readfds)) {
-                        socket->sock.res.status |= POLLIN;
-                        event_trigger(&socket->sock.res.event, false);
-                    }
-                    if (FD_ISSET(socket->lwip_fd, &writefds)) {
-                        socket->sock.res.status |= POLLOUT;
-                        event_trigger(&socket->sock.res.event, false);
-                    }
-                }
-                spinlock_drop(&net_sockets_table_lock);
-            }
-        }
+			if (spinlock_acquire(&net_sockets_table_lock)) {
+				for (int i = 0; i < net_sockets_table.length; i++) {
+					struct net_socket *socket = net_sockets_table.data[i];
+					if (socket->lwip_fd < 0)
+						continue;
+					if (FD_ISSET(socket->lwip_fd, &readfds)) {
+						socket->sock.res.status |= POLLIN;
+						event_trigger(&socket->sock.res.event, false);
+					}
+					if (FD_ISSET(socket->lwip_fd, &writefds)) {
+						socket->sock.res.status |= POLLOUT;
+						event_trigger(&socket->sock.res.event, false);
+					}
+				}
+				spinlock_drop(&net_sockets_table_lock);
+			}
+		}
 
-        sched_yield(true);
-    }
+		sched_yield(true);
+	}
 }
-
 
 void net_handle_packet_thread(uint64_t *handover) {
 	if (handover == NULL) {
@@ -69,11 +68,11 @@ void net_handle_packet_thread(uint64_t *handover) {
 	uint16_t length = (uint16_t)handover[1];
 	struct net_nic_interfaces *nic_interface =
 		(struct net_nic_interfaces *)handover[2];
-	
+
 	struct pbuf *p = pbuf_alloc(PBUF_RAW, length, PBUF_RAM);
-  	void *targ = (void *)p->payload;
+	void *targ = (void *)p->payload;
 	memcpy(targ, packet, length);
-  	nic_interface->lwip.input(p, &nic_interface->lwip);
+	nic_interface->lwip.input(p, &nic_interface->lwip);
 
 	// net_handle_packet(packet, length, nic_interface);
 	kfree(packet);

@@ -295,7 +295,7 @@ struct f_descriptor *fd_from_fdnum(struct process *proc, int fdnum) {
 		goto cleanup;
 	}
 
-//	ret->description->refcount++;
+	//	ret->description->refcount++;
 
 cleanup:
 	spinlock_drop(&proc->fds_lock);

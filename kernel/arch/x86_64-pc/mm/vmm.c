@@ -506,46 +506,45 @@ struct pagemap *vmm_fork_pagemap(struct pagemap *pagemap) {
 			vec_push(&new_global_range->locals, new_local_range);
 
 			// TODO: CoW for MAP_PRIVATE?
-//			if ((local_range->flags & MAP_ANONYMOUS) != 0) {
-				for (uintptr_t i = local_range->base;
-					 i < local_range->base + local_range->length;
-					 i += PAGE_SIZE) {
-					uint64_t *old_pte = vmm_virt_to_pte(pagemap, i, false);
-					if (old_pte == NULL || (((*old_pte) & 0xfff) & 1) == 0) {
-						continue;
-					}
-					spinlock_acquire_or_wait(&new_pagemap->lock);
-					uint64_t *new_pte = vmm_virt_to_pte(new_pagemap, i, true);
-					spinlock_drop(&new_pagemap->lock);
-					if (new_pte == NULL) {
-						goto cleanup;
-					}
-					spinlock_acquire_or_wait(
-						&new_global_range->shadow_pagemap->lock);
-					uint64_t *new_spte = vmm_virt_to_pte(
-						new_global_range->shadow_pagemap, i, true);
-					spinlock_drop(&new_global_range->shadow_pagemap->lock);
-					if (new_spte == NULL) {
-						goto cleanup;
-					}
-
-					void *old_page = (void *)((*old_pte) & 0xffffffffff000);
-					void *page = pmm_alloc(1);
-
-					if (page == NULL) {
-						goto cleanup;
-					}
-
-					memcpy((void *)((uintptr_t)page + MEM_PHYS_OFFSET),
-						   (void *)((uintptr_t)old_page + MEM_PHYS_OFFSET),
-						   PAGE_SIZE);
-
-					*new_pte = ((*old_pte) & 0xfff) | (uint64_t)page;
-					*new_spte = *new_pte;
+			//			if ((local_range->flags & MAP_ANONYMOUS) != 0) {
+			for (uintptr_t i = local_range->base;
+				 i < local_range->base + local_range->length; i += PAGE_SIZE) {
+				uint64_t *old_pte = vmm_virt_to_pte(pagemap, i, false);
+				if (old_pte == NULL || (((*old_pte) & 0xfff) & 1) == 0) {
+					continue;
 				}
-//			} else {
-//				kprintf("WARNING: Non anon fork\n");
-//			}
+				spinlock_acquire_or_wait(&new_pagemap->lock);
+				uint64_t *new_pte = vmm_virt_to_pte(new_pagemap, i, true);
+				spinlock_drop(&new_pagemap->lock);
+				if (new_pte == NULL) {
+					goto cleanup;
+				}
+				spinlock_acquire_or_wait(
+					&new_global_range->shadow_pagemap->lock);
+				uint64_t *new_spte =
+					vmm_virt_to_pte(new_global_range->shadow_pagemap, i, true);
+				spinlock_drop(&new_global_range->shadow_pagemap->lock);
+				if (new_spte == NULL) {
+					goto cleanup;
+				}
+
+				void *old_page = (void *)((*old_pte) & 0xffffffffff000);
+				void *page = pmm_alloc(1);
+
+				if (page == NULL) {
+					goto cleanup;
+				}
+
+				memcpy((void *)((uintptr_t)page + MEM_PHYS_OFFSET),
+					   (void *)((uintptr_t)old_page + MEM_PHYS_OFFSET),
+					   PAGE_SIZE);
+
+				*new_pte = ((*old_pte) & 0xfff) | (uint64_t)page;
+				*new_spte = *new_pte;
+			}
+			//			} else {
+			//				kprintf("WARNING: Non anon fork\n");
+			//			}
 		}
 
 		vec_push(&new_pagemap->mmap_ranges, new_local_range);

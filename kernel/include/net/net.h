@@ -1,9 +1,9 @@
 #ifndef NET_H
 #define NET_H
 
+#include "lwip/netif.h"
 #include <stddef.h>
 #include <stdint.h>
-#include "lwip/netif.h"
 
 #define BSWAP16(x) ((((x) & 0xff) << 8) | (((x) & 0xff00) >> 8))
 

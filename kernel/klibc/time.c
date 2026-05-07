@@ -57,7 +57,8 @@ cleanup:
 
 bool timer_handler(uint64_t ns) {
 	if (spinlock_acquire(&timers_lock)) {
-		struct timespec interval = {.tv_sec = ns / 1000000000, .tv_nsec = ns % 1000000000};
+		struct timespec interval = {.tv_sec = ns / 1000000000,
+									.tv_nsec = ns % 1000000000};
 
 		time_monotonic = timespec_add(time_monotonic, interval);
 		time_realtime = timespec_add(time_realtime, interval);
@@ -81,7 +82,8 @@ bool timer_handler(uint64_t ns) {
 }
 
 void time_nsleep(uint64_t ns) {
-	struct timespec duration = {.tv_sec = ns / 1000000000, .tv_nsec = ns % 1000000000};
+	struct timespec duration = {.tv_sec = ns / 1000000000,
+								.tv_nsec = ns % 1000000000};
 	struct timer *timer = NULL;
 
 	timer = timer_new(duration);

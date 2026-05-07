@@ -42,17 +42,17 @@ void dbgbrk(void) {
 }
 
 bool int_state(void) {
-    uint64_t flags;
-    asm volatile ("pushfq; pop %0" : "=rm"(flags) :: "memory");
-    return flags & (1 << 9);
+	uint64_t flags;
+	asm volatile("pushfq; pop %0" : "=rm"(flags)::"memory");
+	return flags & (1 << 9);
 }
 
 bool int_toggle(bool state) {
-    bool ret = int_state();
-    if (state) {
-        sti();
-    } else {
-        cli();
-    }
-    return ret;
+	bool ret = int_state();
+	if (state) {
+		sti();
+	} else {
+		cli();
+	}
+	return ret;
 }
