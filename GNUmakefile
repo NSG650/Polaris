@@ -58,7 +58,7 @@ distclean: jinx
 
 .PHONY: format
 format:
-	clang-format -i $(shell find kernel/ tests/ \
+	clang-format -i $(shell find drivers/ kernel/ tests/ \
         \( -iname "*.h" -o -iname "*.c" \) \
         -not -ipath "kernel/net/api/*" \
         -not -ipath "kernel/net/core/*" \
