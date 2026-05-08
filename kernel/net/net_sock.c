@@ -56,7 +56,7 @@ static bool net_sock_unref(struct resource *this,
 	this->refcount--;
 	if (this->refcount == 0) {
 		spinlock_acquire_or_wait(&net_sockets_table_lock);
-		vec_push(&net_sockets_table, sock);
+		vec_remove(&net_sockets_table, sock);
 		spinlock_drop(&net_sockets_table_lock);
 		return (lwip_close(sock->lwip_fd) == 0);
 	}
