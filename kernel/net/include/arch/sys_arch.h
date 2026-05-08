@@ -15,11 +15,13 @@ struct sem {
 };
 typedef struct sem sys_sem_t;
 
+#define SYS_ARCH_MBOX_SIZE 256
+
 struct mbox {
     lock_t lock;
     sys_sem_t free, queued;
     int count, head, next;
-    void *slots[128];
+    void *slots[SYS_ARCH_MBOX_SIZE];
     int valid;
 };
 typedef struct mbox sys_mbox_t;

@@ -62,9 +62,10 @@ void sys_sem_set_invalid(sys_sem_t *sem) {
 }
 
 err_t sys_mbox_new(sys_mbox_t *mbox, int size) {
+	memzero(mbox, sizeof(sys_mbox_t));
 	sys_mutex_new((sys_mutex_t *)&mbox->lock);
 	mbox->valid = 1;
-	sys_sem_new(&mbox->free, 128);
+	sys_sem_new(&mbox->free, SYS_ARCH_MBOX_SIZE);
 	sys_sem_new(&mbox->queued, 0);
 	mbox->head = -1;
 	mbox->next = 0;
@@ -74,13 +75,13 @@ err_t sys_mbox_new(sys_mbox_t *mbox, int size) {
 void sys_mbox_post(sys_mbox_t *mbox, void *msg) {
 	sys_arch_sem_wait(&mbox->free, 0);
 	sys_mutex_lock((sys_mutex_t *)&mbox->lock);
-	if (mbox->count == 128) {
+	if (mbox->count == SYS_ARCH_MBOX_SIZE) {
 		sys_mutex_unlock((sys_mutex_t *)&mbox->lock);
 		return;
 	}
 
 	int slot = mbox->next;
-	mbox->next = (slot + 1) % 128;
+	mbox->next = (slot + 1) % SYS_ARCH_MBOX_SIZE;
 	mbox->slots[slot] = msg;
 	mbox->count++;
 	if (mbox->head == -1)
@@ -92,13 +93,13 @@ void sys_mbox_post(sys_mbox_t *mbox, void *msg) {
 
 err_t sys_mbox_trypost(sys_mbox_t *mbox, void *msg) {
 	sys_mutex_lock((sys_mutex_t *)&mbox->lock);
-	if (mbox->count == 128) {
+	if (mbox->count == SYS_ARCH_MBOX_SIZE) {
 		sys_mutex_unlock((sys_mutex_t *)&mbox->lock);
 		return ERR_MEM;
 	}
 
 	int slot = mbox->next;
-	mbox->next = (slot + 1) % 128;
+	mbox->next = (slot + 1) % SYS_ARCH_MBOX_SIZE;
 	mbox->slots[slot] = msg;
 	mbox->count++;
 	if (mbox->head == -1)
@@ -131,7 +132,7 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout) {
 	if (msg)
 		*msg = mbox->slots[slot];
 
-	mbox->head = (slot + 1) % 128;
+	mbox->head = (slot + 1) % SYS_ARCH_MBOX_SIZE;
 	mbox->count--;
 	if (mbox->count == 0)
 		mbox->head = -1;
@@ -152,7 +153,7 @@ u32_t sys_arch_mbox_tryfetch(sys_mbox_t *mbox, void **msg) {
 	if (msg)
 		*msg = mbox->slots[slot];
 
-	mbox->head = (slot + 1) % 128;
+	mbox->head = (slot + 1) % SYS_ARCH_MBOX_SIZE;
 	mbox->count--;
 	if (mbox->count == 0)
 		mbox->head = -1;
@@ -166,6 +167,7 @@ void sys_mbox_free(sys_mbox_t *mbox) {
 	sys_mutex_lock((sys_mutex_t *)&mbox->lock);
 	sys_sem_free(&mbox->free);
 	sys_sem_free(&mbox->queued);
+	mbox->valid = 0;
 	sys_mutex_unlock((sys_mutex_t *)&mbox->lock);
 }
 
