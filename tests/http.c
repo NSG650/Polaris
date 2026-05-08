@@ -1,5 +1,6 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,6 +11,32 @@
 #define PORT 80
 #define BUFFER_SIZE 4096
 
+struct client_args {
+	int fd;
+	struct sockaddr_in addr;
+};
+
+char HTML[512] = {0};
+char HTTP_RESPONSE[1024] = {0};
+
+static void *handle_client(void *arg) {
+	struct client_args *client = (struct client_args *)arg;
+	char buf[BUFFER_SIZE];
+
+	printf("Connection from %s\n", inet_ntoa(client->addr.sin_addr));
+
+	ssize_t n = read(client->fd, buf, sizeof(buf) - 1);
+	if (n > 0) {
+		buf[n] = '\0';
+		printf("--- Request ---\n%s\n", buf);
+		write(client->fd, HTTP_RESPONSE, strlen(HTTP_RESPONSE));
+	}
+
+	close(client->fd);
+	free(client);
+	return NULL;
+}
+
 int main(void) {
 	int server_fd, client_fd;
 	struct sockaddr_in addr;
@@ -18,12 +45,20 @@ int main(void) {
 	struct utsname system_uname = {0};
 	uname(&system_uname);
 
-	char HTTP_RESPONSE[1024] = "HTTP/1.1 200 OK\r\nContent-Type: "
-							   "text/html\r\nConnection: close\r\n\r\n";
-	char HTML[512] = {0};
-	snprintf(HTML, 512, "<h1>It works!</h1><p>Hello from %s %s %s!</p>\r\n",
-			 system_uname.sysname, system_uname.release, system_uname.version);
-	strcat(HTTP_RESPONSE, HTML);
+	snprintf(HTML, 512,
+			 "<h1>It works!</h1><p>Hello from %s %s %s!</p><a "
+			 "href=\"https://github.com/NSG650/%s\"> What is %s?</a>\r\n",
+			 system_uname.sysname, system_uname.release, system_uname.version,
+			 system_uname.sysname, system_uname.sysname);
+
+	snprintf(HTTP_RESPONSE, sizeof(HTTP_RESPONSE),
+			 "HTTP/1.1 200 OK\r\n"
+			 "Content-Type: text/html\r\n"
+			 "Connection: close\r\n"
+			 "Server: %s %s\r\n"
+			 "\r\n"
+			 "%s",
+			 system_uname.sysname, system_uname.version, HTML);
 
 	server_fd = socket(AF_INET, SOCK_STREAM, 0);
 	if (server_fd < 0) {
@@ -60,16 +95,22 @@ int main(void) {
 			continue;
 		}
 
-		printf("Connection from %s\n", inet_ntoa(client_addr.sin_addr));
-
-		ssize_t n = read(client_fd, buf, sizeof(buf) - 1);
-		if (n > 0) {
-			buf[n] = '\0';
-			printf("--- Request ---\n%s\n", buf);
-			write(client_fd, HTTP_RESPONSE, strlen(HTTP_RESPONSE));
+		struct client_args *args = malloc(sizeof(struct client_args));
+		if (args == NULL) {
+			close(client_fd);
+			continue;
 		}
+		args->fd = client_fd;
+		args->addr = client_addr;
 
-		close(client_fd);
+		pthread_t thread;
+		if (pthread_create(&thread, NULL, handle_client, args) != 0) {
+			perror("pthread_create");
+			close(client_fd);
+			free(args);
+			continue;
+		}
+		pthread_detach(thread);
 	}
 
 	close(server_fd);

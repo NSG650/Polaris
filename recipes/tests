@@ -23,7 +23,7 @@ build() {
     nasm -felf64 kaslr_bypass.asm -o kb.o
     ${OS_TRIPLET}-gcc kaslr_bypass.c kb.o -o kaslr_bypass
 
-    ${OS_TRIPLET}-gcc http.c -o http
+    ${OS_TRIPLET}-gcc http.c -o http -lpthread
     ${OS_TRIPLET}-gcc dnslookup.c -o dnslookup
 }
 
