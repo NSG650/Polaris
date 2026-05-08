@@ -2,6 +2,7 @@
 #include <debug/debug.h>
 #include <io/mmio.h>
 #include <io/pci.h>
+#include <klibc/kargs.h>
 #include <klibc/mem.h>
 #include <klibc/misc.h>
 #include <klibc/module.h>
@@ -411,7 +412,6 @@ uint64_t driver_entry(struct module *driver_module) {
 	nic_i8254x.lwip.hwaddr[3] = i8254x_dev.mac_addr[3];
 	nic_i8254x.lwip.hwaddr[4] = i8254x_dev.mac_addr[4];
 	nic_i8254x.lwip.hwaddr[5] = i8254x_dev.mac_addr[5];
-	nic_i8254x.lwip.hwaddr_len = ETH_HWADDR_LEN;
 	nic_i8254x.lwip.mtu = 1500;
 	nic_i8254x.lwip.flags = NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP |
 							NETIF_FLAG_ETHERNET | NETIF_FLAG_LINK_UP;
@@ -421,6 +421,11 @@ uint64_t driver_entry(struct module *driver_module) {
 	IP4_ADDR(&ip, 192, 168, 10, 10);
 	IP4_ADDR(&mask, 255, 255, 255, 0);
 	IP4_ADDR(&gw, 192, 168, 10, 1);
+	if (kernel_arguments.kernel_args & KERNEL_ARGS_IP_GIVEN) {
+		ipaddr_aton(kernel_arguments.ip, &ip);
+		ipaddr_aton(kernel_arguments.mask, &mask);
+		ipaddr_aton(kernel_arguments.gateway, &gw);
+	}
 	netif_set_addr(&nic_i8254x.lwip, &ip, &mask, &gw);
 
 	const ip4_addr_t *addr = netif_ip4_addr(&nic_i8254x.lwip);

@@ -44,6 +44,18 @@ void kargs_init(char *args) {
 		if (!strncmp(tokens[i], "panic-on-deadlock", 18)) {
 			kernel_arguments.kernel_args |= KERNEL_ARGS_PANIC_ON_DEADLOCK;
 		}
+		if (!strncmp(tokens[i], "netconf", 7)) {
+			char *addrs = &tokens[i][8];
+			char **a_tokens = NULL;
+			size_t a_count = strsplit(addrs, ',', &a_tokens);
+			if (a_count == 3) {
+				kernel_arguments.kernel_args |= KERNEL_ARGS_IP_GIVEN;
+				kernel_arguments.ip = a_tokens[0];
+				kernel_arguments.mask = a_tokens[1];
+				kernel_arguments.gateway = a_tokens[2];
+			}
+			kfree(a_tokens);
+		}
 	}
 
 	for (size_t i = 0; i < count; i++) {

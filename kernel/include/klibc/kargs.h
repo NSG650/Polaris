@@ -15,12 +15,16 @@ enum kernel_args_enum_t {
 	KERNEL_ARGS_SUPPRESS_USER_DEBUG_MESSAGES = 1 << 6,
 	KERNEL_ARGS_DONT_TRUST_CPU_RANDOM_SEED = 1 << 7,
 	KERNEL_ARGS_PANIC_ON_DEADLOCK = 1 << 8,
+	KERNEL_ARGS_IP_GIVEN = 1 << 9,
 };
 
 struct kernel_args {
 	uint32_t kernel_args;
 	uint32_t cpu_count;
 	char *init_binary_path;
+	char *ip;
+	char *mask;
+	char *gateway;
 };
 
 extern struct kernel_args kernel_arguments;

@@ -111,7 +111,8 @@ static void *inner_alloc(size_t pages, size_t limit) {
 	return NULL;
 }
 
-// Disabling interrupts here because if something locks this and then gets scheduled away it will deadlock others.
+// Disabling interrupts here because if something locks this and then gets
+// scheduled away it will deadlock others.
 // TODO: Go lockless?
 void *pmm_alloc(size_t pages) {
 	bool state = int_toggle(false);
