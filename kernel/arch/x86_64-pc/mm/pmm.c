@@ -111,7 +111,10 @@ static void *inner_alloc(size_t pages, size_t limit) {
 	return NULL;
 }
 
+// Disabling interrupts here because if something locks this and then gets scheduled away it will deadlock others.
+// TODO: Go lockless?
 void *pmm_alloc(size_t pages) {
+	bool state = int_toggle(false);
 	spinlock_acquire_or_wait(&memory_lock);
 
 	size_t last = last_used_index;
@@ -125,6 +128,7 @@ void *pmm_alloc(size_t pages) {
 		panic("Out of memory!\n");
 	}
 	spinlock_drop(&memory_lock);
+	int_toggle(state);
 	return ret;
 }
 
@@ -138,12 +142,14 @@ void *pmm_allocz(size_t pages) {
 }
 
 void pmm_free(void *addr, size_t pages) {
+	bool state = int_toggle(false);
 	spinlock_acquire_or_wait(&memory_lock);
 	size_t page = (size_t)addr;
 	page /= PAGE_SIZE;
 	for (size_t i = page; i < page + pages; i++)
 		bitmap_reset(bitmap, i);
 	spinlock_drop(&memory_lock);
+	int_toggle(state);
 }
 
 void pmm_get_memory_info(uint64_t *info) {
