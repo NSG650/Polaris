@@ -1,0 +1,22 @@
+name=make-ca
+version_url=1.16
+version=20250603.3.112
+revision=1
+tarball_url="https://github.com/lfs-book/make-ca/archive/v${version_url}/make-ca-${version_url}.tar.gz"
+tarball_blake2b="e078ea45fe71309f3de84d8c398418ba0bbc23b95bf6fb7684941982d61c373fa065b39847d5674e78bdd3b27a4e39996eb1f7648ecc42eaa469aaccc070da5d"
+imagedeps="openssl p11-kit bash"
+rundeps="bash"
+allow_network="yes"
+
+package() {
+	cp -rpv ${source_dir}/* .
+	make install DESTDIR=${dest_dir} PREFIX=/usr
+	install -vdm 755 ${dest_dir}/etc/ssl/local
+
+	# Cursed
+	curl -o certdata.txt https://hg.mozilla.org/releases/mozilla-release/raw-file/default/security/nss/lib/ckfw/builtins/certdata.txt
+
+    MOZILLA_CERT_SYSROOT=${dest_dir} ${dest_dir}/usr/sbin/make-ca -C certdata.txt -D ${dest_dir}
+
+	chmod -v 0755 "${dest_dir}/etc/ssl/certs"
+}
