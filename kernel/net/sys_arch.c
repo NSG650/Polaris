@@ -62,26 +62,32 @@ void sys_sem_set_invalid(sys_sem_t *sem) {
 }
 
 err_t sys_mbox_new(sys_mbox_t *mbox, int size) {
+	if (size == 0) {
+		size = 512;
+	}
+	size *= 2; // I am having trust issues
 	memzero(mbox, sizeof(sys_mbox_t));
 	sys_mutex_new((sys_mutex_t *)&mbox->lock);
 	mbox->valid = 1;
-	sys_sem_new(&mbox->free, SYS_ARCH_MBOX_SIZE);
+	sys_sem_new(&mbox->free, size);
 	sys_sem_new(&mbox->queued, 0);
 	mbox->head = -1;
 	mbox->next = 0;
+	mbox->length = size;
+	mbox->slots = kmalloc(sizeof(void *) * size);
 	return ERR_OK;
 }
 
 void sys_mbox_post(sys_mbox_t *mbox, void *msg) {
 	sys_arch_sem_wait(&mbox->free, 0);
 	sys_mutex_lock((sys_mutex_t *)&mbox->lock);
-	if (mbox->count == SYS_ARCH_MBOX_SIZE) {
+	if (mbox->count == mbox->length) {
 		sys_mutex_unlock((sys_mutex_t *)&mbox->lock);
 		return;
 	}
 
 	int slot = mbox->next;
-	mbox->next = (slot + 1) % SYS_ARCH_MBOX_SIZE;
+	mbox->next = (slot + 1) % mbox->length;
 	mbox->slots[slot] = msg;
 	mbox->count++;
 	if (mbox->head == -1)
@@ -93,13 +99,13 @@ void sys_mbox_post(sys_mbox_t *mbox, void *msg) {
 
 err_t sys_mbox_trypost(sys_mbox_t *mbox, void *msg) {
 	sys_mutex_lock((sys_mutex_t *)&mbox->lock);
-	if (mbox->count == SYS_ARCH_MBOX_SIZE) {
+	if (mbox->count == mbox->length) {
 		sys_mutex_unlock((sys_mutex_t *)&mbox->lock);
 		return ERR_MEM;
 	}
 
 	int slot = mbox->next;
-	mbox->next = (slot + 1) % SYS_ARCH_MBOX_SIZE;
+	mbox->next = (slot + 1) % mbox->length;
 	mbox->slots[slot] = msg;
 	mbox->count++;
 	if (mbox->head == -1)
@@ -132,7 +138,7 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout) {
 	if (msg)
 		*msg = mbox->slots[slot];
 
-	mbox->head = (slot + 1) % SYS_ARCH_MBOX_SIZE;
+	mbox->head = (slot + 1) % mbox->length;
 	mbox->count--;
 	if (mbox->count == 0)
 		mbox->head = -1;
@@ -153,7 +159,7 @@ u32_t sys_arch_mbox_tryfetch(sys_mbox_t *mbox, void **msg) {
 	if (msg)
 		*msg = mbox->slots[slot];
 
-	mbox->head = (slot + 1) % SYS_ARCH_MBOX_SIZE;
+	mbox->head = (slot + 1) % mbox->length;
 	mbox->count--;
 	if (mbox->count == 0)
 		mbox->head = -1;
@@ -168,6 +174,8 @@ void sys_mbox_free(sys_mbox_t *mbox) {
 	sys_sem_free(&mbox->free);
 	sys_sem_free(&mbox->queued);
 	mbox->valid = 0;
+	mbox->length = 0;
+	kfree(mbox->slots);
 	sys_mutex_unlock((sys_mutex_t *)&mbox->lock);
 }
 
