@@ -1,5 +1,6 @@
 #include "arch/sys_arch.h"
 #include <debug/debug.h>
+#include <klibc/time.h>
 #include <mm/slab.h>
 #include <sys/timer.h>
 
@@ -38,15 +39,41 @@ err_t sys_sem_new(sys_sem_t *sem, u8_t count) {
 }
 
 void sys_sem_signal(sys_sem_t *sem) {
+	spinlock_acquire_or_wait(&sem->lock);
 	event_trigger(&sem->ev, false);
+	spinlock_drop(&sem->lock);
 }
 
 u32_t sys_arch_sem_wait(sys_sem_t *sem, u32_t timeout) {
-	struct event *events[] = {&sem->ev};
-	if (event_await(events, 1, true) < 0) {
-		return SYS_ARCH_TIMEOUT;
+	spinlock_acquire_or_wait(&sem->lock);
+	struct timer *timer = NULL;
+	size_t event_count = 1;
+	struct event *events[2] = {&sem->ev, NULL};
+
+	if (timeout) {
+		size_t ns = timeout * 1000000;
+		struct timespec duration = {.tv_sec = ns / 1000000000,
+									.tv_nsec = ns % 1000000000};
+
+		timer = timer_new(duration);
+		if (timer == NULL) {
+			spinlock_drop(&sem->lock);
+			return SYS_ARCH_TIMEOUT;
+		}
+
+		events[1] = &timer->event;
+		event_count = 2;
 	}
-	return 0;
+	spinlock_drop(&sem->lock);
+
+	int ret = event_await(events, event_count, true);
+
+	if (timeout) {
+		timer_disarm(timer);
+		kfree(timer);
+	}
+
+	return ret != 0 ? SYS_ARCH_TIMEOUT : 0;
 }
 
 void sys_sem_free(sys_sem_t *sem) {
@@ -54,11 +81,16 @@ void sys_sem_free(sys_sem_t *sem) {
 }
 
 int sys_sem_valid(sys_sem_t *sem) {
-	return sem->valid;
+	spinlock_acquire_or_wait(&sem->lock);
+	int ret = sem->valid;
+	spinlock_drop(&sem->lock);
+	return ret;
 }
 
 void sys_sem_set_invalid(sys_sem_t *sem) {
+	spinlock_acquire_or_wait(&sem->lock);
 	sem->valid = 0;
+	spinlock_drop(&sem->lock);
 }
 
 err_t sys_mbox_new(sys_mbox_t *mbox, int size) {
@@ -79,11 +111,11 @@ err_t sys_mbox_new(sys_mbox_t *mbox, int size) {
 }
 
 void sys_mbox_post(sys_mbox_t *mbox, void *msg) {
-	sys_arch_sem_wait(&mbox->free, 0);
 	sys_mutex_lock((sys_mutex_t *)&mbox->lock);
-	if (mbox->count == mbox->length) {
+	while (mbox->count == mbox->length) {
 		sys_mutex_unlock((sys_mutex_t *)&mbox->lock);
-		return;
+		sys_arch_sem_wait(&mbox->free, 0);
+		sys_mutex_lock((sys_mutex_t *)&mbox->lock);
 	}
 
 	int slot = mbox->next;
@@ -122,18 +154,17 @@ err_t sys_mbox_trypost_fromisr(sys_mbox_t *mbox, void *msg) {
 }
 
 u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout) {
-	u32_t waited = sys_arch_sem_wait(&mbox->queued, timeout);
 	sys_mutex_lock(&mbox->lock);
-	if (waited == SYS_ARCH_TIMEOUT) {
+	if (mbox->head == -1) {
 		sys_mutex_unlock(&mbox->lock);
-		return waited;
+		u32_t waited = sys_arch_sem_wait(&mbox->queued, timeout);
+		if (waited == SYS_ARCH_TIMEOUT) {
+			return waited;
+		}
+		sys_mutex_lock(&mbox->lock);
 	}
 
 	int slot = mbox->head;
-	if (slot == -1) {
-		sys_mutex_unlock(&mbox->lock);
-		return SYS_ARCH_TIMEOUT;
-	}
 
 	if (msg)
 		*msg = mbox->slots[slot];
@@ -145,7 +176,7 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout) {
 
 	sys_sem_signal(&mbox->free);
 	sys_mutex_unlock(&mbox->lock);
-	return waited;
+	return 0;
 }
 
 u32_t sys_arch_mbox_tryfetch(sys_mbox_t *mbox, void **msg) {
