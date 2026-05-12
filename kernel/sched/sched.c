@@ -593,15 +593,19 @@ bool process_execve(char *path, char **argv, char **envp) {
 		*c = '\0';
 		char **arg_list = NULL;
 		size_t arg_count = strsplit(shebang_line, ' ', &arg_list);
+		if (arg_count < 2) {
+			kfree(arg_list);
+			errno = ENOEXEC;
+			return false;
+		}
 		size_t old_arg_count = get_argv_length(argv);
 		char *new_path = arg_list[1];
 		char **new_argv =
-			kmalloc(sizeof(char *) * (arg_count + old_arg_count) + 2);
+			kmalloc(sizeof(char *) * (arg_count + old_arg_count + 2));
 		new_argv[0] = new_path;
 		new_argv[1] = path;
 		for (size_t i = 2; i < arg_count; i++) {
 			new_argv[i + 1] = arg_list[i];
-			kfree(arg_list[i]);
 		}
 		for (size_t i = 0; i < old_arg_count; i++) {
 			new_argv[i + arg_count + 1] = argv[i];
