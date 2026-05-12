@@ -25,8 +25,13 @@ struct mbox {
 };
 typedef struct mbox sys_mbox_t;
 
+struct mutex {
+    lock_t lock;
+    struct event ev;
+};
+typedef struct mutex sys_mutex_t;
+
 typedef struct thread *sys_thread_t;
-typedef lock_t sys_mutex_t;
 typedef void (*lwip_thread_fn)(void *arg);
 
 #ifndef SYS_ARCH_TIMEOUT

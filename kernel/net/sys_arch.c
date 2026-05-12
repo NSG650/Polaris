@@ -5,22 +5,26 @@
 #include <sys/timer.h>
 
 err_t sys_mutex_new(sys_mutex_t *mutex) {
-	mutex->lock = 0;
-	mutex->last_owner = NULL;
+	mutex->lock.lock = 0;
+	mutex->lock.last_owner = NULL;
 	return ERR_OK;
 }
 
 void sys_mutex_lock(sys_mutex_t *mutex) {
-	spinlock_acquire_or_wait((lock_t *)mutex);
+	while (!spinlock_acquire(&mutex->lock)) {
+		struct event *events[] = {&mutex->ev};
+		event_await(events, 1, true);
+	}
 }
 
 void sys_mutex_unlock(sys_mutex_t *mutex) {
-	spinlock_drop((lock_t *)mutex);
+	spinlock_drop(&mutex->lock);
+	event_trigger(&mutex->ev, false);
 }
 
 void sys_mutex_free(sys_mutex_t *mutex) {
-	mutex->lock = 0;
-	mutex->last_owner = NULL;
+	mutex->lock.lock = 0;
+	mutex->lock.last_owner = NULL;
 }
 
 int sys_mutex_valid(sys_mutex_t *mutex) {
@@ -111,11 +115,11 @@ err_t sys_mbox_new(sys_mbox_t *mbox, int size) {
 }
 
 void sys_mbox_post(sys_mbox_t *mbox, void *msg) {
-	sys_mutex_lock((sys_mutex_t *)&mbox->lock);
+	spinlock_acquire_or_wait(&mbox->lock);
 	while (mbox->count == mbox->length) {
-		sys_mutex_unlock((sys_mutex_t *)&mbox->lock);
+		spinlock_drop(&mbox->lock);
 		sys_arch_sem_wait(&mbox->free, 0);
-		sys_mutex_lock((sys_mutex_t *)&mbox->lock);
+		spinlock_acquire_or_wait(&mbox->lock);
 	}
 
 	int slot = mbox->next;
@@ -126,13 +130,13 @@ void sys_mbox_post(sys_mbox_t *mbox, void *msg) {
 		mbox->head = slot;
 
 	sys_sem_signal(&mbox->queued);
-	sys_mutex_unlock((sys_mutex_t *)&mbox->lock);
+	spinlock_drop(&mbox->lock);
 }
 
 err_t sys_mbox_trypost(sys_mbox_t *mbox, void *msg) {
-	sys_mutex_lock((sys_mutex_t *)&mbox->lock);
+	spinlock_acquire_or_wait(&mbox->lock);
 	if (mbox->count == mbox->length) {
-		sys_mutex_unlock((sys_mutex_t *)&mbox->lock);
+		spinlock_drop(&mbox->lock);
 		return ERR_MEM;
 	}
 
@@ -144,7 +148,7 @@ err_t sys_mbox_trypost(sys_mbox_t *mbox, void *msg) {
 		mbox->head = slot;
 
 	sys_sem_signal(&mbox->queued);
-	sys_mutex_unlock((sys_mutex_t *)&mbox->lock);
+	spinlock_drop(&mbox->lock);
 
 	return ERR_OK;
 }
@@ -154,14 +158,14 @@ err_t sys_mbox_trypost_fromisr(sys_mbox_t *mbox, void *msg) {
 }
 
 u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout) {
-	sys_mutex_lock(&mbox->lock);
+	spinlock_acquire_or_wait(&mbox->lock);
 	if (mbox->head == -1) {
-		sys_mutex_unlock(&mbox->lock);
+		spinlock_drop(&mbox->lock);
 		u32_t waited = sys_arch_sem_wait(&mbox->queued, timeout);
 		if (waited == SYS_ARCH_TIMEOUT) {
 			return waited;
 		}
-		sys_mutex_lock(&mbox->lock);
+		spinlock_acquire_or_wait(&mbox->lock);
 	}
 
 	int slot = mbox->head;
@@ -175,15 +179,15 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout) {
 		mbox->head = -1;
 
 	sys_sem_signal(&mbox->free);
-	sys_mutex_unlock(&mbox->lock);
+	spinlock_drop(&mbox->lock);
 	return 0;
 }
 
 u32_t sys_arch_mbox_tryfetch(sys_mbox_t *mbox, void **msg) {
-	sys_mutex_lock(&mbox->lock);
+	spinlock_acquire_or_wait(&mbox->lock);
 	int slot = mbox->head;
 	if (slot == -1) {
-		sys_mutex_unlock(&mbox->lock);
+		spinlock_drop(&mbox->lock);
 		return SYS_ARCH_TIMEOUT;
 	}
 
@@ -196,18 +200,18 @@ u32_t sys_arch_mbox_tryfetch(sys_mbox_t *mbox, void **msg) {
 		mbox->head = -1;
 
 	sys_sem_signal(&mbox->free);
-	sys_mutex_unlock(&mbox->lock);
+	spinlock_drop(&mbox->lock);
 	return 0;
 }
 
 void sys_mbox_free(sys_mbox_t *mbox) {
-	sys_mutex_lock((sys_mutex_t *)&mbox->lock);
+	spinlock_acquire_or_wait(&mbox->lock);
 	sys_sem_free(&mbox->free);
 	sys_sem_free(&mbox->queued);
 	mbox->valid = 0;
 	mbox->length = 0;
 	kfree(mbox->slots);
-	sys_mutex_unlock((sys_mutex_t *)&mbox->lock);
+	spinlock_drop(&mbox->lock);
 }
 
 int sys_mbox_valid(sys_mbox_t *mbox) {
