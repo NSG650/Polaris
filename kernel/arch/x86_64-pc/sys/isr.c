@@ -313,34 +313,42 @@ void isr_handle(registers_t *r) {
 		swapgs();
 	}
 
-	if (r->isrNumber < 256 && event_handlers[r->isrNumber] != NULL)
-		return event_handlers[r->isrNumber](r);
-
-	if (r->isrNumber < 32) {
-		if (r->cs & 0x3) {
-			struct thread *thrd = sched_get_running_thread();
-			kprintf("Killing user thread tid %d under process %s for exception "
+	if (r->isrNumber < 256 && event_handlers[r->isrNumber] != NULL) {
+		event_handlers[r->isrNumber](r);
+	} else {
+		if (r->isrNumber < 32) {
+			if (r->cs & 0x3) {
+				struct thread *thrd = sched_get_running_thread();
+				kprintf(
+					"Killing user thread tid %d under process %s for exception "
 					"%s\n",
 					thrd->tid, thrd->mother_proc->name,
 					isr_exception_messages[r->isrNumber]);
-			kprintf("User thread crashed at address: %p\n", r->rip);
-			thread_kill(thrd, true);
-		} else {
-			halt_other_cpus();
-			kprintffos(0, "AH! UNHANDLED EXCEPTION!\n");
-			kprintffos(0, "RIP: %p RBP: %p RSP: %p\n", r->rip, r->rbp, r->rsp);
-			kprintffos(0, "RAX: %p RBX: %p RCX: %p\n", r->rax, r->rbx, r->rcx);
-			kprintffos(0, "RDX: %p RDI: %p RSI: %p\n", r->rdx, r->rdi, r->rsi);
-			kprintffos(0, "R8 : %p R9 : %p R10: %p\n", r->r8, r->r9, r->r10);
-			kprintffos(0, "R11: %p R12: %p R13: %p\n", r->r11, r->r12, r->r13);
-			kprintffos(0, "R14: %p R15: %p ERR: 0b%b\n", r->r14, r->r15,
-					   r->errorCode);
-			kprintffos(0, "CS : %p SS : %p RFLAGS: %p\n", r->cs, r->ss,
-					   r->rflags);
-			kprintffos(0, "FS : %p UGS: %p KGS: %p\n", read_fs_base(),
-					   read_user_gs(), read_kernel_gs());
-			panic_((void *)r->rip, (void *)r->rbp, "Unhandled Exception: %s\n",
-				   isr_exception_messages[r->isrNumber]);
+				kprintf("User thread crashed at address: %p\n", r->rip);
+				thread_kill(thrd, true);
+			} else {
+				halt_other_cpus();
+				kprintffos(0, "AH! UNHANDLED EXCEPTION!\n");
+				kprintffos(0, "RIP: %p RBP: %p RSP: %p\n", r->rip, r->rbp,
+						   r->rsp);
+				kprintffos(0, "RAX: %p RBX: %p RCX: %p\n", r->rax, r->rbx,
+						   r->rcx);
+				kprintffos(0, "RDX: %p RDI: %p RSI: %p\n", r->rdx, r->rdi,
+						   r->rsi);
+				kprintffos(0, "R8 : %p R9 : %p R10: %p\n", r->r8, r->r9,
+						   r->r10);
+				kprintffos(0, "R11: %p R12: %p R13: %p\n", r->r11, r->r12,
+						   r->r13);
+				kprintffos(0, "R14: %p R15: %p ERR: 0b%b\n", r->r14, r->r15,
+						   r->errorCode);
+				kprintffos(0, "CS : %p SS : %p RFLAGS: %p\n", r->cs, r->ss,
+						   r->rflags);
+				kprintffos(0, "FS : %p UGS: %p KGS: %p\n", read_fs_base(),
+						   read_user_gs(), read_kernel_gs());
+				panic_((void *)r->rip, (void *)r->rbp,
+					   "Unhandled Exception: %s\n",
+					   isr_exception_messages[r->isrNumber]);
+			}
 		}
 	}
 

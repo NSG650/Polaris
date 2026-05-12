@@ -6,6 +6,7 @@
 #include <mm/slab.h>
 #include <mm/vmm.h>
 #include <sched/sched.h>
+#include <sys/halt.h>
 #include <sys/isr.h>
 #include <sys/prcb.h>
 
@@ -382,8 +383,6 @@ uint64_t vmm_virt_to_kernel(struct pagemap *pagemap, uint64_t virt_addr) {
 
 void vmm_page_fault_handler(registers_t *reg) {
 	if (mmap_handle_pf(reg)) {
-		if (reg->cs & 0x3)
-			swapgs();
 		return;
 	}
 
@@ -419,6 +418,7 @@ void vmm_page_fault_handler(registers_t *reg) {
 #endif
 		thread_kill(thrd, true);
 	} else {
+		halt_other_cpus();
 		kprintffos(0, "AH! UNHANDLED EXCEPTION!\n");
 		kprintffos(0, "RIP: %p RBP: %p RSP: %p\n", reg->rip, reg->rbp,
 				   reg->rsp);
