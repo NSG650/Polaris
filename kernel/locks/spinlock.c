@@ -23,12 +23,10 @@
 #include <stddef.h>
 #include <sys/prcb.h>
 
-static void *last_addr = NULL;
-
 extern bool sched_runit;
 extern bool is_smp;
 
-static void spinlock_spinning_for_too_long(lock_t *spin) {
+static void spinlock_spinning_for_too_long(void *last_addr, lock_t *spin) {
 	panic("Deadlocked at %p. Last owner %p\n", last_addr, spin->last_owner);
 }
 
@@ -45,13 +43,13 @@ void spinlock_acquire_or_wait(lock_t *spin) {
 	if (!spin)
 		return;
 	volatile size_t deadlock_counter = 0;
-	last_addr = __builtin_return_address(0);
+	void *caller = __builtin_return_address(0);
 	for (;;) {
 		if (spinlock_acquire(spin))
 			break;
 		if ((kernel_arguments.kernel_args & KERNEL_ARGS_PANIC_ON_DEADLOCK)) {
 			if (++deadlock_counter >= 100000000)
-				spinlock_spinning_for_too_long(spin);
+				spinlock_spinning_for_too_long(caller, spin);
 		}
 		pause();
 	}
@@ -62,4 +60,5 @@ void spinlock_drop(lock_t *spin) {
 	if (!spin)
 		return;
 	__atomic_store_n(&spin->lock, 0, __ATOMIC_SEQ_CST);
+	spin->last_owner = NULL;
 }
