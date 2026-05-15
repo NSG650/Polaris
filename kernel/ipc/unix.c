@@ -64,6 +64,9 @@ static ssize_t unix_sock_read(struct resource *_this,
 	if (this->capacity_used < (ssize_t)count) {
 		count = this->capacity_used;
 	}
+	if (count > this->data_length) {
+		count = this->data_length;
+	}
 
 	size_t before_wrap = 0, after_wrap = 0, new_ptr = 0;
 	if (this->read_ptr + count > this->data_length) {
@@ -126,6 +129,9 @@ static ssize_t unix_sock_write(struct resource *_this,
 
 	if (peer->capacity_used + count > peer->data_length) {
 		count = peer->data_length - peer->capacity_used;
+	}
+	if (count > peer->data_length) {
+		count = peer->data_length;
 	}
 
 	size_t before_wrap = 0, after_wrap = 0, new_ptr = 0;
@@ -412,6 +418,9 @@ static ssize_t unix_sock_recvmsg(struct socket *_this,
 
 	if (this->capacity_used < (ssize_t)count) {
 		count = this->capacity_used;
+	}
+	if (count > this->data_length) {
+		count = this->data_length;
 	}
 
 	size_t before_wrap = 0, after_wrap = 0, new_ptr = 0;
