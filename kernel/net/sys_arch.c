@@ -99,9 +99,8 @@ void sys_sem_set_invalid(sys_sem_t *sem) {
 
 err_t sys_mbox_new(sys_mbox_t *mbox, int size) {
 	if (size == 0) {
-		size = 512;
+		size = TCPIP_MBOX_SIZE;
 	}
-	size *= 2; // I am having trust issues
 	memzero(mbox, sizeof(sys_mbox_t));
 	sys_mutex_new((sys_mutex_t *)&mbox->lock);
 	mbox->valid = 1;
@@ -111,6 +110,7 @@ err_t sys_mbox_new(sys_mbox_t *mbox, int size) {
 	mbox->next = 0;
 	mbox->length = size;
 	mbox->slots = kmalloc(sizeof(void *) * size);
+	memzero(mbox->slots, (sizeof(void *) * size));
 	return ERR_OK;
 }
 
@@ -168,6 +168,11 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout) {
 		spinlock_acquire_or_wait(&mbox->lock);
 	}
 
+	if (mbox->head == -1) {
+		spinlock_drop(&mbox->lock);
+		return SYS_ARCH_TIMEOUT;
+	}
+
 	int slot = mbox->head;
 
 	if (msg)
@@ -215,11 +220,16 @@ void sys_mbox_free(sys_mbox_t *mbox) {
 }
 
 int sys_mbox_valid(sys_mbox_t *mbox) {
-	return mbox->valid;
+	spinlock_acquire_or_wait(&mbox->lock);
+	int ret = mbox->valid;
+	spinlock_drop(&mbox->lock);
+	return ret;
 }
 
 void sys_mbox_set_invalid(sys_mbox_t *mbox) {
+	spinlock_acquire_or_wait(&mbox->lock);
 	mbox->valid = 0;
+	spinlock_drop(&mbox->lock);
 }
 
 sys_thread_t sys_thread_new(const char *name, lwip_thread_fn thread, void *arg,

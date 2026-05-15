@@ -65,6 +65,12 @@ void net_handle_packet_thread(uint64_t *handover) {
 		(struct net_nic_interfaces *)handover[2];
 
 	struct pbuf *p = pbuf_alloc(PBUF_RAW, length, PBUF_RAM);
+	if (p == NULL) {
+		kfree(packet);
+		kfree(handover);
+		thread_kill(sched_get_running_thread(), true);
+	}
+
 	void *targ = (void *)p->payload;
 	memcpy(targ, packet, length);
 	nic_interface->lwip.input(p, &nic_interface->lwip);
