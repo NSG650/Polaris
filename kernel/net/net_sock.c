@@ -30,6 +30,14 @@ static ssize_t net_sock_read(struct resource *_this,
 							 off_t offset, size_t count) {
 	(void)offset;
 	struct net_socket *this = (struct net_socket *)_this;
+	if (description->flags & O_NONBLOCK) {
+		int ret = lwip_recv(this->lwip_fd, buf, count, MSG_DONTWAIT);
+		if (ret < 0) {
+			errno = EAGAIN;
+			return -1;
+		}
+		return ret;
+	}
 	return lwip_read(this->lwip_fd, buf, count);
 }
 
@@ -38,6 +46,14 @@ static ssize_t net_sock_write(struct resource *_this,
 							  const void *buf, off_t offset, size_t count) {
 	(void)offset;
 	struct net_socket *this = (struct net_socket *)_this;
+	if (description->flags & O_NONBLOCK) {
+		int ret = lwip_send(this->lwip_fd, buf, count, MSG_DONTWAIT);
+		if (ret < 0) {
+			errno = EAGAIN;
+			return -1;
+		}
+		return ret;
+	}
 	return lwip_write(this->lwip_fd, buf, count);
 }
 
