@@ -1,6 +1,6 @@
-diff --color -uNr fastfetch-clean/CMakeLists.txt fastfetch-workdir/CMakeLists.txt
---- fastfetch-clean/CMakeLists.txt	2024-12-26 01:37:25.000000000 +0000
-+++ fastfetch-workdir/CMakeLists.txt	2026-04-13 16:14:18.840261727 +0000
+diff -urN --no-dereference fastfetch-clean/CMakeLists.txt fastfetch-workdir/CMakeLists.txt
+--- fastfetch-clean/CMakeLists.txt
++++ fastfetch-workdir/CMakeLists.txt
 @@ -30,6 +30,8 @@
      set(DragonFly TRUE CACHE BOOL "..." FORCE)
  elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "SunOS")
@@ -105,15 +105,9 @@ diff --color -uNr fastfetch-clean/CMakeLists.txt fastfetch-workdir/CMakeLists.tx
  endif()
  
  if(FreeBSD OR OpenBSD OR NetBSD)
-diff --color -uNr fastfetch-clean/src/data/structure.txt fastfetch-workdir/src/data/structure.txt
---- fastfetch-clean/src/data/structure.txt	2024-12-26 01:37:25.000000000 +0000
-+++ fastfetch-workdir/src/data/structure.txt	2026-04-13 16:14:18.850261727 +0000
-@@ -1 +1 @@
--Title:Separator:OS:Host:Kernel:Uptime:Packages:Shell:Display:DE:WM:WMTheme:Theme:Icons:Font:Cursor:Terminal:TerminalFont:CPU:GPU:Memory:Swap:Disk:LocalIp:Battery:PowerAdapter:Locale:Break:Colors
-+Title:Separator:OS:Host:Kernel:Uptime:Packages:Display:DE:WM:WMTheme:Theme:Icons:Font:Cursor:Terminal:TerminalFont:CPU:GPU:Memory:Swap:Disk:LocalIp:Battery:PowerAdapter:Locale:Break:Colors
-diff --color -uNr fastfetch-clean/src/detection/localip/localip_linux.c fastfetch-workdir/src/detection/localip/localip_linux.c
---- fastfetch-clean/src/detection/localip/localip_linux.c	2024-12-26 01:37:25.000000000 +0000
-+++ fastfetch-workdir/src/detection/localip/localip_linux.c	2026-04-13 16:14:18.870261727 +0000
+diff -urN --no-dereference fastfetch-clean/src/detection/localip/localip_linux.c fastfetch-workdir/src/detection/localip/localip_linux.c
+--- fastfetch-clean/src/detection/localip/localip_linux.c
++++ fastfetch-workdir/src/detection/localip/localip_linux.c
 @@ -6,7 +6,9 @@
  #include <string.h>
  #include <ctype.h>
@@ -156,9 +150,9 @@ diff --color -uNr fastfetch-clean/src/detection/localip/localip_linux.c fastfetc
  
      return NULL;
  }
-diff --color -uNr fastfetch-clean/src/detection/os/os_polaris.c fastfetch-workdir/src/detection/os/os_polaris.c
+diff -urN --no-dereference fastfetch-clean/src/detection/os/os_polaris.c fastfetch-workdir/src/detection/os/os_polaris.c
 --- fastfetch-clean/src/detection/os/os_polaris.c	1970-01-01 00:00:00.000000000 +0000
-+++ fastfetch-workdir/src/detection/os/os_polaris.c	2026-04-13 16:14:18.870261727 +0000
++++ fastfetch-workdir/src/detection/os/os_polaris.c
 @@ -0,0 +1,7 @@
 +#include "os.h"
 +#include <stdio.h>
@@ -167,9 +161,23 @@ diff --color -uNr fastfetch-clean/src/detection/os/os_polaris.c fastfetch-workdi
 +    ffStrbufSetStatic(&os->name, "Polaris");
 +    ffStrbufSet(&os->version, &instance.state.platform.sysinfo.release);
 +}
-diff --color -uNr fastfetch-clean/src/logo/ascii/polaris.txt fastfetch-workdir/src/logo/ascii/polaris.txt
+diff -urN --no-dereference fastfetch-clean/src/detection/terminalshell/terminalshell.c fastfetch-workdir/src/detection/terminalshell/terminalshell.c
+--- fastfetch-clean/src/detection/terminalshell/terminalshell.c
++++ fastfetch-workdir/src/detection/terminalshell/terminalshell.c
+@@ -88,8 +88,8 @@
+         path = exe->chars;
+     ffBinaryExtractStrings(path, extractBashVersion, version, (uint32_t) strlen("@(#)Bash version 0.0.0(0) release GNU"));
+ 
+-    if(!getExeVersionRaw(exe, version))
+-        return false;
++//    if(!getExeVersionRaw(exe, version))
++//        return false;
+ 
+     // GNU bash, version 5.1.16(1)-release (x86_64-pc-msys)\nCopyright...
+     ffStrbufSubstrBeforeFirstC(version, '('); // GNU bash, version 5.1.16
+diff -urN --no-dereference fastfetch-clean/src/logo/ascii/polaris.txt fastfetch-workdir/src/logo/ascii/polaris.txt
 --- fastfetch-clean/src/logo/ascii/polaris.txt	1970-01-01 00:00:00.000000000 +0000
-+++ fastfetch-workdir/src/logo/ascii/polaris.txt	2026-04-13 16:14:18.880261727 +0000
++++ fastfetch-workdir/src/logo/ascii/polaris.txt
 @@ -0,0 +1,17 @@
 +                                                            
 +              .:                                            
@@ -189,9 +197,9 @@ diff --color -uNr fastfetch-clean/src/logo/ascii/polaris.txt fastfetch-workdir/s
 +      -:.            .:=.                                   
 +                                                            
 \ No newline at end of file
-diff --color -uNr fastfetch-clean/src/logo/builtin.c fastfetch-workdir/src/logo/builtin.c
---- fastfetch-clean/src/logo/builtin.c	2024-12-26 01:37:25.000000000 +0000
-+++ fastfetch-workdir/src/logo/builtin.c	2026-04-13 16:14:18.880261727 +0000
+diff -urN --no-dereference fastfetch-clean/src/logo/builtin.c fastfetch-workdir/src/logo/builtin.c
+--- fastfetch-clean/src/logo/builtin.c
++++ fastfetch-workdir/src/logo/builtin.c
 @@ -3712,6 +3712,14 @@
              FF_COLOR_FG_WHITE,
          },
@@ -207,9 +215,9 @@ diff --color -uNr fastfetch-clean/src/logo/builtin.c fastfetch-workdir/src/logo/
      // LAST
      {},
  };
-diff --color -uNr fastfetch-clean/src/options/general.h fastfetch-workdir/src/options/general.h
---- fastfetch-clean/src/options/general.h	2024-12-26 01:37:25.000000000 +0000
-+++ fastfetch-workdir/src/options/general.h	2026-04-13 16:14:18.930261727 +0000
+diff -urN --no-dereference fastfetch-clean/src/options/general.h fastfetch-workdir/src/options/general.h
+--- fastfetch-clean/src/options/general.h
++++ fastfetch-workdir/src/options/general.h
 @@ -16,7 +16,7 @@
      bool detectVersion;
  
@@ -219,9 +227,9 @@ diff --color -uNr fastfetch-clean/src/options/general.h fastfetch-workdir/src/op
      FFstrbuf playerName;
      bool escapeBedrock;
      FFDsForceDrmType dsForceDrm;
-diff --color -uNr fastfetch-clean/src/util/FFstrbuf.h fastfetch-workdir/src/util/FFstrbuf.h
---- fastfetch-clean/src/util/FFstrbuf.h	2024-12-26 01:37:25.000000000 +0000
-+++ fastfetch-workdir/src/util/FFstrbuf.h	2026-04-13 16:14:18.930261727 +0000
+diff -urN --no-dereference fastfetch-clean/src/util/FFstrbuf.h fastfetch-workdir/src/util/FFstrbuf.h
+--- fastfetch-clean/src/util/FFstrbuf.h
++++ fastfetch-workdir/src/util/FFstrbuf.h
 @@ -7,6 +7,7 @@
  #include <stdbool.h>
  #include <stdio.h>
@@ -230,9 +238,9 @@ diff --color -uNr fastfetch-clean/src/util/FFstrbuf.h fastfetch-workdir/src/util
  #include <stdlib.h>
  #include <assert.h>
  
-diff --color -uNr fastfetch-clean/src/util/platform/FFPlatform_unix.c fastfetch-workdir/src/util/platform/FFPlatform_unix.c
---- fastfetch-clean/src/util/platform/FFPlatform_unix.c	2024-12-26 01:37:25.000000000 +0000
-+++ fastfetch-workdir/src/util/platform/FFPlatform_unix.c	2026-04-13 16:14:18.930261727 +0000
+diff -urN --no-dereference fastfetch-clean/src/util/platform/FFPlatform_unix.c fastfetch-workdir/src/util/platform/FFPlatform_unix.c
+--- fastfetch-clean/src/util/platform/FFPlatform_unix.c
++++ fastfetch-workdir/src/util/platform/FFPlatform_unix.c
 @@ -19,7 +19,7 @@
  static void getExePath(FFPlatform* platform)
  {
