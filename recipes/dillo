@@ -6,7 +6,7 @@ tarball_blake2b="874ca5a43c5faf31fc6598655d4c540f4f5ba24f14d19c9d41d467a5bd5c3db
 source_hostdeps="automake autoconf libtool pkg-config"
 hostdeps="gcc autoconf automake libtool pkg-config"
 imagedeps="libfltk1.3-dev"
-deps="core-libs openssl libjpeg-turbo libpng libwebp libx11 openssl zlib fltk"
+deps="core-libs openssl libjpeg-turbo libpng libwebp libx11 openssl zlib fltk make-ca"
 
 build() {
     autotools_configure \
@@ -14,11 +14,8 @@ build() {
 		--enable-ipv6 \
 		--enable-jpeg \
 		--enable-png \
-		--enable-tls \
 		--enable-webp \
-		--with-ca-certs-dir=/etc/ssl/certs \
-        --enable-openssl \
-		--disable-mbedtls
+		--with-ca-certs-dir=/etc/ssl/certs
 
     make -j${parallelism}
 }
