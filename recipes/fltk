@@ -1,0 +1,33 @@
+name=fltk
+version=1.3.11
+revision=1
+tarball_url="https://github.com/fltk/fltk/releases/download/release-${version}/fltk-${version}-source.tar.gz"
+tarball_blake2b="df507a884898d3767c75f3a0e1d6c0450f331c67feec9e30c0b10c2a39a675e1109be82c1b31f7ce9f0cfc7fc3618d5403c50e7932441d7b629b9c37c5d0b8ae"
+imagedeps="build-essential ninja-build"
+hostdeps="gcc cmake pkg-config"
+deps="core-libs libpng libx11 libxext libxft libxinerama libjpeg-turbo mesa"
+
+build() {
+    export CFLAGS="$CFLAGS -fPIC -flto=auto"
+	export CXXFLAGS="$CXXFLAGS -fPIC -flto=auto"
+
+    cmake_configure \
+        -B build \
+        -G Ninja \
+        -DCMAKE_BUILD_TYPE=None \
+		-DCMAKE_INSTALL_PREFIX=${prefix} \
+		-DCMAKE_INSTALL_LIBDIR=lib \
+		-DOPTION_CAIRO=OFF \
+		-DOPTION_CAIROEXT=OFF \
+		-DOPTION_BUILD_SHARED_LIBS=ON \
+		-DFLTK_BUILD_TEST=OFF
+
+    
+    ninja -C build -j${parallelism}
+}
+
+package() {
+    DESTDIR="${dest_dir}" ninja -C build install
+
+    post_package_strip
+}

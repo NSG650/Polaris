@@ -1,0 +1,30 @@
+name=dillo
+version=3.3.0
+revision=1
+tarball_url="https://dillo-browser.org/release/${version}/dillo-${version}.tar.gz"
+tarball_blake2b="874ca5a43c5faf31fc6598655d4c540f4f5ba24f14d19c9d41d467a5bd5c3db8393f1aeb6c0c32b91bef09ca691c74285bbb15886cb21a1567010378e6a91304"
+source_hostdeps="automake autoconf libtool pkg-config"
+hostdeps="gcc autoconf automake libtool pkg-config"
+imagedeps="libfltk1.3-dev"
+deps="core-libs openssl libjpeg-turbo libpng libwebp libx11 openssl zlib fltk"
+
+build() {
+    autotools_configure \
+        --enable-gif \
+		--enable-ipv6 \
+		--enable-jpeg \
+		--enable-png \
+		--enable-tls \
+		--enable-webp \
+		--with-ca-certs-dir=/etc/ssl/certs \
+        --enable-openssl \
+		--disable-mbedtls
+
+    make -j${parallelism}
+}
+
+package() {
+    DESTDIR="${dest_dir}" make install
+
+    post_package_strip
+}
