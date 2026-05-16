@@ -1,0 +1,22 @@
+diff -urN --no-dereference jwm-clean/src/client.c jwm-workdir/src/client.c
+--- jwm-clean/src/client.c
++++ jwm-workdir/src/client.c
+@@ -879,11 +879,17 @@
+ {
+    Assert(np);
+    ReadWMProtocols(np->window, &np->state);
++   if(np == activeClient) {
++      FocusNextStacked(np);
++   }
++   JXKillClient(display, np->window);
++#if 0
+    if(np->state.status & STAT_DELETE) {
+       SendClientMessage(np->window, ATOM_WM_PROTOCOLS, ATOM_WM_DELETE_WINDOW);
+    } else {
+-      KillClient(np);
++      
+    }
++#endif
+ }
+ 
+ /** Callback to kill a client after a confirm dialog. */
