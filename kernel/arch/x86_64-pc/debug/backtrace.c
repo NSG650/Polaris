@@ -21,7 +21,13 @@ void backtrace(uintptr_t *bp) {
 			((uintptr_t)rip) < MEM_PHYS_OFFSET)
 			break;
 
-		kprintf("%p\n", rip);
+		uint64_t f_off = 0;
+		char *f = elf_get_name_from_address((uint64_t)rip, &f_off);
+		if (f != NULL) {
+			kprintf("%p <%s+%x>\n", rip, f, f_off);
+		} else {
+			kprintf("%p\n", rip);
+		}
 
 		rbp = old_rbp;
 	}

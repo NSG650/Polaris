@@ -22,6 +22,46 @@ static void simple_append_name(const char *string, uint64_t address) {
 	name_to_function[index].name = string;
 }
 */
+
+const char *elf_get_name_from_address(uint64_t address, uint64_t *offset_out) {
+	if (!symbol_table_initialised) {
+		if (offset_out)
+			*offset_out = 0;
+		return NULL;
+	}
+
+	if (address < KERNEL_BASE) {
+		return NULL;
+	}
+
+	address -= KERNEL_BASE;
+	address += 0xffffffff80000000;
+
+	size_t best = SIZE_MAX;
+	uint64_t best_diff = UINT64_MAX;
+
+	for (size_t i = 0; i < function_table_size; i++) {
+		uint64_t fn_addr = function_to_name[i].address;
+		if (fn_addr <= address) {
+			uint64_t diff = address - fn_addr;
+			if (diff < best_diff) {
+				best_diff = diff;
+				best = i;
+			}
+		}
+	}
+
+	if (best == SIZE_MAX) {
+		if (offset_out)
+			*offset_out = 0;
+		return "UNKNOWN";
+	}
+
+	if (offset_out)
+		*offset_out = best_diff;
+	return function_to_name[best].name;
+}
+
 const char *elf_get_name_from_function(uint64_t address) {
 	if (!symbol_table_initialised)
 		return "";

@@ -25,6 +25,7 @@
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <sys/elf.h>
 #include <sys/halt.h>
 #include <sys/prcb.h>
 #include <sys/timer.h>
@@ -162,7 +163,13 @@ void panic_(size_t *ip, size_t *bp, char *fmt, ...) {
 	kputs("*** PANIC:\t");
 	vprintf_(fmt, args);
 	va_end(args);
-	kprintf("Crashed at %p\n", ip);
+	uint64_t f_off = 0;
+	char *f = elf_get_name_from_address((uint64_t)ip, &f_off);
+	if (f != NULL) {
+		kprintf("Crashed at %p <%s+%x>\n", ip, f, f_off);
+	} else {
+		kprintf("Crashed at %p\n", ip);
+	}
 	backtrace(bp);
 	halt_current_cpu();
 	__builtin_unreachable();
