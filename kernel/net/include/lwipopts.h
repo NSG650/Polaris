@@ -30,6 +30,7 @@
 #define MEM_CUSTOM_FREE                 kfree
 #define MEM_CUSTOM_MALLOC               kmalloc
 #define MEM_CUSTOM_CALLOC               kcalloc
+#define MEMP_MEM_MALLOC 1
 
 // raise connection limits
 #define MEMP_NUM_NETCONN 100
