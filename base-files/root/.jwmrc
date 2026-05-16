@@ -44,7 +44,7 @@
 
  <!-- Visual Styles -->
     <WindowStyle decorations="flat">
-        <Font>DejaVu Sans:bold:pixelsize=14</Font>
+        <Font>DejaVu Sans:bold</Font>
         <Width>4</Width>
         <Corner>2</Corner>
         <Foreground>#000000</Foreground>
@@ -57,13 +57,13 @@
         </Active>
     </WindowStyle>
     <TrayStyle decorations="flat">
-        <Font>DejaVu Sans:pixelsize=14</Font>
+        <Font>DejaVu Sans</Font>
         <Foreground>#000000</Foreground>
         <Background>#FFFFFF</Background>
         <Opacity>0.75</Opacity>
     </TrayStyle>
     <TaskListStyle list="all" group="true">
-      <Font>DejaVu Sans:pixelsize=14</Font>
+      <Font>DejaVu Sans</Font>
       <Active>
         <Foreground>#000000</Foreground>
         <Background>#D0DEE5</Background>
@@ -81,7 +81,7 @@
         </Active>
     </PagerStyle>
     <MenuStyle decorations="flat">
-        <Font>DejaVu Sans:pixelsize=14</Font>
+        <Font>DejaVu Sans</Font>
         <Foreground>#000000</Foreground>
         <Background>#FFFFFF</Background>
         <Active>
@@ -91,7 +91,7 @@
         <Opacity>0.85</Opacity>
     </MenuStyle>
     <PopupStyle>
-        <Font>DejaVu Sans:pixelsize=14</Font>
+        <Font>DejaVu Sans</Font>
         <Foreground>#000000</Foreground>
         <Background>#D0DEE5</Background>
     </PopupStyle>
