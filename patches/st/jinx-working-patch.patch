@@ -1,7 +1,16 @@
 diff --git st-clean/Makefile st-workdir/Makefile
-index 15db421..713ec57 100644
+index 15db421..8a366e5 100644
 --- st-clean/Makefile
 +++ st-workdir/Makefile
+@@ -21,7 +21,7 @@ x.o: arg.h config.h st.h win.h
+ $(OBJ): config.h config.mk
+ 
+ st: $(OBJ)
+-	$(CC) -o $@ $(OBJ) $(STLDFLAGS)
++	$(CC) $(STCFLAGS) $(STLDFLAGS) -o $@ $(OBJ) $(LIBS)
+ 
+ clean:
+ 	rm -f st $(OBJ) st-$(VERSION).tar.gz
 @@ -41,7 +41,7 @@ install: st
  	mkdir -p $(DESTDIR)$(MANPREFIX)/man1
  	sed "s/VERSION/$(VERSION)/g" < st.1 > $(DESTDIR)$(MANPREFIX)/man1/st.1
@@ -11,11 +20,24 @@ index 15db421..713ec57 100644
  	@echo Please see the README file regarding the terminfo entry of st.
  
  uninstall:
+diff --git st-clean/config.mk st-workdir/config.mk
+index 2fc854e..320ea32 100644
+--- st-clean/config.mk
++++ st-workdir/config.mk
+@@ -23,7 +23,7 @@ LIBS = -L$(X11LIB) -lm -lrt -lX11 -lutil -lXft \
+ # flags
+ STCPPFLAGS = -DVERSION=\"$(VERSION)\" -D_XOPEN_SOURCE=600
+ STCFLAGS = $(INCS) $(STCPPFLAGS) $(CPPFLAGS) $(CFLAGS)
+-STLDFLAGS = $(LIBS) $(LDFLAGS)
++STLDFLAGS = $(LDFLAGS)
+ 
+ # OpenBSD:
+ #CPPFLAGS = -DVERSION=\"$(VERSION)\" -D_XOPEN_SOURCE=600 -D_BSD_SOURCE
 diff --git st-clean/st.c st-workdir/st.c
-index b9f66e7..8d8b1f9 100644
+index 8e57991..7705bd4 100644
 --- st-clean/st.c
 +++ st-workdir/st.c
-@@ -16,17 +16,12 @@
+@@ -16,17 +19,12 @@
  #include <termios.h>
  #include <unistd.h>
  #include <wchar.h>
@@ -34,4 +56,3 @@ index b9f66e7..8d8b1f9 100644
  
  /* Arbitrary sizes */
  #define UTF_INVALID   0xFFFD
- 
