@@ -180,10 +180,18 @@ static int unix_sock_ioctl(struct resource *_this,
 	}
 }
 
-static bool unix_sock_unref(struct resource *this,
+static bool unix_sock_unref(struct resource *_this,
 							struct f_description *description) {
-	(void)this;
 	(void)description;
+	struct unix_socket *this = (struct unix_socket *)_this;
+	struct unix_socket *peer = this->peer;
+	_this->refcount--;
+	if (_this->refcount == 0 && peer) {
+		peer->sock.res.status &= ~POLLIN;
+		peer->sock.res.status &= ~POLLOUT;
+		peer->sock.res.status |= POLLHUP;
+		event_trigger(&peer->sock.res.event, false);
+	}
 	return true;
 }
 
