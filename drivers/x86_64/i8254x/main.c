@@ -180,6 +180,14 @@ static void i8254x_rx_packet(struct i8254x_device *dev) {
 		}
 
 		if (!drop) {
+			struct pbuf *p = pbuf_alloc(PBUF_RAW, packet_length, PBUF_RAM);
+			if (p != NULL) {
+				void *targ = (void *)p->payload;
+				memcpy(targ, (void *)((uintptr_t)packet + MEM_PHYS_OFFSET),
+					   packet_length);
+				nic_i8254x.lwip.input(p, &nic_i8254x.lwip);
+			}
+#if 0
 			uint8_t *packet_pass = kmalloc(packet_length);
 			uint64_t *handover = kmalloc(sizeof(uint64_t) * 3);
 			memcpy(packet_pass, (void *)((uintptr_t)packet + MEM_PHYS_OFFSET),
@@ -190,6 +198,7 @@ static void i8254x_rx_packet(struct i8254x_device *dev) {
 
 			thread_create((uintptr_t)net_handle_packet_thread,
 						  (uint64_t)handover, false, kernel_proc);
+#endif
 		}
 
 		dev->rx_desc[dev->rx_tail]->status = 0;

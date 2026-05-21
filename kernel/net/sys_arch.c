@@ -11,15 +11,16 @@ err_t sys_mutex_new(sys_mutex_t *mutex) {
 }
 
 void sys_mutex_lock(sys_mutex_t *mutex) {
-	while (!spinlock_acquire(&mutex->lock)) {
-		struct event *events[] = {&mutex->ev};
-		event_await(events, 1, true);
-	}
+	// while (!spinlock_acquire(&mutex->lock)) {
+	//	struct event *events[] = {&mutex->ev};
+	//	event_await(events, 1, true);
+	// }
+	spinlock_acquire_or_wait(&mutex->lock);
 }
 
 void sys_mutex_unlock(sys_mutex_t *mutex) {
 	spinlock_drop(&mutex->lock);
-	event_trigger(&mutex->ev, false);
+	// event_trigger(&mutex->ev, false);
 }
 
 void sys_mutex_free(sys_mutex_t *mutex) {
