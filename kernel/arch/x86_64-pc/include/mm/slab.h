@@ -1,6 +1,7 @@
 #ifndef SLAB_H
 #define SLAB_H
 
+#include <klibc/mem.h>
 #include <stddef.h>
 
 void slab_init(void);
@@ -20,6 +21,13 @@ static inline void kfree(void *addr) {
 	return slab_free(addr);
 }
 
-#define kcalloc(A, B) kmalloc(A * sizeof(B))
+static inline void *kcalloc(size_t count, size_t size) {
+	void *ret = kmalloc(count * size);
+	if (ret == NULL) {
+		return NULL;
+	}
+	memzero(ret, count * size);
+	return ret;
+}
 
 #endif

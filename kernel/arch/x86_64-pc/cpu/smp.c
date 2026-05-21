@@ -155,9 +155,7 @@ void smp_init(struct limine_smp_response *smp_info) {
 		cpu_count = smp_info->cpu_count;
 	}
 
-	prcbs = kcalloc(cpu_count, struct prcb);
-
-	memzero(prcbs, sizeof(struct prcb) * cpu_count);
+	prcbs = kcalloc(cpu_count, sizeof(struct prcb));
 
 	for (size_t i = 0; i < cpu_count; i++) {
 		struct limine_smp_info *cpu = smp_info->cpus[i];

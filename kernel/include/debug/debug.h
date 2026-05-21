@@ -52,5 +52,6 @@ extern bool print_now;
 #define crash_or_not() kprintf("Do we crash? %s:%d\n", __FILE__, __LINE__)
 #define print_var_pointer(var) kprintf(#var ": %p\n", var)
 #define print_var_hex(var) kprintf(#var ": %x\n", var)
+#define print_var_string(var) kprintf(#var ": %s\n", var)
 
 #endif
