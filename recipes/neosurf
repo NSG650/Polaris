@@ -1,0 +1,19 @@
+name=neosurf
+version=3.11
+revision=1
+tarball_url="https://github.com/nicolarevelant/neosurf/archive/793aa84beb7b9a9296a0cf19cabf50416473378a.tar.gz"
+tarball_blake2b="68f223f4c6426d8193be59acd950fb51f933f0b7107fa5f9d7cb59c86267da55d9261a3ce08f7a62c6db54b8b12eb6ae6d5506dd7d9a941129b5c17ecb9cbd38"
+hostdeps="gcc pkg-config"
+imagedeps="build-essential meson ninja-build binutils python3 bison flex gperf libglib2.0-dev-bin"
+deps="core-libs gtk+-3 curl libpsl openssl zlib libpng libjpeg-turbo libwebp freetype2 fontconfig libxml pango"
+
+build() {
+    meson_configure
+    meson compile -j${parallelism}
+}
+
+package() {
+    DESTDIR="${dest_dir}" meson install --no-rebuild
+
+    post_package_strip
+}

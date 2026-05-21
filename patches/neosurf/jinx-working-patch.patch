@@ -1,0 +1,136 @@
+diff -urN --no-dereference neosurf-clean/contrib/libcss/meson.build neosurf-workdir/contrib/libcss/meson.build
+--- neosurf-clean/contrib/libcss/meson.build
++++ neosurf-workdir/contrib/libcss/meson.build
+@@ -1,4 +1,4 @@
+-gen_parser = executable('gen_parser', 'src/parse/properties/gen_parser/css_property_parser_gen.c')
++gen_parser = executable('gen_parser', 'src/parse/properties/gen_parser/css_property_parser_gen.c', native: true)
+ 
+ subdir('properties')
+ 
+diff -urN --no-dereference neosurf-clean/contrib/libcss/src/parse/properties/parser_wrapper.sh neosurf-workdir/contrib/libcss/src/parse/properties/parser_wrapper.sh
+--- neosurf-clean/contrib/libcss/src/parse/properties/parser_wrapper.sh
++++ neosurf-workdir/contrib/libcss/src/parse/properties/parser_wrapper.sh
+@@ -1,4 +1,4 @@
+-#!/bin/sh
++#!/bin/bash
+ 
+ if [[ ${#} -lt 3 ]]; then
+ 	echo "Requires at least three arguments (output directory, gen_parser binary location, properties.gen location)"
+diff -urN --no-dereference neosurf-clean/contrib/libdom/meson.build neosurf-workdir/contrib/libdom/meson.build
+--- neosurf-clean/contrib/libdom/meson.build
++++ neosurf-workdir/contrib/libdom/meson.build
+@@ -105,7 +105,7 @@
+ 
+ dom = library('dom',
+     dom_src,
+-    dependencies: dependency('libxml2'),
++    dependencies: dependency('libxml-2.0'),
+     include_directories: include_directories,
+     link_with: [nsutils, parserutils, hubbub],
+ 	install: true
+diff -urN --no-dereference neosurf-clean/contrib/libparserutils/meson.build neosurf-workdir/contrib/libparserutils/meson.build
+--- neosurf-clean/contrib/libparserutils/meson.build
++++ neosurf-workdir/contrib/libparserutils/meson.build
+@@ -11,5 +11,6 @@
+ parserutils = library('parserutils',
+   parserutils_src,
+   include_directories: include_directories('src', 'include'),
++  link_args: ['-liconv'],
+ 	install: true
+ )
+diff -urN --no-dereference neosurf-clean/contrib/nsgenbind/meson.build neosurf-workdir/contrib/nsgenbind/meson.build
+--- neosurf-clean/contrib/nsgenbind/meson.build
++++ neosurf-workdir/contrib/nsgenbind/meson.build
+@@ -45,5 +45,6 @@
+     nsgenbind_parser,
+     webidl_lexer,
+     webidl_parser,
+-    include_directories: include_directories('src')
++    include_directories: include_directories('src'),
++    native: true
+ )
+\ No newline at end of file
+diff -urN --no-dereference neosurf-clean/include/neosurf/utils/nsoption.h neosurf-workdir/include/neosurf/utils/nsoption.h
+--- neosurf-clean/include/neosurf/utils/nsoption.h
++++ neosurf-workdir/include/neosurf/utils/nsoption.h
+@@ -60,7 +60,8 @@
+ #if defined(riscos)
+ #include "riscos/options.h"
+ #elif defined(nsgtk)
+-#include "gtk/options.h"
++// FORGIVE ME FOR THIS, I WAS IN A HURRY
++#include "/build_dir/sources/neosurf/frontends/gtk/options.h"
+ #elif defined(nsmonkey)
+ #include "monkey/options.h"
+ #elif defined(nswin32)
+@@ -127,7 +128,7 @@
+ #if defined(riscos)
+ #include "riscos/options.h"
+ #elif defined(nsgtk)
+-#include "gtk/options.h"
++#include "/build_dir/sources/neosurf/frontends/gtk/options.h"
+ #elif defined(nswin32)
+ #include "windows/options.h"
+ #elif defined(nsvi)
+diff -urN --no-dereference neosurf-clean/meson.build neosurf-workdir/meson.build
+--- neosurf-clean/meson.build
++++ neosurf-workdir/meson.build
+@@ -13,6 +13,8 @@
+   '-DWITH_PNG',
+   '-DWITH_JPEG',
+   '-DWITH_WEBP',
++  '-Dnsgtk',
++  '-Wno-error=implicit-function-declaration',
+   language: 'c')
+ 
+ if get_option('buildtype') != 'debug'
+diff -urN --no-dereference neosurf-clean/meson.options neosurf-workdir/meson.options
+--- neosurf-clean/meson.options
++++ neosurf-workdir/meson.options
+@@ -5,5 +5,5 @@
+ 
+ option('NEOSURF_BUILD_VI_FRONTEND',
+     type: 'boolean',
+-    value: true
++    value: false
+ )
+diff -urN --no-dereference neosurf-clean/src/duktape/meson.build neosurf-workdir/src/duktape/meson.build
+--- neosurf-clean/src/duktape/meson.build
++++ neosurf-workdir/src/duktape/meson.build
+@@ -1,5 +1,5 @@
+ nsgenbind_webidl = custom_target('nsgenbind WebIDL',
+-  input: '../content/handlers/javascript/duktape/neosurf.bnd',
++  input: '/build_dir/sources/neosurf/src/content/handlers/javascript/duktape/neosurf.bnd',
+   output: [
+   'application_cache.c',
+   'attr.c',
+@@ -229,5 +229,5 @@
+   'xml_document.c',
+   'xml_serializer.c',
+   ],
+-  command: [nsgenbind, '-I', '../src/content/handlers/javascript/WebIDL', '@INPUT@', 'src/duktape']
++  command: [nsgenbind, '-I', '/build_dir/sources/neosurf/src/content/handlers/javascript/WebIDL', '@INPUT@', 'src/duktape']
+ )
+diff -urN --no-dereference neosurf-clean/src/meson.build neosurf-workdir/src/meson.build
+--- neosurf-clean/src/meson.build
++++ neosurf-workdir/src/meson.build
+@@ -160,6 +160,6 @@
+   include_directories: include_directories,
+   link_with: [css, dom, nsbmp, nsgif, nsutils, parserutils, svgtiny],
+   dependencies: dependencies,
+-  link_args: ['-lm'],
++  link_args: ['-lm', '-liconv'],
+   install: true
+ )
+diff -urN --no-dereference neosurf-clean/src/utils/nsoption.c neosurf-workdir/src/utils/nsoption.c
+--- neosurf-clean/src/utils/nsoption.c
++++ neosurf-workdir/src/utils/nsoption.c
+@@ -66,7 +66,7 @@
+ #if defined(riscos)
+ #include "riscos/options.h"
+ #elif defined(nsgtk)
+-#include "gtk/options.h"
++#include "/build_dir/sources/neosurf/frontends/gtk/options.h"
+ #elif defined(nswin32)
+ #include "windows/options.h"
+ #elif defined(nsvi)
