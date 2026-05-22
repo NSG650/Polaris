@@ -804,7 +804,12 @@ void thread_kill(struct thread *thrd, bool reschedule) {
 	vec_remove(&mother_proc->process_threads, thrd);
 	spinlock_drop(&mother_proc->lock);
 
+	cli();
 	thrd->state = THREAD_KILLED;
+
+	if (mother_proc->process_threads.length == 0) {
+		process_kill(mother_proc, false);
+	}
 
 	if (reschedule) {
 		sched_yield(false);

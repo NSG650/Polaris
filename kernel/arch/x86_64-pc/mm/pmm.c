@@ -124,7 +124,9 @@ void *pmm_alloc(size_t pages) {
 		last_used_index = 0;
 		ret = inner_alloc(pages, last);
 	}
-	free_pages -= pages;
+	if (ret != NULL) {
+		free_pages -= pages;
+	}
 	if (ret == NULL) {
 		panic("Out of memory!\n");
 	}
@@ -153,7 +155,10 @@ void pmm_free(void *addr, size_t pages) {
 	int_toggle(state);
 }
 
-void pmm_get_memory_info(uint64_t *info) {
-	info[0] = total_page_count;
-	info[1] = free_pages;
+uint64_t pmm_get_free_page_count(void) {
+	return free_pages;
+}
+
+uint64_t pmm_get_total_page_count(void) {
+	return total_page_count;
 }

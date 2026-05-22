@@ -70,6 +70,13 @@ static void *stub_mmap(struct resource *this, size_t file_page, int flags) {
 	return NULL;
 }
 
+static bool stub_unmap(struct resource *this, void *file_page, int flags) {
+	(void)this;
+	(void)file_page;
+	(void)flags;
+	return false;
+}
+
 static bool stub_ref(struct resource *this, struct f_description *description) {
 	(void)this;
 	(void)description;
@@ -106,6 +113,7 @@ void *resource_create(size_t size) {
 	res->write = stub_write;
 	res->ioctl = resource_default_ioctl;
 	res->mmap = stub_mmap;
+	res->unmap = stub_unmap;
 	res->ref = stub_ref;
 	res->unref = stub_unref;
 	res->truncate = stub_truncate;

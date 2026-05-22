@@ -62,27 +62,31 @@ bool mmap_handle_pf(registers_t *reg) {
 	struct addr2range range = addr2range(pagemap, cr2);
 	struct mmap_range_local *local_range = range.range;
 
-	spinlock_drop(&pagemap->lock);
-
 	if (local_range == NULL) {
+		spinlock_drop(&pagemap->lock);
 		return false;
 	}
+
+	int flags = local_range->flags;
+	int prot = local_range->prot;
+	struct mmap_range_global *global = local_range->global;
+
+	spinlock_drop(&pagemap->lock);
 
 	void *page = NULL;
 	if ((local_range->flags & MAP_ANONYMOUS) != 0) {
 		page = pmm_allocz(1);
 	} else {
-		struct resource *res = page = local_range->global->res;
-		page = res->mmap(res, range.file_page, local_range->flags);
+		struct resource *res = global->res;
+		page = res->mmap(res, range.file_page, flags);
 	}
 
 	if (page == NULL) {
 		return false;
 	}
 
-	return mmap_page_in_range(local_range->global,
-							  range.memory_page * PAGE_SIZE, (uintptr_t)page,
-							  local_range->prot);
+	return mmap_page_in_range(global, range.memory_page * PAGE_SIZE,
+							  (uintptr_t)page, prot);
 }
 
 bool mmap_range(struct pagemap *pagemap, uintptr_t virt, uintptr_t phys,
@@ -334,6 +338,10 @@ bool munmap(struct pagemap *pagemap, uintptr_t addr, size_t length) {
 			local_range->length -= postsplit_range->length;
 		}
 
+		if (snip_length == local_range->length) {
+			vec_remove(&pagemap->mmap_ranges, local_range);
+		}
+
 		spinlock_drop(&pagemap->lock);
 
 		for (uintptr_t j = snip_begin; j < snip_end; j += PAGE_SIZE) {
@@ -342,33 +350,34 @@ bool munmap(struct pagemap *pagemap, uintptr_t addr, size_t length) {
 
 		if (snip_length == local_range->length) {
 			if (global_range->locals.length == 1) {
-				if ((local_range->flags & MAP_ANONYMOUS) != 0) {
-					for (uintptr_t j = global_range->base;
-						 j < global_range->base + global_range->length;
-						 j += PAGE_SIZE) {
-						uintptr_t phys =
-							vmm_virt_to_phys(global_range->shadow_pagemap, j);
-						if (phys == INVALID_PHYS) {
-							continue;
-						}
-
-						if (!vmm_unmap_page(global_range->shadow_pagemap, j,
-											true)) {
-							// FIXME: Page map is in inconsistent state at this
-							// point!
-							errno = EINVAL;
-							return false;
-						}
-						pmm_free((void *)phys, 1);
+				for (uintptr_t j = global_range->base;
+					 j < global_range->base + global_range->length;
+					 j += PAGE_SIZE) {
+					uintptr_t phys =
+						vmm_virt_to_phys(global_range->shadow_pagemap, j);
+					if (phys == INVALID_PHYS) {
+						continue;
 					}
-				} else {
-					// TODO: res->unmap();
+
+					if (!vmm_unmap_page(global_range->shadow_pagemap, j,
+										true)) {
+						// FIXME: Page map is in inconsistent state at this
+						// point!
+						errno = EINVAL;
+						return false;
+					}
+					if ((local_range->flags & MAP_ANONYMOUS) != 0) {
+						pmm_free((void *)phys, 1);
+					} else {
+						struct resource *res = global_range->res;
+						res->unmap(res, (void *)phys, local_range->flags);
+					}
 				}
-			} else {
-				vec_remove(&global_range->locals, local_range);
 			}
-			vec_remove(&pagemap->mmap_ranges, local_range);
+
+			vmm_destroy_pagemap(global_range->shadow_pagemap);
 			kfree(local_range);
+			kfree(global_range);
 		} else {
 			if (snip_begin == local_range->base) {
 				local_range->offset += snip_length;
@@ -390,10 +399,17 @@ bool mprotect(struct pagemap *pagemap, uintptr_t addr, size_t length,
 	length = ALIGN_UP(length, PAGE_SIZE);
 
 	for (uintptr_t i = addr; i < addr + length; i += PAGE_SIZE) {
+		spinlock_acquire_or_wait(&pagemap->lock);
 		bool remove_local_range = false;
 		struct mmap_range_local *local_range = addr2range(pagemap, i).range;
 
+		if (local_range == NULL) {
+			spinlock_drop(&pagemap->lock);
+			continue;
+		}
+
 		if (local_range->prot == prot) {
+			spinlock_drop(&pagemap->lock);
 			continue;
 		}
 
@@ -408,7 +424,6 @@ bool mprotect(struct pagemap *pagemap, uintptr_t addr, size_t length,
 		uintptr_t snip_end = i;
 		uintptr_t snip_size = snip_end - snip_begin;
 
-		spinlock_acquire_or_wait(&pagemap->lock);
 		if (snip_begin > local_range->base &&
 			snip_end < local_range->base + local_range->length) {
 			struct mmap_range_local *postsplit_range =
@@ -446,6 +461,9 @@ bool mprotect(struct pagemap *pagemap, uintptr_t addr, size_t length,
 
 		uintptr_t new_offset =
 			local_range->offset + (snip_begin - local_range->base);
+		struct pagemap *saved_pagemap = local_range->pagemap;
+		struct mmap_range_global *saved_global = local_range->global;
+		int saved_flags = local_range->flags;
 
 		if (snip_begin == local_range->base) {
 			local_range->offset += snip_size;
@@ -459,13 +477,13 @@ bool mprotect(struct pagemap *pagemap, uintptr_t addr, size_t length,
 		struct mmap_range_local *new_range =
 			kmalloc(sizeof(struct mmap_range_local));
 
-		new_range->pagemap = local_range->pagemap;
-		new_range->global = local_range->global;
+		new_range->pagemap = saved_pagemap;
+		new_range->global = saved_global;
 		new_range->base = snip_begin;
 		new_range->length = snip_size;
 		new_range->offset = new_offset;
 		new_range->prot = prot;
-		new_range->flags = local_range->flags;
+		new_range->flags = saved_flags;
 
 		vec_push(&pagemap->mmap_ranges, new_range);
 
@@ -508,6 +526,8 @@ void syscall_mmap(struct syscall_arguments *args) {
 	ret = mmap(proc->process_pagemap, hint, length, prot, flags, res, offset);
 cleanup:
 	args->ret = (uint64_t)ret;
+	//	kprintf("[%d] mmap(%p, %lu, 0b%b, 0b%b, %p, %ld) -> %p\n", proc->pid,
+	//hint, length, prot, flags, res, offset, args->ret);
 }
 
 void syscall_munmap(struct syscall_arguments *args) {
@@ -518,6 +538,8 @@ void syscall_munmap(struct syscall_arguments *args) {
 	struct process *proc = thread->mother_proc;
 
 	args->ret = munmap(proc->process_pagemap, addr, length) ? 0 : -1;
+	//	kprintf("[%d] munmap(%p, %lu) -> %d\n", proc->pid, addr, length,
+	//args->ret);
 }
 
 void syscall_mprotect(struct syscall_arguments *args) {
@@ -529,4 +551,6 @@ void syscall_mprotect(struct syscall_arguments *args) {
 	struct process *proc = thread->mother_proc;
 
 	args->ret = mprotect(proc->process_pagemap, addr, length, prot) ? 0 : -1;
+	//	kprintf("[%d] mprotect(%p, %lu, 0b%b) -> %d\n", proc->pid, addr, length,
+	//prot, args->ret);
 }

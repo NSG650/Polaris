@@ -398,7 +398,6 @@ void vmm_page_fault_handler(registers_t *reg) {
 		kprintf("Killing user thread tid %d under process %s for Page Fault\n",
 				thrd->tid, thrd->mother_proc->name);
 		kprintf("User thread crashed at address: %p\n", reg->rip);
-		// backtrace_unsafe((void *)reg->rbp);
 #if 0
 		kprintf("RIP: %p RBP: %p RSP: %p\n", reg->rip, reg->rbp, reg->rsp);
 		kprintf("RAX: %p RBX: %p RCX: %p\n", reg->rax, reg->rbx, reg->rcx);
@@ -416,6 +415,7 @@ void vmm_page_fault_handler(registers_t *reg) {
 				user_supervisor ? "U" : "S", reserved ? "R" : "NR",
 				execute ? "X" : "NX");
 #endif
+		//		backtrace_unsafe((void *)reg->rbp);
 		thread_kill(thrd, true);
 	} else {
 		halt_other_cpus();
@@ -503,6 +503,8 @@ struct pagemap *vmm_fork_pagemap(struct pagemap *pagemap) {
 			new_global_range->res = global_range->res;
 			new_global_range->offset = global_range->offset;
 
+			new_local_range->global = new_global_range;
+
 			vec_push(&new_global_range->locals, new_local_range);
 
 			// TODO: CoW for MAP_PRIVATE?
@@ -581,6 +583,12 @@ static void destroy_level(uint64_t *pml, size_t start, size_t end, int level) {
 void vmm_destroy_pagemap(struct pagemap *pagemap) {
 	while (pagemap->mmap_ranges.length > 0) {
 		struct mmap_range_local *local_range = pagemap->mmap_ranges.data[0];
+
+		if (local_range->length == 0) {
+			vec_remove(&pagemap->mmap_ranges, 0);
+			continue;
+		}
+
 		munmap(pagemap, local_range->base, local_range->length);
 	}
 
