@@ -53,6 +53,7 @@ struct thread {
 	uint64_t gs_base;
 	uint64_t fs_base;
 	int64_t running_on_cpu;
+	uint8_t reserved[128];
 	struct thread *next;
 };
 

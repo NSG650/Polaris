@@ -98,6 +98,23 @@ void sys_sem_set_invalid(sys_sem_t *sem) {
 	spinlock_drop(&sem->lock);
 }
 
+err_t LWIP_NETCONN_THREAD_SEM_ALLOC() {
+	struct thread *thrd = sched_get_running_thread();
+	sys_sem_new((sys_sem_t *)&thrd->reserved, 0);
+	return ERR_OK;
+}
+
+err_t LWIP_NETCONN_THREAD_SEM_FREE() {
+	struct thread *thrd = sched_get_running_thread();
+	sys_sem_new((sys_sem_t *)&thrd->reserved, 0);
+	return ERR_OK;
+}
+
+sys_sem_t *LWIP_NETCONN_THREAD_SEM_GET() {
+	struct thread *thrd = sched_get_running_thread();
+	return (sys_sem_t *)&thrd->reserved;
+}
+
 err_t sys_mbox_new(sys_mbox_t *mbox, int size) {
 	if (size == 0) {
 		size = TCPIP_MBOX_SIZE;

@@ -38,4 +38,16 @@ typedef void (*lwip_thread_fn)(void *arg);
 #define SYS_ARCH_TIMEOUT 0xffffffffUL
 #endif
 
+#ifndef LWIP_NETCONN_THREAD_SEM_ALLOC
+err_t LWIP_NETCONN_THREAD_SEM_ALLOC();
+#endif
+
+#ifndef LWIP_NETCONN_THREAD_SEM_FREE
+err_t LWIP_NETCONN_THREAD_SEM_FREE();
+#endif
+
+#ifndef LWIP_NETCONN_THREAD_SEM_GET
+sys_sem_t *LWIP_NETCONN_THREAD_SEM_GET();
+#endif
+
 #endif
