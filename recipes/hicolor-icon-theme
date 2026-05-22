@@ -1,0 +1,19 @@
+name=hicolor-icon-theme
+version=0.18
+revision=1
+tarball_url="https://icon-theme.freedesktop.org/releases/hicolor-icon-theme-${version}.tar.xz"
+tarball_blake2b="afa724777d1bfcb40fc94477a473a6c12958888ef442bd3f672abb98eaac5c4f91e025c8c131690c5557d369182e7f687fed745d604509bdffdac269bf0bcdde"
+hostdeps="gcc pkg-config"
+deps="core-libs"
+
+configure() {
+    meson_configure
+}
+
+build() {
+    meson compile -j${parallelism}
+}
+
+package() {
+    DESTDIR="${dest_dir}" meson install --no-rebuild
+}

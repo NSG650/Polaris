@@ -1,0 +1,20 @@
+name=adwaita-icon-theme
+version=50.0
+revision=1
+tarball_url="https://download.gnome.org/sources/adwaita-icon-theme/50/adwaita-icon-theme-${version}.tar.xz"
+tarball_blake2b="7e2c417eb41cbfecd80249e173340080be4510467515ec2811b846d7d5b850c27ae837a089016a02d8043c92c49f558f473d11db46e213012f68f473e66eeadc"
+imagedeps="gtk-update-icon-cache"
+hostdeps="gcc pkg-config"
+deps="core-libs"
+
+configure() {
+    meson_configure
+}
+
+build() {
+    meson compile -j${parallelism}
+}
+
+package() {
+    DESTDIR="${dest_dir}" meson install --no-rebuild
+}
