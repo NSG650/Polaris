@@ -75,7 +75,12 @@ diff -urN --no-dereference neosurf-clean/include/neosurf/utils/nsoption.h neosur
 diff -urN --no-dereference neosurf-clean/meson.build neosurf-workdir/meson.build
 --- neosurf-clean/meson.build
 +++ neosurf-workdir/meson.build
-@@ -13,6 +13,8 @@
+@@ -9,10 +9,12 @@
+   '-DWITH_OPENSSL',
+   '-DWITH_BMP',
+   '-DWITH_GIF',
+-  '-DWITH_NS_SVG',
++#  '-DWITH_NS_SVG',
    '-DWITH_PNG',
    '-DWITH_JPEG',
    '-DWITH_WEBP',
@@ -114,6 +119,15 @@ diff -urN --no-dereference neosurf-clean/src/duktape/meson.build neosurf-workdir
 diff -urN --no-dereference neosurf-clean/src/meson.build neosurf-workdir/src/meson.build
 --- neosurf-clean/src/meson.build
 +++ neosurf-workdir/src/meson.build
+@@ -32,7 +32,7 @@
+   'content/handlers/image/ico.c',
+   #'content/handlers/image/video.c',
+   'content/handlers/image/bmp.c',
+-  'content/handlers/image/svg.c',
++  #'content/handlers/image/svg.c',
+   'content/handlers/image/png.c',
+   'content/handlers/image/image.c',
+   'content/handlers/text/textplain.c',
 @@ -160,6 +160,6 @@
    include_directories: include_directories,
    link_with: [css, dom, nsbmp, nsgif, nsutils, parserutils, svgtiny],
