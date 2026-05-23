@@ -349,7 +349,8 @@ bool munmap(struct pagemap *pagemap, uintptr_t addr, size_t length) {
 		}
 
 		if (snip_length == local_range->length) {
-			if (global_range->locals.length == 1) {
+			if (global_range->locals.length == 1 &&
+				((local_range->flags & MAP_SHARED) == 0)) {
 				for (uintptr_t j = global_range->base;
 					 j < global_range->base + global_range->length;
 					 j += PAGE_SIZE) {
@@ -375,9 +376,11 @@ bool munmap(struct pagemap *pagemap, uintptr_t addr, size_t length) {
 				}
 			}
 
-			vmm_destroy_pagemap(global_range->shadow_pagemap);
+			if (((local_range->flags & MAP_SHARED) == 0)) {
+				vmm_destroy_pagemap(global_range->shadow_pagemap);
+				kfree(global_range);
+			}
 			kfree(local_range);
-			kfree(global_range);
 		} else {
 			if (snip_begin == local_range->base) {
 				local_range->offset += snip_length;
@@ -527,7 +530,7 @@ void syscall_mmap(struct syscall_arguments *args) {
 cleanup:
 	args->ret = (uint64_t)ret;
 	//	kprintf("[%d] mmap(%p, %lu, 0b%b, 0b%b, %p, %ld) -> %p\n", proc->pid,
-	//hint, length, prot, flags, res, offset, args->ret);
+	// hint, length, prot, flags, res, offset, args->ret);
 }
 
 void syscall_munmap(struct syscall_arguments *args) {
@@ -539,7 +542,7 @@ void syscall_munmap(struct syscall_arguments *args) {
 
 	args->ret = munmap(proc->process_pagemap, addr, length) ? 0 : -1;
 	//	kprintf("[%d] munmap(%p, %lu) -> %d\n", proc->pid, addr, length,
-	//args->ret);
+	// args->ret);
 }
 
 void syscall_mprotect(struct syscall_arguments *args) {
@@ -552,5 +555,5 @@ void syscall_mprotect(struct syscall_arguments *args) {
 
 	args->ret = mprotect(proc->process_pagemap, addr, length, prot) ? 0 : -1;
 	//	kprintf("[%d] mprotect(%p, %lu, 0b%b) -> %d\n", proc->pid, addr, length,
-	//prot, args->ret);
+	// prot, args->ret);
 }

@@ -502,6 +502,7 @@ struct pagemap *vmm_fork_pagemap(struct pagemap *pagemap) {
 			new_global_range->length = global_range->length;
 			new_global_range->res = global_range->res;
 			new_global_range->offset = global_range->offset;
+			vec_init(&new_global_range->locals);
 
 			new_local_range->global = new_global_range;
 
@@ -586,6 +587,7 @@ void vmm_destroy_pagemap(struct pagemap *pagemap) {
 
 		if (local_range->length == 0) {
 			vec_remove(&pagemap->mmap_ranges, 0);
+			kfree(local_range);
 			continue;
 		}
 
