@@ -642,6 +642,10 @@ bool process_execve(char *path, char **argv, char **envp) {
 
 	for (int i = 0; i < proc->process_threads.length; i++) {
 		if (proc->process_threads.data[i] != thread) {
+			if (proc->process_threads.data[i]->state == THREAD_NORMAL) {
+				sched_trigger_yield(
+					proc->process_threads.data[i]->running_on_cpu);
+			}
 			proc->process_threads.data[i]->state = THREAD_KILLED;
 		}
 	}
@@ -657,6 +661,7 @@ bool process_execve(char *path, char **argv, char **envp) {
 
 	thread_execve(proc, thread, entry, argv, envp);
 
+	vmm_destroy_pagemap(old_pagemap);
 	vmm_switch_pagemap(kernel_pagemap);
 
 	sched_yield(false);
