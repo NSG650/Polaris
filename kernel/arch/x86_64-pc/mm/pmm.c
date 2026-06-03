@@ -128,7 +128,7 @@ void *pmm_alloc(size_t pages) {
 		free_pages -= pages;
 	}
 	if (ret == NULL) {
-		panic("Out of memory! Total pages: %lu Free pages: %lu\n",
+		panic("Out of memory? Total pages: %lu Free pages: %lu\n",
 			  total_page_count, free_pages);
 	}
 	spinlock_drop(&memory_lock);

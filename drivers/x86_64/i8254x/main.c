@@ -427,9 +427,9 @@ uint64_t driver_entry(struct module *driver_module) {
 	netif_set_up(&nic_i8254x.lwip);
 
 	ip4_addr_t ip, mask, gw;
-	IP4_ADDR(&ip, 192, 168, 10, 10);
+	IP4_ADDR(&ip, 10, 0, 2, 15);
 	IP4_ADDR(&mask, 255, 255, 255, 0);
-	IP4_ADDR(&gw, 192, 168, 10, 1);
+	IP4_ADDR(&gw, 10, 0, 2, 2);
 	if (kernel_arguments.kernel_args & KERNEL_ARGS_IP_GIVEN) {
 		ipaddr_aton(kernel_arguments.ip, &ip);
 		ipaddr_aton(kernel_arguments.mask, &mask);
