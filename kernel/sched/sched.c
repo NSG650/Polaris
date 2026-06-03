@@ -283,8 +283,7 @@ void syscall_waitpid(struct syscall_arguments *args) {
 	if (which == -1) {
 		if (!block) {
 			args->ret = 0;
-		}
-		else {
+		} else {
 			errno = EINTR;
 		}
 		kfree(events);

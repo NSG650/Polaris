@@ -51,15 +51,14 @@ static ssize_t net_sock_write(struct resource *_this,
 	if (description->flags & O_NONBLOCK) {
 		ret = lwip_send(this->lwip_fd, buf, count, MSG_DONTWAIT);
 		if (ret < 0) {
-		    return -1;
+			return -1;
 		}
-	}
-	else {
-        ret = lwip_write(this->lwip_fd, buf, count);
+	} else {
+		ret = lwip_write(this->lwip_fd, buf, count);
 	}
 	if (ret < count) {
-        this->sock.res.status &= ~POLLOUT;
-    }
+		this->sock.res.status &= ~POLLOUT;
+	}
 	return ret;
 }
 
@@ -93,9 +92,9 @@ static bool net_sock_connect(struct socket *_this,
 	struct net_socket *this = (struct net_socket *)_this;
 	uint16_t f = net_sock_linux_to_lwip_sockaddr(addr, len);
 	if (lwip_connect(this->lwip_fd, addr, len) < 0) {
-		 if (errno == EINPROGRESS) {
-        	return true;
-    	}
+		if (errno == EINPROGRESS) {
+			return true;
+		}
 		net_sock_lwip_to_linux_sockaddr(addr, f);
 		return false;
 	}

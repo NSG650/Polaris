@@ -352,8 +352,9 @@ static struct socket *unix_sock_accept(struct socket *_this,
 	return (struct socket *)connection_sock;
 }
 
-static bool unix_sock_bind(struct socket *_this, struct f_description *description,
-					void *addr_, socklen_t len) {
+static bool unix_sock_bind(struct socket *_this,
+						   struct f_description *description, void *addr_,
+						   socklen_t len) {
 	(void)description;
 	(void)len;
 
