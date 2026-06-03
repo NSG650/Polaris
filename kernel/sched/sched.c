@@ -267,7 +267,6 @@ void syscall_waitpid(struct syscall_arguments *args) {
 		if (waitee_process == NULL) {
 			errno = ECHILD;
 			kfree(events);
-			args->ret = -1;
 			return;
 		}
 
@@ -280,15 +279,16 @@ void syscall_waitpid(struct syscall_arguments *args) {
 	bool block = (mode & WNOHANG) == 0;
 	ssize_t which = event_await(events, event_count, block);
 
+	// on WNOHANG waitpid returns 0 even when no child has exited.
 	if (which == -1) {
-		kfree(events);
-		if (block) {
+		if (!block) {
 			args->ret = 0;
-			return;
-		} else {
-			errno = EINTR;
-			return;
 		}
+		else {
+			errno = EINTR;
+		}
+		kfree(events);
+		return;
 	}
 
 	spinlock_acquire_or_wait(&waiter_proc->lock);
