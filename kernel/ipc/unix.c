@@ -186,11 +186,11 @@ static bool unix_sock_unref(struct resource *_this,
 	struct unix_socket *this = (struct unix_socket *)_this;
 	struct unix_socket *peer = this->peer;
 	_this->refcount--;
-	if (_this->refcount == 0 && peer) {
-		peer->sock.res.status &= ~POLLIN;
-		peer->sock.res.status &= ~POLLOUT;
+	if ((this->state & UNIX_SOCK_CONNECTED) != 0) {
+		spinlock_acquire_or_wait(&peer->sock.res.lock);
 		peer->sock.res.status |= POLLHUP;
 		event_trigger(&peer->sock.res.event, false);
+		spinlock_drop(&peer->sock.res.lock);
 	}
 	return true;
 }
@@ -352,7 +352,7 @@ static struct socket *unix_sock_accept(struct socket *_this,
 	return (struct socket *)connection_sock;
 }
 
-bool unix_sock_bind(struct socket *_this, struct f_description *description,
+static bool unix_sock_bind(struct socket *_this, struct f_description *description,
 					void *addr_, socklen_t len) {
 	(void)description;
 	(void)len;

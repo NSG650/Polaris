@@ -31,13 +31,14 @@ static ssize_t net_sock_read(struct resource *_this,
 	(void)offset;
 	struct net_socket *this = (struct net_socket *)_this;
 	if (description->flags & O_NONBLOCK) {
-		int ret = lwip_recv(this->lwip_fd, buf, count, MSG_DONTWAIT);
+		ssize_t ret = lwip_recv(this->lwip_fd, buf, count, MSG_DONTWAIT);
 		if (ret < 0) {
-			errno = EAGAIN;
 			return -1;
 		}
+		this->sock.res.status &= ~POLLIN;
 		return ret;
 	}
+	this->sock.res.status &= ~POLLIN;
 	return lwip_read(this->lwip_fd, buf, count);
 }
 
@@ -46,15 +47,20 @@ static ssize_t net_sock_write(struct resource *_this,
 							  const void *buf, off_t offset, size_t count) {
 	(void)offset;
 	struct net_socket *this = (struct net_socket *)_this;
+	ssize_t ret = 0;
 	if (description->flags & O_NONBLOCK) {
-		int ret = lwip_send(this->lwip_fd, buf, count, MSG_DONTWAIT);
+		ret = lwip_send(this->lwip_fd, buf, count, MSG_DONTWAIT);
 		if (ret < 0) {
-			errno = EAGAIN;
-			return -1;
+		    return -1;
 		}
-		return ret;
 	}
-	return lwip_write(this->lwip_fd, buf, count);
+	else {
+        ret = lwip_write(this->lwip_fd, buf, count);
+	}
+	if (ret < count) {
+        this->sock.res.status &= ~POLLOUT;
+    }
+	return ret;
 }
 
 static int net_sock_ioctl(struct resource *_this,
@@ -87,6 +93,9 @@ static bool net_sock_connect(struct socket *_this,
 	struct net_socket *this = (struct net_socket *)_this;
 	uint16_t f = net_sock_linux_to_lwip_sockaddr(addr, len);
 	if (lwip_connect(this->lwip_fd, addr, len) < 0) {
+		 if (errno == EINPROGRESS) {
+        	return true;
+    	}
 		net_sock_lwip_to_linux_sockaddr(addr, f);
 		return false;
 	}
