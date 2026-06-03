@@ -56,11 +56,15 @@ void ramdisk_install(uintptr_t ramdisk_address, uint64_t ramdisk_size) {
 			name_override = NULL;
 		}
 
-		if (strcmp(name, "./") == 0)
-			continue;
-
 		size_t mode = octal_to_int(current_file->mode);
 		size_t size = octal_to_int(current_file->size);
+		struct ustar_header *next_file =
+			(void *)current_file + 512 + ALIGN_UP(size, 512);
+
+		if (strcmp(name, "./") == 0) {
+			current_file = next_file;
+			continue;
+		}
 
 		struct vfs_node *node = NULL;
 		switch (current_file->type) {
@@ -90,7 +94,7 @@ void ramdisk_install(uintptr_t ramdisk_address, uint64_t ramdisk_size) {
 			}
 		}
 
-		current_file = (void *)current_file + 512 + ALIGN_UP(size, 512);
+		current_file = next_file;
 	}
 
 	kprintf("VFS: Loaded ramdisk of size %u\n", ramdisk_size);
