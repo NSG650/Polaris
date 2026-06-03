@@ -1,8 +1,12 @@
 # Polaris
 
 ![Polaris Logo](/.github/polaris_logo_text.png?raw=true)
-
 [Logo by Toastito](https://www.toastito.co.uk/)
+
+# Note
+This codebase will no longer be maintained. There are plans to restart this project from scratch. Over time, I've learned more about OS development and feel like I could do a lot of things differently now. Feel free to look around the code, but be warned there may be some bugs lurking here and there.
+
+#
 
 Polaris is an UNIX-like kernel written in C, which uses [Limine](https://github.com/limine-bootloader/limine) as its default bootloader and boot protocol.
 It's goal is to be simple to build and understand, while also acting as a learning experience.
