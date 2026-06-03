@@ -8,17 +8,6 @@
             <Program label="xeyes">xeyes</Program>
             <Program label="xneko">oneko</Program>
         </Menu>
-        <Menu icon="applications-system" label="System utilities">
-            <Program icon="preferences-desktop-font" label="Fonts">xfontsel</Program>
-            <Program icon="preferences-system-windows" label="Window Properties">
-                xprop | xmessage -file -
-            </Program>
-            <Program icon="preferences-system-windows" label="Window Information">
-                xwininfo | xmessage -file -
-            </Program>
-        </Menu>
-        <Program icon="view-refresh" label="Reboot">reboot</Program>
-        <Program icon="system-shutdown" label="Shutdown">poweroff</Program>
         <Separator/>
         <Restart label="Restart WM" icon="reload"/>
         <Exit label="Exit" confirm="true" icon="exit"/>
@@ -32,9 +21,9 @@
         <Option>noborder</Option>
     </Group>
 
-    <!-- Tray at the top. -->
-    <Tray x="0" y="0" autohide="off" delay="1000">
-        <TrayButton label="Applications">root:0</TrayButton>
+    <!-- Tray at the bottom. -->
+    <Tray x="0" y="-1" autohide="off">
+        <TrayButton label="Start">root:0</TrayButton>
         <Spacer width="2"/>
         <TaskList maxwidth="256"/>
         <Pager labeled="true"/>
@@ -43,58 +32,58 @@
     </Tray>
 
  <!-- Visual Styles -->
-    <WindowStyle decorations="flat">
-        <Font>DejaVu Sans:bold</Font>
-        <Width>4</Width>
-        <Corner>2</Corner>
-        <Foreground>#000000</Foreground>
-        <Background>#FFFFFF</Background>
-        <Opacity>0.5</Opacity>
+    <WindowStyle>
+        <Font>Sans-10:Bold</Font>
+        <Width>1</Width>
+        <Corner>5</Corner>
+        <Opacity>1.0</Opacity>
+        <Foreground>#aeaeae</Foreground>
+        <Background>#1e1e1e</Background>
+        <Outline>#2e2e2e</Outline>
         <Active>
-            <Foreground>#000000</Foreground>
-            <Background>#D0DEE5</Background>
-            <Opacity>1.0</Opacity>
+            <Foreground>#e2e2e2</Foreground>
+            <Background>#272727</Background>
+            <Outline>#2e2e2e</Outline>
         </Active>
     </WindowStyle>
-    <TrayStyle decorations="flat">
-        <Font>DejaVu Sans</Font>
-        <Foreground>#000000</Foreground>
-        <Background>#FFFFFF</Background>
-        <Opacity>0.75</Opacity>
-    </TrayStyle>
-    <TaskListStyle list="all" group="true">
-      <Font>DejaVu Sans</Font>
-      <Active>
-        <Foreground>#000000</Foreground>
-        <Background>#D0DEE5</Background>
-      </Active>
-      <Foreground>#000000</Foreground>
-      <Background>#FFFFFF</Background>
-    </TaskListStyle>
-    <PagerStyle>
-        <Foreground>#D0DEE5</Foreground>
-        <Background>#A7AAAC</Background>
-        <Text>#000000</Text>
-        <Active>
-            <Foreground>#0077CC</Foreground>
-            <Background>#4376C7</Background>
-        </Active>
-    </PagerStyle>
-    <MenuStyle decorations="flat">
-        <Font>DejaVu Sans</Font>
-        <Foreground>#000000</Foreground>
-        <Background>#FFFFFF</Background>
-        <Active>
-            <Foreground>#000000</Foreground>
-            <Background>#D0DEE5</Background>
-        </Active>
-        <Opacity>0.85</Opacity>
-    </MenuStyle>
-    <PopupStyle>
-        <Font>DejaVu Sans</Font>
-        <Foreground>#000000</Foreground>
-        <Background>#D0DEE5</Background>
-    </PopupStyle>
+	<TrayStyle group="false" list="desktop">
+		<Font>Sans-11</Font>
+		<Background>#1e1e1e</Background>
+		<Foreground>#e2e2e2</Foreground>
+		<Outline>#424242</Outline>
+		<Active>
+			<Background>#d1d1d1</Background>
+			<Foreground>#424242</Foreground>
+		</Active>
+	</TrayStyle>
+
+        <PagerStyle>
+                <Outline>#444444</Outline>
+                <Foreground>#ececec</Foreground>
+                <Background>#303030</Background>
+                <Text>#ACABAB</Text>
+                <Active>
+                        <Foreground>#ebebeb</Foreground>
+                        <Background>#d1d1d1</Background>
+                </Active>
+        </PagerStyle>
+
+	<MenuStyle>
+		<Font>Sans-11</Font>
+		<Foreground>#aeaeae</Foreground>
+		<Background>#1e1e1e</Background>
+		<Outline>#2e2e2e</Outline>
+		<Active>
+			<Background>#272727</Background>
+			<Foreground>#e2e2e2</Foreground>
+		</Active>
+	</MenuStyle>
+	<PopupStyle>
+		<Font>Sans-11</Font>
+		<Foreground>#aeaeae</Foreground>
+		<Background>#303030</Background>
+		<Outline>#2e2e2e</Outline>
+	</PopupStyle>
 
     <!-- Virtual Desktops -->
     <Desktops width="4" height="1">
@@ -114,7 +103,7 @@
     <SnapMode distance="10">border</SnapMode>
 
     <!-- The move mode (outline or opaque) -->
-    <MoveMode>opaque</MoveMode>
+    <MoveMode>outline</MoveMode>
 
     <!-- The resize mode (outline or opaque) -->
     <ResizeMode>opaque</ResizeMode>
