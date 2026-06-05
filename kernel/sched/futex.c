@@ -15,7 +15,7 @@ int futex_wait(uint32_t value, uint32_t *futex, struct thread *thrd) {
 
 	struct futex_entry *entry = NULL;
 
-	if (HASHMAP_GET(&futex_hashmap, entry, &futex, sizeof(uint32_t *))) {
+	if (HASHMAP_GET(&futex_hashmap, entry, futex, sizeof(uint32_t *))) {
 		goto wait;
 	}
 
@@ -29,7 +29,7 @@ int futex_wait(uint32_t value, uint32_t *futex, struct thread *thrd) {
 	entry->event = futex_event;
 
 	spinlock_acquire_or_wait(&futex_lock);
-	HASHMAP_INSERT(&futex_hashmap, &futex, sizeof(uint32_t *), entry);
+	HASHMAP_INSERT(&futex_hashmap, futex, sizeof(uint32_t *), entry);
 	spinlock_drop(&futex_lock);
 
 wait:
@@ -43,7 +43,7 @@ wait:
 int futex_wake(uint32_t *futex) {
 	spinlock_acquire_or_wait(&futex_lock);
 	struct futex_entry *entry = NULL;
-	if (HASHMAP_GET(&futex_hashmap, entry, &futex, sizeof(uint32_t *))) {
+	if (HASHMAP_GET(&futex_hashmap, entry, futex, sizeof(uint32_t *))) {
 		event_trigger(entry->event, false);
 	}
 	spinlock_drop(&futex_lock);
