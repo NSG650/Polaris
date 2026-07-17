@@ -1,0 +1,7 @@
+/target
+/build
+limine.h
+/limine-binary
+/iso_root
+.DS_Store
+*.iso

@@ -1,0 +1,22 @@
+[package]
+name = "polaris"
+version = "2.0.0"
+edition = "2024"
+
+[profile.dev]
+panic = "abort"
+lto = false
+
+[profile.dev.package."*"]
+opt-level = 2
+
+[profile.release]
+panic = "abort"
+opt-level = 2
+
+[dependencies]
+limine = { path = "limine-rs" }
+flanterm = { path = "flanterm-rs", default-features = false }
+
+[workspace]
+members = ["limine-rs", "flanterm-rs"]

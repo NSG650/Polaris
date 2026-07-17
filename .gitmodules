@@ -1,0 +1,6 @@
+[submodule "flanterm-rs"]
+	path = flanterm-rs
+	url = https://github.com/robotman2412/flanterm-rs/
+[submodule "limine-rs"]
+	path = limine-rs
+	url = https://github.com/robotman2412/limine-boot-rust

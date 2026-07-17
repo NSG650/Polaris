@@ -1,0 +1,14 @@
+[target.x86_64-kernel]
+rustflags = [
+    "-C",
+    "force-frame-pointers",
+    "-C",
+    "link-arg=-Tmisc/linker_x86_64.ld",
+    "-C",
+    "link-arg=--gc-sections",
+    "-C",
+    "codegen-units=1",
+]
+
+[unstable]
+build-std = ["core"]
