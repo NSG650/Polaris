@@ -4,9 +4,12 @@
 
 use core::panic::PanicInfo;
 
+extern crate alloc;
 extern crate core;
 mod arch;
 mod fbcon;
+mod locks;
+mod mm;
 
 #[macro_use]
 mod log;

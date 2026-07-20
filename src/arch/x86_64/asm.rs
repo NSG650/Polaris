@@ -209,3 +209,25 @@ pub fn halt_forever() {
         }
     }
 }
+
+#[inline]
+pub unsafe fn interrupt_state() -> bool {
+    unsafe {
+        let mut value: u64 = 0;
+        asm!("pushf; pop {0}", out(reg) value);
+        return (value & (1 << 9)) != 0;
+    }
+}
+
+#[inline]
+pub unsafe fn toggle_interrupts(state: bool) -> bool {
+    unsafe {
+        let mut current_state = interrupt_state();
+        if (state) {
+            sti();
+        } else {
+            cli();
+        }
+        return current_state;
+    }
+}

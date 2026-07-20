@@ -6,6 +6,8 @@ use crate::log;
 use crate::fbcon;
 use flanterm;
 
+use crate::arch::x86_64::mminit;
+
 #[used]
 #[unsafe(link_section = ".requests_start")]
 pub static REQUESTS_START: RequestsStartMarker = RequestsStartMarker::new();
@@ -15,6 +17,12 @@ pub static BASE_REVISION: BaseRevision = BaseRevision::new();
 pub static STACK: StackSizeRequest = StackSizeRequest::new(65536);
 #[unsafe(link_section = ".requests")]
 static FRAMEBUFFER: FramebufferRequest = FramebufferRequest::new();
+#[unsafe(link_section = ".requests")]
+pub static MEMMAP: MemmapRequest = MemmapRequest::new();
+#[unsafe(link_section = ".requests")]
+pub static HHDM: HhdmRequest = HhdmRequest::new();
+#[unsafe(link_section = ".requests")]
+pub static EXEC_ADDR: ExecutableAddressRequest = ExecutableAddressRequest::new();
 #[used]
 #[unsafe(link_section = ".requests_end")]
 pub static REQUESTS_END: RequestsEndMarker = RequestsEndMarker::new();
@@ -41,6 +49,23 @@ pub fn arch_entry() {
     }
 
     log!("Hello x86_64!\r\n");
+
+    mminit::init(
+        MEMMAP
+            .response()
+            .expect("Did not get a memory map??")
+            .entries(),
+        HHDM.response().expect("Did not get HHDM??").offset,
+        EXEC_ADDR
+            .response()
+            .expect("Did not get the executable address??")
+            .physical_base,
+        EXEC_ADDR
+            .response()
+            .expect("Did not get the executable address??")
+            .virtual_base,
+    );
+
     loop {
         asm::halt_forever();
     }
