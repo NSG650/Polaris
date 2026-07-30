@@ -70,3 +70,11 @@ pub unsafe extern "C" fn memmove(dest: *mut u8, src: *const u8, size: usize) -> 
         "ret"
     )
 }
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn __stack_chk_fail() -> !{
+    loop
+    {
+        core::hint::spin_loop();
+    }
+}
