@@ -1,5 +1,11 @@
+mod acpi;
+mod apic;
 pub mod asm;
 pub mod crt;
 mod e9;
 pub mod entry;
+mod gdt;
+mod idt;
+pub mod intr;
 mod mminit;
+mod smp;

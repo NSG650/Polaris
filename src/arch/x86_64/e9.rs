@@ -1,4 +1,4 @@
-use crate::arch::x86_64::asm;
+use super::asm;
 use crate::log;
 use core::fmt::Write;
 

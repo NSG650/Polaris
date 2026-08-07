@@ -1,12 +1,16 @@
-use crate::arch::x86_64::asm;
+use super::asm;
 use limine::{BaseRevision, RequestsEndMarker, RequestsStartMarker, request::*};
 
+use super::acpi;
+use super::apic;
 use crate::log;
 
 use crate::fbcon;
 use flanterm;
 
-use crate::arch::x86_64::mminit;
+use super::idt;
+use super::mminit;
+use super::smp;
 
 #[used]
 #[unsafe(link_section = ".requests_start")]
@@ -23,6 +27,10 @@ pub static MEMMAP: MemmapRequest = MemmapRequest::new();
 pub static HHDM: HhdmRequest = HhdmRequest::new();
 #[unsafe(link_section = ".requests")]
 pub static EXEC_ADDR: ExecutableAddressRequest = ExecutableAddressRequest::new();
+#[unsafe(link_section = ".requests")]
+pub static RSDP: RsdpRequest = RsdpRequest::new();
+#[unsafe(link_section = ".requests")]
+pub static MP_REQUEST: MpRequest = MpRequest::new(1);
 #[used]
 #[unsafe(link_section = ".requests_end")]
 pub static REQUESTS_END: RequestsEndMarker = RequestsEndMarker::new();
@@ -65,6 +73,12 @@ pub fn arch_entry() {
             .expect("Did not get the executable address??")
             .virtual_base,
     );
+
+    idt::init();
+
+    acpi::init(RSDP.response().expect("Did not get RSDP pointer??").address);
+    apic::init();
+    smp::init(MP_REQUEST.response().expect("Did not get SMP response??"));
 
     loop {
         asm::halt_forever();

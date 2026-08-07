@@ -19,6 +19,7 @@ limine = { path = "limine-rs" }
 flanterm = { path = "flanterm-rs", default-features = false }
 bitflags = "2.13.1"
 intrusive-collections = { version = "0.10.2", default-features = false, features = ["nightly"] }
+seq-macro = "0.3.6"
 
 [workspace]
 members = ["limine-rs", "flanterm-rs"]

@@ -7,6 +7,7 @@ pub enum PageUsage {
     Free,
     PageTable,
     KernelHeap,
+    KernelStack,
 }
 
 pub struct Page {
