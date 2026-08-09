@@ -3,10 +3,12 @@ BUILDDIR ?= build/$(ARCH)-$(BUILDTYPE)
 CARGO_FLAGS ?=
 
 HOST_CC := cc
-HOST_CFLAGS := -g -O2 -pipe
+HOST_CFLAGS := -g -O2 -pipe -fno-stack-protector
 HOST_CPPFLAGS :=
 HOST_LDFLAGS :=
 HOST_LIBS :=
+
+CFLAGS := -fno-stack-protector
 
 ifeq '$(BUILDTYPE)' 'release'
 CARGO_BUILD_FLAGS ?= --release
