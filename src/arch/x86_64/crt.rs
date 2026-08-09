@@ -60,13 +60,13 @@ pub unsafe extern "C" fn memmove(dest: *mut u8, src: *const u8, size: usize) -> 
         "ja copy_backwardsf",
         "rep movsb",
         "jmp donemovef",
-        "copy_backwards:",
+        "copy_backwardsf:",
         "lea rdi, [rdi+rcx-1]",
         "lea rsi, [rsi+rcx-1]",
         "std",
         "rep movsb",
         "cld",
-        "donemove:",
+        "donemovef:",
         "ret"
     )
 }

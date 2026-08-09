@@ -3,6 +3,8 @@ use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use super::acpi;
 use super::acpi::AcpiHeader;
 use super::asm::{cpuid, outb, rdmsr, wrmsr};
+use super::hpet;
+use super::smp;
 use crate::mm::virt::HHDM_OFFSET;
 
 const MADT_TYPE_PROCESSOR_LOCAL_APIC: u8 = 0;
@@ -199,6 +201,24 @@ impl Lapic {
             let nmi = unsafe { &*MADT_NMIS[i as usize] };
             Self::set_nmi(2, processor_id, nmi.acpi_processor_id, nmi.flags, nmi.lint);
         }
+
+        Self::write(0x3E0, 3);
+        Self::write(0x380, 0xFFFFFFFF);
+
+        hpet::sleep(10);
+
+        Self::write(0x320, 0x10000);
+
+        let ticks_in_10ms = 0xFFFFFFFFu32 - Self::read(0x390);
+
+        Self::write(0x3E0, 3);
+        Self::write(0x380, ticks_in_10ms / 10);
+
+        unsafe {
+            (*smp::get_current_processor()).ticks_in_10ms = ticks_in_10ms;
+        }
+
+        Self::write(0x320, 32 | 0x20000);
     }
 
     pub fn send_ipi(lapic_id: u32, flags: u32) {

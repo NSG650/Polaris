@@ -1,12 +1,22 @@
 use super::apic;
 use super::gdt;
 use super::idt;
+use crate::arch::intr;
+use crate::arch::x86_64::asm;
+use crate::arch::x86_64::asm::interrupt_state;
 use crate::arch::x86_64::gdt::CpuGdt;
+use crate::locks::spinlock::SpinLock;
 use crate::log;
 use crate::mm::stack::*;
 use crate::mm::virt::*;
+use crate::sched::sched::RunQueue;
+use crate::sched::thread::Thread;
+use crate::sched::thread::idle_thread;
 use alloc::boxed::Box;
+use alloc::vec::Vec;
+use core::arch::asm;
 use core::array;
+use core::mem::offset_of;
 use core::sync::atomic::{AtomicUsize, Ordering};
 use limine::mp::*;
 
@@ -17,39 +27,113 @@ pub struct Prcb {
     pub cpu_id: u32,
     gdt: gdt::CpuGdt,
     kernel_stacks: [KernelStack; KERNEL_STACKS_COUNT],
+    pub ticks_in_10ms: u32,
+    pub run_queue: SpinLock<RunQueue>,
+    pub running_thread: Option<Box<Thread>>,
 }
 
+unsafe impl Sync for Prcb {}
+
 pub static PROCESSOR_COUNT: AtomicUsize = AtomicUsize::new(0);
+pub static PROCESSORS: SpinLock<Vec<Option<&'static Prcb>>> = SpinLock::new(Vec::new());
+
+pub fn get_current_processor() -> *mut Prcb {
+    if unsafe { interrupt_state() } {
+        panic!("Calling get_current_processor with interrupts enabled is a bug!\r\n");
+    }
+
+    let processor: *mut Prcb;
+    unsafe {
+        asm!(
+            "mov {processor}, gs:[{me}]",
+            processor = out(reg) processor,
+            me = const offset_of!(Prcb, me),
+            options(nostack, preserves_flags),
+        );
+    }
+    processor
+}
+
+pub fn get_running_thread() -> Option<&'static Thread> {
+    let mut running_thread: Option<&'static Thread>;
+    unsafe {
+        let previous_state = intr::toggle_interrupts(false);
+        let prcb = &*get_current_processor();
+        running_thread = prcb.running_thread.as_deref();
+        intr::toggle_interrupts(previous_state);
+    }
+    running_thread
+}
+
+fn register_processor(prcb: &'static Prcb) {
+    let mut processors = PROCESSORS.lock();
+    processors[prcb.cpu_id as usize] = Some(prcb);
+    PROCESSOR_COUNT.fetch_add(1, Ordering::SeqCst);
+}
 
 unsafe extern "C" fn processor_startup(mp_info: &MpInfo) -> ! {
     unsafe {
+        intr::disable_interrupts();
+    }
+
+    unsafe {
         KERNEL_ADDRESS_SPACE.lock().as_ref().unwrap().set();
     }
+
     let prcb = mp_info.extra_argument() as *mut Prcb;
     let mut prcb = unsafe { &mut *prcb };
 
     prcb.gdt.load();
     idt::load();
+
+    unsafe {
+        asm::wrmsr(0xC0000101, mp_info.extra_argument());
+    }
+
     apic::Lapic::init(prcb.cpu_id as u8);
 
-    log!("Hello I am processor {}\r\n", prcb.cpu_id);
-    PROCESSOR_COUNT.fetch_add(1, Ordering::SeqCst);
+    log!("Hello I am processor {}\r\n", unsafe {
+        (*get_current_processor()).cpu_id
+    });
 
+    register_processor(prcb);
+
+    unsafe {
+        intr::enable_interrupts();
+    }
     loop {}
 }
 
-fn processor_setup_bsp(prcb: &mut Prcb) {
+fn processor_setup_bsp(prcb: &'static mut Prcb) {
+    unsafe {
+        intr::disable_interrupts();
+    }
+
     prcb.gdt.load();
     idt::load();
+
+    unsafe {
+        asm::wrmsr(0xC0000101, (prcb as *mut Prcb) as u64);
+    }
+
     apic::Lapic::init(prcb.cpu_id as u8);
 
-    log!("Hello I am the boot processor {}\r\n", prcb.cpu_id);
-    PROCESSOR_COUNT.fetch_add(1, Ordering::SeqCst);
+    log!("Hello I am the boot processor {}\r\n", unsafe {
+        (*get_current_processor()).cpu_id
+    });
+
+    register_processor(prcb);
 }
 
 pub(in crate::arch::x86_64) fn init(mp_request: &MpRespData) {
+    let processor_count = mp_request.cpus().len();
+
+    let mut v = Vec::with_capacity(processor_count);
+    v.resize_with(processor_count, || None);
+    *PROCESSORS.lock() = v;
+
     for cpu in mp_request.cpus() {
-        let mut kernel_stacks: [KernelStack; 4] =
+        let mut kernel_stacks: [KernelStack; KERNEL_STACKS_COUNT] =
             array::from_fn(|_| KernelStack::new().expect("Failed to allocate kernel stack?"));
 
         let mut prcb = Box::new(Prcb {
@@ -57,6 +141,9 @@ pub(in crate::arch::x86_64) fn init(mp_request: &MpRespData) {
             cpu_id: cpu.processor_id,
             gdt: CpuGdt::new(),
             kernel_stacks,
+            ticks_in_10ms: 0,
+            run_queue: SpinLock::new(RunQueue::new()),
+            running_thread: None,
         });
 
         let prcb_ref: &'static mut Prcb = Box::leak(prcb);
@@ -68,6 +155,10 @@ pub(in crate::arch::x86_64) fn init(mp_request: &MpRespData) {
         prcb_ref.gdt.tss.ist[1] = prcb_ref.kernel_stacks[2].top() as u64;
         prcb_ref.gdt.tss.ist[2] = prcb_ref.kernel_stacks[3].top() as u64;
 
+        prcb_ref.run_queue.lock().enqueue(Box::new(
+            Thread::new_kernel(idle_thread, 0).expect("Failed to create idle thread?"),
+        ));
+
         if cpu.lapic_id == mp_request.bsp_lapic_id {
             processor_setup_bsp(prcb_ref);
         } else {
@@ -75,7 +166,9 @@ pub(in crate::arch::x86_64) fn init(mp_request: &MpRespData) {
         }
     }
 
-    while PROCESSOR_COUNT.load(Ordering::Relaxed) != mp_request.cpus().len() {}
+    while PROCESSOR_COUNT.load(Ordering::Relaxed) != mp_request.cpus().len() {
+        core::hint::spin_loop();
+    }
 
     log!(
         "The system has {} processor(s) installed\r\n",

@@ -1,16 +1,20 @@
-use super::asm;
-use limine::{BaseRevision, RequestsEndMarker, RequestsStartMarker, request::*};
-
 use super::acpi;
 use super::apic;
-use crate::log;
-
-use crate::fbcon;
-use flanterm;
-
+use super::asm;
+use super::hpet;
 use super::idt;
+use super::intr;
 use super::mminit;
 use super::smp;
+use crate::arch::PROCESSOR_COUNT;
+use crate::fbcon;
+use crate::log;
+use crate::sched::sched;
+use crate::sched::thread::Thread;
+use alloc::boxed::Box;
+use core::sync::atomic::Ordering;
+use flanterm;
+use limine::{BaseRevision, RequestsEndMarker, RequestsStartMarker, request::*};
 
 #[used]
 #[unsafe(link_section = ".requests_start")]
@@ -34,6 +38,15 @@ pub static MP_REQUEST: MpRequest = MpRequest::new(1);
 #[used]
 #[unsafe(link_section = ".requests_end")]
 pub static REQUESTS_END: RequestsEndMarker = RequestsEndMarker::new();
+
+extern "C" fn test_thread(arg: usize) {
+    loop {
+        unsafe {
+            asm::outb(0xE9, arg as u8);
+            sched::yield_execution();
+        }
+    }
+}
 
 pub fn arch_entry() {
     if let Some(resp) = FRAMEBUFFER.response()
@@ -77,8 +90,19 @@ pub fn arch_entry() {
     idt::init();
 
     acpi::init(RSDP.response().expect("Did not get RSDP pointer??").address);
+    hpet::init();
     apic::init();
     smp::init(MP_REQUEST.response().expect("Did not get SMP response??"));
+
+    for i in 0..(PROCESSOR_COUNT.load(Ordering::Relaxed) * 2) {
+        sched::enqueue_thread(Box::new(
+            Thread::new_kernel(test_thread, 0x41 + i).expect("Failed to create test thread??"),
+        ));
+    }
+
+    unsafe {
+        intr::enable_interrupts();
+    }
 
     loop {
         asm::halt_forever();

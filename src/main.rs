@@ -10,6 +10,7 @@ mod arch;
 mod fbcon;
 mod locks;
 mod mm;
+mod sched;
 
 #[macro_use]
 mod log;
