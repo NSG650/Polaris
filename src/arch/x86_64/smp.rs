@@ -13,6 +13,7 @@ use crate::sched::sched::RunQueue;
 use crate::sched::thread::Thread;
 use crate::sched::thread::idle_thread;
 use alloc::boxed::Box;
+use alloc::sync::Arc;
 use alloc::vec::Vec;
 use core::arch::asm;
 use core::array;
@@ -29,10 +30,16 @@ pub struct Prcb {
     kernel_stacks: [KernelStack; KERNEL_STACKS_COUNT],
     pub ticks_in_10ms: u32,
     pub run_queue: SpinLock<RunQueue>,
-    pub running_thread: Option<Box<Thread>>,
+    pub running_thread: Option<Arc<Thread>>,
 }
 
 unsafe impl Sync for Prcb {}
+
+impl Prcb {
+    pub fn set_kernel_stack(&mut self, kernel_stack: &KernelStack) {
+        self.gdt.tss.rsp[0] = kernel_stack.top() as u64;
+    }
+}
 
 pub static PROCESSOR_COUNT: AtomicUsize = AtomicUsize::new(0);
 pub static PROCESSORS: SpinLock<Vec<Option<&'static Prcb>>> = SpinLock::new(Vec::new());
@@ -55,13 +62,10 @@ pub fn get_current_processor() -> *mut Prcb {
 }
 
 pub fn get_running_thread() -> Option<&'static Thread> {
-    let mut running_thread: Option<&'static Thread>;
-    unsafe {
-        let previous_state = intr::toggle_interrupts(false);
-        let prcb = &*get_current_processor();
-        running_thread = prcb.running_thread.as_deref();
-        intr::toggle_interrupts(previous_state);
-    }
+    let previous = unsafe { intr::toggle_interrupts(false) };
+    let prcb = unsafe { &mut *get_current_processor() };
+    let running_thread = prcb.running_thread.as_deref();
+    unsafe { intr::toggle_interrupts(previous) };
     running_thread
 }
 
@@ -155,9 +159,10 @@ pub(in crate::arch::x86_64) fn init(mp_request: &MpRespData) {
         prcb_ref.gdt.tss.ist[1] = prcb_ref.kernel_stacks[2].top() as u64;
         prcb_ref.gdt.tss.ist[2] = prcb_ref.kernel_stacks[3].top() as u64;
 
-        prcb_ref.run_queue.lock().enqueue(Box::new(
-            Thread::new_kernel(idle_thread, 0).expect("Failed to create idle thread?"),
-        ));
+        let idle_thread =
+            Arc::new(Thread::new_kernel(idle_thread, 0).expect("Failed to create idle thread?"));
+        idle_thread.niceness.store(19, Ordering::Release);
+        prcb_ref.run_queue.lock().enqueue(idle_thread);
 
         if cpu.lapic_id == mp_request.bsp_lapic_id {
             processor_setup_bsp(prcb_ref);

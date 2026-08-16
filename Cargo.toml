@@ -18,8 +18,9 @@ opt-level = 2
 limine = { path = "limine-rs" }
 flanterm = { path = "flanterm-rs", default-features = false }
 bitflags = "2.13.1"
-intrusive-collections = { version = "0.10.2", default-features = false, features = ["nightly"] }
+intrusive-collections = { version = "0.10.3", default-features = false, features = ["alloc"] }
 seq-macro = "0.3.6"
+enum_dispatch = "0.3.13"
 
 [workspace]
 members = ["limine-rs", "flanterm-rs"]

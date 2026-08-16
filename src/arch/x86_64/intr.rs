@@ -1,5 +1,6 @@
 use super::Context;
 use super::asm;
+use super::smp;
 use crate::sched::sched;
 use seq_macro;
 
@@ -126,6 +127,9 @@ pub unsafe extern "C" fn idt_handler(context: *mut Context) {
     let context = unsafe { &mut *context };
     let isr = context.isr as u8;
 
+    let prcb = smp::get_current_processor();
+    let mut prcb = unsafe { &mut *prcb };
+
     match isr {
         0x00..0x1F => {
             panic!(
@@ -137,7 +141,10 @@ pub unsafe extern "C" fn idt_handler(context: *mut Context) {
             let next = sched::schedule(*context);
             apic::Lapic::eoi();
             match next {
-                Some(next_thrd) => unsafe { load_context(&next_thrd.context) },
+                Some(next_thrd) => unsafe {
+                    prcb.set_kernel_stack(&next_thrd.kernel_stack);
+                    load_context(&next_thrd.context());
+                },
                 None => unsafe { load_context(context) },
             }
         }

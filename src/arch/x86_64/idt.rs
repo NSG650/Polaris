@@ -75,9 +75,9 @@ pub fn init() {
                 IdtEntry::init(interrupt_stub~N as *const () as usize as u64, 0, GateType::Interrupt, 0);
         });
 
-        (*&raw mut IDT_TABLE).entries[32].ist = 0;
-        (*&raw mut IDT_TABLE).entries[8].ist = 1;
-        (*&raw mut IDT_TABLE).entries[2].ist = 2;
+        (*&raw mut IDT_TABLE).entries[32].ist = 1;
+        (*&raw mut IDT_TABLE).entries[8].ist = 2;
+        (*&raw mut IDT_TABLE).entries[2].ist = 3;
     }
 }
 

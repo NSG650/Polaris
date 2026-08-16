@@ -2,10 +2,11 @@
 
 use core::arch::naked_asm;
 use core::ffi::c_int;
+use core::ffi::c_void;
 
 #[inline(never)]
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn strlen(str: *const u8) -> usize {
+pub unsafe extern "C" fn strlen(str: *const i8) -> usize {
     let mut cur = str;
     while cur.read_volatile() != 0 {
         cur = cur.add(1);
@@ -15,7 +16,7 @@ pub unsafe extern "C" fn strlen(str: *const u8) -> usize {
 
 #[unsafe(naked)]
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn memset(dest: *mut u8, val: c_int, size: usize) -> *mut u8 {
+pub unsafe extern "C" fn memset(dest: *mut c_void, val: c_int, size: usize) -> *mut c_void {
     naked_asm!(
         "push rdi",
         "mov rax, rsi",
@@ -28,31 +29,35 @@ pub unsafe extern "C" fn memset(dest: *mut u8, val: c_int, size: usize) -> *mut 
 
 #[unsafe(naked)]
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn memcmp(_a: *const i8, _b: *const i8, _size: usize) -> i32 {
+pub unsafe extern "C" fn memcmp(_a: *const c_void, _b: *const c_void, _size: usize) -> i32 {
     naked_asm!(
         "mov rcx, rdx",
         "repe cmpsb",
-        "je eqf",
+        "je 2f",
         "mov al, byte ptr [rdi-1]",
         "sub al, byte ptr [rsi-1]",
-        "movsx rax, al",
-        "jmp donecmpf",
-        "eq:",
+        "movsx eax, al",
+        "jmp 3f",
+        "2:",
         "xor eax, eax",
-        "donecmp:",
+        "3:",
         "ret"
     )
 }
 
 #[unsafe(naked)]
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn memcpy(dest: *mut u8, src: *const u8, size: usize) -> *mut u8 {
+pub unsafe extern "C" fn memcpy(dest: *mut c_void, src: *const c_void, size: usize) -> *mut c_void {
     naked_asm!("mov rcx, rdx", "mov rax, rdi", "rep movsb", "ret")
 }
 
 #[unsafe(naked)]
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn memmove(dest: *mut u8, src: *const u8, size: usize) -> *mut u8 {
+pub unsafe extern "C" fn memmove(
+    dest: *mut c_void,
+    src: *const c_void,
+    size: usize,
+) -> *mut c_void {
     naked_asm!(
         "mov rcx, rdx",
         "mov rax, rdi",
