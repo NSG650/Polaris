@@ -60,7 +60,7 @@ impl Thread {
         let kernel_stack = KernelStack::new()?;
         let sp = kernel_stack.top();
 
-        Some(Arc::new(Self {
+        let thread = Arc::new(Self {
             id: CURRENT_THREAD_ID.fetch_add(1, Ordering::SeqCst),
             vruntime: AtomicUsize::new(0),
             niceness: AtomicI8::new(0),
@@ -73,10 +73,14 @@ impl Thread {
                 waiting_objects: Vec::new(),
                 wait_time_out: 0,
             }),
-            mother_proc,
+            mother_proc: mother_proc.clone(),
             queued: AtomicBool::new(false),
             link: RBTreeLink::new(),
-        }))
+        });
+
+        mother_proc.add_thread(thread.clone());
+
+        Some(thread.clone())
     }
 
     pub fn terminate(&self) {

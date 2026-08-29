@@ -226,6 +226,5 @@ pub fn schedule(context: Context) -> Option<&'static Thread> {
 pub fn init() {
     let init_thread = Thread::new_kernel(init_thread, 0, process::kernel_process().clone())
         .expect("Failed to create kernel init thread??");
-    process::kernel_process().add_thread(init_thread.clone());
     enqueue_thread(init_thread.clone());
 }
