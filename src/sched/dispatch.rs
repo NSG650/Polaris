@@ -44,6 +44,15 @@ pub enum DispatcherObject {
     Thread(Arc<Thread>),
 }
 
+impl DispatcherObject {
+    pub fn as_event(&self) -> Option<Arc<Event>> {
+        match self {
+            DispatcherObject::Event(ev) => Some(ev.clone()),
+            _ => None,
+        }
+    }
+}
+
 pub fn wait_on_single_object(object: Arc<DispatcherObject>, timeout: usize) -> bool {
     let running_thread =
         arch::get_running_thread().expect("wait_on_single_object called with no thread running??");

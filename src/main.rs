@@ -10,10 +10,20 @@ mod arch;
 mod fbcon;
 mod locks;
 mod mm;
+mod object;
 mod sched;
 
-use crate::{locks::mutex::Mutex, sched::thread::Thread};
+use crate::{
+    locks::mutex::Mutex,
+    object::handle::Handle,
+    sched::{
+        dispatch::{DispatcherObject, Event},
+        thread::Thread,
+    },
+};
 use spin::Once;
+
+use alloc::sync::Arc;
 
 #[macro_use]
 mod log;
@@ -23,44 +33,59 @@ unsafe extern "C" fn _start() {
     arch::entry::arch_entry();
 }
 
-static TEST_MUTEX: Once<Mutex<u64>> = Once::new();
-const THREADS: u64 = 4;
-const ITERS_PER_THREAD: u64 = 100_000;
+extern "C" fn another_thread(arg: usize) -> ! {
+    log!("Hello from another thread!\r\n");
 
-extern "C" fn mutex_worker(_: usize) -> ! {
-    log!("Hello I am a mutex worker thread!\r\n");
-    let mutex = TEST_MUTEX.get().unwrap();
+    let dispatcher_object = arch::get_running_thread()
+        .unwrap()
+        .mother_proc
+        .handle_table
+        .lock()
+        .get(arg)
+        .expect("We should've gotten a handle??")
+        .get();
 
-    for _ in 0..ITERS_PER_THREAD {
-        let mut guard = mutex.lock();
-        let val = *guard;
-        *guard = val + 1;
-    }
+    let event: Arc<Event> = dispatcher_object.as_event().unwrap();
 
-    log!("Done\r\n");
-    Thread::terminate(arch::get_running_thread().unwrap());
+    event.trigger(true);
+
+    log!("Triggered the event!\r\n");
+
+    arch::get_running_thread().unwrap().terminate();
     unreachable!()
 }
 
 extern "C" fn init_thread(_arg: usize) -> ! {
     log!("Hello from kernel init thread!\r\n");
-    TEST_MUTEX.call_once(|| Mutex::new(0u64));
 
-    for _ in 0..THREADS {
-        sched::sched::enqueue_thread(
-            Thread::new_kernel(mutex_worker, 0, sched::process::kernel_process().clone())
-                .expect("failed to create mutex worker thread"),
-        );
-    }
+    let event = Arc::new(Event::new());
+    let devent: Arc<DispatcherObject> = Arc::new(event.clone().into());
+    let handle = Handle::new(devent.clone());
 
-    loop {
-        let val = *TEST_MUTEX.get().unwrap().lock();
-        if val == THREADS * ITERS_PER_THREAD {
-            log!("Test mutex value is {}\r\n", val);
-            loop {}
-        }
-        sched::sched::yield_execution();
-    }
+    let handle_id = arch::get_running_thread()
+        .unwrap()
+        .mother_proc
+        .handle_table
+        .lock()
+        .insert(handle);
+
+    sched::sched::enqueue_thread(
+        Thread::new_kernel(
+            another_thread,
+            handle_id,
+            arch::get_running_thread().unwrap().mother_proc.clone(),
+        )
+        .unwrap(),
+    );
+
+    log!("Waiting on event to be triggered\r\n");
+    event.trigger(false);
+
+    sched::dispatch::wait_on_single_object(devent.clone(), usize::MAX);
+
+    log!("The event was triggered!\r\n");
+
+    loop {}
 }
 
 #[panic_handler]

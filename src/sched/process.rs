@@ -1,5 +1,7 @@
 use super::dispatch::Dispatcher;
 use super::thread::Thread;
+use crate::locks::mutex::Mutex;
+use crate::object::handle::{self, Handle, HandleTable};
 use crate::{locks::spinlock::SpinLock, sched::thread::ThreadState};
 use alloc::collections::BTreeMap;
 use alloc::sync::Arc;
@@ -20,6 +22,7 @@ pub struct Process {
     pub id: usize,
     pub threads: SpinLock<Vec<Arc<Thread>>>,
     pub state: SpinLock<ProcessState>,
+    pub handle_table: Mutex<HandleTable>,
 }
 
 impl Process {
@@ -28,6 +31,7 @@ impl Process {
             id: NEXT_PROCESS_ID.fetch_add(1, Ordering::Relaxed),
             threads: SpinLock::new(Vec::new()),
             state: SpinLock::new(ProcessState::Normal),
+            handle_table: Mutex::new(HandleTable::new()),
         });
         PROCESS_LIST.lock().insert(proc.id, proc.clone());
         proc
