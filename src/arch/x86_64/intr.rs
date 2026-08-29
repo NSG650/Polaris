@@ -133,7 +133,7 @@ pub unsafe extern "C" fn idt_handler(context: *mut Context) {
     match isr {
         0x00..0x1F => {
             panic!(
-                "Got kernel exception {}: {:#x?}\r\n{:?}\r\n",
+                "Unhandled exception {}: {:#x?}\r\n{:?}\r\n",
                 isr, context.error, context
             );
         }

@@ -17,8 +17,12 @@ mod log;
 
 #[unsafe(no_mangle)]
 unsafe extern "C" fn _start() {
-    #[cfg(target_arch = "x86_64")]
-    arch::x86_64::entry::arch_entry();
+    arch::entry::arch_entry();
+}
+
+extern "C" fn init_thread(arg: usize) -> ! {
+    log!("Hello from kernel init thread!\r\n");
+    loop {}
 }
 
 #[panic_handler]
@@ -29,7 +33,6 @@ fn panic_handler(info: &PanicInfo) -> ! {
     }
     log!("{}\r\n", info.message());
     loop {
-        #[cfg(target_arch = "x86_64")]
-        arch::x86_64::asm::halt_forever();
+        arch::asm::halt_forever();
     }
 }

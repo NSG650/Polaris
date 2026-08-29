@@ -9,6 +9,7 @@ use crate::locks::spinlock::SpinLock;
 use crate::log;
 use crate::mm::stack::*;
 use crate::mm::virt::*;
+use crate::sched::process;
 use crate::sched::sched::RunQueue;
 use crate::sched::thread::Thread;
 use crate::sched::thread::idle_thread;
@@ -159,8 +160,8 @@ pub(in crate::arch::x86_64) fn init(mp_request: &MpRespData) {
         prcb_ref.gdt.tss.ist[1] = prcb_ref.kernel_stacks[2].top() as u64;
         prcb_ref.gdt.tss.ist[2] = prcb_ref.kernel_stacks[3].top() as u64;
 
-        let idle_thread =
-            Arc::new(Thread::new_kernel(idle_thread, 0).expect("Failed to create idle thread?"));
+        let idle_thread = Thread::new_kernel(idle_thread, 0, process::kernel_process().clone())
+            .expect("Failed to create idle thread?");
         idle_thread.niceness.store(19, Ordering::Release);
         prcb_ref.run_queue.lock().enqueue(idle_thread);
 

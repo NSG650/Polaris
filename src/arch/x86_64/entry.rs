@@ -10,6 +10,7 @@ use crate::arch;
 use crate::fbcon;
 use crate::log;
 use crate::sched::dispatch::{self, DispatcherObject, Event};
+use crate::sched::process;
 use crate::sched::sched;
 use crate::sched::thread::Thread;
 use alloc::sync::Arc;
@@ -40,35 +41,6 @@ pub static MP_REQUEST: MpRequest = MpRequest::new(1);
 #[used]
 #[unsafe(link_section = ".requests_end")]
 pub static REQUESTS_END: RequestsEndMarker = RequestsEndMarker::new();
-
-extern "C" fn test_thread(arg: usize) {
-    log!("Hello I am test thread {}\r\n", arg);
-
-    arch::get_running_thread().unwrap().terminate();
-}
-
-extern "C" fn thread0(arg: usize) {
-    const THREAD_COUNT: usize = 10;
-    log!(
-        "Hello I am thread0 and I am going to spawn {} threads\r\n",
-        THREAD_COUNT
-    );
-
-    let mut threads = Vec::with_capacity(THREAD_COUNT);
-    for i in 0..THREAD_COUNT {
-        let ktest_thread = Arc::new(Thread::new_kernel(test_thread, i).unwrap());
-        let dtest_thread: Arc<DispatcherObject> = Arc::new(ktest_thread.clone().into());
-        sched::enqueue_thread(ktest_thread);
-
-        threads.push(dtest_thread);
-    }
-
-    dispatch::wait_on_multiple_objects(&threads, true, usize::MAX);
-
-    log!("Test threads got terminated\r\n");
-
-    loop {}
-}
 
 pub fn arch_entry() {
     if let Some(resp) = FRAMEBUFFER.response()
@@ -114,9 +86,10 @@ pub fn arch_entry() {
     acpi::init(RSDP.response().expect("Did not get RSDP pointer??").address);
     hpet::init();
     apic::init();
-    smp::init(MP_REQUEST.response().expect("Did not get SMP response??"));
 
-    sched::enqueue_thread(Arc::new(Thread::new_kernel(thread0, 0).unwrap()));
+    process::init();
+    smp::init(MP_REQUEST.response().expect("Did not get SMP response??"));
+    sched::init();
 
     unsafe {
         intr::enable_interrupts();

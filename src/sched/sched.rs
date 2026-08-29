@@ -1,6 +1,9 @@
+use super::process;
+use super::process::Process;
 use super::thread::{Thread, ThreadAdapter, ThreadState};
 use crate::arch::Context;
 use crate::arch::{self, PROCESSORS, Prcb};
+use crate::init_thread;
 use alloc::sync::Arc;
 use core::sync::atomic::{AtomicUsize, Ordering};
 use intrusive_collections::{RBTree, UnsafeRef};
@@ -218,4 +221,11 @@ pub fn schedule(context: Context) -> Option<&'static Thread> {
         .store(arch::time::now_ns(), Ordering::Relaxed);
     prcb.running_thread = Some(next);
     prcb.running_thread.as_deref()
+}
+
+pub fn init() {
+    let init_thread = Thread::new_kernel(init_thread, 0, process::kernel_process().clone())
+        .expect("Failed to create kernel init thread??");
+    process::kernel_process().add_thread(init_thread.clone());
+    enqueue_thread(init_thread.clone());
 }

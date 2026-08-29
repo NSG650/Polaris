@@ -21,6 +21,7 @@ bitflags = "2.13.1"
 intrusive-collections = { version = "0.10.3", default-features = false, features = ["alloc"] }
 seq-macro = "0.3.6"
 enum_dispatch = "0.3.13"
+spin = { version = "0.12.3", default-features = false, features = ["once"] }
 
 [workspace]
 members = ["limine-rs", "flanterm-rs"]

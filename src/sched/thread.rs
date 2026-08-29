@@ -1,4 +1,5 @@
 use super::dispatch::{Dispatcher, DispatcherObject};
+use super::process::Process;
 use super::sched;
 use crate::mm::stack::*;
 use crate::{arch::Context, locks::spinlock::SpinLock};
@@ -34,6 +35,7 @@ pub struct Thread {
     pub last_scheduled_at: AtomicUsize,
     pub kernel_stack: KernelStack,
     pub wait_state: SpinLock<WaitState>,
+    pub mother_proc: Arc<Process>,
     pub queued: AtomicBool,
     link: RBTreeLink,
 }
@@ -50,11 +52,15 @@ impl<'a> KeyAdapter<'a> for ThreadAdapter {
 }
 
 impl Thread {
-    pub fn new_kernel(entry: extern "C" fn(usize), arg: usize) -> Option<Self> {
+    pub fn new_kernel(
+        entry: extern "C" fn(usize) -> !,
+        arg: usize,
+        mother_proc: Arc<Process>,
+    ) -> Option<Arc<Self>> {
         let kernel_stack = KernelStack::new()?;
         let sp = kernel_stack.top();
 
-        Some(Self {
+        Some(Arc::new(Self {
             id: CURRENT_THREAD_ID.fetch_add(1, Ordering::SeqCst),
             vruntime: AtomicUsize::new(0),
             niceness: AtomicI8::new(0),
@@ -67,9 +73,10 @@ impl Thread {
                 waiting_objects: Vec::new(),
                 wait_time_out: 0,
             }),
+            mother_proc,
             queued: AtomicBool::new(false),
             link: RBTreeLink::new(),
-        })
+        }))
     }
 
     pub fn terminate(&self) {
@@ -110,6 +117,6 @@ impl Dispatcher for Thread {
     }
 }
 
-pub extern "C" fn idle_thread(_: usize) {
+pub extern "C" fn idle_thread(_: usize) -> ! {
     loop {}
 }
