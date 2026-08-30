@@ -16,8 +16,8 @@ impl KernelStack {
             .fetch_add((STACK_SIZE + PAGE_SIZE) as u64, Ordering::Relaxed)
             + PAGE_SIZE as u64;
 
-        let mut kernel_address_space = KERNEL_ADDRESS_SPACE.lock();
-        let kernel_address_space = kernel_address_space.as_mut().unwrap();
+        let kernel_address_space = KERNEL_ADDRESS_SPACE.get().unwrap();
+        let mut kernel_address_space = kernel_address_space.lock();
 
         for i in (0..STACK_SIZE).step_by(PAGE_SIZE) {
             let page = match PMM.lock().as_mut().unwrap().alloc(PageUsage::KernelStack) {
@@ -41,8 +41,8 @@ impl KernelStack {
 
 impl Drop for KernelStack {
     fn drop(&mut self) {
-        let mut kernel_address_space = KERNEL_ADDRESS_SPACE.lock();
-        let kernel_address_space = kernel_address_space.as_mut().unwrap();
+        let kernel_address_space = KERNEL_ADDRESS_SPACE.get().unwrap();
+        let mut kernel_address_space = kernel_address_space.lock();
 
         for i in (0..self.size).step_by(PAGE_SIZE) {
             if let Some(phys) = kernel_address_space.unmap((self.base + i) as u64) {

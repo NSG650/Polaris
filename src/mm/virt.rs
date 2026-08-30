@@ -1,9 +1,11 @@
 use crate::arch::*;
 use crate::locks::spinlock::SpinLock;
+use alloc::sync::Arc;
 use core::sync::atomic::AtomicU64;
+use spin::Once;
 
+pub static KERNEL_ADDRESS_SPACE: Once<Arc<SpinLock<AddressSpace>>> = Once::new();
 pub static HHDM_OFFSET: AtomicU64 = AtomicU64::new(0);
-pub static KERNEL_ADDRESS_SPACE: SpinLock<Option<AddressSpace>> = SpinLock::new(None);
 
 pub(crate) struct PageTable {
     pub(crate) directory: u64,

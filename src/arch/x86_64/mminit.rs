@@ -1,7 +1,9 @@
 use crate::arch::*;
+use crate::locks::spinlock::SpinLock;
 use crate::log;
 use crate::mm::phys::*;
 use crate::mm::virt::*;
+use alloc::sync::Arc;
 use core::sync::atomic::{AtomicUsize, Ordering};
 use limine::memmap;
 
@@ -326,28 +328,38 @@ pub(in crate::arch::x86_64) fn init(
         p_phys += PAGE_SIZE as u64;
     }
 
-    let mut pmm = PMM.lock();
-    let pmm = pmm.as_mut().unwrap();
+    {
+        let mut pmm = PMM.lock();
+        let pmm = pmm.as_mut().unwrap();
 
-    pmm.pfndb = unsafe { core::slice::from_raw_parts_mut(PFN_DATABASE as *mut Page, highest_pfn) };
-    pmm.bitmap = unsafe {
-        core::slice::from_raw_parts_mut((PFN_DATABASE + pfndb_size as u64) as *mut u8, bitmap_size)
-    };
+        pmm.pfndb =
+            unsafe { core::slice::from_raw_parts_mut(PFN_DATABASE as *mut Page, highest_pfn) };
+        pmm.bitmap = unsafe {
+            core::slice::from_raw_parts_mut(
+                (PFN_DATABASE + pfndb_size as u64) as *mut u8,
+                bitmap_size,
+            )
+        };
+    }
 
     unsafe {
         address_space.set();
     }
 
-    *KERNEL_ADDRESS_SPACE.lock() = Some(address_space);
+    KERNEL_ADDRESS_SPACE.call_once(|| Arc::new(SpinLock::new(address_space)));
 
-    log!("The system has {} pages available\r\n", total_page_count);
-    log!(
-        "The kernel is loaded at {:p}\r\n",
-        virt_kernel_base as *const ()
-    );
-    log!(
-        "The HHDM offset is at {:p}\r\n",
-        HHDM_OFFSET.load(Ordering::Relaxed) as *const ()
-    );
-    log!("The PFNDB is located at {:p}\r\n", pmm.pfndb.as_ptr());
+    {
+        let mut pmm = PMM.lock();
+        let pmm = pmm.as_mut().unwrap();
+        log!("The system has {} pages available\r\n", total_page_count);
+        log!(
+            "The kernel is loaded at {:p}\r\n",
+            virt_kernel_base as *const ()
+        );
+        log!(
+            "The HHDM offset is at {:p}\r\n",
+            HHDM_OFFSET.load(Ordering::Relaxed) as *const ()
+        );
+        log!("The PFNDB is located at {:p}\r\n", pmm.pfndb.as_ptr());
+    }
 }

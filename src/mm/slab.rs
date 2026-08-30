@@ -176,8 +176,8 @@ fn big_alloc(pages: usize) -> *mut u8 {
     let allocation_base =
         BIG_ALLOC_PTR.fetch_add(((pages + 1) * PAGE_SIZE) as u64, Ordering::Relaxed);
 
-    let mut kernel_address_space = KERNEL_ADDRESS_SPACE.lock();
-    let kernel_address_space = kernel_address_space.as_mut().unwrap();
+    let kernel_address_space = KERNEL_ADDRESS_SPACE.get().unwrap();
+    let mut kernel_address_space = kernel_address_space.lock();
 
     for i in 0..pages + 1 {
         let page = match PMM.lock().as_mut().unwrap().alloc(PageUsage::KernelHeap) {
@@ -205,8 +205,8 @@ fn big_dealloc(ptr: *mut u8) {
     let header = allocation_base as *mut u64;
     let pages = unsafe { header.read() };
 
-    let mut kernel_address_space = KERNEL_ADDRESS_SPACE.lock();
-    let kernel_address_space = kernel_address_space.as_mut().unwrap();
+    let kernel_address_space = KERNEL_ADDRESS_SPACE.get().unwrap();
+    let mut kernel_address_space = kernel_address_space.lock();
 
     for i in 0..pages + 1 {
         if let Some(phys) = kernel_address_space.unmap(allocation_base + i * PAGE_SIZE as u64) {

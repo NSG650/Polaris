@@ -82,7 +82,7 @@ unsafe extern "C" fn processor_startup(mp_info: &MpInfo) -> ! {
     }
 
     unsafe {
-        KERNEL_ADDRESS_SPACE.lock().as_ref().unwrap().set();
+        KERNEL_ADDRESS_SPACE.get().unwrap().lock().set();
     }
 
     let prcb = mp_info.extra_argument() as *mut Prcb;

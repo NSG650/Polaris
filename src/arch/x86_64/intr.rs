@@ -143,6 +143,7 @@ pub unsafe extern "C" fn idt_handler(context: *mut Context) {
             match next {
                 Some(next_thrd) => unsafe {
                     prcb.set_kernel_stack(&next_thrd.kernel_stack);
+                    next_thrd.mother_proc.address_space.lock().set();
                     load_context(&next_thrd.context());
                 },
                 None => unsafe { load_context(context) },
