@@ -1,6 +1,8 @@
+use super::process::Process;
 use super::sched;
 use super::thread::{Thread, ThreadState};
 use crate::arch;
+use crate::locks::mutex::KMutex;
 use alloc::sync::Arc;
 use core::sync::atomic::{AtomicBool, Ordering};
 use enum_dispatch::enum_dispatch;
@@ -42,12 +44,35 @@ impl Dispatcher for Event {
 pub enum DispatcherObject {
     Event(Arc<Event>),
     Thread(Arc<Thread>),
+    Process(Arc<Process>),
+    Mutex(Arc<KMutex>),
 }
 
 impl DispatcherObject {
     pub fn as_event(&self) -> Option<Arc<Event>> {
         match self {
             DispatcherObject::Event(ev) => Some(ev.clone()),
+            _ => None,
+        }
+    }
+
+    pub fn as_thread(&self) -> Option<Arc<Thread>> {
+        match self {
+            DispatcherObject::Thread(t) => Some(t.clone()),
+            _ => None,
+        }
+    }
+
+    pub fn as_process(&self) -> Option<Arc<Process>> {
+        match self {
+            DispatcherObject::Process(p) => Some(p.clone()),
+            _ => None,
+        }
+    }
+
+    pub fn as_mutex(&self) -> Option<Arc<KMutex>> {
+        match self {
+            DispatcherObject::Mutex(m) => Some(m.clone()),
             _ => None,
         }
     }

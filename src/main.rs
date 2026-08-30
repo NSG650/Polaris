@@ -55,7 +55,7 @@ extern "C" fn another_thread(arg: usize) -> ! {
     unreachable!()
 }
 
-extern "C" fn init_thread(_arg: usize) -> ! {
+extern "C" fn init_thread(_: usize) -> ! {
     log!("Hello from kernel init thread!\r\n");
 
     let event = Arc::new(Event::new());
