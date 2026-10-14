@@ -11,6 +11,8 @@ bitflags! {
         const READ     = 1 << 0;
         const WRITE    = 1 << 1;
         const EXECUTE  = 1 << 2;
+        const COW = 1 << 3;
+        const SHARED = 1 << 4;
     }
 }
 
@@ -21,6 +23,7 @@ impl FromArg for VarProtectionFlags {
     }
 }
 
+#[derive(Clone)]
 pub struct Var {
     pub base_address: u64,
     pub length: usize,

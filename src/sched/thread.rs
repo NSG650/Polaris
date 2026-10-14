@@ -4,8 +4,8 @@ use super::sched;
 use crate::arch::{Context, get_running_thread};
 use crate::locks::spinlock::SpinLock;
 use crate::mm::stack::*;
-use crate::object::KernelObject;
 use crate::object::handle::{self, Handle};
+use crate::object::{KernelObject, PSEUDO_HANDLE_CURRENT_THREAD};
 use crate::status_codes::{PxResult, PxStatus};
 use alloc::sync::Arc;
 use alloc::vec::Vec;
@@ -176,12 +176,50 @@ pub fn syscall_new_thread(
         }
     };
 
-    let new_thread = Thread::new(ip, sp, arg, process.clone());
-
-    let new_thread = match new_thread {
+    let new_thread = match Thread::new(ip, sp, arg, process.clone()) {
         Some(t) => t,
         None => return PxStatus::Unsuccessful,
     };
+
+    let mut handle_table = running_proc.handle_table.lock();
+    let th = handle_table.insert(Handle::new(KernelObject::Thread(new_thread.clone())));
+
+    unsafe {
+        *thread_handle = th;
+    }
+
+    sched::enqueue_thread(new_thread);
+
+    PxStatus::Success
+}
+
+pub fn syscall_new_thread_given_context(
+    process_handle: isize,
+    thread_handle: *mut isize,
+    context: *const Context,
+) -> PxStatus {
+    if thread_handle.is_null() {
+        return PxStatus::BufferTooSmall;
+    }
+
+    let running_proc = get_running_thread().unwrap().mother_proc.clone();
+
+    let process = match handle::get_object_as::<Arc<Process>>(process_handle) {
+        Ok(p) => p,
+        Err(e) => {
+            return e;
+        }
+    };
+
+    let new_thread = match Thread::new(0, 0, 0, process.clone()) {
+        Some(t) => t,
+        None => return PxStatus::Unsuccessful,
+    };
+
+    unsafe {
+        let n_context = new_thread.context_mut();
+        n_context.copy_context(&(*context), true);
+    }
 
     let mut handle_table = running_proc.handle_table.lock();
     let th = handle_table.insert(Handle::new(KernelObject::Thread(new_thread.clone())));
@@ -201,5 +239,42 @@ pub fn syscall_terminate_thread() -> PxStatus {
         running_thread.terminate();
     }
     unreachable!();
+    PxStatus::Success
+}
+
+pub fn syscall_set_thread_context(thread_handle: isize, context: *const Context) -> PxStatus {
+    let thread = match handle::get_object_as::<Arc<Thread>>(thread_handle) {
+        Ok(t) => t,
+        Err(e) => {
+            return e;
+        }
+    };
+
+    unsafe {
+        let thread_context = thread.context_mut();
+        *thread_context = *context;
+    }
+    *thread.state.lock() = ThreadState::Ready;
+
+    if thread_handle == PSEUDO_HANDLE_CURRENT_THREAD {
+        sched::yield_execution();
+    }
+
+    PxStatus::Success
+}
+
+pub fn syscall_get_thread_context(thread_handle: isize, context: *mut Context) -> PxStatus {
+    let thread = match handle::get_object_as::<Arc<Thread>>(thread_handle) {
+        Ok(t) => t,
+        Err(e) => {
+            return e;
+        }
+    };
+
+    unsafe {
+        let thread_context = thread.context();
+        *context = *thread_context;
+    }
+
     PxStatus::Success
 }

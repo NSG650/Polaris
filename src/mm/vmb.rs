@@ -75,13 +75,15 @@ impl Vmb {
 
         let indx = off >> PAGE_SHIFT;
 
-        if self.backing_type == VmbBacking::Pager {
-            todo!();
-        }
-
         let mut pages = self.pages.lock();
         if let Some(page) = pages.get(&indx) {
+            let mut pmm = PMM.lock();
+            pmm.as_mut().unwrap().ref_page(*page);
             return Ok(*page);
+        }
+
+        if self.backing_type == VmbBacking::Pager {
+            todo!();
         }
 
         let mut pmm = PMM.lock();
@@ -122,36 +124,4 @@ pub fn syscall_new_vmb(vmb_handle: *mut isize, length: usize, backing: VmbBackin
     }
 
     PxStatus::Success
-}
-
-pub fn syscall_map_vmb(
-    process_handle: isize,
-    vmb_handle: isize,
-    base: usize,
-    length: usize,
-    protections: VarProtectionFlags,
-) -> PxStatus {
-    let process = match handle::get_object_as::<Arc<Process>>(process_handle) {
-        Ok(p) => p,
-        Err(e) => {
-            return e;
-        }
-    };
-
-    let vmb = match handle::get_object_as::<Arc<Vmb>>(vmb_handle) {
-        Ok(v) => v,
-        Err(e) => {
-            return e;
-        }
-    };
-
-    let mut address_space = process.address_space.lock();
-    match address_space.insert_var_range(base as u64, length, protections, vmb.clone()) {
-        Ok(()) => {
-            return PxStatus::Success;
-        }
-        Err(e) => {
-            return e;
-        }
-    }
 }

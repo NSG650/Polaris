@@ -2,6 +2,9 @@ use super::var::{self, Var, VarProtectionFlags};
 use super::vmb::{self, Vmb, VmbBacking};
 use crate::arch::{self, *};
 use crate::locks::spinlock::SpinLock;
+use crate::mm::phys::PMM;
+use crate::object::handle;
+use crate::sched::process::Process;
 use crate::status_codes::{PxResult, PxStatus};
 use alloc::collections::BTreeMap;
 use alloc::sync::Arc;
@@ -154,6 +157,18 @@ impl AddressSpace {
             );
         }
 
+        let mut i = addr as usize;
+
+        let mut pmm = PMM.lock();
+        let mut pmm = pmm.as_mut().unwrap();
+
+        while i < addr as usize + length {
+            if let Some(p) = self.unmap(i as u64) {
+                pmm.free(p);
+            }
+            i += PAGE_SIZE;
+        }
+
         Ok(())
     }
 
@@ -203,4 +218,78 @@ impl AddressSpace {
 
         Ok(())
     }
+}
+
+pub fn clone_address_space(
+    addr_space_from: &AddressSpace,
+    addr_space_to: &mut AddressSpace,
+) -> PxResult<()> {
+    addr_space_to.vars.clear();
+
+    for (addr, var) in addr_space_from.vars.iter() {
+        let mut v = var.clone();
+        if !v.protections.contains(VarProtectionFlags::SHARED) {
+            v.protections.set(
+                VarProtectionFlags::COW,
+                v.protections.contains(VarProtectionFlags::WRITE),
+            );
+        }
+        addr_space_to.vars.insert(*addr, v);
+    }
+
+    if addr_space_to.clone_user_from(addr_space_from).is_none() {
+        return Err(PxStatus::FailedToAllocate);
+    }
+
+    Ok(())
+}
+
+pub fn syscall_map_vmb(
+    process_handle: isize,
+    vmb_handle: isize,
+    base: usize,
+    length: usize,
+    protections: VarProtectionFlags,
+) -> PxStatus {
+    let process = match handle::get_object_as::<Arc<Process>>(process_handle) {
+        Ok(p) => p,
+        Err(e) => {
+            return e;
+        }
+    };
+
+    let vmb = match handle::get_object_as::<Arc<Vmb>>(vmb_handle) {
+        Ok(v) => v,
+        Err(e) => {
+            return e;
+        }
+    };
+
+    let mut address_space = process.address_space.lock();
+    address_space
+        .map_var_range(base as u64, length, protections, vmb.clone())
+        .err()
+        .unwrap_or(PxStatus::Success)
+}
+
+pub fn syscall_unmap_vmb(process_handle: isize, base: usize, length: usize) -> PxStatus {
+    let process = match handle::get_object_as::<Arc<Process>>(process_handle) {
+        Ok(p) => p,
+        Err(e) => {
+            return e;
+        }
+    };
+
+    let mut address_space = process.address_space.lock();
+
+    let status = address_space
+        .remove_var_range(base as u64, length)
+        .err()
+        .unwrap_or(PxStatus::Success);
+
+    address_space
+        .page_table
+        .invalidate_tlb_range(base as u64, length);
+
+    status
 }

@@ -7,6 +7,7 @@ global syscall4
 global syscall5
 global syscall6
 global die
+global px_fork
 
 syscall0:
 	mov rax, rdi
@@ -69,3 +70,26 @@ syscall6:
 
 die:
     ud2
+
+extern _px_fork
+
+px_fork:
+    mov  rdi, [rsp]
+    lea  rsi, [rsp + 8]
+    push rbp
+    push rbx
+    push r12
+    push r13
+    push r14
+    push r15
+    mov  rdx, rsp
+    sub  rsp, 8
+    call _px_fork
+    add  rsp, 8
+    pop  r15
+    pop  r14
+    pop  r13
+    pop  r12
+    pop  rbx
+    pop  rbp
+    ret

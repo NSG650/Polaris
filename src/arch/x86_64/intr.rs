@@ -141,20 +141,52 @@ pub unsafe extern "C" fn load_context(context: &Context) {
 
 pub static MANUALLY_INITIATED_NMI: AtomicBool = AtomicBool::new(false);
 
+const PF_P: usize = 1 << 0;
+const PF_W: usize = 1 << 1;
+const PF_U: usize = 1 << 2;
+const PF_RSVD: usize = 1 << 3;
+const PF_ID: usize = 1 << 4;
+const PF_PK: usize = 1 << 5;
+const PF_SS: usize = 1 << 6;
+const PF_SGX: usize = 1 << 15;
+
+fn should_page_fault_be_handled(err: usize) -> bool {
+    if err & (PF_RSVD | PF_PK | PF_SS | PF_SGX) != 0 {
+        return false;
+    }
+
+    if err & PF_P == 0 {
+        return true;
+    }
+
+    err & PF_W != 0 && err & PF_ID == 0
+}
+
 fn page_fault_handler(context: &mut Context) {
     let mut cr2: usize;
     unsafe { asm!("mov {cr2}, cr2", cr2 = out(reg) cr2) };
-    let status = fault::handle_fault(cr2 as u64);
-    let err = context.error;
+
+    let err = context.error as usize;
+    let mut status = PxStatus::Unsuccessful;
+
+    let mut fault_type = fault::FaultType::empty();
+    fault_type.set(fault::FaultType::READ, err & PF_P != 0);
+    fault_type.set(fault::FaultType::WRITE, err & PF_W != 0);
+
+    if should_page_fault_be_handled(err) {
+        status = fault::handle_fault(cr2 as u64, fault_type)
+            .err()
+            .unwrap_or(PxStatus::Success);
+    }
 
     if status != PxStatus::Success {
         panic!(
             "Page fault at {:p} [{}:{}:{}:{}]. Failed to handle with {:?}.\r\n{:?}\r\n",
             cr2 as *const (),
-            if err & (1 << 0) != 0 { "P" } else { "NP" },
-            if err & (1 << 1) != 0 { "W" } else { "R" },
-            if err & (1 << 2) != 0 { "U" } else { "S" },
-            if err & (1 << 4) != 0 { "X" } else { "NX" },
+            if err & PF_P != 0 { "P" } else { "NP" },
+            if err & PF_W != 0 { "W" } else { "R" },
+            if err & PF_U != 0 { "U" } else { "S" },
+            if err & PF_ID != 0 { "X" } else { "NX" },
             status,
             context
         );
@@ -173,7 +205,7 @@ pub unsafe extern "C" fn idt_handler(context: *mut Context) {
             page_fault_handler(context);
         }
         0x02 => {
-            if (MANUALLY_INITIATED_NMI.load(Ordering::Relaxed)) {
+            if MANUALLY_INITIATED_NMI.load(Ordering::Relaxed) {
                 asm::halt_forever();
             }
             panic!("Unexpected NMI!\r\n{:?}\r\n", context);

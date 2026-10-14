@@ -50,7 +50,10 @@ impl TryFrom<KernelObject> for Arc<DispatcherObject> {
             KernelObject::Thread(t) => Ok(DispatcherObject::Thread(t.clone()).into()),
             KernelObject::Process(p) => Ok(DispatcherObject::Process(p.clone()).into()),
             KernelObject::Mutex(m) => Ok(DispatcherObject::Mutex(m.clone()).into()),
-            KernelObject::Vmb(_) => Err(PxStatus::TypeMismatch),
+            _ => Err(PxStatus::TypeMismatch),
         }
     }
 }
+
+pub const PSEUDO_HANDLE_CURRENT_PROCESS: isize = -1;
+pub const PSEUDO_HANDLE_CURRENT_THREAD: isize = -2;

@@ -85,6 +85,10 @@ impl PageTable {
         unsafe { &mut *((self.directory + HHDM_OFFSET.load(Ordering::Relaxed)) as *mut Table) }
     }
 
+    fn table_at(dir: u64) -> &'static mut Table {
+        unsafe { &mut *((dir + HHDM_OFFSET.load(Ordering::Relaxed)) as *mut Table) }
+    }
+
     pub fn set(&self) {
         unsafe {
             core::arch::asm!("mov cr3, {}", in(reg) self.directory, options(nostack, preserves_flags));
@@ -149,6 +153,50 @@ impl PageTable {
 
         Some(())
     }
+
+    pub fn invalidate_tlb_range(&self, virt: u64, length: usize) {
+        let virt = align_down(virt, PAGE_SIZE as u64);
+        let length = align_up(length as u64, PAGE_SIZE as u64);
+
+        let mut i = virt;
+
+        while i < virt + length as u64 {
+            unsafe {
+                core::arch::asm!("invlpg [{}]", in(reg) i, options(nostack, preserves_flags));
+            }
+
+            i += PAGE_SIZE as u64;
+        }
+    }
+
+    fn clone_level(level: usize, from_directory: u64) -> Option<u64> {
+        let dir = PMM.lock().as_mut().unwrap().alloc(PageUsage::PageTable)?;
+
+        let to = Self::table_at(dir);
+        let from = Self::table_at(from_directory);
+
+        for i in 0..512 {
+            let mut e = from.entries[i];
+            if !e.is_present() {
+                continue;
+            }
+
+            let leaf = level == 1 || (e.0 & PteFlags::HUGE.bits()) != 0;
+
+            if leaf {
+                if (e.0 & PteFlags::WRITABLE.bits() != 0) && (e.0 & PteFlags::SHARED.bits() == 0) {
+                    e.0 = (e.0 & !PteFlags::WRITABLE.bits()) | PteFlags::COW.bits();
+                    from.entries[i] = e;
+                }
+                to.entries[i] = e;
+            } else {
+                let child = Self::clone_level(level - 1, e.addr())?;
+                to.entries[i] = Entry(child | (e.0 & !ADDR_MASK));
+            }
+        }
+
+        Some(dir)
+    }
 }
 
 impl AddressSpace {
@@ -162,6 +210,22 @@ impl AddressSpace {
         let to = self.page_table.top_level();
 
         to.entries[256..512].copy_from_slice(&from.entries[256..512]);
+    }
+
+    pub fn clone_user_from(&mut self, from: &AddressSpace) -> Option<()> {
+        let from = from.page_table.top_level();
+        let to = self.page_table.top_level();
+
+        for i in 0..256 {
+            let e = from.entries[i];
+            if !e.is_present() {
+                continue;
+            }
+            let child = PageTable::clone_level(3, e.addr())?;
+            to.entries[i] = Entry(child | (e.0 & !ADDR_MASK));
+        }
+
+        Some(())
     }
 }
 

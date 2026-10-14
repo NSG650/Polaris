@@ -1,9 +1,10 @@
-use crate::object::KernelObject;
+use crate::object::{KernelObject, PSEUDO_HANDLE_CURRENT_PROCESS, PSEUDO_HANDLE_CURRENT_THREAD};
 use crate::sched::dispatch::DispatcherObject;
 use crate::status_codes::{PxResult, PxStatus};
 use alloc::collections::BTreeMap;
 use alloc::sync::Arc;
 
+#[derive(Clone)]
 pub struct Handle {
     object: KernelObject,
 }
@@ -28,6 +29,10 @@ impl HandleTable {
         r
     }
 
+    pub fn remove(&mut self, handle_id: isize) -> Option<Handle> {
+        self.handles.remove(&handle_id)
+    }
+
     pub fn get(&mut self, handle_id: isize) -> Option<&Handle> {
         self.handles.get(&handle_id)
     }
@@ -43,16 +48,28 @@ impl Handle {
     }
 }
 
+pub fn clone_handles(
+    handle_table_from: &HandleTable,
+    handle_table_to: &mut HandleTable,
+) -> PxResult<()> {
+    for (handle_id, handle) in handle_table_from.handles.iter() {
+        let mut h = handle.clone();
+        handle_table_to.handles.insert(*handle_id, h);
+    }
+
+    Ok(())
+}
+
 pub fn get_object(handle_id: isize) -> PxResult<KernelObject> {
     let running_thread =
         crate::arch::get_running_thread().expect("get_object called with no thread running??");
 
-    if handle_id == -1 {
+    if handle_id == PSEUDO_HANDLE_CURRENT_PROCESS {
         let running_proc = running_thread.mother_proc.clone();
         return Ok(KernelObject::Process(running_proc));
     }
 
-    if handle_id == -2 {
+    if handle_id == PSEUDO_HANDLE_CURRENT_THREAD {
         return Ok(KernelObject::Thread(running_thread.clone()));
     }
 
@@ -65,4 +82,22 @@ pub fn get_object(handle_id: isize) -> PxResult<KernelObject> {
 
 pub fn get_object_as<T: TryFrom<KernelObject, Error = PxStatus>>(handle_id: isize) -> PxResult<T> {
     T::try_from(get_object(handle_id)?)
+}
+
+pub fn close(handle_id: isize) -> PxResult<()> {
+    if handle_id == PSEUDO_HANDLE_CURRENT_PROCESS || handle_id == PSEUDO_HANDLE_CURRENT_THREAD {
+        return Err(PxStatus::Unsuccessful);
+    }
+
+    let running_thread =
+        crate::arch::get_running_thread().expect("close called with no thread running??");
+    let mut table = running_thread.mother_proc.handle_table.lock();
+
+    table.remove(handle_id).ok_or(PxStatus::NotFound)?;
+
+    Ok(())
+}
+
+pub fn syscall_close(handle_id: isize) -> PxStatus {
+    close(handle_id).err().unwrap_or(PxStatus::Success)
 }

@@ -64,6 +64,17 @@ impl Context {
         }
     }
 
+    pub fn copy_context(&mut self, from: &Context, user: bool) {
+        *self = *from;
+        if user {
+            self.cs = gdt::SEL_USER_CODE as u64;
+            self.ss = gdt::SEL_USER_DATA as u64;
+        } else {
+            self.cs = gdt::SEL_KERNEL_CODE as u64;
+            self.ss = gdt::SEL_KERNEL_DATA as u64;
+        }
+    }
+
     pub fn get_ip(&self) -> usize {
         self.rip as usize
     }
@@ -148,21 +159,26 @@ bitflags! {
         const WRITABLE    = 1 << 1;
         const USER        = 1 << 2;
         const HUGE        = 1 << 7;
+        const COW         = 1 << 9;
+        const SHARED      = 1 << 10;
         const NO_EXECUTE  = 1 << 63;
     }
 }
 
 pub fn prot_to_pte_flags(flags: VarProtectionFlags) -> PteFlags {
     let mut pte_flags = PteFlags::USER;
-    if flags.contains(VarProtectionFlags::READ) {
-        pte_flags |= PteFlags::PRESENT;
-    }
-    if flags.contains(VarProtectionFlags::WRITE) {
-        pte_flags |= PteFlags::WRITABLE;
-    }
-    if !flags.contains(VarProtectionFlags::EXECUTE) {
-        pte_flags |= PteFlags::NO_EXECUTE;
-    }
+
+    pte_flags.set(PteFlags::PRESENT, flags.contains(VarProtectionFlags::READ));
+    pte_flags.set(
+        PteFlags::WRITABLE,
+        flags.contains(VarProtectionFlags::WRITE),
+    );
+    pte_flags.set(
+        PteFlags::NO_EXECUTE,
+        !flags.contains(VarProtectionFlags::EXECUTE),
+    );
+    pte_flags.set(PteFlags::COW, flags.contains(VarProtectionFlags::COW));
+    pte_flags.set(PteFlags::SHARED, flags.contains(VarProtectionFlags::SHARED));
     pte_flags
 }
 

@@ -34,25 +34,83 @@ typedef enum {
 
 typedef int64_t handle_t;
 
+typedef struct {
+  uint64_t r15;
+  uint64_t r14;
+  uint64_t r13;
+  uint64_t r12;
+  uint64_t r11;
+  uint64_t r10;
+  uint64_t r9;
+  uint64_t r8;
+  uint64_t rsi;
+  uint64_t rdi;
+  uint64_t rbp;
+  uint64_t rdx;
+  uint64_t rcx;
+  uint64_t rbx;
+  uint64_t rax;
+  uint64_t reserved;
+  uint64_t reserved1;
+  uint64_t rip;
+  uint64_t cs;
+  uint64_t rflags;
+  uint64_t rsp;
+  uint64_t ss;
+} __attribute__((packed)) px_context_t;
+
+typedef struct {
+  uint64_t r15;
+  uint64_t r14;
+  uint64_t r13;
+  uint64_t r12;
+  uint64_t rbx;
+  uint64_t rbp;
+} __attribute__((packed)) px_fork_context_t;
+
 #define PX_LOG 1
-#define PX_WAIT_FOR_SINGLE_OBJECT 2
-#define PX_WAIT_FOR_MULTIPLE_OBJECTS 3
-#define PX_NEW_THREAD 4
-#define PX_TERMINATE_THREAD 5
-#define PX_NEW_VMB 6
-#define PX_MAP_VMB 7
+#define PX_CLOSE 2
+#define PX_WAIT_FOR_SINGLE_OBJECT 3
+#define PX_WAIT_FOR_MULTIPLE_OBJECTS 4
+#define PX_NEW_THREAD 5
+#define PX_NEW_THREAD_GIVEN_CONTEXT 6
+#define PX_GET_THREAD_CONTEXT 7
+#define PX_SET_THREAD_CONTEXT 8
+#define PX_TERMINATE_THREAD 9
+#define PX_NEW_VMB 10
+#define PX_MAP_VMB 11
+#define PX_UNMAP_VMB 12
+#define PX_NEW_PROCESS 13
+#define PX_TERMINATE_PROCESS 14
+#define PX_CLONE 15
 
 pxstatus_t px_log(const char *string) {
   return syscall1(PX_LOG, (uintptr_t)string);
 }
 
+pxstatus_t px_close(handle_t handle) { return syscall1(PX_CLOSE, handle); }
+
 pxstatus_t px_new_thread(handle_t process_handle, handle_t *thread_handle,
-                         void *ip, void *sp, void *arg) {
-  return syscall5(PX_NEW_THREAD, process_handle, (uintptr_t)thread_handle,
-                  (uintptr_t)ip, (uintptr_t)sp, (uintptr_t)arg);
+                         uintptr_t ip, uintptr_t sp, size_t arg) {
+  return syscall5(PX_NEW_THREAD, process_handle, (uintptr_t)thread_handle, ip,
+                  sp, arg);
+}
+
+pxstatus_t px_new_thread_given_context(handle_t process_handle,
+                                       handle_t *thread_handle, void *context) {
+  return syscall3(PX_NEW_THREAD_GIVEN_CONTEXT, process_handle,
+                  (uintptr_t)thread_handle, (uintptr_t)context);
 }
 
 void px_terminate_thread(void) { syscall0(PX_TERMINATE_THREAD); }
+
+pxstatus_t px_new_process(handle_t *process_handle) {
+  return syscall1(PX_NEW_PROCESS, (uintptr_t)process_handle);
+}
+
+pxstatus_t px_terminate_process(handle_t process_handle) {
+  return syscall1(PX_TERMINATE_PROCESS, process_handle);
+}
 
 typedef enum {
   Anon = 0,
@@ -67,11 +125,18 @@ pxstatus_t px_new_vmb(handle_t *vmb_handle, size_t length,
 #define VAR_FLAGS_READ (1 << 0)
 #define VAR_FLAGS_WRITE (1 << 1)
 #define VAR_FLAGS_EXECUTE (1 << 2)
+#define VAR_FLAGS_COW (1 << 3)
+#define VAR_FLAGS_SHARED (1 << 4)
 
 pxstatus_t px_map_vmb(handle_t process_handle, handle_t vmb_handle,
                       uintptr_t base, size_t length, int protections) {
   return syscall5(PX_MAP_VMB, process_handle, vmb_handle, base, length,
                   protections);
+}
+
+pxstatus_t px_unmap_vmb(handle_t process_handle, uintptr_t base,
+                        size_t length) {
+  return syscall3(PX_UNMAP_VMB, process_handle, base, length);
 }
 
 #define WAIT_TIMEOUT_INFINITE (size_t)-1
@@ -89,69 +154,250 @@ pxstatus_t px_wait_for_multiple_objects(handle_t *objects,
                   (uintptr_t)triggered_object);
 }
 
-#define RANDOM_ADDRESS 0x70000000000ULL
+#define CLONE_COPY_ADDRESS_SPACE (1 << 0)
+#define CLONE_COPY_HANDLES (1 << 1)
+
+pxstatus_t px_clone(handle_t process_from, handle_t process_to, int32_t flags) {
+  return syscall3(PX_CLONE, process_from, process_to, flags);
+}
+
+#define STACK_ADDRESS 0x70000000000ULL
+#define CODE_ADDRESS 0x40000000000ULL
+
+#define RANDOM_ADDRESS 0xA0000000000ULL
+#define RANDOM_COW_ADDRESS 0xB0000000000ULL
 
 #define px_current_process() -1
 #define px_current_thread() -2
 
 extern void die(size_t err);
 
-void test_thread(uint64_t t) {
-  char message[] = "Hello I am thread 0!\r\n";
-  message[18] = '0' + (char)t;
-  px_log(message);
+extern handle_t px_fork(void);
 
-  px_terminate_thread();
+handle_t _px_fork(uintptr_t ip, uintptr_t sp, px_fork_context_t *fork_context) {
+  handle_t new_process_handle = 0;
+  pxstatus_t status = px_new_process(&new_process_handle);
+
+  if (status != Success) {
+    px_log("Failed to create process :(\r\n");
+    die(status);
+  }
+
+  status = px_clone(px_current_process(), new_process_handle,
+                    CLONE_COPY_HANDLES | CLONE_COPY_ADDRESS_SPACE);
+  if (status != Success) {
+    px_log("Failed to clone process :(\r\n");
+    die(status);
+  }
+
+  px_context_t thread_context = {0};
+  thread_context.rip = ip;
+  thread_context.rsp = sp;
+  thread_context.rax = 0;
+
+  thread_context.rbx = fork_context->rbx;
+  thread_context.rbp = fork_context->rbp;
+  thread_context.r12 = fork_context->r12;
+  thread_context.r13 = fork_context->r13;
+  thread_context.r14 = fork_context->r14;
+  thread_context.r15 = fork_context->r15;
+
+  handle_t thread_handle = 0;
+  status = px_new_thread_given_context(new_process_handle, &thread_handle,
+                                       &thread_context);
+
+  if (status != Success) {
+    px_log("Failed to create thread :(\r\n");
+    die(status);
+  }
+
+  return new_process_handle;
 }
 
 void _start(void) {
   px_log("Hello from userspace!\r\n");
-  px_log("Spawning 4 threads\r\n");
 
-  handle_t thread_handles[4] = {0};
-
-  uintptr_t stack_ptr = RANDOM_ADDRESS;
-  pxstatus_t status = Success;
-
-  for (int i = 0; i < 4; i++) {
-    handle_t stack_vmb_handle = 0;
-    px_new_vmb(&stack_vmb_handle, 4096, Anon);
-
-    if (status != Success) {
-      px_log("Failed to create stack vmb :(\r\n");
-      die(status);
-    }
-    status =
-        px_map_vmb(px_current_process(), stack_vmb_handle, stack_ptr - 4096,
-                   4096, VAR_FLAGS_READ | VAR_FLAGS_WRITE);
-
-    if (status != Success) {
-      px_log("Failed to map stack vmb :(\r\n");
-      die(status);
-    }
-
-    status =
-        px_new_thread(px_current_process(), &thread_handles[i], test_thread,
-                      (void *)stack_ptr, (void *)(uintptr_t)i);
-    if (status != Success) {
-      px_log("Failed to create thread :(\r\n");
-      die(status);
-    }
-
-    stack_ptr -= 4096 * 2;
-  }
-
-  handle_t triggered_thread = 0;
-  status = px_wait_for_multiple_objects(
-      thread_handles, 4, true, WAIT_TIMEOUT_INFINITE, &triggered_thread);
+  handle_t vmb_handle = 0;
+  pxstatus_t status = px_new_vmb(&vmb_handle, 4096, Anon);
 
   if (status != Success) {
-    px_log("Failed to wait on threads :(\r\n");
+    px_log("Failed to create vmb :(\r\n");
     die(status);
-  } else {
-    px_log("Done!\r\n");
   }
+
+  handle_t vmb_cow_handle = 0;
+  status = px_new_vmb(&vmb_cow_handle, 4096, Anon);
+
+  if (status != Success) {
+    px_log("Failed to create cow vmb :(\r\n");
+    die(status);
+  }
+
+  status = px_map_vmb(px_current_process(), vmb_handle, RANDOM_ADDRESS, 4096,
+                      VAR_FLAGS_READ | VAR_FLAGS_WRITE | VAR_FLAGS_SHARED);
+  if (status != Success) {
+    px_log("Failed to map vmb :(\r\n");
+    die(status);
+  }
+
+  status = px_map_vmb(px_current_process(), vmb_cow_handle, RANDOM_COW_ADDRESS,
+                      4096, VAR_FLAGS_READ | VAR_FLAGS_WRITE);
+  if (status != Success) {
+    px_log("Failed to map cow vmb :(\r\n");
+    die(status);
+  }
+
+  __builtin_memset((void *)RANDOM_ADDRESS, 0, 4096);
+  __builtin_memset((void *)RANDOM_COW_ADDRESS, 0xBB, 4096);
+
+  handle_t new_process_handle = px_fork();
+
+  if (new_process_handle == 0) {
+    px_log("Hello I am the cloned process!\r\n");
+    __builtin_memset((void *)RANDOM_ADDRESS, 0xAA, 4096);
+    __builtin_memset((void *)RANDOM_COW_ADDRESS, 0xCC, 4096);
+
+    uint8_t *check = (uint8_t *)RANDOM_ADDRESS;
+    uint8_t *check_cow = (uint8_t *)RANDOM_COW_ADDRESS;
+    for (size_t i = 0; i < 4096; i++) {
+      if (check[i] != 0xAA) {
+        px_log("Cloned: RANDOM_ADDRESS check failed!\r\n");
+        die(i);
+      }
+      if (check_cow[i] != 0xCC) {
+        px_log("Cloned: RANDOM_COW_ADDRESS check failed!\r\n");
+        die(i);
+      }
+    }
+    px_log("Cloned: Forked process check passed!\r\n");
+    px_terminate_process(px_current_process());
+  }
+
+  status = px_wait_for_single_object(new_process_handle, WAIT_TIMEOUT_INFINITE);
+  if (status != Success) {
+    px_log("Failed to wait on process :(\r\n");
+    die(status);
+  }
+
+  uint8_t *check = (uint8_t *)RANDOM_ADDRESS;
+  uint8_t *check_cow = (uint8_t *)RANDOM_COW_ADDRESS;
+  for (size_t i = 0; i < 4096; i++) {
+    if (check[i] != 0xAA) {
+      px_log("RANDOM_ADDRESS check failed!\r\n");
+      die(i);
+    }
+    if (check_cow[i] != 0xBB) {
+      px_log("RANDOM_COW_ADDRESS check failed!\r\n");
+      die(i);
+    }
+  }
+  px_log("Parent process check passed!\r\n");
+  px_log("Done!\r\n");
+  for (;;)
+    ;
+}
+
+#if 0
+void _start(void) {
+  px_log("Hello from userspace!\r\n");
+  px_log("Creating a new process\r\n");
+
+  pxstatus_t status = Success;
+
+  handle_t stack_vmb_handle = 0;
+  px_new_vmb(&stack_vmb_handle, 4096, Anon);
+
+  if (status != Success) {
+    px_log("Failed to create stack vmb :(\r\n");
+    die(status);
+  }
+
+  handle_t code_vmb_handle = 0;
+  px_new_vmb(&code_vmb_handle, 4096, Anon);
+
+  if (status != Success) {
+    px_log("Failed to create code vmb :(\r\n");
+    die(status);
+  }
+
+  status = px_map_vmb(px_current_process(), code_vmb_handle, RANDOM_ADDRESS,
+                      4096, VAR_FLAGS_READ | VAR_FLAGS_WRITE);
+
+  if (status != Success) {
+    px_log("Failed to map code vmb :(\r\n");
+    die(status);
+  }
+
+  char message[] = "Hello from new process!\r\n";
+
+  uint8_t shellcode[26 + sizeof(message)] = {
+      0x48, 0x8D, 0x3D, 0x13, 0x00, 0x00, 0x00, // lea rdi, [rip+0x13]
+      0xB8, 0x01, 0x00, 0x00, 0x00,             // mov eax, 1
+      0x0F, 0x05,                               // syscall
+      0xB8, 0x0B, 0x00, 0x00, 0x00,             // mov eax, 11
+      0x6a, 0xff,                               // push -1
+      0x5f,                                     // pop rdi
+      0x0F, 0x05,                               // syscall
+      0x0F, 0x0B,                               // ud2
+  };
+
+  __builtin_memcpy(&shellcode[26], message, sizeof(message));
+  __builtin_memcpy((void *)RANDOM_ADDRESS, shellcode, sizeof(shellcode));
+
+  handle_t process_handle = 0;
+  status = px_new_process(&process_handle);
+
+  if (status != Success) {
+    px_log("Failed to create process :(\r\n");
+    die(status);
+  }
+
+  status = px_map_vmb(process_handle, stack_vmb_handle, STACK_ADDRESS - 4096,
+                      4096, VAR_FLAGS_READ | VAR_FLAGS_WRITE);
+
+  if (status != Success) {
+    px_log("Failed to map in stack in the new process :(\r\n");
+    die(status);
+  }
+
+  status = px_map_vmb(process_handle, code_vmb_handle, CODE_ADDRESS, 4096,
+                      VAR_FLAGS_READ | VAR_FLAGS_WRITE | VAR_FLAGS_EXECUTE);
+
+  handle_t thread_handle = 0;
+  status = px_new_thread(process_handle, &thread_handle, CODE_ADDRESS,
+                         STACK_ADDRESS, 0);
+
+  if (status != Success) {
+    px_log("Failed to create thread :(\r\n");
+    die(status);
+  }
+
+  // status = px_wait_for_single_object(process_handle, WAIT_TIMEOUT_INFINITE);
+
+  handle_t handles[2] = {process_handle, thread_handle};
+  handle_t triggered_object = 0;
+  status = px_wait_for_multiple_objects(handles, 2, true, WAIT_TIMEOUT_INFINITE,
+                                        &triggered_object);
+
+  if (status != Success) {
+    px_log("Failed to wait on objects :(\r\n");
+    die(status);
+  }
+
+  status = px_unmap_vmb(px_current_process(), RANDOM_ADDRESS, 4096);
+  if (status != Success) {
+    px_log("Failed to unmap code vmb :(\r\n");
+    die(status);
+  }
+
+  px_close(thread_handle);
+  px_close(process_handle);
+  px_close(stack_vmb_handle);
+  px_close(code_vmb_handle);
+
+  px_log("Done!\r\n");
 
   for (;;)
     ;
 }
+#endif
