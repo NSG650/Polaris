@@ -83,6 +83,11 @@ typedef struct {
 #define PX_NEW_PROCESS 13
 #define PX_TERMINATE_PROCESS 14
 #define PX_CLONE 15
+#define PX_NEW_CHANNEL_PAIR 16
+#define PX_CHANNEL_SEND 17
+#define PX_CHANNEL_RECEIVE 18
+#define PX_NEW_EVENT 19
+#define PX_EVENT_TRIGGER 20
 
 pxstatus_t px_log(const char *string) {
   return syscall1(PX_LOG, (uintptr_t)string);
@@ -161,6 +166,32 @@ pxstatus_t px_clone(handle_t process_from, handle_t process_to, int32_t flags) {
   return syscall3(PX_CLONE, process_from, process_to, flags);
 }
 
+pxstatus_t px_new_channel_pair(handle_t *handles) {
+  return syscall1(PX_NEW_CHANNEL_PAIR, (uintptr_t)handles);
+}
+
+pxstatus_t px_channel_send(handle_t channel_handle, void *buffer, size_t length,
+                           handle_t *handles, size_t handle_count) {
+  return syscall5(PX_CHANNEL_SEND, channel_handle, (uintptr_t)buffer, length,
+                  (uintptr_t)handles, handle_count);
+}
+
+pxstatus_t px_channel_receive(handle_t channel_handle, void *buffer,
+                              size_t *length, handle_t *handles,
+                              size_t *handle_count) {
+  return syscall5(PX_CHANNEL_RECEIVE, channel_handle, (uintptr_t)buffer,
+                  (uintptr_t)length, (uintptr_t)handles,
+                  (uintptr_t)handle_count);
+}
+
+pxstatus_t px_new_event(handle_t *event_handle) {
+  return syscall1(PX_NEW_EVENT, (uintptr_t)event_handle);
+}
+
+pxstatus_t px_event_trigger(handle_t event_handle, bool state) {
+  return syscall2(PX_EVENT_TRIGGER, event_handle, state);
+}
+
 #define STACK_ADDRESS 0x70000000000ULL
 #define CODE_ADDRESS 0x40000000000ULL
 
@@ -217,81 +248,67 @@ handle_t _px_fork(uintptr_t ip, uintptr_t sp, px_fork_context_t *fork_context) {
 void _start(void) {
   px_log("Hello from userspace!\r\n");
 
-  handle_t vmb_handle = 0;
-  pxstatus_t status = px_new_vmb(&vmb_handle, 4096, Anon);
+  handle_t channel_pair[2] = {0};
+  pxstatus_t status = px_new_channel_pair(channel_pair);
 
   if (status != Success) {
-    px_log("Failed to create vmb :(\r\n");
+    px_log("Failed to create channel pair :(\r\n");
     die(status);
   }
 
-  handle_t vmb_cow_handle = 0;
-  status = px_new_vmb(&vmb_cow_handle, 4096, Anon);
-
-  if (status != Success) {
-    px_log("Failed to create cow vmb :(\r\n");
-    die(status);
-  }
-
-  status = px_map_vmb(px_current_process(), vmb_handle, RANDOM_ADDRESS, 4096,
-                      VAR_FLAGS_READ | VAR_FLAGS_WRITE | VAR_FLAGS_SHARED);
-  if (status != Success) {
-    px_log("Failed to map vmb :(\r\n");
-    die(status);
-  }
-
-  status = px_map_vmb(px_current_process(), vmb_cow_handle, RANDOM_COW_ADDRESS,
-                      4096, VAR_FLAGS_READ | VAR_FLAGS_WRITE);
-  if (status != Success) {
-    px_log("Failed to map cow vmb :(\r\n");
-    die(status);
-  }
-
-  __builtin_memset((void *)RANDOM_ADDRESS, 0, 4096);
-  __builtin_memset((void *)RANDOM_COW_ADDRESS, 0xBB, 4096);
-
+  handle_t channel_handle = channel_pair[0];
   handle_t new_process_handle = px_fork();
 
   if (new_process_handle == 0) {
-    px_log("Hello I am the cloned process!\r\n");
-    __builtin_memset((void *)RANDOM_ADDRESS, 0xAA, 4096);
-    __builtin_memset((void *)RANDOM_COW_ADDRESS, 0xCC, 4096);
+    channel_handle = channel_pair[1];
+    px_log("Cloned: Hello I am the cloned process!\r\n");
 
-    uint8_t *check = (uint8_t *)RANDOM_ADDRESS;
-    uint8_t *check_cow = (uint8_t *)RANDOM_COW_ADDRESS;
-    for (size_t i = 0; i < 4096; i++) {
-      if (check[i] != 0xAA) {
-        px_log("Cloned: RANDOM_ADDRESS check failed!\r\n");
-        die(i);
-      }
-      if (check_cow[i] != 0xCC) {
-        px_log("Cloned: RANDOM_COW_ADDRESS check failed!\r\n");
-        die(i);
-      }
+    px_log("Cloned: Creating an event\r\n");
+
+    handle_t event_handle = 0;
+    status = px_new_event(&event_handle);
+    if (status != Success) {
+      px_log("Failed to create event :(\r\n");
+      die(status);
     }
-    px_log("Cloned: Forked process check passed!\r\n");
+    px_event_trigger(event_handle, false);
+
+    px_log("Cloned: Going to send some data through the channel\r\n");
+
+    char data[] = "Hello from the cloned process!\r\n";
+    status =
+        px_channel_send(channel_handle, data, sizeof(data), &event_handle, 1);
+    if (status != Success) {
+      px_log("Failed to send to the channel :(\r\n");
+      die(status);
+    }
+
+    px_wait_for_single_object(event_handle, WAIT_TIMEOUT_INFINITE);
+
+    px_log("Cloned: Done! bye bye!\r\n");
     px_terminate_process(px_current_process());
   }
 
-  status = px_wait_for_single_object(new_process_handle, WAIT_TIMEOUT_INFINITE);
+  px_log("Going to read from the channel\r\n");
+  char buffer[512];
+  size_t length_read = sizeof(buffer);
+
+  handle_t event_handle = 0;
+  size_t handle_count = 1;
+  status = px_channel_receive(channel_pair[0], buffer, &length_read,
+                              &event_handle, &handle_count);
   if (status != Success) {
-    px_log("Failed to wait on process :(\r\n");
+    px_log("Failed to read channel :(\r\n");
     die(status);
   }
 
-  uint8_t *check = (uint8_t *)RANDOM_ADDRESS;
-  uint8_t *check_cow = (uint8_t *)RANDOM_COW_ADDRESS;
-  for (size_t i = 0; i < 4096; i++) {
-    if (check[i] != 0xAA) {
-      px_log("RANDOM_ADDRESS check failed!\r\n");
-      die(i);
-    }
-    if (check_cow[i] != 0xBB) {
-      px_log("RANDOM_COW_ADDRESS check failed!\r\n");
-      die(i);
-    }
-  }
-  px_log("Parent process check passed!\r\n");
+  buffer[length_read - 1] = '\0';
+  px_log("Got data from the cloned process!\r\n");
+  px_log(buffer);
+
+  px_log("Triggering the event now\r\n");
+  px_event_trigger(event_handle, true);
+
   px_log("Done!\r\n");
   for (;;)
     ;

@@ -3,6 +3,7 @@ use super::sched;
 use super::thread::{Thread, ThreadState};
 use crate::arch;
 use crate::locks::mutex::KMutex;
+use crate::object::handle::Handle;
 use crate::object::{KernelObject, handle};
 use crate::status_codes::{PxResult, PxStatus};
 use alloc::sync::Arc;
@@ -43,6 +44,39 @@ impl Dispatcher for Event {
     fn test(&self) -> bool {
         self.state.load(Ordering::Acquire)
     }
+}
+
+pub fn syscall_new_event(handle_id: *mut isize) -> PxStatus {
+    if handle_id.is_null() {
+        return PxStatus::BufferTooSmall;
+    }
+
+    let running_proc = crate::arch::get_running_thread()
+        .unwrap()
+        .mother_proc
+        .clone();
+
+    unsafe {
+        *handle_id = running_proc
+            .handle_table
+            .lock()
+            .insert(Handle::new(KernelObject::Event(Arc::new(Event::new()))));
+    }
+
+    PxStatus::Success
+}
+
+pub fn syscall_event_trigger(handle_id: isize, state: bool) -> PxStatus {
+    let event = match handle::get_object_as::<Arc<Event>>(handle_id) {
+        Ok(ev) => ev,
+        Err(e) => {
+            return e;
+        }
+    };
+
+    event.trigger(state);
+
+    PxStatus::Success
 }
 
 #[enum_dispatch(Dispatcher)]

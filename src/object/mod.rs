@@ -1,5 +1,6 @@
 pub mod handle;
 
+use crate::ipc::channels::Channel;
 use crate::locks::mutex::KMutex;
 use crate::mm::vmb::Vmb;
 use crate::sched::dispatch::{DispatcherObject, Event};
@@ -15,6 +16,7 @@ pub enum KernelObject {
     Process(Arc<Process>),
     Mutex(Arc<KMutex>),
     Vmb(Arc<Vmb>),
+    Channel(Arc<Channel>),
 }
 
 macro_rules! kernel_object_conv {
@@ -40,6 +42,7 @@ kernel_object_conv!(
     Process(Process),
     Mutex(KMutex),
     Vmb(Vmb),
+    Channel(Channel),
 );
 
 impl TryFrom<KernelObject> for Arc<DispatcherObject> {

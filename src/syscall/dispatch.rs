@@ -1,5 +1,6 @@
 use super::SyscallFn;
 use crate::arch::Context;
+use crate::ipc::channels;
 use crate::log;
 use crate::mm::virt;
 use crate::mm::vmb;
@@ -35,6 +36,11 @@ pub fn dispatch(context: &mut Context) {
         super::NEW_PROCESS => run(process::syscall_new_process, context),
         super::TERMINATE_PROCESS => run(process::syscall_terminate_process, context),
         super::CLONE => run(process::syscall_clone, context),
+        super::NEW_CHANNEL_PAIR => run(channels::syscall_new_channel_pair, context),
+        super::CHANNEL_SEND => run(channels::syscall_channel_send, context),
+        super::CHANNEL_RECEIVE => run(channels::syscall_channel_receive, context),
+        super::NEW_EVENT => run(sched::dispatch::syscall_new_event, context),
+        super::EVENT_TRIGGER => run(sched::dispatch::syscall_event_trigger, context),
         n => {
             log!("Unknown syscall {n}");
             context.set_ret(PxStatus::InvalidArguments as usize);
